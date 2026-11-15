@@ -6,11 +6,11 @@ per use and key.
 
 Backends (``$XD_LIMIT_BACKEND`` forces one):
 
-``systemd``  ``systemd-run --user --scope -p MemoryMax=M -p MemorySwapMax=0 -- timeout T cmd``
-             (the same as the interim ``xd-limit``). Used when a systemd user session answers.
-``ulimit``   ``sh -c 'ulimit -v KB; exec timeout T cmd'`` -- GitHub runners have no systemd user
-             session; the address-space limit is the fallback (``vmem``, default = memory).
-``none``     no limits (debugging only).
+- ``systemd``: ``systemd-run --user --scope -p MemoryMax=M -p MemorySwapMax=0 -- timeout T cmd``
+  (the same as the interim ``xd-limit``). Used when a systemd user session answers.
+- ``ulimit``: ``sh -c 'ulimit -v KB; exec timeout T cmd'`` -- GitHub runners have no systemd user
+  session; the address-space limit is the fallback (``vmem``, default = memory).
+- ``none``: no limits (debugging only).
 
 GUI tools get a memory limit only (``timeout: none``, D117). Exit codes: the command's own;
 124 = timeout; 137 = killed (usually out of memory).

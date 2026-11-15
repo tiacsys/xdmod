@@ -1,0 +1,26 @@
+# zdocs registry of xdmod (doc-architecture.md §2-§3, framework-docs.md §2).
+# xdmod has no upstream documents: the framework never links to the projects that use it (D111).
+# The robarm full set (robarm-manifest/docs/documents.yaml) lists both documents again, with the
+# same id, title and prefix. If you change an entry here, change it there too.
+# Format: tools/zdocs/doc/manual/reference/registry-schema.rst.
+base_url: "https://tiacsys.github.io/robarm-manifest/"
+
+groups:
+  - id: g-framework
+    title: "Framework"
+
+documents:
+  xdmod-manual:
+    title: "XDMOD Manual"
+    group: g-framework
+    prefix: xdmod-manual
+    version_project: xdmod
+    builders: [html]
+    needs: {source: json}
+  xdmod-ref:
+    title: "curatrix Reference"
+    group: g-framework
+    prefix: xdmod-ref
+    version_project: xdmod
+    builders: [html]
+    needs: {source: json}

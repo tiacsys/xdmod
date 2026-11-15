@@ -29,6 +29,10 @@ Directives
     ``.. tracechain:: sys-need <-refines- sys-req <-satisfies- sys-el <-realizes- ee-cmp``
     One row per path from each need of the first type down the back links; gaps are shown.
 
+Reference directives (``xd-need-types``, ``xd-link-types``, ``xd-need-fields``, ``xd-id-kinds``,
+``xd-check-table``, ``xd-check-needs``, ``xd-cli``)
+    Tables and needs generated from needs_config.toml and curatrix; see ``reference.py``.
+
 ``coverage-matrix``, ``config-page``
     Iteration 1 stubs: they render a notice. (Requirement x configuration matrix, D104; one page per
     configuration, D106.)
@@ -337,5 +341,7 @@ def setup(app):
     app.add_directive("coverage-matrix", make_stub("coverage-matrix", "requirement x configuration coverage (D104)"))
     app.add_directive("config-page", make_stub("config-page", "one generated page per configuration (D106)"))
     app.add_directive("sysml-element", make_stub("sysml-element", "attributes, ports and relations of a model element"))
+    from xdmod_sphinx import reference
+    reference.setup(app)
     app.connect("doctree-resolved", resolve)
     return {"version": __version__, "parallel_read_safe": True, "parallel_write_safe": True}

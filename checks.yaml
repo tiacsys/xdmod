@@ -1,12 +1,39 @@
 # What `curatrix check xdmod` runs (format: curatrix/README.md, "checks.yaml").
-# xdmod has no docs yet (the XDMOD manual is a later task); its checks are the ledger, hygiene,
-# and the curatrix test suite.
+# xdmod's checks: the docs build of the XDMOD manual and the curatrix reference (with the graph
+# checks on their needs: decisions, rules, checks), the ledger, hygiene, and the curatrix tests.
 version: 1
 area: xdmod
+
+docs:                               # CK-A6 strict build of xdmod-manual and xdmod-ref + graph checks
+  registry: docs/documents.yaml
+
 ids:
   ledger: ids.yaml
-  # IDs and placeholders in xdmod's own files are examples and test data, not trace IDs.
-  exclude: ["curatrix/**", "sphinx/**", "launch/**", "templates/**", "needs/**", "sysml/**", "*.md", "workflows/**", ".github/**"]
+  # Files whose IDs and placeholders are examples or test data, not trace IDs. The decision and
+  # rule pages (docs/xdmod-manual/explanation/decisions|rules) and the check catalogue
+  # (curatrix/src/curatrix/data/checks.yaml) hold real XD-* IDs and are checked.
+  # fnmatch: `*` also matches `/`.
+  exclude:
+    - "curatrix/*.py"
+    - "curatrix/*.mjs"
+    - "curatrix/tests/*"
+    - "curatrix/limits.yaml"
+    - "curatrix/pyproject.toml"
+    - "sphinx/*"
+    - "launch/*"
+    - "templates/*"
+    - "needs/*"
+    - "sysml/*"
+    - "*.md"
+    - "claude/*"
+    - "workflows/*"
+    - ".github/*"
+    - "docs/xdmod-manual/tutorials/*"
+    - "docs/xdmod-manual/howto/*"
+    - "docs/xdmod-manual/reference/*"
+    - "docs/xdmod-manual/explanation/[!dr]*"
+    - "docs/xdmod-ref/*"
+
 commands:
   - id: XD-T1
     name: curatrix unit tests (pytest; without the tests that need node/Firefox/Java)
