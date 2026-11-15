@@ -4,8 +4,10 @@ The workspace root is the west topdir (D67, D68). curatrix finds it itself, so c
 work from a subfolder:
 
 1. ``$XD_WORKSPACE`` if set;
-2. the nearest folder upward from the current directory that holds ``.west/``;
-3. the folder above the xdmod checkout this package was installed from (editable install,
+2. inside a worktree set (D125): the set root on the logical ``$PWD``, also from a symlinked
+   folder of the set (``.worktrees/<branch>/zephyr``);
+3. the nearest folder upward from the current directory that holds ``.west/``;
+4. the folder above the xdmod checkout this package was installed from (editable install,
    ``<ws>/xdmod/curatrix/src/curatrix``). This keeps curatrix usable before ``west init``.
 """
 from __future__ import annotations
@@ -51,6 +53,15 @@ def find_root(start: Path | None = None) -> Path:
     if env:
         return Path(env).resolve()
     here = (start or Path.cwd()).resolve()
+    if start is None:
+        # In a worktree set (D125) shared folders are symlinks to the main checkout, so the
+        # physical cwd of e.g. `.worktrees/b/zephyr` is the main zephyr. The logical $PWD still
+        # says which set we are in: prefer the set root on it.
+        lp = os.environ.get("PWD")
+        if lp and os.path.isabs(lp) and Path(lp).resolve() == here:
+            for p in (Path(lp), *Path(lp).parents):
+                if (p / ".xdmod-worktree.json").is_file() and (p / ".west").is_dir():
+                    return p.resolve()
     for p in (here, *here.parents):
         if (p / ".west").is_dir():
             return p

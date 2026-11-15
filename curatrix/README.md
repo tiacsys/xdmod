@@ -43,7 +43,7 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 | `curatrix evidence record TWISTER_DIR --config SYS-CFG-n [--kind sim\|hil] [--setup S] [--branch B] [--create] [--dry-run]` | a run record from a Twister output dir + the workspace state, committed onto the orphan branch `evidence` of robarm-integration through a worktree in `build/evidence/` ([Evidence](#evidence-run-records)) |
 | `curatrix evidence read [--repo R] [--branch B] [-o FILE]` | run records → `TR` needs (`build/<repo>/evidence/tr-needs.json`), stale ones tagged |
 | `curatrix evidence validate FILE` | a record against the schema |
-| `curatrix work start <branch> <repos…>` / `work done <branch> [--force] [--delete-branch]` / `work list` | worktree set `.worktrees/<branch>/` for parallel work (D125): the named repos as git worktrees on `<branch>`, everything else symlinked to the main checkout, its own `.west/`, `build` → `build/<branch>/`. Work from `.worktrees/<branch>/` ([Worktrees](#worktrees-d125)) |
+| `curatrix work start <branch> <repos…>` / `work done <branch> [--force] [--delete-branch]` / `work list` | worktree set `.worktrees/<branch>/` for parallel work (D125): the named repos as git worktrees on `<branch>`, the other framework repos as detached worktrees, shared trees symlinked to the main checkout, its own `.west/`, `build` → `build/wt-<branch>/`. Work from `.worktrees/<branch>/` ([Worktrees](#worktrees-d125)) |
 | `curatrix hook pre-commit` | what the installed git hook runs (CK-C1 warning, CK-H1, `.drawio.svg` freshness, FCStd-without-JSON warning) |
 
 Roles (`--role`, repo-topology.md §4): `syseng` (manifest default, D93), `ee` (`+ee`), `ee3d`
@@ -422,27 +422,28 @@ affirmatrix integration for R7 (needs-diff is the interim).
 
 ## Worktrees (D125)
 
-`curatrix work start feat/x robarm-ee robarm-syseng` makes `.worktrees/feat/x/` a workspace root
-of its own: `robarm-ee/` and `robarm-syseng/` are git worktrees on `feat/x` (from `main`, or the
-existing local / `origin` branch), all other top-level entries (`xdmod`, other repos, `zephyr`,
-`modules`, `tools`, `libs`, `.venv`, `.xdmod`, `CLAUDE.md`, `.claude`) are relative symlinks to the
-main checkout, `.west/` is a real folder with a copy of the west config, and `build` points to
-`build/feat-x/`. Then `cd .worktrees/feat/x` and use curatrix as usual:
+`curatrix work start feat/x robarm-syseng` makes `.worktrees/feat/x/` a workspace root of its own:
 
-- West finds its topdir from the current directory, so `west list`, `west build` and Zephyr's
-  module discovery (`zephyr_module.py`) see the worktree repos; so does the docs build
-  (`west topdir`).
-- Registry paths `../../<repo>/docs/…` resolve inside `.worktrees/feat/x/`: to the worktree for
-  repos of the change, through the symlink to the main checkout for all others.
-- Builds land in `build/feat-x/<area>/`; the main checkouts are not touched.
-- If `xdmod` is one of the worktree repos, curatrix re-executes itself from the worktree's
-  `xdmod/curatrix/src`, so the branch's own curatrix code runs.
-- Don't run `west update` / `curatrix update` inside a worktree set (it would move the worktrees
-  to the pins). Run commands from the worktree root, not from a symlinked folder inside it.
+- **Every framework repo is a git worktree in the set:** xdmod, the manifest and every robarm repo. The named repos are on `feat/x` (from `main`, or the existing local / `origin` branch). All others are detached at the main checkout's HEAD; treat them as read-only.
+- **Paths between our repos stay inside the set**, even when resolved physically. A registry path `../../robarm-syseng/docs/se-req` from robarm-ee reaches the set's robarm-syseng whichever repos the change touches.
+- **Shared and third-party trees are relative symlinks** to the main checkout: `zephyr`, `modules`, `tools`, `libs`, `.venv`, `.xdmod`, `CLAUDE.md`, `.claude`. Nothing in them refers to our repos by relative path.
+- **`.west/` is a real folder** with a copy of the west config.
+- **`build` points to `build/wt-feat-x/`.** The `wt-` prefix keeps branch builds apart from the repo areas.
 
-`curatrix work done feat/x` removes the worktrees (refused with uncommitted changes unless
-`--force`), the links and the folder; `--delete-branch` also deletes merged branches. Tested in
-`tests/test_work.py` (a real west workspace of local repos, incl. `zephyr_module.py`).
+Then `cd .worktrees/feat/x` and use curatrix as usual:
+
+- West finds its topdir from the current directory. So `west list`, `west build`, Zephyr's module discovery (`zephyr_module.py`) and the docs build (`west topdir`) all see the set.
+- curatrix finds the set root from any folder of the set, also from a symlinked one (`.worktrees/feat/x/zephyr`), through the logical `$PWD`. West needs a real folder of the set as its current directory: the set root or a repo.
+- Builds land in `build/wt-feat-x/<area>/`. The main checkouts are not touched.
+- If `xdmod` is on the branch, curatrix re-executes itself from the set's `xdmod/curatrix/src`.
+- Don't run `west update` / `curatrix update` inside a set: it would move the worktrees to the pins.
+- Branch names that would nest (`feat` and `feat/x`) or share a build folder (`feat/x` and `feat-x`) are refused.
+
+To add a repo to the change, run `work start feat/x robarm-ee` again: its detached worktree moves onto the branch.
+
+`curatrix work done feat/x` removes all worktrees of the set, the links and the folder. It refuses while there are uncommitted changes unless `--force`; `--delete-branch` also deletes merged branches. `start` writes its marker file first, so a failed `start` can be repeated or undone with `done`. All git calls run under the `git` limits (D71).
+
+Tested in `tests/test_work.py`: a real west workspace of local repos. It covers physical `../../` resolution in both directions, `west topdir` from a repo outside the change, root detection from a symlinked folder, `zephyr_module.py`, a half-done start, and refused names.
 
 ## Tests
 
