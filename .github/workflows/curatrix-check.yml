@@ -132,7 +132,7 @@ jobs:
             ws/modules
           key: xd-zephyr-${{ hashFiles('ws/robarm-manifest/submanifests/10-zephyr.yml') }}
 
-      - name: Library cache (libs/: KiCad, SYSMOD, PLEML, ...)
+      - name: Library cache (libs - KiCad, SYSMOD, PLEML)
         uses: actions/cache@v4
         with:
           path: ws/libs
