@@ -7,26 +7,6 @@
    "@id": "Probe",
    "@type": "Package",
    "declaredName": "Probe",
-   "importedMembership": [
-    {
-     "@id": "lib:OwningMembership"
-    },
-    {
-     "@id": "lib:OwningMembership#7"
-    },
-    {
-     "@id": "lib:OwningMembership#3"
-    },
-    {
-     "@id": "lib:OwningMembership#6"
-    },
-    {
-     "@id": "lib:OwningMembership#8"
-    },
-    {
-     "@id": "lib:OwningMembership#2"
-    }
-   ],
    "isLibraryElement": false,
    "name": "Probe",
    "ownedMember": [
@@ -5840,12 +5820,6 @@
      "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0"
     },
     {
-     "@id": "lib:Documentation"
-    },
-    {
-     "@id": "lib:MetadataUsage"
-    },
-    {
      "@id": "lib:NeedStubs::sys_req_0001::ears"
     },
     {
@@ -5927,27 +5901,6 @@
     },
     {
      "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1"
-    },
-    {
-     "@id": "lib:OwningMembership#5"
-    },
-    {
-     "@id": "lib:OwningMembership#4"
-    },
-    {
-     "@id": "lib:FeatureMembership#2"
-    },
-    {
-     "@id": "lib:FeatureMembership#4"
-    },
-    {
-     "@id": "lib:FeatureMembership"
-    },
-    {
-     "@id": "lib:FeatureMembership#3"
-    },
-    {
-     "@id": "lib:FramedConcernMembership"
     }
    ],
    "isAbstract": false,
@@ -6594,76 +6547,6 @@
  },
  {
   "identity": {
-   "@id": "lib:Documentation"
-  },
-  "payload": {
-   "@id": "lib:Documentation",
-   "@type": "Documentation",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:FeatureMembership"
-  },
-  "payload": {
-   "@id": "lib:FeatureMembership",
-   "@type": "FeatureMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:FeatureMembership#2"
-  },
-  "payload": {
-   "@id": "lib:FeatureMembership#2",
-   "@type": "FeatureMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:FeatureMembership#3"
-  },
-  "payload": {
-   "@id": "lib:FeatureMembership#3",
-   "@type": "FeatureMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:FeatureMembership#4"
-  },
-  "payload": {
-   "@id": "lib:FeatureMembership#4",
-   "@type": "FeatureMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:FramedConcernMembership"
-  },
-  "payload": {
-   "@id": "lib:FramedConcernMembership",
-   "@type": "FramedConcernMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:MetadataUsage"
-  },
-  "payload": {
-   "@id": "lib:MetadataUsage",
-   "@type": "MetadataUsage",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
    "@id": "lib:NeedStubs"
   },
   "payload": {
@@ -6751,86 +6634,6 @@
    "isLibraryElement": true,
    "name": "unit",
    "qualifiedName": "NeedStubs::sys_req_0001::unit"
-  }
- },
- {
-  "identity": {
-   "@id": "lib:OwningMembership"
-  },
-  "payload": {
-   "@id": "lib:OwningMembership",
-   "@type": "OwningMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:OwningMembership#2"
-  },
-  "payload": {
-   "@id": "lib:OwningMembership#2",
-   "@type": "OwningMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:OwningMembership#3"
-  },
-  "payload": {
-   "@id": "lib:OwningMembership#3",
-   "@type": "OwningMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:OwningMembership#4"
-  },
-  "payload": {
-   "@id": "lib:OwningMembership#4",
-   "@type": "OwningMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:OwningMembership#5"
-  },
-  "payload": {
-   "@id": "lib:OwningMembership#5",
-   "@type": "OwningMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:OwningMembership#6"
-  },
-  "payload": {
-   "@id": "lib:OwningMembership#6",
-   "@type": "OwningMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:OwningMembership#7"
-  },
-  "payload": {
-   "@id": "lib:OwningMembership#7",
-   "@type": "OwningMembership",
-   "isLibraryElement": true
-  }
- },
- {
-  "identity": {
-   "@id": "lib:OwningMembership#8"
-  },
-  "payload": {
-   "@id": "lib:OwningMembership#8",
-   "@type": "OwningMembership",
-   "isLibraryElement": true
   }
  },
  {

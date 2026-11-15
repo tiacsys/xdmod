@@ -221,16 +221,18 @@ def compact(data: list[dict], library_packages: set[str] = frozenset()) -> list[
             for x in v:
                 yield from refs(x)
 
+    # Referenced library elements become stubs, but only named ones: unnamed library elements
+    # (memberships, relationships) carry nothing our readers use, and only their random Pilot IDs
+    # would tell them apart, so references to them are dropped.
     stubs = set()
     for i in keep:
         for k, v in E[i].items():
             if k in KEEP:
                 for r in refs(v):
-                    if r not in new_id and r in E:
+                    if r not in new_id and r in E and E[r].get("qualifiedName"):
                         stubs.add(r)
     for s in sorted(stubs, key=lambda s: (E[s].get("qualifiedName") or "", E[s].get("@type", ""), s)):
-        q = E[s].get("qualifiedName")
-        base = f"lib:{q}" if q else f"lib:{E[s].get('@type')}"
+        base = f"lib:{E[s]['qualifiedName']}"
         nid, n = base, 1
         while nid in new_id.values():
             n += 1
