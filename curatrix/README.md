@@ -144,6 +144,7 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-D2 | `model.json` + `model-needs.json` match the model | `model` | local, pr, baseline | yes |
 | CK-D3 | views: content, uncompressed, geometry sane, picture fresh | `views` | local, pr, baseline | yes (kinds `interconnection`, `decomposition`) |
 | CK-D4 | `cad-needs.json` matches KiCad/FreeCAD files (plain Python) | `cad` | local, baseline | yes |
+| CK-D5 | generated files record the pinned tool versions (`generated/provenance.json`, 4.4b) | `model` or `cad.freecad_json` | local/pr/full warning, baseline error | yes |
 | CK-E2 | value fields appear in the sentence (number + unit) | `requirements` | local, pr, baseline | first version |
 | CK-E3 | EARS pattern vs. sentence start, "shall" | `requirements` | local, pr, baseline (warning) | first version |
 | CK-G1 | needs-diff against `--base` (report, `build/<area>/checks/needs-diff.md`) | `docs` | pr, full | yes (skipped without `--base`) |
@@ -258,6 +259,15 @@ sorted and stable:
 | `generated/retired-needs.json` | `gen model` / `gen cad-needs` / `gen tombstones` | tombstones (D130): a generated need that vanished without `status: retired` keeps `{id, type, title, status: retired, retired_on, source_file}` until the next `baseline/*` tag of the manifest | CK-B7 |
 | `generated/freecad/<path>.FCStd.json` | `gen freecad-json [--shape]` | trace part (plain Python: objects, `trace` fields, placements, plain values, spreadsheets) + optional `shapes` (FreeCAD: volume, bbox, solids) | textconv / review |
 | `views/<view>.drawio.svg` | `views build` | model.json | CK-D3 |
+| `generated/provenance.json` | `gen model`, `gen freecad-json --shape`, `views build` | the tool versions used (tools.yaml stamps, system `--version`) for each file they wrote | CK-D5 (record vs. tools.yaml pins; no tools needed, so it runs in CI) |
+
+**Tool provenance (4.4b).** Files made with an external tool (the Pilot + JDK for `model.json` and
+`model-needs.json`; elkjs, drawio viewer and Firefox for views; FreeCAD for `--shape` JSON) get an
+entry `{"made_by": "curatrix gen model", "tools": {"jdk": "21.0.13+9", "sysml-pilot": "0.63.1"}}`
+in `generated/provenance.json`. CK-D5 reports a file whose record is missing or differs from the
+pins in tools.yaml (e.g. made on a rolling distro with another Firefox), so after a pin bump the
+files must be regenerated. Plain-Python outputs (stubs, cad-needs, tombstones) have no entry.
+`curatrix doctor` fails when an installed tool differs from its pin.
 
 ## SysML model conventions
 

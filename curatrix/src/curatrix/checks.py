@@ -79,6 +79,8 @@ BUILTIN = [
     ("CK-D2", "model.json and model-needs.json match the model", _lv({"local": "error", "pr": "error", "baseline": "error"}), "model", False, "c_model"),
     ("CK-D3", "views match the model (content), fresh, uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), "views", False, "c_views"),
     ("CK-D4", "cad-needs.json matches the CAD files", _lv({"local": "error", "pr": "error", "baseline": "error"}), "cad", False, "c_cadneeds"),
+    ("CK-D5", "generated files record the pinned tool versions (provenance.json)",
+     _lv({"local": "warning", "pr": "warning", "full": "warning", "baseline": "error"}), "provenance", False, "c_provenance"),
     ("CK-E2", "requirement values agree with the sentence", _lv({"local": "error", "pr": "error", "baseline": "error"}), "requirements", False, "c_ears"),
     ("CK-E3", "EARS pattern matches the sentence", _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "requirements", False, "c_ears"),
     ("CK-G1", "needs-diff against the base (change impact)", _lv({"pr": "report", "full": "report"}), "docs", False, "c_diff"),
@@ -101,6 +103,8 @@ def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
         return any(cfg.section(x) for x in ("model", "cad"))
     if need == "requirements":
         return bool(cfg.raw.get("requirements")) and cfg.section("docs") is not None
+    if need == "provenance":
+        return cfg.section("model") is not None or bool((cfg.section("cad") or {}).get("freecad_json"))
     if need == "views":
         return cfg.section("views") is not None and cfg.section("model") is not None
     return cfg.section(need) is not None
@@ -222,6 +226,23 @@ def c_views(ctx: Ctx, r: Result):
         r.findings.append(f"{name}: view missing; run `curatrix views build {ctx.repo.name}`")
     for f in files:
         r.findings += viewsmod.check_file(f, expected.get(f.name))
+
+
+def c_provenance(ctx: Ctx, r: Result):
+    from curatrix import provenance
+    cfg = ctx.cfg
+    ms = cfg.section("model")
+    if ms is not None:
+        r.findings += provenance.check(ctx.ws, cfg, [cfg.resolve(ms.get("json", "generated/model.json")),
+                                                     cfg.resolve(ms.get("needs", "generated/model-needs.json"))], "model")
+        vs = cfg.section("views")
+        if vs is not None:
+            vdir = cfg.resolve(vs.get("dir", "views"))
+            r.findings += provenance.check(ctx.ws, cfg, sorted(vdir.glob("*.drawio.svg")) if vdir.is_dir() else [], "views")
+    # FreeCAD JSON with shapes: only files that have a record (without --shape it is plain Python)
+    doc = provenance.load(cfg)
+    shaped = [cfg.repo / f for f, e in doc["files"].items() if e.get("made_by") == provenance.KINDS["freecad-shapes"][0]]
+    r.findings += provenance.check(ctx.ws, cfg, shaped, "freecad-shapes")
 
 
 def c_cadneeds(ctx: Ctx, r: Result):

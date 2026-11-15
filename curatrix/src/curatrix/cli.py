@@ -158,6 +158,7 @@ def cmd_gen(a):
     repo = _repo(ws, a.repo)
     cfg = _cfg(ws, repo)
     outs, msgs, rc = [], [], 0
+    made: list[tuple[str, list[Path], list[Path]]] = []    # (provenance kind, files made, files no longer tool-made)
     whats = ["stubs", "model", "cad-needs", "freecad-json"] if a.what == "all" else [a.what]
     for what in whats:
         try:
@@ -171,12 +172,16 @@ def cmd_gen(a):
                 mjson, mneeds, res = gen.model(ws, cfg)
                 print(f"  Pilot: {res.seconds:.1f} s, 0 errors")
                 outs += [mjson, mneeds]
+                made.append(("model", [mjson.path, mneeds.path], []))
             elif what == "cad-needs":
                 if cfg.section("cad") is None and a.what == "all":
                     continue
                 outs.append(gen.cad_needs(ws, cfg))
             elif what == "freecad-json":
-                outs += gen.freecad_json(ws, cfg, shapes=a.shape)
+                fj = gen.freecad_json(ws, cfg, shapes=a.shape)
+                outs += fj
+                made.append(("freecad-shapes", [o.path for o in fj], []) if a.shape else
+                            ("freecad-shapes", [], [o.path for o in fj]))
             elif what == "cad-exports":
                 for e in gen.cad_exports(ws, cfg):
                     print(f"  {e}", file=sys.stderr)
@@ -208,6 +213,11 @@ def cmd_gen(a):
                 print(f"  up to date  {ws.rel(o.path)}")
         else:
             print(f"  {'wrote' if o.write() else 'unchanged'} {ws.rel(o.path)}")
+    if not a.check and rc == 0:
+        from curatrix import provenance
+        for kind, files, dropped in made:
+            if provenance.record(ws, cfg, files, kind, drop=dropped):
+                print(f"  wrote {ws.rel(provenance.path(cfg))} ({kind}: {provenance.used(ws, kind) if files else 'plain Python'})")
     for m in msgs:
         print(f"  {m}")
     return rc
@@ -272,6 +282,11 @@ def cmd_views(a):
     if a.action == "build":
         m = modelmod.Model.load(mj)
         errs = render.build(ws, m, vdir, ws.build(cfg.area) / "views", a.view or None)
+        if not errs:
+            from curatrix import provenance
+            built = [vdir / f"{n}.drawio.svg" for n in a.view] if a.view else sorted(vdir.glob("*.drawio.svg"))
+            if provenance.record(ws, cfg, built, "views"):
+                print(f"  wrote {ws.rel(provenance.path(cfg))} (views: {provenance.used(ws, 'views')})")
     elif a.action == "normalize":
         errs = render.normalize(ws, sorted(vdir.glob("*.drawio.svg")), ws.build(cfg.area) / "views" / "_normalize",
                                 check_only=a.check)
