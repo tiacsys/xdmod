@@ -341,7 +341,7 @@ def c_trailers(ctx: Ctx, r: Result):
 
 
 def c_bootstrap(ctx: Ctx, r: Result):
-    copy = ctx.cfg.resolve(ctx.cfg.raw.get("bootstrap_template") or "scripts/bootstrap.sh")
+    copy = ctx.cfg.bootstrap_copy
     tmpl = ctx.ws.xdmod / "templates" / "bootstrap.sh"
     if not copy.exists():
         r.findings = [f"{ctx.ws.rel(copy)} missing (copy {ctx.ws.rel(tmpl)})"]
