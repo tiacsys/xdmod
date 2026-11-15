@@ -10,8 +10,8 @@
 # require that name (D133, D141).
 #
 # What it does:
-#   1. system packages for the role and repo (graphviz, ninja; doxygen for the SW API docs;
-#      gcc-multilib for native_sim, D101);
+#   1. system packages (graphviz, ninja, doxygen: every zdocs build; gcc-multilib for
+#      robarm-sw's native_sim tests, D101);
 #   2. a west workspace from the manifest (default: its main) with the role's group filter
 #      (repo-topology.md §4, §7), shallow (--narrow --depth=1); Zephyr and its modules come from
 #      a cache keyed on the Zephyr submanifest;
@@ -70,10 +70,7 @@ jobs:
       - name: Plan (packages for role ${{ inputs.role }}, repo ${{ inputs.repo }})
         id: plan
         run: |
-          pkgs="graphviz ninja-build"
-          case "${{ inputs.role }}" in
-            sw|integration|full|ci-full) pkgs="$pkgs doxygen" ;;          # sw-api (zdocs doxygen)
-          esac
+          pkgs="graphviz ninja-build doxygen"     # zdocs' cmake needs Doxygen in every docs build
           [ "${{ inputs.repo }}" = robarm-sw ] && pkgs="$pkgs gcc-multilib g++-multilib"   # native_sim (D101)
           echo "apt=$pkgs ${{ inputs.extra-apt }}" >> "$GITHUB_OUTPUT"
 
