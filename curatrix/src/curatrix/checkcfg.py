@@ -103,10 +103,22 @@ class ChecksConfig:
         return out
 
     def section(self, name: str) -> dict | None:
+        """The section as a mapping, None if it is off. A scalar key (``requirements: true``,
+        ``bootstrap_template: scripts/bootstrap.sh``) gives ``{}`` or ``{"path": <value>}``."""
         v = self.raw.get(name)
         if v is None or v is False:
             return None
-        return {} if v is True else dict(v)
+        if v is True:
+            return {}
+        if isinstance(v, str):
+            return {"path": v}
+        return dict(v)
+
+    @property
+    def bootstrap_copy(self) -> Path:
+        """CK-H5: the repo's copy of xdmod/templates/bootstrap.sh (``true`` = the default path)."""
+        v = self.raw.get("bootstrap_template")
+        return self.resolve(v if isinstance(v, str) else "scripts/bootstrap.sh")
 
     @property
     def area(self) -> str:
@@ -154,6 +166,12 @@ def validate(raw: dict, path: Path) -> list[str]:
         for k in ("files", "libraries", "export", "docs", "kicad", "freecad", "exclude"):
             if k in v and not (isinstance(v[k], list) and all(isinstance(x, str) for x in v[k])):
                 errs.append(f"{path}: {sec}.{k} must be a list of strings")
+    for k in ("requirements",):
+        if k in raw and not isinstance(raw[k], bool):
+            errs.append(f"{path}: {k} must be true or false")
+    bt = raw.get("bootstrap_template")
+    if bt is not None and not isinstance(bt, (bool, str)):
+        errs.append(f"{path}: bootstrap_template must be a path (string) or true/false")
     if "model" in raw and isinstance(raw["model"], dict) and not raw["model"].get("files"):
         errs.append(f"{path}: model.files is required")
     if "stubs" in raw and isinstance(raw["stubs"], dict) and not raw["stubs"].get("docs"):
