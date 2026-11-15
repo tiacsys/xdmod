@@ -3,6 +3,8 @@
 # reusable workflows from .github/workflows/, so that is where the real workflow lives; this
 # folder holds the thin callers (repo-layouts.md §1).
 name: check
+permissions:
+  contents: read
 on:
   pull_request:
   push:

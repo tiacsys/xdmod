@@ -76,3 +76,17 @@ def test_repo_under_check_at_head(tmp_path, upstream):
     r = ci.resolve_one(p, "feat/x", "robarm-ee", upstream["feat"])
     assert (r.rule, r.sha) == ("head", upstream["feat"])
     assert git(p.path, "rev-parse", "HEAD") == upstream["feat"]
+
+
+def test_ls_remote_failure_is_an_error_not_no_branch(tmp_path, upstream):
+    p = clone(tmp_path, upstream, upstream["pin"])
+    p.url = f"file://{tmp_path / 'does-not-exist'}"
+    with pytest.raises(RuntimeError, match="ls-remote"):
+        ci.resolve_one(p, "feat/x", "robarm-sw", "")
+
+
+def test_tags_are_fetched(tmp_path, upstream):
+    git(Path(upstream["url"]), "tag", "-a", "-m", "b", "baseline/v0.1.0", upstream["pin"])
+    p = clone(tmp_path, upstream, upstream["pin"])
+    ci.resolve_one(p, "feat/other", "robarm-sw", "")
+    assert git(p.path, "describe", "--tags", upstream["pin"]) == "baseline/v0.1.0"

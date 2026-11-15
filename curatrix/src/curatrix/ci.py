@@ -64,15 +64,22 @@ def _is_shallow(path: Path, ws) -> bool:
 
 
 def _fetch(p: Project, refspecs: list[str], ws) -> None:
-    args = ["fetch", "-q", "--no-tags", "--filter=blob:none"]
+    args = ["fetch", "-q", "--filter=blob:none"]
     if _is_shallow(p.path, ws):
         args.append("--unshallow")
-    _git([*args, p.url, *refspecs], p.path, ws)
+    # full history and the tags (D64 g), e.g. for `git describe`
+    _git([*args, p.url, *refspecs, "+refs/tags/*:refs/tags/*"], p.path, ws)
 
 
 def remote_has_branch(p: Project, branch: str, ws) -> bool:
-    r = _git(["ls-remote", "--heads", p.url, f"refs/heads/{branch}"], p.path, ws, check=False)
-    return r.returncode == 0 and bool(r.stdout.strip())
+    """True/False; any other ls-remote failure (network, auth, bad URL) raises, so it is never
+    mistaken for "no such branch"."""
+    r = _git(["ls-remote", "--exit-code", "--heads", p.url, f"refs/heads/{branch}"], p.path, ws, check=False)
+    if r.returncode == 0:
+        return True
+    if r.returncode == 2:
+        return False
+    raise RuntimeError(f"git ls-remote {p.url} failed ({r.returncode}): {r.stderr.strip()}")
 
 
 def resolve_one(p: Project, branch: str, under_check: str, head_sha: str, ws=None, checkout: bool = True) -> Resolution:

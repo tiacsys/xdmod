@@ -4,6 +4,8 @@
 #          (./.github/workflows/curatrix-check.yml), so a PR that changes the reusable workflow
 #          tests it on itself before the domain repos use it. Status check: "check / check".
 name: xdmod-ci
+permissions:
+  contents: read
 on:
   pull_request:
   push:
