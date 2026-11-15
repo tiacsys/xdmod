@@ -55,8 +55,13 @@ Checks
   the picture is fresh. It needs no browser.
 - :need:`XD-CHECK-0025`: no compressed diagrams (:need:`XD-RULE-0039`).
 
-.. note:: Iteration 1 builds the view kinds ``interconnection`` and ``decomposition``.
-   ``context``, ``usecases``, ``allocation`` and ``variants`` come later. Keeping manual layout
+.. note:: curatrix builds the view kinds ``interconnection`` and ``decomposition``, and the
+   SysML v2 standard views ``general``, ``actionflow``, ``statetransition`` and ``usecases``.
+   A ``general`` view shows what its ``expose`` and ``filter`` select; ``show`` limits the
+   relationships it draws and ``compartments`` (``all``, ``none``, ``root``) the feature lists.
+   ``direction`` (``DOWN``, ``RIGHT``, ``LEFT``, ``UP``) sets the layout direction. The diagrams in
+   :ref:`expl-framework-model` are examples of every kind (``xdmod/model/views.sysml``).
+   ``context``, ``allocation`` and ``variants`` come later. Keeping manual layout
    across rebuilds is iteration 2 (:need:`XD-ADR-0037`). Trace graphs use ``needflow``, not drawio
    (:need:`XD-ADR-0086`).
 

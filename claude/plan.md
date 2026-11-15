@@ -127,6 +127,7 @@ Local repos only; GitHub comes in Phase 4.
 - [x] 4.10 `west init` at the workspace root and bootstrap with the integration role; first full local check
 - [x] 4.7 Open issues on tiacsys/zdocs (#25–#34, D62) and tiacsys/affirmatrix (#10–#18, D59), after the user approved the drafts in *`claude/notes/issue-drafts/`*
 - [ ] 4.7a PRs for those issues, as agreed per issue
+- [ ] 4.11 Diagrams of the framework (asked 2026-11-15): XDMOD described in SysML v2 (`xdmod/model/`), its views rendered as drawio with SysML v2 notation (new view kinds general, actionflow, statetransition, usecases) in the manual page *XDMOD as a SysML model*; a test ties the need types in the model to `needs_config.toml`. Waiting for the owner's review, together with the Phase 4 review (P4-1 to P4-17)
       - zdocs PRs opened 2026-11-14, waiting for the user's review: #35 (→ #34, sphinx-needs 9.2), #36 (→ #29, strict mode), #37 (→ #25, version_project), #38 (→ #26, imports). Not stacked; ADR index lines conflict trivially.
 
 ### Phase 4 follow-ups (non-blocking review points, to become issues)

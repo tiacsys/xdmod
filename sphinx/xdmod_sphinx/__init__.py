@@ -119,7 +119,7 @@ def resolve(app, doctree, fromdoc):
             return m.group(1) + need_url(app, fromdoc, needs[nid]) + '"'
 
         svg = re.sub(r'((?:xlink:)?href=")need:([^"]+)"', repl, node["svg"])
-        html = f'<figure class="sysml-view">{svg}'
+        html = f'<figure class="sysml-view"><div class="sysml-view-scroll">{svg}</div>'
         if node["caption"]:
             html += f"<figcaption>{node['caption']}</figcaption>"
         node.replace_self(nodes.raw("", html + "</figure>", format="html"))
@@ -327,7 +327,15 @@ def make_stub(name: str, what: str):
     return Stub
 
 
+def _static_files(app):
+    static = str(Path(__file__).resolve().parent / "static")
+    if static not in app.config.html_static_path:
+        app.config.html_static_path.append(static)
+
+
 def setup(app):
+    app.connect("builder-inited", _static_files)
+    app.add_css_file("xdmod.css")
     app.add_config_value("xd_cad_dir", "", "env")
     app.add_config_value("xd_repo", "", "env")
     app.add_node(sysml_view)

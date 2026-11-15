@@ -159,10 +159,11 @@ class Model:
 
 # ------------------------------------------------------------------ compaction
 def top_packages(files: list[Path]) -> set[str]:
-    """Top-level package names declared in library files (they become stubs)."""
+    """Top-level package names declared in the files (they become stubs, or the export roots).
+    Only declarations at the start of a line count: nested packages are indented."""
     out = set()
     for f in files:
-        for m in re.finditer(r"^\s*(?:standard\s+)?(?:library\s+)?package\s+(?:<'?[^>]*'?>\s*)?('[^']+'|\w+)",
+        for m in re.finditer(r"^(?:standard\s+)?(?:library\s+)?package\s+(?:<'?[^>]*'?>\s*)?('[^']+'|\w+)",
                              Path(f).read_text(), re.M):
             out.add(m.group(1).strip("'"))
     return out

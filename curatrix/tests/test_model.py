@@ -46,3 +46,9 @@ def test_top_packages(tmp_path):
     f = tmp_path / "a.sysml"
     f.write_text("library package XdTrace {\n}\npackage <'P'> 'My Pkg' { }\nstandard library package S;\n")
     assert model.top_packages([f]) == {"XdTrace", "My Pkg", "S"}
+
+
+def test_top_packages_ignores_nested(tmp_path):
+    f = tmp_path / "b.sysml"
+    f.write_text("package Outer {\n    package Inner {\n    }\n    private package Hidden;\n}\n")
+    assert model.top_packages([f]) == {"Outer"}

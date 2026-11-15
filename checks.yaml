@@ -46,3 +46,10 @@ commands:
     use: tests
     stages: [local, baseline]
     cad: true
+
+model:
+  files: ["model/*.sysml"]
+  json: generated/model.json
+  needs: generated/model-needs.json
+views:
+  dir: views

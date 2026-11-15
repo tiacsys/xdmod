@@ -24,6 +24,9 @@ Status: **AGREED 2026-11-14** (review answers → D94–D97). Built on D2, D38, 
 | `interconnection` | parts with ports and connectors inside one part (IBD-like) | 10b–10d | ELK layered, ports on borders |
 | `allocation` | functional → logical → product (150 %) (`realizes`) | 10a–10d | ELK layered, three columns |
 | `variants` | per configuration: the variant chosen at each variation point, side by side (D102) | 10c–10d | ELK layered, one column per configuration |
+| `general` | SysML v2 general view: what `expose`/`filter` select; definitions, usages, specialization, composite and reference features, dependencies (added 2026-11-15 for the XDMOD self-model) | any | ELK layered, `direction` option |
+| `actionflow` | SysML v2 action flow view: actions with pins, successions, flows, decide/merge/fork/join, start/done | any | ELK layered, model-order cycle breaking |
+| `statetransition` | SysML v2 state transition view: states, entry, transitions with trigger and guard | any | ELK layered |
 | `trace` | needs graph around one need (requirement ↔ model ↔ domain ↔ tests) | all | sphinx-needs `needflow` (graphviz); not drawio (question 2) |
 
 ## 3. Where views are defined

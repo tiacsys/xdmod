@@ -16,8 +16,10 @@ links, layers and configs (never geometry, D64a); it rejects compressed diagrams
 errors, and compares the stored hash with the embedded diagram (picture freshness).
 
 View definitions are SysML ``view``s with ``@XdView { kind = "..."; root = "..."; }`` (D94).
-Iteration 1 implements the kinds ``interconnection`` and ``decomposition``; the others are
-reported as not implemented.
+Implemented kinds: ``interconnection`` and ``decomposition`` (here), and the SysML v2 standard
+views ``general``, ``actionflow``, ``statetransition`` and ``usecases`` (``views/sysml.py`` builds
+the graph, ``views/draw.py`` lays it out and writes drawio). The others are reported as not
+implemented.
 """
 from __future__ import annotations
 
@@ -35,8 +37,9 @@ from pathlib import Path
 from curatrix.model import Model, element_id
 
 HERE = Path(__file__).resolve().parent
-IMPLEMENTED = ("interconnection", "decomposition")
-KNOWN = ("context", "usecases", "decomposition", "interconnection", "allocation", "variants")
+SYSML_KINDS = ("general", "actionflow", "statetransition", "usecases")
+IMPLEMENTED = ("interconnection", "decomposition", *SYSML_KINDS)
+KNOWN = ("context", "usecases", "decomposition", "interconnection", "allocation", "variants", *SYSML_KINDS[:3])
 HASH_ATTR = "data-xdmod-hash"
 PORT = 12
 LAYER_FILL = {"context": "#F5F5F5", "functional": "#DAE8FC", "logical": "#D5E8D4", "product": "#FFF2CC", None: "#FFFFFF"}
@@ -51,6 +54,7 @@ class ViewDef:
     layer: str | None
     qualified_name: str
     exposed: set = field(default_factory=set)
+    opts: dict = field(default_factory=dict)    # direction, show, compartments
 
 
 class ViewError(Exception):
@@ -69,7 +73,8 @@ def discover(m: Model) -> list[ViewDef]:
         out.append(ViewDef(name=v.get("declaredName") or v.get("name") or v["@id"],
                            short_id=v.get("declaredShortName"), kind=str(meta.get("kind", "")),
                            root=meta.get("root"), layer=meta.get("layer"), qualified_name=v.get("qualifiedName", ""),
-                           exposed={x["@id"] for x in (v.get("exposedElement") or []) if isinstance(x, dict)}))
+                           exposed={x["@id"] for x in (v.get("exposedElement") or []) if isinstance(x, dict)},
+                           opts={k: str(meta[k]) for k in ("direction", "show", "compartments") if meta.get(k)}))
     return sorted(out, key=lambda v: v.name)
 
 
@@ -131,6 +136,12 @@ def graph(m: Model, v: ViewDef) -> dict:
         raise ViewError(f"view {v.name}: unknown kind {v.kind!r} (known: {', '.join(KNOWN)})")
     if v.kind not in IMPLEMENTED:
         raise ViewError(f"view {v.name}: kind {v.kind!r} is not implemented yet (iteration 1: {', '.join(IMPLEMENTED)})")
+    if v.kind in SYSML_KINDS:
+        from curatrix.views import sysml
+        try:
+            return sysml.build(m, v, v.opts)
+        except sysml.GraphError as e:
+            raise ViewError(f"view {v.name}: {e}") from None
     if not v.root:
         raise ViewError(f"view {v.name}: @XdView needs root")
     root = _find(m, v.root)
@@ -160,6 +171,7 @@ def graph(m: Model, v: ViewDef) -> dict:
             if len(ends) == 2:
                 cid = f"{rid}::connect({ends[0].split('::')[-1]}->{ends[1].split('::')[-1]})"
                 g["edges"].append({"id": cid, "src": ends[0], "dst": ends[1], "sysml_kind": c["@type"], "label": ""})
+        _as_drawn(g, root, v)
     else:  # decomposition: definition -> part usages -> their definitions, as a tree
         def rec(p, pid, depth):
             if depth > 4:
@@ -177,8 +189,38 @@ def graph(m: Model, v: ViewDef) -> dict:
     return g
 
 
+def _as_drawn(g: dict, root: dict, v: ViewDef) -> None:
+    """Interconnection graphs are drawn by views/draw.py: a frame for the root, rounded part
+    usages with their ports, plain lines for connections and interfaces (SysML v2 notation)."""
+    from curatrix.views.sysml import keyword, node as snode, size_for
+    g["draw"] = True
+    g["direction"] = (v.opts.get("direction") or "RIGHT").upper()
+    first = g["nodes"][0]
+    frame = snode(first["id"], f"«{keyword(root)}»\n{first['label']}", first["sysml_kind"], shape="frame",
+                  trace_id=first["trace_id"])
+    frame.update({k: first[k] for k in ("layer", "configs")})
+    out = [frame]
+    for n in g["nodes"][1:]:
+        sides = {s: [p for p in n["ports"] if p["side"] == s] for s in ("WEST", "EAST")}
+        pw = {s: max([len(p["label"]) for p in sides[s]] or [0]) * 6.6 for s in sides}
+        w, _ = size_for([n["label"]], min_w=150)
+        d = snode(n["id"], n["label"], n["sysml_kind"], parent=n["parent"], shape="usage", trace_id=n["trace_id"],
+                  w=round(w + 2 * max(pw.values()) + 16), h=max(56, 30 + 22 * max(len(sides["WEST"]), len(sides["EAST"]))),
+                  ports=n["ports"])
+        d.update({k: n[k] for k in ("layer", "configs")})
+        d["fill"] = LAYER_FILL.get(n["layer"] or None, "#FFFFFF")
+        out.append(d)
+    g["nodes"] = out
+    for e in g["edges"]:
+        e["rel"] = "flow" if e["sysml_kind"] == "FlowConnectionUsage" else "connection"
+
+
 # ------------------------------------------------------------------ layout (elkjs)
 def to_elk(g: dict) -> dict:
+    if g["kind"] in SYSML_KINDS or g.get("draw"):
+        from curatrix.views import draw
+        return draw.to_elk(g)
+
     def port(p):
         return {"id": p["id"], "width": PORT, "height": PORT,
                 "layoutOptions": {"elk.port.side": p["side"], "elk.port.borderOffset": "-6"}}
@@ -218,19 +260,13 @@ def run_elk(ws, elk_graph: dict) -> dict:
 
 
 def positions(laid: dict) -> dict[str, dict]:
-    """id -> absolute box (x, y, width, height) and edge bend points, from ELK root coordinates."""
-    out = {}
-
-    def rec(n):
-        for c in n.get("children", []) or []:
-            out[c["id"]] = {k: c.get(k, 0) for k in ("x", "y", "width", "height")}
-            for p in c.get("ports", []) or []:
-                out[p["id"]] = {k: p.get(k, 0) for k in ("x", "y", "width", "height")}
-            rec(c)
-        for e in n.get("edges", []) or []:
-            sec = (e.get("sections") or [{}])[0]
-            out[e["id"]] = {"bends": [(b["x"], b["y"]) for b in sec.get("bendPoints", []) or []]}
-    rec(laid)
+    """id -> absolute box (x, y, width, height); edges: route points (start, bends, end), bends
+    and label box, from ELK root coordinates."""
+    from curatrix.views import draw
+    out = draw.positions(laid)
+    for v in out.values():
+        if "points" in v:
+            v["bends"] = v["points"][1:-1]
     return out
 
 
@@ -278,6 +314,9 @@ def _cell(root, cid, label, style, parent, geom=None, edge=None, attrs=None):
 
 def to_mxfile(g: dict, pos: dict | None = None) -> str:
     """Normalized, uncompressed drawio XML for a view graph (pos=None: dummy geometry, content only)."""
+    if g["kind"] in SYSML_KINDS or g.get("draw"):
+        from curatrix.views import draw
+        return draw.to_mxfile(g, pos, normalize_xml)
     pos = pos or {}
     mx = ET.Element("mxfile", {"host": "xdmod-curatrix"})
     dia = ET.SubElement(mx, "diagram", {"id": "view:" + g["view"], "name": g["view"]})
@@ -461,7 +500,7 @@ def geometry_errors(mxfile_xml: str) -> list[str]:
             errs.append(f"{cid}: width/height must be > 0")
         if parent in boxes:
             pw, ph = boxes[parent][0][2], boxes[parent][0][3]
-            tol = PORT if kinds.get(cid) == "PortUsage" else 1
+            tol = PORT if kinds.get(cid) in ("PortUsage", "pin") else 1
             if x < -tol or y < -tol or x + w > pw + tol or y + h > ph + tol:
                 errs.append(f"{cid}: lies outside its parent {parent}")
     return errs

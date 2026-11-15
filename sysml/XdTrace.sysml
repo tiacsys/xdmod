@@ -23,15 +23,31 @@ library package XdTrace {
         attribute layer : String[0..1];
     }
 
+    // ------------------------------------------------------------------ explanations
+    // Names the need (a decision, rule or check) that explains a model element. Views link the
+    // element to that need's page. Used by the XDMOD self-model (xdmod/model).
+    metadata def See {
+        attribute needId : String;
+    }
+
     // ------------------------------------------------------------------ views (D94, views.md §3)
     // Names the view kind of a SysML `view` and its options:
-    //   kind   context | usecases | decomposition | interconnection | allocation | variants
-    //   root   qualified name of the element the view starts from
-    //   layer  optional layer filter (functional | logical | product)
+    //   kind       context | usecases | decomposition | interconnection | allocation | variants
+    //              | general | actionflow | statetransition (the SysML v2 standard views)
+    //   root       qualified name of the element the view starts from
+    //   layer      optional layer filter (functional | logical | product)
+    //   direction  optional layout direction: DOWN (default) | RIGHT | LEFT | UP
+    //   show       general view: relationships to draw, comma-separated: specialization,
+    //              composition, reference, dependency (default: all)
+    //   compartments  general view: all (default) | none | root (only abstract definitions)
+    // A view's `expose` (and `filter`) choose the elements of a general view.
     // Views are model elements, not needs: their short name is a reserved SYS-VIEW ID.
     metadata def XdView {
         attribute kind : String;
         attribute root : String[0..1];
         attribute layer : String[0..1];
+        attribute direction : String[0..1];
+        attribute show : String[0..1];
+        attribute compartments : String[0..1];
     }
 }

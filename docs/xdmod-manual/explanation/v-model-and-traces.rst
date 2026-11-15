@@ -27,6 +27,9 @@ Links point to the left and upwards. Each arrow is written on the artifact at it
                                                        ^ implements (+ optional satisfies -> SW-REQ)
                                                     SW-IMPL (code)
 
+The same links, drawn from the SysML model of XDMOD, are in
+:ref:`expl-framework-model` (section *Trace links*).
+
 The exact rules (which type may link to which, and how many links are required) are in
 :doc:`../reference/trace-model`.
 

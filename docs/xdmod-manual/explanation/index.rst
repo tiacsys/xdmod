@@ -11,6 +11,7 @@ understand a design choice, not when you need a quick answer.
    :maxdepth: 1
 
    principles
+   framework-model
    v-model-and-traces
    sysmod-and-sysml
    variants

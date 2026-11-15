@@ -27,9 +27,14 @@ Elements
      - Trace data of a model element that becomes a need. On a package it is the default for
        every element inside. Generated needs take their status from here (:need:`XD-ADR-0119`).
    * - ``XdView``
-     - ``kind``, ``root``, ``layer``
+     - ``kind``, ``root``, ``layer``, ``direction``, ``show``, ``compartments``
      - Names the kind of a SysML ``view`` (``context``, ``usecases``, ``decomposition``,
-       ``interconnection``, ``allocation``, ``variants``) and its options (:need:`XD-ADR-0085`).
+       ``interconnection``, ``allocation``, ``variants``, and the SysML v2 standard views
+       ``general``, ``actionflow``, ``statetransition``) and its options (:need:`XD-ADR-0085`).
+   * - ``See``
+     - ``needId``
+     - Names the need (decision, rule or check) that explains a model element. Views link the
+       element's box to that need's page. Used by the XDMOD self-model.
 
 The need ID of a model element is its **short name**. Only kinds of the model become needs:
 ``SYS-EL``, ``SYS-IF``, ``SYS-UC``, ``SYS-CFG`` and ``SYS-FEAT``. Views use the reserved kind
