@@ -177,6 +177,9 @@ def graph(m: Model, v: ViewDef) -> dict:
                 g["edges"].append({"id": cid, "src": ends[0], "dst": ends[1], "sysml_kind": c["@type"], "label": ""})
         if v.opts.get("show"):     # only these ports, their connections, and the parts that have them
             keep = {x.strip() for x in v.opts["show"].split(",") if x.strip()}
+            unknown = keep - {p["label"] for n in g["nodes"][1:] for p in n["ports"]}
+            if unknown:
+                raise ViewError(f"view {v.name}: show names ports that no part has: {', '.join(sorted(unknown))}")
             for n in g["nodes"][1:]:
                 n["ports"] = [p for p in n["ports"] if p["label"] in keep]
             pids = {p["id"] for n in g["nodes"] for p in n["ports"]}

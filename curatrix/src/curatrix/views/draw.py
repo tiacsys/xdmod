@@ -57,7 +57,8 @@ LEGEND = {
                "«keyword» and <short name> above the name; lists inside a box = compartments. "
                "Hollow triangle = specialization (points to the general type); filled diamond = composite feature; "
                "hollow diamond with open arrow = reference feature, held by the diamond end and labelled with the "
-               "link type and multiplicity. A box with a need ID links to its page.",
+               "link type and multiplicity. \":> T\" under the name = specializes T, written as in the textual "
+               "notation when T has no box here. A box with a need ID links to its page.",
     "actionflow": "Legend (SysML v2 action flow view): rounded box = action (name : its action definition, here the "
                   "kind of task, which says who may do it); small squares = "
                   "parameters (in on the entry side, out on the exit side); filled circle = start, bull's eye = done, "
@@ -109,10 +110,11 @@ def to_elk(g: dict) -> dict:
         s, d = (e["dst"], e["src"]) if rev else (e["src"], e["dst"])
         ee = {"id": e["id"], "sources": [s], "targets": [d]}
         if e["label"]:
-            # end labels need no label layer. A part is named at its type end (HEAD); a reference
-            # at its holder (TAIL, next to the diamond), because many references share one target
-            # and their names would pile up there; guards, triggers and items at the start (TAIL)
-            place = {"reference": "TAIL", "composition": "HEAD", "flow": "TAIL"}.get(e["rel"], "CENTER")
+            # A part is named at its type end (HEAD); guards, triggers and items at the start
+            # (TAIL). A reference is named in the middle of its line: at the target end the
+            # names of references that share a target pile up, and at the holder end they cover
+            # the diamonds of the neighbouring references.
+            place = {"composition": "HEAD", "flow": "TAIL"}.get(e["rel"], "CENTER")
             if rev:
                 place = {"HEAD": "TAIL", "TAIL": "HEAD"}.get(place, place)
             ee["labels"] = [{"text": e["label"], "width": round(len(e["label"]) * 6.0 + 8), "height": 14,
@@ -178,7 +180,7 @@ def positions(laid: dict) -> dict:
 
 def _wrap(text: str, cols: int) -> str:
     import textwrap
-    return "\n".join(textwrap.wrap(text, max(40, cols)))
+    return "\n".join(textwrap.wrap(text, max(40, cols), break_on_hyphens=False, break_long_words=False))
 
 
 def _f(v) -> str:

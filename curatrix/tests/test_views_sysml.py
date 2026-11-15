@@ -121,3 +121,22 @@ def test_canvas_ratio_counts_boxes_and_routes():
            '</root></mxGraphModel></diagram></mxfile>')
     assert views.canvas_ratio(xml) == 3.0                     # the label offset is not a route point
     assert views.ratio_error(1.33) == 0 and views.ratio_error(3.0) > 0
+
+
+def test_turned_interconnection_keeps_the_content():
+    m = model.Model.load(FIXTURES / "sysml" / "probe-model.json")
+    for v in views.discover(m):
+        bare = views.content_of(views.to_mxfile(views.graph(m, v)))
+        for d in ("DOWN", "RIGHT"):
+            turned = views.ViewDef(**{**v.__dict__, "opts": {**v.opts, "direction": d}})
+            g = views.graph(m, turned)
+            g["wrap"] = True
+            assert views.content_of(views.to_mxfile(g)) == bare, (v.name, d)
+
+
+def test_interconnection_show_with_an_unknown_port_is_an_error():
+    m = model.Model.load(FIXTURES / "sysml" / "probe-model.json")
+    (v,) = views.discover(m)
+    bad = views.ViewDef(**{**v.__dict__, "opts": {**v.opts, "show": "noSuchPort"}})
+    with pytest.raises(views.ViewError, match="noSuchPort"):
+        views.graph(m, bad)

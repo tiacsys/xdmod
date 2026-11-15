@@ -277,13 +277,9 @@ def general(m: Model, v, opts: dict) -> dict:
             secs.insert(0, ("doc", _wrap_words(doc_of(m, p), 36)))
         shape = "package" if p.get("@type") == "Package" else ("def" if is_def(p) else
                                                                  "ref" if p.get("isReference") else "usage")
-        # a general type that is not drawn as a box with a triangle is named in the header
-        # (textual notation `:> General`), so the category of each type stays visible
-        hidden = [name(gen) for gen in related(m, p, "Subclassification")
-                  if "specialization" not in show or gen["@id"] not in shown]
-        label = header(p) + (f"\n:> {', '.join(hidden)}" if hidden else "")
-        g["nodes"].append(node(pid, label, p["@type"], shape=shape, trace_id=see_of(m, p),
-                               sections=secs, tooltip=doc_of(m, p)))
+        n = node(pid, header(p), p["@type"], shape=shape, trace_id=see_of(m, p), sections=secs, tooltip=doc_of(m, p))
+        n["_generals"] = [(gen.get("qualifiedName") or gen["@id"], name(gen)) for gen in related(m, p, "Subclassification")]
+        g["nodes"].append(n)
         if "specialization" in show:
             for gen in related(m, p, "Subclassification"):
                 if gen["@id"] in shown:
@@ -306,6 +302,15 @@ def general(m: Model, v, opts: dict) -> dict:
         g["nodes"] = [n for n in g["nodes"] if n["id"] in used]
         if not g["nodes"]:
             raise GraphError(f"view {v.name}: no relations between {', '.join(between)}")
+    # a general type that is not drawn (box and triangle) is named in the header in the textual
+    # notation, `:> General`, so the category of each type stays visible
+    drawn = {(e["src"], e["dst"]) for e in g["edges"] if e["rel"] == "specialization"}
+    for n in g["nodes"]:
+        hidden = [gname for gid, gname in n.pop("_generals") if (n["id"], gid) not in drawn]
+        if hidden:
+            lines = n["label"].split("\n") + [f":> {', '.join(hidden)}"]
+            grown = node(n["id"], "\n".join(lines), n["sysml_kind"], shape=n["shape"], sections=n["sections"])
+            n.update({k: grown[k] for k in ("label", "w", "h", "header_h")})
     return g
 
 
@@ -419,6 +424,9 @@ def behaviour(m: Model, v, opts: dict, kind: str) -> dict:
                     ends.append(f"{act[0].get('qualifiedName')}.{pin[0]}")
             if len(ends) == 2:
                 item = type_names(m, [y for _, y in m.owned([e for _, e in m.owned(x) if e.get("@type") == "FlowEnd"][0]) if name(y)][0])
+                # an out pin that feeds several actions names its item once
+                if any(e["rel"] == "flow" and e["src"] == ends[0] and e["label"] == item for e in g["edges"]):
+                    item = ""
                 g["edges"].append(edge(ends[0], ends[1], "flow", t, item, eid=f"flow({ends[0]}->{ends[1]})"))
             continue
         src = x.get("source")

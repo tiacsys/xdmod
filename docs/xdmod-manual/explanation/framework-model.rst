@@ -30,8 +30,8 @@ link types in package ``XdmodNeeds`` with ``needs/needs_config.toml``
 The five domains
 ----------------
 
-XDMOD splits a project into five domains. Each domain has its own repo, its own need types and
-its own reviewers (:need:`XD-ADR-0006`, :need:`XD-ADR-0061`):
+XDMOD splits a project into five domains. Each domain has its own repo in one west workspace,
+and its own need types (:need:`XD-ADR-0006`, :need:`XD-ADR-0066`):
 
 - **SYS**, systems engineering: stakeholders, system requirements and the SysML model.
 - **EE**, electrical engineering: KiCad projects and prototype wiring.
@@ -50,8 +50,9 @@ sphinx-needs directive (``<sys-req>``). The line ``:> Requirement`` names its ca
 in the V (`Need categories`_ below).
 
 The concrete side holds the link (:need:`XD-ADR-0004`, :need:`XD-RULE-0001`). The diamond sits on
-the need type that holds the link; the arrow points to the more abstract type, so the abstract
-types stand at the top. The label next to the diamond names the link type. ``[1..*]`` marks a
+the need type that holds the link, and the arrow points to the more abstract type. In the
+domain diagrams the abstract types stand at the top; in the diagrams between two domains, systems
+engineering stands on the left. The label on the line names the link type. ``[1..*]`` marks a
 link that is required; the need schema in ``needs_config.toml`` enforces it
 (:need:`XD-RULE-0002`, :need:`XD-RULE-0007`). Some links may point to more than one need type.
 The model then has one reference per target type, each ``[0..*]``, and "(>= 1 in total)" says
@@ -65,7 +66,7 @@ The systems repo holds the SysML model, the documents with the requirements and 
 .. sysml-view:: /views/sysRepo.drawio.svg
    :caption: sysRepo: the repo, its documents and design files (general view)
 
-Stakeholders raise needs; system requirements refine them. Use cases address needs, and system model elements satisfy requirements and realize use cases. A configuration selects model elements. Interfaces and features are the targets of the other domains: nothing inside SYS links to them.
+Stakeholders raise needs; system requirements refine them. Use cases address needs, and system model elements satisfy requirements and realize use cases. A configuration selects model elements. Nothing inside SYS links to an interface: interfaces are the targets of the engineering domains and of system-level tests (next section). Features have no links; a requirement names a feature in its ``where`` field (:doc:`variants`).
 
 .. sysml-view:: /views/sysNeeds.drawio.svg
    :caption: sysNeeds: need types and the trace links inside the domain (general view)
@@ -117,7 +118,7 @@ The integration repo holds the system and integration tests, the HIL setups and 
 .. sysml-view:: /views/intRepo.drawio.svg
    :caption: intRepo: the repo, its documents and design files (general view)
 
-Inside the domain there is only one kind of link: a test result points to its test case. Everything a system-level test verifies is in SYS (next section). A run result also carries the firmware hash and the pinned SHAs (:need:`XD-RULE-0012`).
+Inside the domain there is only one kind of link: a test result points to its test case. Everything a system-level test verifies is in SYS (next section). A HIL run result also carries the firmware hash and the pinned SHAs (:need:`XD-RULE-0012`).
 
 .. sysml-view:: /views/intNeeds.drawio.svg
    :caption: intNeeds: need types and the trace links inside the domain (general view)
