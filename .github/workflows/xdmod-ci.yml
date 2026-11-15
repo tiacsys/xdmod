@@ -1,0 +1,25 @@
+# xdmod's own CI: the curatrix test suite (without the tests that need Java, node or Firefox).
+name: xdmod-ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install
+        run: |
+          pip install -q -r requirements.txt
+          pip install -q --no-deps -e curatrix
+      - name: pytest (not tools)
+        run: python -m pytest -q -m "not tools" curatrix/tests

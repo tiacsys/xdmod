@@ -1,0 +1,17 @@
+# Template: copy to <repo>/.github/workflows/check.yml and set `repo` and `role`.
+# It calls xdmod's reusable workflow (xdmod/.github/workflows/curatrix-check.yml). GitHub only runs
+# reusable workflows from .github/workflows/, so that is where the real workflow lives; this
+# folder holds the thin callers (repo-layouts.md §1).
+name: check
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    uses: tiacsys/xdmod/.github/workflows/curatrix-check.yml@main
+    with:
+      repo: robarm-ee          # this repo's west project name
+      role: ee                 # robarm-syseng and xdmod: integration (checks every downstream repo too)

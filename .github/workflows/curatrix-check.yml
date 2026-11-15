@@ -1,0 +1,136 @@
+# Reusable workflow: `curatrix check <repo> --stage pr --no-cad` for one repo (checks.md §3, D47, D56).
+# FIRST VERSION (task 4.8); CI hardening (caching, PR comments, required checks) is a later task.
+#
+# A repo calls it from .github/workflows/check.yml (template: xdmod/workflows/check.yml):
+#   jobs:
+#     check:
+#       uses: tiacsys/xdmod/.github/workflows/curatrix-check.yml@main
+#       with: {repo: robarm-ee, role: ee}
+#
+# What it does:
+#   1. builds a workspace from the manifest's main branch with the role's group filter (D39, D86);
+#   2. resolves every active xdmod/robarm-* repo (D127): branch of the same name as the PR head, else
+#      the repo's main if the manifest pin is an ancestor of it, else the pin; the calling repo is
+#      checked out at the PR head;
+#   3. installs the venv and tools through curatrix (sha256-checked downloads) and runs the check.
+# Limits: GitHub runners have no systemd user session, so curatrix falls back to timeout + ulimit -v;
+# timeout-minutes caps the whole job (command-layer.md §6).
+name: curatrix-check
+on:
+  workflow_call:
+    inputs:
+      repo:
+        description: west project name of the repo under check
+        type: string
+        required: true
+      role:
+        description: curatrix role (group filter); xdmod and robarm-syseng use integration (repo-topology.md §7)
+        type: string
+        default: integration
+      stage:
+        type: string
+        default: pr
+      manifest:
+        description: manifest repo (owner/name)
+        type: string
+        default: tiacsys/robarm-manifest
+      manifest-ref:
+        type: string
+        default: main
+      python-version:
+        type: string
+        default: "3.14"
+      extra-args:
+        description: extra arguments for curatrix check (e.g. --only CK-A6)
+        type: string
+        default: ""
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      WS: ${{ github.workspace }}/ws
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: System packages (graphviz for needflow, ninja for zdocs)
+        run: sudo apt-get update -q && sudo apt-get install -y -q graphviz ninja-build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Manifest
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.manifest }}
+          ref: ${{ inputs.manifest-ref }}
+          path: ws/robarm-manifest   # west init -l needs the manifest at this path
+          fetch-depth: 0
+
+      - name: West workspace (role ${{ inputs.role }})
+        working-directory: ws
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -q west==1.4.0
+          .venv/bin/west init -l robarm-manifest
+          case "${{ inputs.role }}" in
+            syseng) ;;
+            ee) .venv/bin/west config manifest.group-filter -- +ee ;;
+            me) .venv/bin/west config manifest.group-filter -- +me ;;
+            sw) .venv/bin/west config manifest.group-filter -- +sw ;;
+            *) .venv/bin/west config manifest.group-filter -- +ee,+me,+sw,+integration ;;
+          esac
+          .venv/bin/west config xdmod.role "${{ inputs.role }}"
+          .venv/bin/west update --fetch-opt=--filter=blob:none
+
+      - name: Sibling revisions (D127) and the repo under check at the PR head
+        working-directory: ws
+        env:
+          HEAD_REF: ${{ github.head_ref || github.ref_name }}
+          UNDER_CHECK: ${{ inputs.repo }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          .venv/bin/west list -f "{name} {path} {sha}" | while read -r name path pin; do
+            case "$name" in xdmod|robarm-*) ;; *) continue ;; esac
+            [ "$name" = manifest ] && continue
+            git -C "$path" fetch -q origin "+refs/heads/*:refs/remotes/origin/*" || true
+            if [ "$name" = "$UNDER_CHECK" ]; then
+              git -C "$path" fetch -q origin "$HEAD_SHA" && git -C "$path" checkout -q "$HEAD_SHA"
+              echo "$name: PR head $HEAD_SHA"
+            elif git -C "$path" rev-parse -q --verify "origin/$HEAD_REF" >/dev/null; then
+              git -C "$path" checkout -q "origin/$HEAD_REF"; echo "$name: branch $HEAD_REF"
+            elif git -C "$path" merge-base --is-ancestor "$pin" origin/main 2>/dev/null; then
+              git -C "$path" checkout -q origin/main; echo "$name: main"
+            else
+              echo "$name: pin $pin"
+            fi
+          done
+
+      - name: Tool downloads cache
+        uses: actions/cache@v4
+        with:
+          path: ws/.xdmod/cache/downloads
+          key: xdmod-tools-${{ hashFiles('ws/**/tools.yaml') }}
+
+      - name: curatrix (venv, tools)
+        working-directory: ws
+        run: |
+          .venv/bin/pip install -q -e xdmod/curatrix
+          .venv/bin/curatrix bootstrap --role "${{ inputs.role }}" --no-west --no-doctor
+
+      - name: curatrix check ${{ inputs.repo }} --stage ${{ inputs.stage }} --no-cad
+        working-directory: ws
+        run: |
+          .venv/bin/curatrix check "${{ inputs.repo }}" --stage "${{ inputs.stage }}" --no-cad ${{ inputs.extra-args }}
+
+      - name: Upload check results and docs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: curatrix-${{ inputs.repo }}-${{ inputs.stage }}
+          path: |
+            ws/build/*/checks/
+            ws/build/*/docs/deploy/html/
+            ws/build/*/docs-build.log
+          if-no-files-found: ignore

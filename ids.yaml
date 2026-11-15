@@ -1,0 +1,6 @@
+# ID ledger (id-scheme.md §4, D133). Every number issued per kind, one per line.
+# Append-only: a number listed here is never issued again. Edit it only through
+# `curatrix ids new` / `curatrix ids fix`.
+XD-ADR: []
+XD-CHECK: []
+XD-RULE: []

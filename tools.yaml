@@ -1,0 +1,66 @@
+# Non-pip tools that xdmod's own tooling needs (D19). pip packages: requirements.txt.
+# Format: xdmod/curatrix/README.md ("tools.yaml"). Installed by `curatrix bootstrap` /
+# `curatrix update` into <ws>/.venv/<location>, every download checked against its sha256.
+# `curatrix doctor` fails when an installed tool or a system tool has another version.
+tools:
+  - name: jdk
+    version: "21.0.13+9"
+    kind: tarball
+    url: https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz
+    sha256: d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c
+    location: opt/jdk
+    env: {JAVA_HOME: "{location}"}
+
+  - name: sysml-pilot
+    # SysML v2 Pilot Implementation 0.63.1 (2026-09.1), as the conda package jupyter-sysml-kernel.
+    # Holds jupyter-sysml-kernel-0.63.1-all.jar and sysml.library/ (D65).
+    version: "0.63.1"
+    kind: conda
+    url: https://conda.anaconda.org/conda-forge/noarch/jupyter-sysml-kernel-0.63.1-pyhd8ed1ab_0.conda
+    sha256: 8da665d2b2131dcfbde62d32926864d0d03a62393ffdf4598efa64e0bc4b2251
+    subdir: share/jupyter/kernels/sysml
+    location: opt/sysml-pilot
+
+  # node packages share one prefix (opt/node). npm checks their integrity itself (no sha256).
+  - name: elkjs
+    version: "0.12.1"
+    kind: npm
+    location: opt/node
+  - name: puppeteer-core
+    version: "25.17.0"
+    kind: npm
+    location: opt/node
+
+  - name: drawio-viewer
+    # drawio's viewer (Apache-2.0), used to render .drawio.svg pictures in headless Firefox.
+    version: "32.6.1"
+    kind: file
+    url: https://cdn.jsdelivr.net/gh/jgraph/drawio@v32.6.1/src/main/webapp/js/viewer-static.min.js
+    sha256: 0c12ccf10dcaf0d0ef40ca60a5bc881ba27b57e076797ee39bce46602371f769
+    location: opt/drawio-viewer/viewer-static.min.js
+
+  - name: gh
+    # GitHub CLI (PRs, issues, bump bot). 2.103.3 rather than 2.104.0 (too new at the time).
+    version: "2.103.3"
+    kind: tarball
+    url: https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz
+    sha256: 4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d
+    location: opt/gh
+    links: {gh: bin/gh}
+
+# Tools used from the machine (D19). Versions are the ones tested on the reference machine.
+system:
+  - {name: python3, version: "3.14.*", regex: 'Python (\d+\.\d+\.\d+)'}
+  - {name: git, version: "2.56.1"}
+  - {name: cmake, version: "4.5.0"}
+  - {name: ninja, version: "1.13.2"}
+  - {name: node, version: "26.13.1", regex: 'v(\d+\.\d+\.\d+)'}
+  - {name: npm, version: "12.2.2"}
+  - {name: firefox, version: "160.0", regex: 'Firefox (\d+\.\d+(?:\.\d+)?)'}   # headless SVG export of views
+  - {name: dot, version: "16.1.1", cmd: [dot, -V]}                               # needflow (graphviz)
+  - {name: curl, version: "any"}
+  - {name: tar, version: "any"}
+  - {name: zstd, version: "any", cmd: [zstd, --version], regex: 'v(\d+\.\d+\.\d+)'}
+  - {name: drawio, version: "31.7.0", optional: true}                            # D97, people only
+  - {name: kicad-cli, version: "10.0.8", optional: true, roles: [ee, integration, full]}
+  - {name: FreeCADCmd, version: "1.1.4", optional: true, roles: [me, integration, full], regex: 'FreeCAD (\d+\.\d+\.\d+)'}

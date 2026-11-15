@@ -1,0 +1,21 @@
+# What `curatrix check xdmod` runs (format: curatrix/README.md, "checks.yaml").
+# xdmod has no docs yet (the XDMOD manual is a later task); its checks are the ledger, hygiene,
+# and the curatrix test suite.
+version: 1
+area: xdmod
+ids:
+  ledger: ids.yaml
+  # IDs and placeholders in xdmod's own files are examples and test data, not trace IDs.
+  exclude: ["curatrix/**", "sphinx/**", "launch/**", "templates/**", "needs/**", "sysml/**", "*.md", "workflows/**", ".github/**"]
+commands:
+  - id: XD-T1
+    name: curatrix unit tests (pytest; without the tests that need node/Firefox/Java)
+    run: ["{python}", "-m", "pytest", "-q", "-m", "not tools", "{repo}/curatrix/tests"]
+    use: tests
+    stages: [local, pr, full, baseline]
+  - id: XD-T2
+    name: curatrix tool tests (Pilot, elkjs, headless Firefox)
+    run: ["{python}", "-m", "pytest", "-q", "-m", "tools", "{repo}/curatrix/tests"]
+    use: tests
+    stages: [local, baseline]
+    cad: true
