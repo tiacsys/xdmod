@@ -10,8 +10,9 @@
 # require that name (D133, D141).
 #
 # What it does:
-#   1. system packages (graphviz, ninja, doxygen: every zdocs build; gcc-multilib for
-#      robarm-sw's native_sim tests, D101);
+#   1. system packages (graphviz, ninja; gcc-multilib for robarm-sw's native_sim tests, D101) and
+#      Doxygen at the pinned version (every zdocs build needs it; Ubuntu's 1.9.8 is too old for
+#      zdocs' HTML header), from the release tarball, sha256-checked and cached;
 #   2. a west workspace from the manifest (default: its main) with the role's group filter
 #      (repo-topology.md §4, §7), shallow (--narrow --depth=1); Zephyr and its modules come from
 #      a cache keyed on the Zephyr submanifest;
@@ -52,6 +53,13 @@ on:
         description: extra arguments for curatrix check (e.g. --only CK-A6)
         type: string
         default: ""
+      doxygen-version:
+        description: Doxygen release (system tool pinned in robarm-sw/tools.yaml)
+        type: string
+        default: "1.18.0"
+      doxygen-sha256:
+        type: string
+        default: 14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
       extra-apt:
         description: extra apt packages for this repo
         type: string
@@ -70,7 +78,7 @@ jobs:
       - name: Plan (packages for role ${{ inputs.role }}, repo ${{ inputs.repo }})
         id: plan
         run: |
-          pkgs="graphviz ninja-build doxygen"     # zdocs' cmake needs Doxygen in every docs build
+          pkgs="graphviz ninja-build"
           [ "${{ inputs.repo }}" = robarm-sw ] && pkgs="$pkgs gcc-multilib g++-multilib"   # native_sim (D101)
           echo "apt=$pkgs ${{ inputs.extra-apt }}" >> "$GITHUB_OUTPUT"
 
@@ -78,6 +86,28 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends ${{ steps.plan.outputs.apt }}
+
+      - name: Doxygen cache
+        id: doxygen-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/xd-doxygen-${{ inputs.doxygen-version }}
+          key: xd-doxygen-${{ inputs.doxygen-version }}-${{ inputs.doxygen-sha256 }}
+
+      - name: Doxygen ${{ inputs.doxygen-version }}
+        env:
+          V: ${{ inputs.doxygen-version }}
+          SHA: ${{ inputs.doxygen-sha256 }}
+        run: |
+          d=~/.cache/xd-doxygen-$V
+          if [ ! -x "$d/bin/doxygen" ]; then
+            t=$(mktemp -d)
+            curl -fsSL -o "$t/d.tgz" "https://github.com/doxygen/doxygen/releases/download/Release_${V//./_}/doxygen-$V.linux.bin.tar.gz"
+            echo "$SHA  $t/d.tgz" | sha256sum -c -
+            mkdir -p "$d" && tar -xzf "$t/d.tgz" -C "$d" --strip-components=1
+          fi
+          echo "$d/bin" >> "$GITHUB_PATH"
+          "$d/bin/doxygen" --version
 
       - uses: actions/setup-python@v5
         id: py
