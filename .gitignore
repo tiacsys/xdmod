@@ -1,0 +1,7 @@
+# No build output in the repo (D46): everything goes to <workspace>/build/<area>/.
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+_build/

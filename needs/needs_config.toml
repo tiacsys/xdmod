@@ -1,0 +1,577 @@
+# XDMOD shared needs configuration (trace-model.md §2-§5, id-scheme.md).
+#
+# Every document of every repo that uses XDMOD loads this file (zdocs: ZDOCS_NEEDS_CONFIG,
+# set by xdmod/cmake/xdmod-docs.cmake; plain Sphinx: needs_from_toml). Every document must
+# know every type, including downstream ones, because external needs are imported everywhere.
+#
+# Rules this file follows:
+# - A link type is declared ONLY on the need type that holds it, the concrete side (D5, D36,
+#   D64h). There is no global link table. A link written from the wrong side fails the build
+#   (needs.undeclared_for_type); a link to an unknown ID fails (needs.link_outgoing); a link
+#   to a wrong target type fails (target_types).
+# - "Min" from the link table is `schema = { minItems = 1 }`. Conditional minimums (only for
+#   some categories / layers) are schema rules at the end of this file.
+# - Directive name = ID kind in lower case (`sys-req` <-> `SYS-REQ-0012`), prefix = kind + "-".
+# - Links to retired needs (R4, D75) do NOT fail a strict build: there is deliberately no
+#   schema rule for them (see the end of this file). `curatrix check` (CK-B3) reports them
+#   as a warning and fails only at the baseline stage.
+# - The conf helper (xdmod/sphinx/xdmod_conf.py) suppresses `needs.type_near_name`: the link
+#   type `configures` and the field `configs` are both fixed by the trace model.
+# Requires sphinx-needs 9.2.
+
+[needs]
+# id-scheme.md §2, plus usage IDs <ID>.<n> (D128) and the IDs sphinx-test-reports generates
+# (TF_/TS_/TC_ hashes, lowercase deterministic ids; id-scheme.md §6.5).
+id_regex = '^(((SYS|SW|EE|ME|INT|XD|PRJ)-[A-Z]{2,5}-[0-9]{4,}(\.[0-9]+)?)|(TR-(SYS|SW|EE|ME|INT)-[A-Z]{2,5}-[0-9]{4,}-[0-9a-f]{8})|((TF|TS|TC)_[A-Za-z0-9_]+)|((testfile|testsuite|testcase|tr)_[A-Za-z0-9_]+))$'
+id_required = true
+reproducible_json = true
+# Without this, needflow uses PlantUML (not installed) and silently renders an error box.
+flow_engine = "graphviz"
+
+# ------------------------------------------------------------------ fields shared by all types (§5)
+[needs.fields.status]
+description = "draft | valid | retired (D64e, D130). draft: structure checks only, no coverage."
+schema = { type = "string", enum = ["draft", "valid", "retired"] }
+
+[needs.fields.source_file]
+description = "Generated needs: source path relative to the repo."
+schema = { type = "string" }
+
+[needs.fields.legacy_id]
+description = "The old D-number of a decision (D120)."
+schema = { type = "string" }
+
+[needs.fields.instances]
+description = "Usages of a definition need (D128), e.g. leader.joint1."
+schema = { type = "array", items = { type = "string" } }
+
+[needs.fields.configs]
+description = "SYS-CFG IDs the element belongs to; empty = all (D103)."
+schema = { type = "array", items = { type = "string", pattern = '^SYS-CFG-[0-9]{4,}$' } }
+
+[needs.fields.qualified_name]
+description = "SysML qualified name of the element (generated needs)."
+schema = { type = "string" }
+
+[needs.fields.sysml_kind]
+description = "SysML metaclass of the element (generated needs)."
+schema = { type = "string" }
+
+# ------------------------------------------------------------------ requirement fields (D83, D103, D104)
+[needs.fields.category]
+description = "SYS-NEED: problem | objective | need. Requirements: functional | performance | interface | constraint."
+schema = { type = "string", enum = ["problem", "objective", "need", "functional", "performance", "interface", "constraint"] }
+
+[needs.fields.ears]
+description = "EARS pattern of the sentence (D12, D45)."
+schema = { type = "string", enum = ["ubiquitous", "event", "state", "optional", "unwanted", "complex"] }
+
+[needs.fields.quantity]
+schema = { type = "string" }
+[needs.fields.unit]
+schema = { type = "string" }
+[needs.fields.min]
+schema = { type = "number" }
+[needs.fields.max]
+schema = { type = "number" }
+[needs.fields.nominal]
+schema = { type = "number" }
+
+[needs.fields.verification_method]
+schema = { type = "string", enum = ["test", "analysis", "inspection", "demonstration"] }
+
+[needs.fields.verification_scope]
+description = "logical: evidence from any configuration counts; config: per configuration (D104)."
+schema = { type = "string", enum = ["logical", "config"] }
+
+[needs.fields.where]
+description = "Feature condition, e.g. SYS-FEAT-0002 (D103)."
+schema = { type = "string" }
+
+[needs.fields.derived]
+description = "Domain requirement without an upstream link (needs a rationale)."
+schema = { type = "boolean" }
+
+[needs.fields.rationale]
+schema = { type = "string" }
+
+# ------------------------------------------------------------------ model element fields (D85, D129)
+[needs.fields.layer]
+description = "SYS-EL only: context | functional | logical | product."
+schema = { type = "string", enum = ["context", "functional", "logical", "product"] }
+
+# ------------------------------------------------------------------ verification result fields (D103, D131)
+[needs.fields.config]
+description = "The single SYS-CFG a test run was made on."
+schema = { type = "string", pattern = '^SYS-CFG-[0-9]{4,}$' }
+[needs.fields.method]
+description = "How the evidence was produced (D131)."
+schema = { type = "string", enum = ["test", "hil", "analysis", "inspection", "demonstration"] }
+[needs.fields.firmware_sha256]
+schema = { type = "string", pattern = '^[0-9a-f]{64}$' }
+[needs.fields.shas]
+description = "Pinned repo SHAs of the run: repo=sha entries (R5)."
+schema = { type = "array", items = { type = "string", pattern = '^[A-Za-z0-9_.-]+=[0-9a-f]{7,40}$' } }
+[needs.fields.reviewer]
+schema = { type = "string" }
+[needs.fields.verdict]
+schema = { type = "string", enum = ["passed", "failed", "skipped", "error"] }
+
+# ================================================================== need types (§2) and links (§3)
+# ------------------------------------------------------------------ systems engineering
+[[needs.types]]
+directive = "sys-sth"
+title = "Stakeholder"
+prefix = "SYS-STH-"
+id_regex = '^SYS-STH-[0-9]{4,}$'
+color = "#BDD7EE"
+style = "actor"
+
+[[needs.types]]
+directive = "sys-need"
+title = "Stakeholder Need"
+prefix = "SYS-NEED-"
+id_regex = '^SYS-NEED-[0-9]{4,}$'
+color = "#DDEBF7"
+style = "node"
+[needs.types.links.raised_by]
+description = "The stakeholder who raised the need (min 1 for category need/objective)."
+target_types = ["sys-sth"]
+outgoing = "raised by"
+incoming = "raised"
+[needs.types.links.addresses]
+description = "A need or objective addresses the problem statement (D81)."
+target_types = ["sys-need"]
+outgoing = "addresses"
+incoming = "addressed by"
+
+[[needs.types]]
+directive = "sys-uc"
+title = "Use Case"
+prefix = "SYS-UC-"
+id_regex = '^SYS-UC-[0-9]{4,}$'
+color = "#DDEBF7"
+style = "usecase"
+[needs.types.links.addresses]
+target_types = ["sys-need"]
+schema = { minItems = 1 }
+
+[[needs.types]]
+directive = "sys-req"
+title = "System Requirement"
+prefix = "SYS-REQ-"
+id_regex = '^SYS-REQ-[0-9]{4,}$'
+color = "#E2EFDA"
+style = "node"
+[needs.types.links.refines]
+description = "The requirement answers this need (SYSMOD frame)."
+target_types = ["sys-need"]
+schema = { minItems = 1 }
+outgoing = "refines"
+incoming = "refined by"
+
+[[needs.types]]
+directive = "sys-if"
+title = "Interface"
+prefix = "SYS-IF-"
+id_regex = '^SYS-IF-[0-9]{4,}$'
+color = "#FFF2CC"
+style = "interface"
+
+[[needs.types]]
+directive = "sys-el"
+title = "System Model Element"
+prefix = "SYS-EL-"
+id_regex = '^SYS-EL-[0-9]{4,}(\.[0-9]+)?$'
+color = "#FFF2CC"
+style = "component"
+[needs.types.links.satisfies]
+description = "The model element satisfies the requirement (SysML satisfy)."
+target_types = ["sys-req"]
+outgoing = "satisfies"
+incoming = "satisfied by"
+[needs.types.links.realizes]
+description = "functional -> use case; logical -> functional; product -> logical (D85, D102)."
+target_types = ["sys-uc", "sys-el"]
+outgoing = "realizes"
+incoming = "realized by"
+
+[[needs.types]]
+directive = "sys-cfg"
+title = "Configuration"
+prefix = "SYS-CFG-"
+id_regex = '^SYS-CFG-[0-9]{4,}$'
+color = "#FCE4D6"
+style = "artifact"
+[needs.types.links.configures]
+description = "The configuration is one product of the 150 % architecture."
+target_types = ["sys-el"]
+schema = { minItems = 1 }
+outgoing = "configures"
+incoming = "configured by"
+
+[[needs.types]]
+directive = "sys-feat"
+title = "Feature"
+prefix = "SYS-FEAT-"
+id_regex = '^SYS-FEAT-[0-9]{4,}$'
+color = "#FCE4D6"
+style = "card"
+
+# ------------------------------------------------------------------ integration
+[[needs.types]]
+directive = "int-stc"
+title = "System Test Case"
+prefix = "INT-STC-"
+id_regex = '^INT-STC-[0-9]{4,}$'
+color = "#E4DFEC"
+style = "node"
+[needs.types.links.verifies]
+target_types = ["sys-req"]
+schema = { minItems = 1 }
+outgoing = "verifies"
+incoming = "verified by"
+
+[[needs.types]]
+directive = "int-itc"
+title = "Integration Test Case"
+prefix = "INT-ITC-"
+id_regex = '^INT-ITC-[0-9]{4,}$'
+color = "#E4DFEC"
+style = "node"
+[needs.types.links.verifies]
+target_types = ["sys-req", "sys-if"]
+schema = { minItems = 1 }
+
+# ------------------------------------------------------------------ software
+[[needs.types]]
+directive = "sw-req"
+title = "SW Requirement"
+prefix = "SW-REQ-"
+id_regex = '^SW-REQ-[0-9]{4,}$'
+color = "#D9E1F2"
+style = "node"
+[needs.types.links.refines]
+target_types = ["sys-req", "sys-if"]
+
+[[needs.types]]
+directive = "sw-arch"
+title = "SW Architecture Element"
+prefix = "SW-ARCH-"
+id_regex = '^SW-ARCH-[0-9]{4,}$'
+color = "#D9E1F2"
+style = "component"
+[needs.types.links.realizes]
+target_types = ["sys-el"]
+[needs.types.links.satisfies]
+target_types = ["sw-req"]
+[needs.types.links.conforms]
+description = "The element meets a peer interface (pin map, connector, mounting)."
+target_types = ["sys-if"]
+outgoing = "conforms to"
+incoming = "conformed by"
+
+[[needs.types]]
+directive = "sw-dd"
+title = "SW Detailed Design Element"
+prefix = "SW-DD-"
+id_regex = '^SW-DD-[0-9]{4,}$'
+color = "#D9E1F2"
+style = "component"
+[needs.types.links.refines]
+target_types = ["sw-arch"]
+schema = { minItems = 1 }
+[needs.types.links.satisfies]
+target_types = ["sw-req"]
+[needs.types.links.conforms]
+target_types = ["sys-if"]
+
+[[needs.types]]
+directive = "sw-impl"
+title = "Code Unit"
+prefix = "SW-IMPL-"
+id_regex = '^SW-IMPL-[0-9]{4,}$'
+color = "#D9E1F2"
+style = "file"
+[needs.types.links.implements]
+target_types = ["sw-dd", "sw-arch"]
+schema = { minItems = 1 }
+outgoing = "implements"
+incoming = "implemented by"
+[needs.types.links.satisfies]
+target_types = ["sw-req"]
+
+[[needs.types]]
+directive = "sw-tc"
+title = "SW Test Case"
+prefix = "SW-TC-"
+id_regex = '^SW-TC-[0-9]{4,}$'
+color = "#D9E1F2"
+style = "node"
+[needs.types.links.verifies]
+target_types = ["sw-req", "sw-dd"]
+schema = { minItems = 1 }
+
+# ------------------------------------------------------------------ electrical
+[[needs.types]]
+directive = "ee-req"
+title = "EE Requirement"
+prefix = "EE-REQ-"
+id_regex = '^EE-REQ-[0-9]{4,}$'
+color = "#F8CBAD"
+style = "node"
+[needs.types.links.refines]
+target_types = ["sys-req", "sys-if"]
+
+[[needs.types]]
+directive = "ee-pcba"
+title = "PCBA"
+prefix = "EE-PCBA-"
+id_regex = '^EE-PCBA-[0-9]{4,}$'
+color = "#F8CBAD"
+style = "component"
+[needs.types.links.realizes]
+target_types = ["sys-el"]
+[needs.types.links.satisfies]
+target_types = ["ee-req"]
+[needs.types.links.conforms]
+target_types = ["sys-if"]
+
+[[needs.types]]
+directive = "ee-cmp"
+title = "Circuit Block / Component"
+prefix = "EE-CMP-"
+id_regex = '^EE-CMP-[0-9]{4,}(\.[0-9]+)?$'
+color = "#F8CBAD"
+style = "component"
+[needs.types.links.realizes]
+target_types = ["sys-el"]
+[needs.types.links.satisfies]
+target_types = ["ee-req"]
+[needs.types.links.conforms]
+target_types = ["sys-if"]
+[needs.types.links.part_of]
+description = "Structure of the domain design."
+target_types = ["ee-pcba"]
+outgoing = "part of"
+incoming = "contains"
+
+[[needs.types]]
+directive = "ee-tc"
+title = "EE Test Case"
+prefix = "EE-TC-"
+id_regex = '^EE-TC-[0-9]{4,}$'
+color = "#F8CBAD"
+style = "node"
+[needs.types.links.verifies]
+target_types = ["ee-req"]
+schema = { minItems = 1 }
+
+# ------------------------------------------------------------------ mechanical
+[[needs.types]]
+directive = "me-req"
+title = "ME Requirement"
+prefix = "ME-REQ-"
+id_regex = '^ME-REQ-[0-9]{4,}$'
+color = "#C6E0B4"
+style = "node"
+[needs.types.links.refines]
+target_types = ["sys-req", "sys-if"]
+
+[[needs.types]]
+directive = "me-asm"
+title = "Assembly"
+prefix = "ME-ASM-"
+id_regex = '^ME-ASM-[0-9]{4,}(\.[0-9]+)?$'
+color = "#C6E0B4"
+style = "component"
+[needs.types.links.realizes]
+target_types = ["sys-el"]
+[needs.types.links.satisfies]
+target_types = ["me-req"]
+[needs.types.links.conforms]
+target_types = ["sys-if"]
+
+[[needs.types]]
+directive = "me-part"
+title = "Part"
+prefix = "ME-PART-"
+id_regex = '^ME-PART-[0-9]{4,}(\.[0-9]+)?$'
+color = "#C6E0B4"
+style = "component"
+[needs.types.links.realizes]
+target_types = ["sys-el"]
+[needs.types.links.satisfies]
+target_types = ["me-req"]
+[needs.types.links.conforms]
+target_types = ["sys-if"]
+[needs.types.links.part_of]
+target_types = ["me-asm"]
+
+[[needs.types]]
+directive = "me-tc"
+title = "ME Test Case"
+prefix = "ME-TC-"
+id_regex = '^ME-TC-[0-9]{4,}$'
+color = "#C6E0B4"
+style = "node"
+[needs.types.links.verifies]
+target_types = ["me-req"]
+schema = { minItems = 1 }
+
+# ------------------------------------------------------------------ framework and project (D120, D121)
+[[needs.types]]
+directive = "xd-adr"
+title = "Framework Decision"
+prefix = "XD-ADR-"
+id_regex = '^XD-ADR-[0-9]{4,}$'
+color = "#EDEDED"
+style = "node"
+
+[[needs.types]]
+directive = "xd-rule"
+title = "Method Rule"
+prefix = "XD-RULE-"
+id_regex = '^XD-RULE-[0-9]{4,}$'
+color = "#EDEDED"
+style = "node"
+[needs.types.links.decided_by]
+target_types = ["xd-adr"]
+schema = { minItems = 1 }
+outgoing = "decided by"
+incoming = "decides"
+
+[[needs.types]]
+directive = "xd-check"
+title = "curatrix Check"
+prefix = "XD-CHECK-"
+id_regex = '^XD-CHECK-[0-9]{4,}$'
+color = "#EDEDED"
+style = "node"
+[needs.types.links.enforces]
+target_types = ["xd-rule"]
+schema = { minItems = 1 }
+outgoing = "enforces"
+incoming = "enforced by"
+
+[[needs.types]]
+directive = "prj-dec"
+title = "Project Decision"
+prefix = "PRJ-DEC-"
+id_regex = '^PRJ-DEC-[0-9]{4,}$'
+color = "#EDEDED"
+style = "node"
+[needs.types.links.follows]
+target_types = ["xd-adr"]
+outgoing = "follows"
+incoming = "followed by"
+
+# ------------------------------------------------------------------ verification results
+[[needs.types]]
+directive = "tr"
+title = "Test Result"
+prefix = "TR-"
+id_regex = '^TR-(SYS|SW|EE|ME|INT)-[A-Z]{2,5}-[0-9]{4,}-[0-9a-f]{8}$'
+color = "#999999"
+style = "rectangle"
+[needs.types.links.result_of]
+target_types = ["int-stc", "int-itc", "sw-tc", "ee-tc", "me-tc"]
+schema = { minItems = 1 }
+outgoing = "result of"
+incoming = "has result"
+
+# sphinx-test-reports registers testfile / testsuite / testcase itself. They are declared
+# here as well so that every document (also those that only import them) knows them.
+# Mapping test-report cases to TR-... needs is the run-record extractor's job (task 4.5a).
+[[needs.types]]
+directive = "testfile"
+title = "Test-File"
+prefix = "TF_"
+color = "#ffffff"
+style = "node"
+
+[[needs.types]]
+directive = "testsuite"
+title = "Test-Suite"
+prefix = "TS_"
+color = "#cccccc"
+style = "folder"
+
+[[needs.types]]
+directive = "testcase"
+title = "Test-Case"
+prefix = "TC_"
+color = "#999999"
+style = "rectangle"
+[needs.types.links.result_of]
+target_types = ["int-stc", "int-itc", "sw-tc", "ee-tc", "me-tc"]
+
+# ================================================================== schema rules (§3 footnotes, §4)
+# --- footnote 4: raised_by is required for category need / objective
+[[needs.schema_definitions.schemas]]
+id = "XD-S-need-raised-by"
+severity = "violation"
+select = { properties = { type = { const = "sys-need" }, category = { enum = ["need", "objective"] } }, required = ["category"] }
+validate.local = { properties = { raised_by = { minItems = 1 } }, required = ["raised_by"] }
+
+# --- every SYS-NEED has a category
+[[needs.schema_definitions.schemas]]
+id = "XD-S-need-category"
+severity = "violation"
+select = { properties = { type = { const = "sys-need" } } }
+validate.local = { required = ["category"] }
+
+# --- addresses between needs points at the problem statement (D81)
+[[needs.schema_definitions.schemas]]
+id = "XD-S-need-addresses-problem"
+severity = "violation"
+select = { properties = { type = { const = "sys-need" } } }
+validate.network.addresses = { items = { local = { properties = { category = { const = "problem" } }, required = ["category"] } } }
+
+# --- footnote 1: a domain requirement refines something, or is derived with a rationale
+[[needs.schema_definitions.schemas]]
+id = "XD-S-domain-req-upstream"
+severity = "violation"
+# sphinx-needs 9.2 schemas have no "any of", so "A or B" is written as "select: A empty; require B".
+select = { properties = { type = { enum = ["sw-req", "ee-req", "me-req"] }, refines = { maxItems = 0 } } }
+validate.local = { properties = { derived = { const = true }, rationale = { minLength = 1 } }, required = ["derived", "rationale"] }
+
+# --- SYS-EL has a layer (D85, D129)
+[[needs.schema_definitions.schemas]]
+id = "XD-S-el-layer"
+severity = "violation"
+select = { properties = { type = { const = "sys-el" } } }
+validate.local = { required = ["layer"] }
+
+# --- a functional SYS-EL realizes a use case (D85)
+[[needs.schema_definitions.schemas]]
+id = "XD-S-el-functional-realizes-uc"
+severity = "violation"
+select = { properties = { type = { const = "sys-el" }, layer = { const = "functional" } }, required = ["layer"] }
+validate.local = { properties = { realizes = { minItems = 1 } }, required = ["realizes"] }
+
+# --- R3 orphans: product-layer SYS-EL and domain design elements realize or satisfy something
+[[needs.schema_definitions.schemas]]
+id = "XD-S-R3-no-orphan-product-el"
+severity = "violation"
+select = { properties = { type = { const = "sys-el" }, layer = { const = "product" }, status = { enum = ["draft", "valid"] }, realizes = { maxItems = 0 } }, required = ["layer"] }
+validate.local = { properties = { satisfies = { minItems = 1 } }, required = ["satisfies"] }
+
+[[needs.schema_definitions.schemas]]
+id = "XD-S-R3-no-orphan-design"
+severity = "violation"
+select = { properties = { type = { enum = ["sw-arch", "ee-pcba", "ee-cmp", "me-asm", "me-part"] }, status = { enum = ["draft", "valid"] }, realizes = { maxItems = 0 } } }
+validate.local = { properties = { satisfies = { minItems = 1 } }, required = ["satisfies"] }
+
+# --- R5: a HIL result carries the firmware hash and the pinned SHAs (D57, D60)
+[[needs.schema_definitions.schemas]]
+id = "XD-S-R5-hil-evidence"
+severity = "violation"
+select = { properties = { type = { const = "tr" }, method = { const = "hil" } }, required = ["method"] }
+validate.local = { properties = { shas = { minItems = 1 } }, required = ["firmware_sha256", "shas"] }
+
+# --- R4: links to retired needs are NOT a schema rule here, on purpose (D75 grace period).
+# sphinx-needs 9.2 reports every failed network rule as a violation, whatever severity the rule
+# names (the child findings of validate.network get the default severity), so a strict build
+# would fail at once. `curatrix check` implements R4 instead (CK-B3): a warning on main and in
+# PRs, an error at the baseline stage.
