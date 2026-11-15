@@ -324,7 +324,10 @@ def launch(ws: Workspace, tool: str, args: list[str]) -> int:
 
 
 # ------------------------------------------------------------------ doctor (§5, 4.4b)
-def doctor(ws: Workspace, quiet: bool = False) -> int:
+def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
+    """Exit 1 on any FAIL. `ci`: on a CI runner the system tools come from the runner image, not
+    from the pinned local toolchain (D19), so their mismatches are warnings; tools.yaml tools
+    (installed by curatrix with sha256) must still match."""
     rows: list[tuple[str, str, str]] = []   # (status, what, detail/fix)
 
     def add(st, what, detail=""):
@@ -351,9 +354,10 @@ def doctor(ws: Workspace, quiet: bool = False) -> int:
     for st in ts.system.values():
         have = tools.system_version(st, ws)
         if have is None:
-            add("warn" if st.optional else "FAIL", f"{st.name} missing", f"system tool, wants {st.version}")
+            add("warn" if st.optional or ci else "FAIL", f"{st.name} missing", f"system tool, wants {st.version}")
         elif not tools.version_ok(st.version, have):
-            add("FAIL", f"{st.name} {have}: tools.yaml wants {st.version}", st.source)
+            add("warn" if ci else "FAIL", f"{st.name} {have}: tools.yaml wants {st.version}",
+                "runner image (--ci)" if ci else st.source)
         else:
             add("ok", f"{st.name} {have}")
     lim_backend = limits.backend()

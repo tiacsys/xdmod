@@ -1,20 +1,28 @@
-# Reusable workflow: `curatrix check <repo> --stage pr --no-cad` for one repo (checks.md §3, D47, D56).
-# FIRST VERSION (task 4.8); CI hardening (caching, PR comments, required checks) is a later task.
+# Reusable workflow: `curatrix check <repo> --stage pr --no-cad` for one repo on a GitHub runner
+# (checks.md §3, D47, D56, D101, D110; tasks 4.4, 4.4a).
 #
 # A repo calls it from .github/workflows/check.yml (template: xdmod/workflows/check.yml):
 #   jobs:
 #     check:
 #       uses: tiacsys/xdmod/.github/workflows/curatrix-check.yml@main
 #       with: {repo: robarm-ee, role: ee}
+# The status check is then called "check / check" (caller job / this job); the repo rulesets
+# require that name (D133, D141).
 #
 # What it does:
-#   1. builds a workspace from the manifest's main branch with the role's group filter (D39, D86);
-#   2. resolves every active xdmod/robarm-* repo (D127): branch of the same name as the PR head, else
-#      the repo's main if the manifest pin is an ancestor of it, else the pin; the calling repo is
-#      checked out at the PR head;
-#   3. installs the venv and tools through curatrix (sha256-checked downloads) and runs the check.
-# Limits: GitHub runners have no systemd user session, so curatrix falls back to timeout + ulimit -v;
-# timeout-minutes caps the whole job (command-layer.md §6).
+#   1. system packages for the role and repo (graphviz, ninja; doxygen for the SW API docs;
+#      gcc-multilib for native_sim, D101);
+#   2. a west workspace from the manifest (default: its main) with the role's group filter
+#      (repo-topology.md §4, §7), shallow (--narrow --depth=1); Zephyr and its modules come from
+#      a cache keyed on the Zephyr submanifest;
+#   3. sibling revisions (D127, `curatrix ci siblings`): same-name branch -> main if the manifest
+#      pin is an ancestor -> the pin; the repo under check at the PR head. xdmod itself is
+#      resolved first in shell, because curatrix comes from it;
+#   4. the venv (.venv, with .venv/opt: JDK, Pilot, Zephyr SDK ...) from a cache keyed on every
+#      requirements.txt and tools.yaml; `curatrix bootstrap --no-west` installs what is missing
+#      (sha256-checked downloads), `curatrix doctor --ci` checks the tools.yaml versions;
+#   5. the check. Limits: GitHub runners have no systemd user session, so curatrix falls back to
+#      `timeout` + `ulimit -v` (command-layer.md §6); timeout-minutes caps the whole job.
 name: curatrix-check
 on:
   workflow_call:
@@ -24,7 +32,7 @@ on:
         type: string
         required: true
       role:
-        description: curatrix role (group filter); xdmod and robarm-syseng use integration (repo-topology.md §7)
+        description: curatrix role (group filter); xdmod, robarm-syseng, robarm-integration and robarm-manifest use integration
         type: string
         default: integration
       stage:
@@ -44,19 +52,38 @@ on:
         description: extra arguments for curatrix check (e.g. --only CK-A6)
         type: string
         default: ""
+      extra-apt:
+        description: extra apt packages for this repo
+        type: string
+        default: ""
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
       WS: ${{ github.workspace }}/ws
       PYTHONDONTWRITEBYTECODE: "1"
+      HEAD_REF: ${{ github.head_ref || github.ref_name }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: System packages (graphviz for needflow, ninja for zdocs)
-        run: sudo apt-get update -q && sudo apt-get install -y -q graphviz ninja-build
+      - name: Plan (packages for role ${{ inputs.role }}, repo ${{ inputs.repo }})
+        id: plan
+        run: |
+          pkgs="graphviz ninja-build"
+          case "${{ inputs.role }}" in
+            sw|integration|full|ci-full) pkgs="$pkgs doxygen" ;;          # sw-api (zdocs doxygen)
+          esac
+          [ "${{ inputs.repo }}" = robarm-sw ] && pkgs="$pkgs gcc-multilib g++-multilib"   # native_sim (D101)
+          echo "apt=$pkgs ${{ inputs.extra-apt }}" >> "$GITHUB_OUTPUT"
+
+      - name: System packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends ${{ steps.plan.outputs.apt }}
 
       - uses: actions/setup-python@v5
+        id: py
         with:
           python-version: ${{ inputs.python-version }}
 
@@ -68,56 +95,67 @@ jobs:
           path: ws/robarm-manifest   # west init -l needs the manifest at this path
           fetch-depth: 0
 
+      - name: Zephyr tree cache
+        id: zephyr-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ws/zephyr
+            ws/modules
+          key: xd-zephyr-${{ hashFiles('ws/robarm-manifest/submanifests/10-zephyr.yml') }}
+
       - name: West workspace (role ${{ inputs.role }})
         working-directory: ws
         run: |
-          python -m venv .venv
-          .venv/bin/pip install -q west==1.4.0
-          .venv/bin/west init -l robarm-manifest
+          python -m pip install -q west==1.4.0 PyYAML==6.0.3
+          west init -l robarm-manifest
           case "${{ inputs.role }}" in
             syseng) ;;
-            ee) .venv/bin/west config manifest.group-filter -- +ee ;;
-            me) .venv/bin/west config manifest.group-filter -- +me ;;
-            sw) .venv/bin/west config manifest.group-filter -- +sw ;;
-            *) .venv/bin/west config manifest.group-filter -- +ee,+me,+sw,+integration ;;
+            ee) west config manifest.group-filter -- +ee ;;
+            me) west config manifest.group-filter -- +me ;;
+            sw) west config manifest.group-filter -- +sw ;;
+            full) west config manifest.group-filter -- +ee,+me,+sw,+integration,+kicad-3d,+freecad-parts ;;
+            *) west config manifest.group-filter -- +ee,+me,+sw,+integration ;;
           esac
-          .venv/bin/west config xdmod.role "${{ inputs.role }}"
-          .venv/bin/west update --fetch-opt=--filter=blob:none
+          west config xdmod.role "${{ inputs.role }}"
+          west update --narrow -o=--depth=1 || { sleep 10; west update --narrow -o=--depth=1; }
 
-      - name: Sibling revisions (D127) and the repo under check at the PR head
+      - name: Sibling revisions (D127)
         working-directory: ws
-        env:
-          HEAD_REF: ${{ github.head_ref || github.ref_name }}
-          UNDER_CHECK: ${{ inputs.repo }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          .venv/bin/west list -f "{name} {path} {sha}" | while read -r name path pin; do
-            case "$name" in xdmod|robarm-*) ;; *) continue ;; esac
-            [ "$name" = manifest ] && continue
-            git -C "$path" fetch -q origin "+refs/heads/*:refs/remotes/origin/*" || true
-            if [ "$name" = "$UNDER_CHECK" ]; then
-              git -C "$path" fetch -q origin "$HEAD_SHA" && git -C "$path" checkout -q "$HEAD_SHA"
-              echo "$name: PR head $HEAD_SHA"
-            elif git -C "$path" rev-parse -q --verify "origin/$HEAD_REF" >/dev/null; then
-              git -C "$path" checkout -q "origin/$HEAD_REF"; echo "$name: branch $HEAD_REF"
-            elif git -C "$path" merge-base --is-ancestor "$pin" origin/main 2>/dev/null; then
-              git -C "$path" checkout -q origin/main; echo "$name: main"
-            else
-              echo "$name: pin $pin"
-            fi
-          done
+          # xdmod first, in shell: curatrix (and its resolver) comes from the xdmod checkout.
+          url=$(west list -f '{url}' xdmod); pin=$(west list -f '{sha}' xdmod)
+          git -C xdmod fetch -q --unshallow --filter=blob:none "$url" \
+            +refs/heads/main:refs/remotes/xd-ci/main 2>/dev/null \
+            || git -C xdmod fetch -q --filter=blob:none "$url" +refs/heads/main:refs/remotes/xd-ci/main
+          if [ "${{ inputs.repo }}" = xdmod ]; then
+            git -C xdmod fetch -q "$url" "$HEAD_SHA" && git -C xdmod checkout -q --detach "$HEAD_SHA"
+          elif [ "$HEAD_REF" != main ] && git ls-remote --exit-code --heads "$url" "refs/heads/$HEAD_REF" >/dev/null; then
+            git -C xdmod fetch -q "$url" "+refs/heads/$HEAD_REF:refs/remotes/xd-ci/branch"
+            git -C xdmod checkout -q --detach xd-ci/branch
+          elif git -C xdmod merge-base --is-ancestor "$pin" xd-ci/main; then
+            git -C xdmod checkout -q --detach xd-ci/main
+          fi
+          PYTHONPATH=xdmod/curatrix/src python -m curatrix ci siblings \
+            --branch "$HEAD_REF" --repo "${{ inputs.repo }}" --sha "$HEAD_SHA"
 
-      - name: Tool downloads cache
+      - name: Venv and tools cache
         uses: actions/cache@v4
         with:
-          path: ws/.xdmod/cache/downloads
-          key: xdmod-tools-${{ hashFiles('ws/**/tools.yaml') }}
+          path: ws/.venv
+          key: xd-venv-${{ inputs.role }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('ws/*/requirements.txt', 'ws/*/tools.yaml') }}
+          restore-keys: |
+            xd-venv-${{ inputs.role }}-py${{ steps.py.outputs.python-version }}-
 
-      - name: curatrix (venv, tools)
+      - name: curatrix (venv, tools, doctor)
         working-directory: ws
         run: |
+          [ -x .venv/bin/python ] || python -m venv .venv
+          .venv/bin/pip install -q west==1.4.0
           .venv/bin/pip install -q -e xdmod/curatrix
           .venv/bin/curatrix bootstrap --role "${{ inputs.role }}" --no-west --no-doctor
+          .venv/bin/curatrix doctor --ci
+          .venv/bin/curatrix limits
 
       - name: curatrix check ${{ inputs.repo }} --stage ${{ inputs.stage }} --no-cad
         working-directory: ws
@@ -133,4 +171,7 @@ jobs:
             ws/build/*/checks/
             ws/build/*/docs/deploy/html/
             ws/build/*/docs-build.log
+            ws/build/*/twister/twister.json
+            ws/build/*/twister/twister_report.xml
+            ws/build/ci/
           if-no-files-found: ignore

@@ -1,4 +1,8 @@
-# xdmod's own CI: the curatrix test suite (without the tests that need Java, node or Firefox).
+# xdmod's own CI:
+#   tests  the curatrix test suite (without the tests that need Java, node or Firefox), fast;
+#   check  `curatrix check xdmod --stage pr --no-cad` through the reusable workflow of THIS commit
+#          (./.github/workflows/curatrix-check.yml), so a PR that changes the reusable workflow
+#          tests it on itself before the domain repos use it. Status check: "check / check".
 name: xdmod-ci
 on:
   pull_request:
@@ -8,7 +12,7 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       PYTHONDONTWRITEBYTECODE: "1"
@@ -17,9 +21,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements.txt
       - name: Install
         run: |
           pip install -q -r requirements.txt
           pip install -q --no-deps -e curatrix
       - name: pytest (not tools)
         run: python -m pytest -q -m "not tools" curatrix/tests
+
+  check:
+    uses: ./.github/workflows/curatrix-check.yml
+    with:
+      repo: xdmod
+      role: integration

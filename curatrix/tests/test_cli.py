@@ -39,6 +39,9 @@ def test_gen_and_check_cad_needs(ws, capsys):
     s = summary(ws)
     assert s["CK-D4"]["status"] == "pass" and s["CK-C1"]["status"] == "pass" and s["CK-X1"]["status"] == "pass"
     assert "CK-B1" not in s                                                    # not a local-stage check
+    # CK-D4 is plain Python, so PR CI (no CAD tools, D56) runs it too (task 4.4a)
+    assert run("check", "robarm-ee", "--stage", "pr", "--no-cad") == 0
+    assert summary(ws)["CK-D4"]["status"] == "pass"
     # delete a traced symbol's TraceID: CK-D4 fails, regenerating leaves a tombstone (D130)
     sch = ws / "robarm-ee/pcba/board/board.kicad_sch"
     sch.write_text(sch.read_text().replace('"TraceID" "EE-CMP-0001"', '"TraceID" ""'))
