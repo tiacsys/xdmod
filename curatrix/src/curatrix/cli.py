@@ -93,9 +93,24 @@ def cmd_launch(a):
 
 
 def cmd_work(a):
-    print("curatrix work start/done: not implemented yet (plan task 4.4c, D125). Until then create worktrees by hand:\n"
-          "  git -C <repo> worktree add ../.worktrees/<branch>/<repo> -b <branch>", file=sys.stderr)
-    return 2
+    from curatrix import work
+    ws = _ws()
+    try:
+        if a.action == "start":
+            if not a.args:
+                raise SystemExit("usage: curatrix work start <branch> <repo>...")
+            work.start(ws, a.args[0], a.args[1:])
+        elif a.action == "done":
+            if len(a.args) != 1:
+                raise SystemExit("usage: curatrix work done <branch> [--force] [--delete-branch]")
+            work.done(ws, a.args[0], a.force, a.delete_branch)
+        else:
+            for m in work.listing(ws):
+                print(f"  {m['branch']:30} {', '.join(m['repos']):40} build: {m['build']}")
+    except work.WorkError as e:
+        print(f"curatrix work: {e}", file=sys.stderr)
+        return 1
+    return 0
 
 
 def cmd_ci(a):
@@ -490,9 +505,11 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("-o", "--out")
     s.set_defaults(func=cmd_needs_diff)
 
-    s = sub.add_parser("work", help="git worktrees for parallel work (not implemented yet, 4.4c)")
-    s.add_argument("action", choices=["start", "done"])
+    s = sub.add_parser("work", help="git worktrees for parallel work: start <branch> <repos...> | done <branch> | list (D125)")
+    s.add_argument("action", choices=["start", "done", "list"])
     s.add_argument("args", nargs="*")
+    s.add_argument("--force", action="store_true", help="done: also with uncommitted changes")
+    s.add_argument("--delete-branch", action="store_true", help="done: delete the branches if merged")
     s.set_defaults(func=cmd_work)
 
     s = sub.add_parser("ci", help="CI helpers: `ci siblings` resolves sibling revisions (D127)")
@@ -528,8 +545,26 @@ def parser() -> argparse.ArgumentParser:
     return p
 
 
+def _reexec_from_worktree(argv: list[str] | None) -> None:
+    """In a worktree set whose xdmod is a worktree (D125), run that xdmod's curatrix, not the
+    editable install of the main checkout."""
+    if os.environ.get("XD_CURATRIX_REEXEC"):
+        return
+    try:
+        from curatrix.ws import PKG_DIR, find_root
+        own = find_root() / "xdmod" / "curatrix" / "src" / "curatrix"
+    except Exception:  # noqa: BLE001 - no workspace: the command reports that itself
+        return
+    if own.is_dir() and own.resolve() != PKG_DIR.resolve():
+        env = dict(os.environ, XD_CURATRIX_REEXEC="1")
+        env["PYTHONPATH"] = os.pathsep.join(x for x in (str(own.parent), env.get("PYTHONPATH", "")) if x)
+        args = sys.argv[1:] if argv is None else argv
+        os.execve(sys.executable, [sys.executable, "-m", "curatrix", *args], env)
+
+
 def main(argv: list[str] | None = None) -> int:
     os.environ.setdefault("PYTHONDONTWRITEBYTECODE", "1")
+    _reexec_from_worktree(argv)
     a = parser().parse_args(argv)
     from curatrix.ws import WorkspaceError
     try:
