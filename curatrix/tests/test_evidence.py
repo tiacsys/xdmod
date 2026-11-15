@@ -61,18 +61,39 @@ def test_test_case_ids_from_ztest_comments(tmp_path):
     assert ev._tc_for("robarm.joint.joint.smoke", "robarm.joint", m) is None
 
 
+TRID = "TR-SW-TC-0007-" + ev.test_suffix("20261115T010203Z-0123abcd", "robarm.joint.joint.limits")
+
+
 def test_reader_makes_tr_needs_and_marks_stale():
     doc = ev.to_needs([record(), record(ok=False, tc="SW-TC-0008")], pins={"robarm-sw": SHA, "zephyr": "b" * 40})
     n = doc["versions"][""]["needs"]
-    assert list(n) == ["TR-SW-TC-0007-0123abcd"]                       # previews and untraced results: no TR
-    tr = n["TR-SW-TC-0007-0123abcd"]
+    assert list(n) == [TRID]                                           # previews and untraced results: no TR
+    tr = n[TRID]
     assert tr["result_of"] == ["SW-TC-0007"] and tr["method"] == "test" and tr["verdict"] == "passed"
     assert tr["shas"] == [f"robarm-sw={SHA}", f"zephyr={'b' * 40}"] and tr["tags"] == []
     from curatrix import ids
-    assert ids.ID_RE.match("TR-SW-TC-0007-0123abcd")
+    assert ids.ID_RE.match(TRID)
     n2 = ev.to_needs([record(kind="hil")], pins={"robarm-sw": "c" * 40})["versions"][""]["needs"]
-    tr2 = n2["TR-SW-TC-0007-0123abcd"]
+    tr2 = n2[TRID]
     assert tr2["method"] == "hil" and tr2["tags"] == ["stale"] and "Stale" in tr2["content"]
+
+
+def test_two_tests_of_one_test_case_keep_both_results():
+    """Review of #14: a later pass must not overwrite an earlier fail of the same test case."""
+    rec = record()
+    rec["results"] = [{"test": "s.joint.limits_low", "suite": "s", "test_case": "SW-TC-0007", "status": "failed", "duration": 0.1},
+                      {"test": "s.joint.limits_high", "suite": "s", "test_case": "SW-TC-0007", "status": "passed", "duration": 0.1}]
+    n = ev.to_needs([rec])["versions"][""]["needs"]
+    assert sorted(x["verdict"] for x in n.values()) == ["failed", "passed"]
+    assert all(x["result_of"] == ["SW-TC-0007"] for x in n.values())
+
+
+def test_reader_skips_invalid_records():
+    bad = record()
+    del bad["firmware"]
+    problems = []
+    assert ev.to_needs([bad, record()], problems=problems)["versions"][""]["needs"].keys() == {TRID}
+    assert len(problems) == 1 and "invalid record" in problems[0]
 
 
 @pytest.fixture
@@ -116,6 +137,36 @@ def test_writer_creates_orphan_branch_and_never_touches_main(integration):
     r2["run_id"] = "20261115T020000Z-89abcdef"
     ev.write(ws, r2, tw, repo, url, "evidence", log=lambda *_: None)
     assert len(ev.load_records(repo, "evidence")) == 2
+
+
+def test_writer_keeps_unpushed_local_records_when_the_remote_moved(integration, tmp_path):
+    """Review of #14: a diverged local branch is replayed onto the remote head, never reset."""
+    ws, repo, url, tw = integration
+    ev.write(ws, record(), tw, repo, url, "evidence", create=True, log=lambda *_: None)
+    git(repo, "push", "-q", url, "evidence")
+    # someone else records a run and pushes (a second clone)
+    other = tmp_path / "other"
+    git(tmp_path, "clone", "-q", "-b", "evidence", url.removeprefix("file://"), str(other))
+    r_remote = copy.deepcopy(record())
+    r_remote["run_id"] = "20261115T030000Z-aaaaaaaa"
+    d = other / ev.record_path(r_remote)
+    d.mkdir(parents=True)
+    (d / "record.json").write_text(json.dumps(r_remote))
+    git(other, "add", ".")
+    git(other, "-c", "user.name=o", "-c", "user.email=o@x", "commit", "-q", "-m", "remote run")
+    git(other, "push", "-q", "origin", "evidence")
+    # here: a local record that was never pushed
+    r_local = copy.deepcopy(record())
+    r_local["run_id"] = "20261115T020000Z-bbbbbbbb"
+    ev.write(ws, r_local, tw, repo, "file:///nonexistent", "evidence", log=lambda *_: None)   # offline: local only
+    # the next record sees both: the remote run AND the unpushed local one
+    r_next = copy.deepcopy(record())
+    r_next["run_id"] = "20261115T040000Z-cccccccc"
+    ev.write(ws, r_next, tw, repo, url, "evidence", log=lambda *_: None)
+    ids = sorted(r["run_id"] for r in ev.load_records(repo, "evidence"))
+    assert ids == ["20261115T010203Z-0123abcd", "20261115T020000Z-bbbbbbbb",
+                   "20261115T030000Z-aaaaaaaa", "20261115T040000Z-cccccccc"]
+    assert git(repo, "merge-base", "--is-ancestor", "refs/remotes/xd-evidence/evidence", "evidence") == ""
 
 
 def test_writer_refuses_previews_on_the_evidence_branch(integration):

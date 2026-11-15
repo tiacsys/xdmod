@@ -129,14 +129,17 @@ def cmd_evidence(a):
             ref = f"refs/remotes/xd-evidence/{a.branch}"
         recs = ev.load_records(repo.path, ref, ws)
         pins = {r.name: r.sha for r in ws.repos if r.sha}
-        doc = ev.to_needs(recs, pins, project=f"{repo.name}-evidence")
+        problems: list[str] = []
+        doc = ev.to_needs(recs, pins, project=f"{repo.name}-evidence", problems=problems)
+        for pr in problems:
+            print(f"  {pr}", file=sys.stderr)
         out = Path(a.out) if a.out else ws.build(repo.name) / "evidence" / "tr-needs.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
         n = doc["versions"][""]["needs"]
         stale = sum(1 for x in n.values() if "stale" in x["tags"])
         print(f"  {len(recs)} record(s) on {ref}: {len(n)} TR need(s), {stale} stale -> {ws.rel(out)}")
-        return 0
+        return 1 if problems else 0
     # record
     if not a.target or not a.config:
         raise SystemExit("usage: curatrix evidence record TWISTER_DIR --config SYS-CFG-nnnn [--kind sim|hil] ...")
