@@ -97,24 +97,60 @@ def _view(m, name):
     return views.graph(m, v)
 
 
-def test_general_view_trace_links_point_from_concrete_to_abstract(m):
-    g = _view(m, "traceSystem")
-    edges = {(e["src"].split("::")[-1], e["dst"].split("::")[-1], e["label"]) for e in g["edges"]}
+def test_every_view_fits_a_page(m):
+    """The committed drawings are between 9:16 and 16:9 (4:3 and 16:9 pages, either way round)."""
+    for v in views.discover(m):
+        content, _, _ = views.read_svg(XDMOD / "views" / views.file_name(v))
+        r = views.canvas_ratio(content)
+        assert views.RATIO_MIN <= r <= views.RATIO_MAX, f"{v.name}: ratio {r:.2f}"
+
+
+DOMAINS = {"sys": "System", "ee": "Electrical", "me": "Mechanical", "sw": "Software", "int": "Verification"}
+
+
+@pytest.mark.parametrize("key", sorted(DOMAINS))
+def test_domain_need_view_stays_inside_its_domain(m, key):
+    g = _view(m, f"{key}Needs")
+    pkgs = {n["id"].split("::")[1] for n in g["nodes"]}
+    assert pkgs <= {DOMAINS[key], "Results"}, pkgs
+    assert all(n["label"].split("\n")[-1].startswith(":> ") for n in g["nodes"])   # category in the header
+
+
+def test_domain_need_view_trace_links_point_from_concrete_to_abstract(m):
+    edges = {(e["src"].split("::")[-1], e["dst"].split("::")[-1], e["label"]) for e in _view(m, "sysNeeds")["edges"]}
     assert ("SystemRequirement", "StakeholderNeed", "refines [1..*]") in edges
-    # one reference per target type, named after the link type; at least one link is required
-    assert ("IntegrationTestCase", "Interface", "verifies [0..*] (>= 1 in total)") in edges
-    labels = {n["label"] for n in g["nodes"]}
-    assert "«item def»\n<sys-req> SystemRequirement" in labels
-    assert not any("Software" in n["id"] for n in g["nodes"])                 # expose only what is asked
+    labels = {n["label"] for n in _view(m, "sysNeeds")["nodes"]}
+    assert "«item def»\n<sys-req> SystemRequirement\n:> Requirement" in labels
 
 
-def test_general_view_compartments_and_values(m):
-    g = _view(m, "workspaceRepos")
+@pytest.mark.parametrize("key,pkg", [("Sw", "Software"), ("Ee", "Electrical"), ("Me", "Mechanical"),
+                                     ("Int", "Verification")])
+def test_two_domain_view_shows_only_links_across(m, key, pkg):
+    g = _view(m, f"sys{key}")
+    assert g["edges"]
+    for e in g["edges"]:
+        assert e["src"].split("::")[1] == pkg and e["dst"].split("::")[1] == "System", e["id"]
+    if key == "Int":   # one reference per target type, named after the link type; >= 1 required in total
+        assert ("IntegrationTestCase", "Interface", "verifies [0..*] (>= 1 in total)") in \
+            {(e["src"].split("::")[-1], e["dst"].split("::")[-1], e["label"]) for e in g["edges"]}
+
+
+def test_repo_view_compartments_and_values(m):
+    g = _view(m, "sysRepo")
     sys_repo = next(n for n in g["nodes"] if n["id"].endswith("::SysEngRepo"))
     assert ("attributes", ["domain = SYS"]) in sys_repo["sections"]
+    assert sys_repo["sections"][0][0] == "doc"
     assert sys_repo["trace_id"] == "XD-ADR-0001"                            # @See links the box to its decision
-    assert any(e["rel"] == "specialization" and e["dst"].endswith("::Repository") for e in g["edges"])
-    assert any(e["rel"] == "composition" and e["label"] == "syseng" for e in g["edges"])
+    assert sys_repo["label"].endswith(":> Repository")
+    assert any(e["rel"] == "composition" and e["label"] == "model [1..*]" for e in g["edges"])
+
+
+def test_interconnection_view_shows_only_the_named_ports(m):
+    g = _view(m, "workspaceNeeds")
+    ports = {p["label"] for n in g["nodes"] for p in n["ports"]}
+    assert ports == {"needs", "upstream", "fullSet"}
+    assert not any(n["id"].endswith("::xdmod") for n in g["nodes"])          # no needs port: not shown
+    assert len(g["edges"]) == 8
 
 
 def test_action_flow_guards_pins_and_flows(m):

@@ -76,8 +76,9 @@ package XdmodNeeds {
         item def <'sys-feat'> Feature :> Architecture;
     }
 
-    // ------------------------------------------------------------------ integration
-    package Integration {
+    // ------------------------------------------------------------------ system-level verification
+    package Verification {
+        doc /* The INT domain: system and integration tests in robarm-integration (XD-ADR-0104). */
         item def <'int-stc'> SystemTestCase :> TestCase {
             ref item :>> verifies : System::SystemRequirement[1..*];
         }
@@ -168,8 +169,8 @@ package XdmodNeeds {
         abstract item def AnyTestCaseResult :> TestResult {
             doc /* Results point to the test case they come from. */
             ref item :>> result_of [1..*];
-            ref item resultOfSystemTest : Integration::SystemTestCase[0..*] :> result_of;
-            ref item resultOfIntegrationTest : Integration::IntegrationTestCase[0..*] :> result_of;
+            ref item resultOfSystemTest : Verification::SystemTestCase[0..*] :> result_of;
+            ref item resultOfIntegrationTest : Verification::IntegrationTestCase[0..*] :> result_of;
             ref item resultOfSwTest : Software::SwTestCase[0..*] :> result_of;
             ref item resultOfEeTest : Electrical::EeTestCase[0..*] :> result_of;
             ref item resultOfMeTest : Mechanical::MeTestCase[0..*] :> result_of;

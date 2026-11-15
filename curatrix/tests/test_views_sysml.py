@@ -97,3 +97,27 @@ def test_content_is_the_same_with_the_real_layout(m):
             g = views.graph(mm, v)
             laid = views.positions(views.run_elk(ws, views.to_elk(g)))
             assert views.content_of(views.to_mxfile(g, laid)) == views.content_of(views.to_mxfile(g)), v.name
+
+
+def test_legend_placement_and_turning_keep_the_content(m):
+    """The layout may turn a view and move its legend to fit a page; CK-D3 content stays the same."""
+    for v in views.discover(m):
+        g = views.graph(m, v)
+        bare = views.content_of(views.to_mxfile(g))
+        for side in ("below-narrow", "right"):
+            g["legend"] = side
+            assert views.content_of(views.to_mxfile(g)) == bare, (v.name, side)
+        if v.kind in ("general", "actionflow", "statetransition", "usecases"):
+            other = views.PERPENDICULAR[g["direction"]]
+            turned = views.ViewDef(**{**v.__dict__, "opts": {**v.opts, "direction": other}})
+            assert views.content_of(views.to_mxfile(views.graph(m, turned))) == bare, v.name
+
+
+def test_canvas_ratio_counts_boxes_and_routes():
+    xml = ('<mxfile><diagram><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+           '<object id="a" label=""><mxCell vertex="1" parent="1"><mxGeometry x="0" y="0" width="100" height="100" as="geometry"/></mxCell></object>'
+           '<object id="e" label=""><mxCell edge="1" parent="1" source="a" target="a"><mxGeometry relative="1" as="geometry">'
+           '<Array as="points"><mxPoint x="300" y="50"/></Array><mxPoint x="900" y="900" as="offset"/></mxGeometry></mxCell></object>'
+           '</root></mxGraphModel></diagram></mxfile>')
+    assert views.canvas_ratio(xml) == 3.0                     # the label offset is not a route point
+    assert views.ratio_error(1.33) == 0 and views.ratio_error(3.0) > 0

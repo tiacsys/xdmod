@@ -15,7 +15,7 @@ package XdmodDomains {
         enum SW;    // software
         enum EE;    // electrical engineering
         enum ME;    // mechanical engineering
-        enum INT;   // integration and system test
+        enum INT;   // system-level verification: system and integration tests, HIL
         enum XD;    // the framework itself
         enum PRJ;   // project decisions
     }
@@ -136,7 +136,7 @@ package XdmodDomains {
     }
     part def IntegrationRepo :> Repository {
         @See { needId = "XD-ADR-0066"; }
-        doc /* robarm-integration: system and integration tests, HIL. */
+        doc /* robarm-integration: system-level verification (system and integration tests, HIL). */
         attribute :>> domain = Domain::INT;
         item tests : TestSuite[0..*];
         item hil : HilSetup[0..*];

@@ -210,7 +210,13 @@ def edge(src, dst, rel, kind, label="", eid=None):
 # ------------------------------------------------------------------ general view
 def general(m: Model, v, opts: dict) -> dict:
     show = {s.strip() for s in (opts.get("show") or ",".join(GENERAL_KINDS)).split(",") if s.strip()}
-    comp = (opts.get("compartments") or "all").lower()
+    # compartments: "all" (features), "root" (features of abstract types), "doc", "none"; a list
+    # such as "root,doc" combines them
+    comp = {c.strip() for c in (opts.get("compartments") or "all").lower().split(",") if c.strip()}
+    # between = "P1, P2": a view of the relations between two (or more) packages. Only edges
+    # whose ends lie in different packages of the list are drawn, and only elements with such an
+    # edge are shown.
+    between = [b.strip() for b in (opts.get("between") or "").split(",") if b.strip()]
     if not v.exposed:
         raise GraphError(f"view {v.name}: a general view needs `expose` (no element exposed)")
     els = [m.get(x) for x in sorted(v.exposed)]
@@ -264,12 +270,19 @@ def general(m: Model, v, opts: dict) -> dict:
                 line = fname + (f" : {tn}" if tn else "")
             mult = multiplicity(m, f)
             sections.setdefault(sec, []).append(line + (f" {mult}" if mult else ""))
-        with_body = comp == "all" or (comp == "root" and p.get("isAbstract"))
+        with_body = "all" in comp or ("root" in comp and p.get("isAbstract"))
         secs = [(s, sections[s]) for s in ("attributes", "ports", "parts", "items", "references", "features")
                 if with_body and sections.get(s)]
+        if "doc" in comp and doc_of(m, p):
+            secs.insert(0, ("doc", _wrap_words(doc_of(m, p), 36)))
         shape = "package" if p.get("@type") == "Package" else ("def" if is_def(p) else
                                                                  "ref" if p.get("isReference") else "usage")
-        g["nodes"].append(node(pid, header(p), p["@type"], shape=shape, trace_id=see_of(m, p),
+        # a general type that is not drawn as a box with a triangle is named in the header
+        # (textual notation `:> General`), so the category of each type stays visible
+        hidden = [name(gen) for gen in related(m, p, "Subclassification")
+                  if "specialization" not in show or gen["@id"] not in shown]
+        label = header(p) + (f"\n:> {', '.join(hidden)}" if hidden else "")
+        g["nodes"].append(node(pid, label, p["@type"], shape=shape, trace_id=see_of(m, p),
                                sections=secs, tooltip=doc_of(m, p)))
         if "specialization" in show:
             for gen in related(m, p, "Subclassification"):
@@ -284,7 +297,21 @@ def general(m: Model, v, opts: dict) -> dict:
                         g["edges"].append(edge(c_["qualifiedName"], s_["qualifiedName"], "dependency", "Dependency"))
     ids = {n["id"] for n in g["nodes"]}
     g["edges"] = [e for e in g["edges"] if e["src"] in ids and e["dst"] in ids]
+    if between:
+        def pkg(qn: str) -> str | None:
+            hits = [b for b in between if qn.startswith(b + "::")]
+            return max(hits, key=len) if hits else None
+        g["edges"] = [e for e in g["edges"] if pkg(e["src"]) and pkg(e["dst"]) and pkg(e["src"]) != pkg(e["dst"])]
+        used = {e[k] for e in g["edges"] for k in ("src", "dst")}
+        g["nodes"] = [n for n in g["nodes"] if n["id"] in used]
+        if not g["nodes"]:
+            raise GraphError(f"view {v.name}: no relations between {', '.join(between)}")
     return g
+
+
+def _wrap_words(text: str, cols: int) -> list[str]:
+    import textwrap
+    return textwrap.wrap(text, cols) or [text]
 
 
 # ------------------------------------------------------------------ action flow view
@@ -356,10 +383,17 @@ def behaviour(m: Model, v, opts: dict, kind: str) -> dict:
             tn = type_names(m, x)
             label = f"«action»\n{name(x)}" + (f" : {tn}" if tn else "")
             n = node(xid, label, t, shape="action", trace_id=see_of(m, x), tooltip=doc_of(m, x), ports=pins)
-            if pins:   # room for the pin names inside the border, left and right of the action name
+            if pins and direction in ("RIGHT", "LEFT"):
+                # room for the pin names inside the border, left and right of the action name
                 side_w = {s: max([len(p["label"]) for p in pins if p["side"] == s] or [0]) * CHAR_W for s in ("WEST", "EAST")}
                 n["w"] = max(n["w"], round(n["w"] + 2 * max(side_w.values()) + 12))
                 n["h"] = max(n["h"], 18 + 22 * max([sum(1 for p in pins if p["side"] == s) for s in ("WEST", "EAST")] + [1]))
+            elif pins:
+                # pin names inside the border, in a row above and below the action name
+                row_w = max(sum(len(p["label"]) * CHAR_W * 0.85 + 18 for p in pins if p["side"] == s)
+                            for s in ("NORTH", "SOUTH"))
+                n["w"] = max(n["w"], round(row_w + 16))
+                n["h"] = n["h"] + 2 * 14
             g["nodes"].append(n)
             ids.add(xid)
         elif kind == "statetransition" and t == "StateUsage":

@@ -27,7 +27,7 @@ Elements
      - Trace data of a model element that becomes a need. On a package it is the default for
        every element inside. Generated needs take their status from here (:need:`XD-ADR-0119`).
    * - ``XdView``
-     - ``kind``, ``root``, ``layer``, ``direction``, ``show``, ``compartments``
+     - ``kind``, ``root``, ``layer``, ``direction``, ``show``, ``compartments``, ``between``
      - Names the kind of a SysML ``view`` (``context``, ``usecases``, ``decomposition``,
        ``interconnection``, ``allocation``, ``variants``, and the SysML v2 standard views
        ``general``, ``actionflow``, ``statetransition``) and its options (:need:`XD-ADR-0085`).

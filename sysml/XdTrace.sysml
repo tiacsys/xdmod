@@ -36,10 +36,16 @@ library package XdTrace {
     //              | general | actionflow | statetransition (the SysML v2 standard views)
     //   root       qualified name of the element the view starts from
     //   layer      optional layer filter (functional | logical | product)
-    //   direction  optional layout direction: DOWN (default) | RIGHT | LEFT | UP
+    //   direction  optional layout direction: DOWN (default) | RIGHT | LEFT | UP; the layout may
+    //              turn it by 90 degrees to keep the canvas between 9:16 and 16:9, unless it ends
+    //              in "!" (RIGHT!)
     //   show       general view: relationships to draw, comma-separated: specialization,
-    //              composition, reference, dependency (default: all)
-    //   compartments  general view: all (default) | none | root (only abstract definitions)
+    //              composition, reference, dependency (default: all); interconnection view: the
+    //              port names to draw (default: all), with their connections
+    //   compartments  general view: all (default) | none | root (only abstract definitions) | doc
+    //              (the documentation comment); a comma-separated list combines them
+    //   between    general view: packages, comma-separated; only the relations between elements
+    //              of different packages of the list are drawn (a view across two domains)
     // A view's `expose` (and `filter`) choose the elements of a general view.
     // Views are model elements, not needs: their short name is a reserved SYS-VIEW ID.
     metadata def XdView {
@@ -49,5 +55,6 @@ library package XdTrace {
         attribute direction : String[0..1];
         attribute show : String[0..1];
         attribute compartments : String[0..1];
+        attribute between : String[0..1];
     }
 }

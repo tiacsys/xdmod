@@ -67,7 +67,7 @@ LEGEND = {
                        "and [guard].",
     "interconnection": "Legend (SysML v2 interconnection view): frame = the part (definition or usage) whose inside is "
                        "shown; rounded box = part usage (name : definition; colour = layer: blue functional, green "
-                       "logical, yellow product); small squares = ports, conjugated (~) ports on the left; lines = "
+                       "logical, yellow product); small squares = ports, conjugated (~) ports on the entry side (left or top); lines = "
                        "connections and interfaces between ports; thick arrow = flow. A box with a need ID links to its page.",
     "usecases": "Legend (SysML v2 use cases): stick figure = actor (its part definition); ellipse = use case "
                 "definition; frame = subject; line = the actor takes part; dashed «include» arrow = included use case.",
@@ -92,6 +92,9 @@ def to_elk(g: dict) -> dict:
             # boxes grow so that edge ends (and their labels) keep their distance
             el["layoutOptions"].update({"elk.nodeSize.constraints": "PORTS MINIMUM_SIZE",
                                         "elk.nodeSize.minimum": f"({n['w']},{n['h']})"})
+        flat = [p for p in n["ports"] if p["side"] in ("NORTH", "SOUTH")]
+        if flat:   # pin names side by side on the top and bottom border must not overlap
+            el["layoutOptions"]["elk.spacing.portPort"] = str(round(max(len(p["label"]) for p in flat) * 5.6 + 12))
         kids = children_of.get(n["id"])
         if kids:
             el.pop("width"), el.pop("height")
@@ -106,15 +109,16 @@ def to_elk(g: dict) -> dict:
         s, d = (e["dst"], e["src"]) if rev else (e["src"], e["dst"])
         ee = {"id": e["id"], "sources": [s], "targets": [d]}
         if e["label"]:
-            # end labels need no label layer: reference and part ends are named at the type end
-            # (HEAD), guards, triggers and items at the start of the line (TAIL)
-            place = {"reference": "HEAD", "composition": "HEAD", "flow": "TAIL"}.get(e["rel"], "CENTER")
+            # end labels need no label layer. A part is named at its type end (HEAD); a reference
+            # at its holder (TAIL, next to the diamond), because many references share one target
+            # and their names would pile up there; guards, triggers and items at the start (TAIL)
+            place = {"reference": "TAIL", "composition": "HEAD", "flow": "TAIL"}.get(e["rel"], "CENTER")
             if rev:
                 place = {"HEAD": "TAIL", "TAIL": "HEAD"}.get(place, place)
             ee["labels"] = [{"text": e["label"], "width": round(len(e["label"]) * 6.0 + 8), "height": 14,
                              "layoutOptions": {"elk.edgeLabels.placement": place}}]
         edges.append(ee)
-    return {"id": "root", "children": [box(n) for n in children_of.get("1", [])], "edges": edges,
+    out = {"id": "root", "children": [box(n) for n in children_of.get("1", [])], "edges": edges,
             "layoutOptions": {"elk.algorithm": "layered", "elk.direction": direction,
                               "elk.edgeRouting": "ORTHOGONAL", "elk.hierarchyHandling": "INCLUDE_CHILDREN",
                               "elk.json.shapeCoords": "ROOT", "elk.json.edgeCoords": "ROOT",
@@ -128,7 +132,25 @@ def to_elk(g: dict) -> dict:
                                  if set(children_of) <= {"1"} else {}),
                               **({"elk.layered.cycleBreaking.strategy": "MODEL_ORDER"}
                                  if g["kind"] in ("actionflow", "statetransition") else {}),
-                              **({"elk.spacing.nodeNode": "44"} if g["kind"] == "usecases" else {})}}
+                              **({"elk.spacing.nodeNode": "44"} if g["kind"] == "usecases" else {}),
+                              # state machines and interconnections: room for transition labels
+                              # and port names between the boxes
+                              **({"elk.spacing.nodeNode": "48", "elk.layered.spacing.nodeNodeBetweenLayers": "72"}
+                                 if g["kind"] in ("statetransition", "interconnection") else {}),
+                              # long chains: cut the layers into rows (or columns) towards a 4:3 canvas
+                              **({"elk.layered.wrapping.strategy": "MULTI_EDGE", "elk.aspectRatio": "1.33",
+                                  "elk.layered.wrapping.additionalEdgeSpacing": "16"}
+                                 if g.get("wrap") else {"elk.aspectRatio": "1.33"})}}
+    # frames (state def, subject, interconnection root) lay out their inside with the same spacing
+    spacing = {k: v for k, v in out["layoutOptions"].items() if k.startswith(("elk.spacing.", "elk.layered.spacing."))}
+
+    def nest(el):
+        for c in el.get("children", []):
+            if c.get("children"):
+                c["layoutOptions"] = {**spacing, **c["layoutOptions"]}
+                nest(c)
+    nest(out)
+    return out
 
 
 def positions(laid: dict) -> dict:
@@ -276,13 +298,18 @@ def to_mxfile(g: dict, pos: dict | None, normalize) -> str:
             offset = (lab["x"] + lab["width"] / 2 - mx_, lab["y"] + lab["height"] / 2 - my_)
         cell(e["id"], e["label"], style, "1", {"sysml_kind": e["sysml_kind"]}, edge=(e["src"], e["dst"], bends, offset))
     tops = [b for k, b in absb.items() if "#" not in k]
-    route_y = [y for v in pos.values() if isinstance(v, dict) for _, y in (v.get("points") or [])]
-    bottom = max([b["y"] + b["height"] for b in tops] + route_y or [0])
+    route = [pt for v in pos.values() if isinstance(v, dict) for pt in (v.get("points") or [])]
+    bottom = max([b["y"] + b["height"] for b in tops] + [y for _, y in route] or [0])
+    right = max([b["x"] + b["width"] for b in tops] + [x for x, _ in route] or [0])
     left = min([b["x"] for b in tops] or [0])
-    # the legend text is content: its line breaks must not depend on the layout
-    text = _wrap(LEGEND.get(g["kind"], "Legend"), 120)
+    top = min([b["y"] for b in tops] or [0])
+    # the legend text is content: its line breaks must not depend on the layout. Below the
+    # drawing it is wide and flat; to the right of it (for wide drawings) narrow and tall.
+    side = g.get("legend", "below")
+    text = _wrap(LEGEND.get(g["kind"], "Legend"), {"below": 120, "below-narrow": 80, "right": 60}[side])
     width = round(max(len(s) for s in text.split("\n")) * 4.9 + 16)
+    xy = (right + 32, top) if side == "right" else (left, bottom + 24)
     cell(LEGEND_ID, text, "text;html=0;align=left;verticalAlign=top;fontFamily=Helvetica;fontSize=9;fillColor=#FFFFFF;"
          "strokeColor=#999999;spacing=4;", "1", {"sysml_kind": "legend"},
-         (left, bottom + 24, width, 12 + 12 * (text.count("\n") + 1)))
+         (*xy, width, 12 + 12 * (text.count("\n") + 1)))
     return normalize(ET.tostring(mx, encoding="unicode"))

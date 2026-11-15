@@ -58,8 +58,14 @@ Checks
 .. note:: curatrix builds the view kinds ``interconnection`` and ``decomposition``, and the
    SysML v2 standard views ``general``, ``actionflow``, ``statetransition`` and ``usecases``.
    A ``general`` view shows what its ``expose`` and ``filter`` select; ``show`` limits the
-   relationships it draws and ``compartments`` (``all``, ``none``, ``root``) the feature lists.
-   ``direction`` (``DOWN``, ``RIGHT``, ``LEFT``, ``UP``) sets the layout direction. The diagrams in
+   relationships it draws and ``compartments`` (``all``, ``none``, ``root``, ``doc``, or a list
+   such as ``all,doc``) the lists inside the boxes. ``between`` names two or more packages: the
+   view then shows only the relations between them (a view across two domains). In an
+   ``interconnection`` view, ``show`` names the ports to draw. ``direction`` (``DOWN``,
+   ``RIGHT``, ``LEFT``, ``UP``) sets the layout direction. Every drawing must fit a 4:3 or 16:9
+   page, upright or across (a width to height ratio from 9:16 to 16:9). When it does not,
+   ``views build`` turns the layout by 90 degrees, wraps long chains and moves the legend, and
+   reports the ratio; ``RIGHT!`` forbids turning. If no layout fits, split the view. The diagrams in
    :ref:`expl-framework-model` are examples of every kind (``xdmod/model/views.sysml``).
    ``context``, ``allocation`` and ``variants`` come later. Keeping manual layout
    across rebuilds is iteration 2 (:need:`XD-ADR-0037`). Trace graphs use ``needflow``, not drawio

@@ -12,7 +12,7 @@ rebuild the views and commit both. ``curatrix check xdmod`` fails when a view no
 the model (:need:`XD-RULE-0033`).
 
 The diagrams use the SysML v2 graphical notation where drawio has a matching shape. Each
-diagram has a legend. In short:
+diagram has a legend and fits a 4:3 or 16:9 page, upright or across. In short:
 
 - A sharp box is a **definition** and a rounded box is a **usage**. The keyword in guillemets
   (``«item def»``) names the kind of element, and the short name in angle brackets (``<sys-req>``)
@@ -27,70 +27,180 @@ The model is checked against the configuration it describes. A test compares the
 link types in package ``XdmodNeeds`` with ``needs/needs_config.toml``
 (:need:`XD-RULE-0007`), so the trace diagrams below always show what sphinx-needs enforces.
 
-Domains, repos and files
-------------------------
+The five domains
+----------------
 
-A workspace holds xdmod, the manifest repo and one repo per domain (:need:`XD-ADR-0006`,
-:need:`XD-ADR-0061`). Every repo has the same configuration files. Each domain repo adds its
-own documents and design files. The ``domain`` value is the first part of every ID in that repo
-(:need:`XD-ADR-0071`).
+XDMOD splits a project into five domains. Each domain has its own repo, its own need types and
+its own reviewers (:need:`XD-ADR-0006`, :need:`XD-ADR-0061`):
 
-.. sysml-view:: /views/workspaceRepos.drawio.svg
-   :caption: workspaceRepos: the repos of a workspace, their domains, documents and design files
-             (general view)
+- **SYS**, systems engineering: stakeholders, system requirements and the SysML model.
+- **EE**, electrical engineering: KiCad projects and prototype wiring.
+- **ME**, mechanical engineering: FreeCAD parts and assemblies.
+- **SW**, software: the Zephyr firmware.
+- **INT**, system-level verification: system and integration tests and HIL runs. A test that
+  touches the system lives here, even if it touches one domain only (:need:`XD-ADR-0104`).
 
-Needs flow from the abstract side to the concrete side: the systems repo exports its needs, and
-the domain repos and the integration repo import them as upstream documents
+The domain is the first part of every ID in its repo (:need:`XD-ADR-0071`). Two more ID
+prefixes are not domains: **XD** for the framework itself and **PRJ** for project decisions.
+
+Each domain has two diagrams. The first shows its repo with the documents and design files it
+holds; the ``doc`` compartment says where each file lives. The second shows its need types
+and the trace links between them. Every need type is an ``item def`` whose short name is its
+sphinx-needs directive (``<sys-req>``). The line ``:> Requirement`` names its category, its place
+in the V (`Need categories`_ below).
+
+The concrete side holds the link (:need:`XD-ADR-0004`, :need:`XD-RULE-0001`). The diamond sits on
+the need type that holds the link; the arrow points to the more abstract type, so the abstract
+types stand at the top. The label next to the diamond names the link type. ``[1..*]`` marks a
+link that is required; the need schema in ``needs_config.toml`` enforces it
+(:need:`XD-RULE-0002`, :need:`XD-RULE-0007`). Some links may point to more than one need type.
+The model then has one reference per target type, each ``[0..*]``, and "(>= 1 in total)" says
+that at least one of them is required.
+
+Systems engineering (SYS)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The systems repo holds the SysML model, the documents with the requirements and the architecture, and the files curatrix generates from them: requirement stubs for the model, the compact model export, the needs taken from the model, and the views (:need:`XD-ADR-0001`).
+
+.. sysml-view:: /views/sysRepo.drawio.svg
+   :caption: sysRepo: the repo, its documents and design files (general view)
+
+Stakeholders raise needs; system requirements refine them. Use cases address needs, and system model elements satisfy requirements and realize use cases. A configuration selects model elements. Interfaces and features are the targets of the other domains: nothing inside SYS links to them.
+
+.. sysml-view:: /views/sysNeeds.drawio.svg
+   :caption: sysNeeds: need types and the trace links inside the domain (general view)
+
+Electrical engineering (EE)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The EE repo holds one KiCad project per PCBA, the prototype wiring, the domain tests and the needs curatrix reads from the KiCad files (:need:`XD-ADR-0102`, :need:`XD-ADR-0023`).
+
+.. sysml-view:: /views/eeRepo.drawio.svg
+   :caption: eeRepo: the repo, its documents and design files (general view)
+
+A circuit block is part of a PCBA. Both satisfy EE requirements. EE tests verify EE requirements, and test results point back to the test case they come from.
+
+.. sysml-view:: /views/eeNeeds.drawio.svg
+   :caption: eeNeeds: need types and the trace links inside the domain (general view)
+
+Mechanical engineering (ME)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ME repo holds the FreeCAD parts and assemblies, the domain tests and the needs curatrix reads from the FreeCAD files (:need:`XD-ADR-0056`).
+
+.. sysml-view:: /views/meRepo.drawio.svg
+   :caption: meRepo: the repo, its documents and design files (general view)
+
+The same pattern as EE: a part is part of an assembly, both satisfy ME requirements, and ME tests verify them.
+
+.. sysml-view:: /views/meNeeds.drawio.svg
+   :caption: meNeeds: need types and the trace links inside the domain (general view)
+
+Software (SW)
+~~~~~~~~~~~~~
+
+The SW repo holds the Zephyr application, its tests and the software documents, from the requirements to the test report (:need:`XD-ADR-0069`).
+
+.. sysml-view:: /views/swRepo.drawio.svg
+   :caption: swRepo: the repo, its documents and design files (general view)
+
+Software has the longest chain inside one domain: requirements, architecture, detailed design and code units, which curatrix extracts from the code (:need:`XD-ADR-0070`). Each level refines or implements the one above and satisfies the requirements.
+
+.. sysml-view:: /views/swNeeds.drawio.svg
+   :caption: swNeeds: need types and the trace links inside the domain (general view)
+
+System-level verification (INT)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The integration repo holds the system and integration tests, the HIL setups and the HIL run records (:need:`XD-ADR-0066`). Run records live on the orphan branch ``evidence``.
+
+.. sysml-view:: /views/intRepo.drawio.svg
+   :caption: intRepo: the repo, its documents and design files (general view)
+
+Inside the domain there is only one kind of link: a test result points to its test case. Everything a system-level test verifies is in SYS (next section). A run result also carries the firmware hash and the pinned SHAs (:need:`XD-RULE-0012`).
+
+.. sysml-view:: /views/intNeeds.drawio.svg
+   :caption: intNeeds: need types and the trace links inside the domain (general view)
+
+Between two domains
+-------------------
+
+These diagrams show only the links that cross from one domain to another. Every crossing link
+goes to systems engineering: a domain requirement refines a system requirement or an interface,
+a design element realizes a system model element and conforms to an interface, and a
+system-level test verifies a system requirement or an interface.
+
+.. sysml-view:: /views/sysSw.drawio.svg
+   :caption: sysSw: software to systems engineering (general view)
+
+.. sysml-view:: /views/sysEe.drawio.svg
+   :caption: sysEe: electrical engineering to systems engineering (general view)
+
+.. sysml-view:: /views/sysMe.drawio.svg
+   :caption: sysMe: mechanical engineering to systems engineering (general view)
+
+.. sysml-view:: /views/sysInt.drawio.svg
+   :caption: sysInt: system-level verification to systems engineering (general view)
+
+There are no diagrams for EE and SW, EE and ME, or ME and SW, because these pairs have no links
+by design. Peer domains never link to each other. When EE and SW must agree on a pin map, the
+agreement is an interface need (``SYS-IF``) in the systems repo, and both link to it with
+``conforms`` (:need:`XD-RULE-0003`, :need:`XD-ADR-0030`). In the diagrams above, ``Interface``
+is that meeting point. System-level verification has no links to the engineering domains
+either: it verifies the system. It does import their needs, as the next section shows.
+
+The whole workspace
+-------------------
+
+Needs flow from the abstract side to the concrete side. The systems repo exports its needs. The
+engineering repos import them as upstream documents, and the integration repo imports all of them
 (:need:`XD-ADR-0021`). Trace links point back the other way (:need:`XD-RULE-0001`). The manifest
-pins every repo (:need:`XD-ADR-0033`) and builds the full set.
+builds the full set.
 
-.. sysml-view:: /views/workspaceInterconnection.drawio.svg
-   :caption: workspaceInterconnection: needs, pins and the framework between the repos
-             (interconnection view)
+.. sysml-view:: /views/workspaceNeeds.drawio.svg
+   :caption: workspaceNeeds: how needs flow between the repos (interconnection view)
+
+xdmod serves every repo with the need types, the Sphinx extensions, the SysML library, curatrix
+and the reusable workflows (:need:`XD-ADR-0059`). The manifest pins every repo
+(:need:`XD-ADR-0033`).
+
+.. sysml-view:: /views/workspacePins.drawio.svg
+   :caption: workspacePins: the framework and the pins (interconnection view)
+
+Every repo has the same configuration files, whatever its domain.
+
+.. sysml-view:: /views/repoLayout.drawio.svg
+   :caption: repoLayout: what every repo has (general view)
+
+The framework repo and the manifest repo are not domains.
+
+.. sysml-view:: /views/frameworkRepos.drawio.svg
+   :caption: frameworkRepos: xdmod and the manifest (general view)
 
 XDMOD knows three kinds of files. **Source** files are written by people and agents.
 **Generated** files are written by curatrix, committed, and compared by ``curatrix check``
 (:need:`XD-RULE-0033`). **Build output** goes to ``build/<area>/`` and is never committed
-(:need:`XD-RULE-0040`).
+(:need:`XD-RULE-0040`). The plain source files (documents, models, configuration) are in the repo
+diagrams above.
 
 .. sysml-view:: /views/artifactKinds.drawio.svg
-   :caption: artifactKinds: source and generated files (general view)
+   :caption: artifactKinds: source, generated and build files (general view)
 
-Need types
-----------
+Need categories
+---------------
 
-Every need type is an ``item def`` whose short name is its sphinx-needs directive. The abstract
-types group them by their place in the V. ``Need`` declares every link type once. Each need type
-then narrows the link types it holds to the target types it may point to
-(:need:`XD-RULE-0002`).
+``Need`` declares every link type once. Each need type then narrows the link types it holds to
+the target types it may point to (:need:`XD-RULE-0002`). The categories group the need types by
+their place in the V.
 
-.. sysml-view:: /views/needKinds.drawio.svg
-   :caption: needKinds: all need types, grouped by their place in the V (general view)
+.. sysml-view:: /views/needCategories.drawio.svg
+   :caption: needCategories: the general need and its categories (general view)
 
-Trace links
------------
+Test results come from two sources: run results written by curatrix and test reports imported from
+JUnit files. Each points to the test case it comes from (domain diagrams above).
 
-The concrete side holds the link (:need:`XD-ADR-0004`, :need:`XD-RULE-0001`). In these
-diagrams the concrete types stand on the right and the abstract types on the left, so every
-reference points from right to left, as in the V. ``[1..*]`` marks a link that is required; the
-need schema in ``needs_config.toml`` enforces it (:need:`XD-RULE-0002`, :need:`XD-RULE-0007`).
-Some links may point to more than one need type. The model then has one reference per target
-type, each ``[0..*]``, and "(>= 1 in total)" says that at least one of them is required.
-
-.. sysml-view:: /views/traceSystem.drawio.svg
-   :caption: traceSystem: systems engineering and integration tests (general view)
-
-.. sysml-view:: /views/traceSoftware.drawio.svg
-   :caption: traceSoftware: the software domain down to code units and tests (general view)
-
-.. sysml-view:: /views/traceHardware.drawio.svg
-   :caption: traceHardware: the electrical and mechanical domains (general view)
-
-Test results point to the test case they come from. A run result also carries the firmware hash
-and the pinned SHAs (:need:`XD-RULE-0012`).
-
-.. sysml-view:: /views/traceResults.drawio.svg
-   :caption: traceResults: test results and test reports (general view)
+.. sysml-view:: /views/testResults.drawio.svg
+   :caption: testResults: kinds of test results (general view)
 
 Decisions, rules and checks are needs too (:need:`XD-ADR-0109`, :need:`XD-ADR-0110`). A rule
 is decided by a decision, and a check enforces a rule. A project decision follows a framework

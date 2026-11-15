@@ -54,7 +54,7 @@ class ViewDef:
     layer: str | None
     qualified_name: str
     exposed: set = field(default_factory=set)
-    opts: dict = field(default_factory=dict)    # direction, show, compartments
+    opts: dict = field(default_factory=dict)    # direction, show, compartments, between
 
 
 class ViewError(Exception):
@@ -70,11 +70,14 @@ def discover(m: Model) -> list[ViewDef]:
         meta = m.trace_meta(v, "XdTrace::XdView")
         if not meta:
             continue
+        opts = {k: str(meta[k]) for k in ("direction", "show", "compartments", "between") if meta.get(k)}
+        if opts.get("direction", "").endswith("!"):     # "RIGHT!": the layout may not turn the view
+            opts["direction"], opts["fixed"] = opts["direction"][:-1], "1"
         out.append(ViewDef(name=v.get("declaredName") or v.get("name") or v["@id"],
                            short_id=v.get("declaredShortName"), kind=str(meta.get("kind", "")),
                            root=meta.get("root"), layer=meta.get("layer"), qualified_name=v.get("qualifiedName", ""),
                            exposed={x["@id"] for x in (v.get("exposedElement") or []) if isinstance(x, dict)},
-                           opts={k: str(meta[k]) for k in ("direction", "show", "compartments") if meta.get(k)}))
+                           opts=opts))
     return sorted(out, key=lambda v: v.name)
 
 
@@ -172,6 +175,13 @@ def graph(m: Model, v: ViewDef) -> dict:
             if len(ends) == 2:
                 cid = f"{rid}::connect({ends[0].split('::')[-1]}->{ends[1].split('::')[-1]})"
                 g["edges"].append({"id": cid, "src": ends[0], "dst": ends[1], "sysml_kind": c["@type"], "label": ""})
+        if v.opts.get("show"):     # only these ports, their connections, and the parts that have them
+            keep = {x.strip() for x in v.opts["show"].split(",") if x.strip()}
+            for n in g["nodes"][1:]:
+                n["ports"] = [p for p in n["ports"] if p["label"] in keep]
+            pids = {p["id"] for n in g["nodes"] for p in n["ports"]}
+            g["edges"] = [e for e in g["edges"] if e["src"] in pids and e["dst"] in pids]
+            g["nodes"] = g["nodes"][:1] + [n for n in g["nodes"][1:] if n["ports"]]
         _as_drawn(g, root, v)
     else:  # decomposition: definition -> part usages -> their definitions, as a tree
         def rec(p, pid, depth):
@@ -201,13 +211,21 @@ def _as_drawn(g: dict, root: dict, v: ViewDef) -> None:
                   trace_id=first["trace_id"])
     frame.update({k: first[k] for k in ("layer", "configs")})
     out = [frame]
+    vertical = g["direction"] in ("DOWN", "UP")
     for n in g["nodes"][1:]:
         sides = {s: [p for p in n["ports"] if p["side"] == s] for s in ("WEST", "EAST")}
-        pw = {s: max([len(p["label"]) for p in sides[s]] or [0]) * 6.6 for s in sides}
         w, _ = size_for([n["label"]], min_w=150)
+        if vertical:   # conjugated ports on the entry side (top for DOWN), the others on the exit side
+            flip = {"WEST": "NORTH", "EAST": "SOUTH"} if g["direction"] == "DOWN" else {"WEST": "SOUTH", "EAST": "NORTH"}
+            ports = [{**p, "side": flip[p["side"]]} for p in n["ports"]]
+            per = max([sum(len(p["label"]) * 6.6 + 24 for p in sides[s]) for s in sides] + [0])
+            w, h = round(max(w + 16, per + 16)), 64
+        else:
+            ports = n["ports"]
+            pw = {s: max([len(p["label"]) for p in sides[s]] or [0]) * 6.6 for s in sides}
+            w, h = round(w + 2 * max(pw.values()) + 16), max(56, 30 + 22 * max(len(sides["WEST"]), len(sides["EAST"])))
         d = snode(n["id"], n["label"], n["sysml_kind"], parent=n["parent"], shape="usage", trace_id=n["trace_id"],
-                  w=round(w + 2 * max(pw.values()) + 16), h=max(56, 30 + 22 * max(len(sides["WEST"]), len(sides["EAST"]))),
-                  ports=n["ports"])
+                  w=w, h=h, ports=ports)
         d.update({k: n[k] for k in ("layer", "configs")})
         d["fill"] = LAYER_FILL.get(n["layer"] or None, "#FFFFFF")
         out.append(d)
@@ -269,6 +287,79 @@ def positions(laid: dict) -> dict[str, dict]:
         if "points" in v:
             v["bends"] = v["points"][1:-1]
     return out
+
+
+# ------------------------------------------------------------------ canvas ratio
+# A diagram must fit a page: its canvas is between 9:16 (portrait) and 16:9 (landscape), so
+# 4:3 and 16:9 pages in either orientation take it without large empty margins.
+RATIO_MIN, RATIO_MAX = 9 / 16, 16 / 9
+PERPENDICULAR = {"RIGHT": "DOWN", "LEFT": "UP", "DOWN": "RIGHT", "UP": "LEFT"}
+
+
+def canvas_ratio(mxfile_xml: str) -> float:
+    """Width / height of the drawing: top-level boxes (with the legend) and edge routes."""
+    root = ET.fromstring(mxfile_xml)
+    xs, ys = [], []
+    for obj in root.iter("object"):
+        c = obj.find("mxCell")
+        g = c.find("mxGeometry") if c is not None else None
+        if g is None:
+            continue
+        if c.get("vertex") == "1" and c.get("parent") == "1":
+            x, y = float(g.get("x", 0)), float(g.get("y", 0))
+            xs += [x, x + float(g.get("width", 0))]
+            ys += [y, y + float(g.get("height", 0))]
+        elif c.get("edge") == "1" and c.get("parent") == "1":
+            for pt in g.iter("mxPoint"):
+                if pt.get("as") != "offset":
+                    xs.append(float(pt.get("x", 0))); ys.append(float(pt.get("y", 0)))
+    if not xs:
+        return 1.0
+    return max(1.0, max(xs) - min(xs)) / max(1.0, max(ys) - min(ys))
+
+
+def ratio_error(r: float) -> float:
+    """0 inside [RATIO_MIN, RATIO_MAX], else how far outside (log scale)."""
+    import math
+    return max(0.0, math.log(r / RATIO_MAX), math.log(RATIO_MIN / r))
+
+
+def layout(ws, m: Model, v: ViewDef, log=lambda *_: None) -> tuple[dict, str, float]:
+    """Lay out a view so that its canvas ratio fits a page. Tries, in this order: the view as
+    declared; the perpendicular direction (unless the view fixes it with ``direction = "RIGHT!"``);
+    with layer wrapping; both. The legend goes below (wide or narrow) or to the right. The first try within
+    [RATIO_MIN, RATIO_MAX] wins, else the closest. Returns (graph, mxfile, ratio).
+    Only geometry changes between the tries: the content (CK-D3) is the same."""
+    fixed = bool(v.opts.get("fixed"))
+    tries = [{}]
+    turn = v.kind in ("general", "actionflow", "statetransition", "usecases", "interconnection") and not fixed
+    if turn:
+        other = PERPENDICULAR.get(graph(m, v).get("direction", "DOWN"), "RIGHT")
+        tries.append({"direction": other})
+    tries.append({"wrap": True})
+    if turn:
+        tries.append({"direction": other, "wrap": True})
+    best = None
+    for t in tries:
+        vv = v
+        if "direction" in t:
+            vv = ViewDef(**{**v.__dict__, "opts": {**v.opts, "direction": t["direction"]}})
+        g = graph(m, vv)
+        if t.get("wrap"):
+            g["wrap"] = True
+        pos = positions(run_elk(ws, to_elk(g)))
+        for legend in ("below", "below-narrow", "right"):
+            g["legend"] = legend
+            xml = to_mxfile(g, pos)
+            r = canvas_ratio(xml)
+            score = (ratio_error(r), tries.index(t), ("below", "below-narrow", "right").index(legend))
+            if best is None or score < best[0]:
+                best = (score, g, xml, r)
+            if ratio_error(r) == 0:
+                log(f"  {v.name}: {t or 'as declared'}, legend {legend}, ratio {r:.2f}")
+                return g, xml, r
+    log(f"  {v.name}: no layout within {RATIO_MIN:.2f}..{RATIO_MAX:.2f}; best ratio {best[3]:.2f}")
+    return best[1], best[2], best[3]
 
 
 # ------------------------------------------------------------------ drawio XML
@@ -459,7 +550,10 @@ def content_of(mxfile_xml: str) -> dict[str, tuple]:
         c = obj.find("mxCell")
         if c is None:
             continue
-        out[obj.get("id")] = (obj.get("label") or "", c.get("parent"), c.get("source"), c.get("target"),
+        label = obj.get("label") or ""
+        if obj.get("sysml_kind") == "legend":     # where the legend breaks its lines is layout
+            label = " ".join(label.split())
+        out[obj.get("id")] = (label, c.get("parent"), c.get("source"), c.get("target"),
                               obj.get("sysml_kind") or "", obj.get("link") or "", obj.get("trace_id") or "",
                               obj.get("layer") or "", obj.get("configs") or "")
     return out
