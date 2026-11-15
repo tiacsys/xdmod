@@ -157,6 +157,17 @@ jobs:
           .venv/bin/curatrix doctor --ci
           .venv/bin/curatrix limits
 
+      - name: Limits fallback (timeout + ulimit -v) works on this runner
+        working-directory: ws
+        run: |
+          # The backend above is what the check uses (systemd if a user session answers). Prove
+          # the fallback too: 64M address space must stop a 256 MB allocation, 2 s must stop a sleep.
+          export XD_LIMIT_BACKEND=ulimit
+          ! .venv/bin/curatrix run -m 64M -- python3 -c "b = bytearray(256 * 1024 * 1024)" 2>/dev/null
+          set +e; .venv/bin/curatrix run -t 2s -- sleep 30; rc=$?; set -e
+          test "$rc" = 124
+          echo "ulimit fallback: memory and timeout limits enforced"
+
       - name: curatrix check ${{ inputs.repo }} --stage ${{ inputs.stage }} --no-cad
         working-directory: ws
         run: |

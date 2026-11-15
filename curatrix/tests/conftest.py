@@ -17,4 +17,6 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "sphinx: runs sphinx-build (slow, a few seconds)")
     config.addinivalue_line("markers", "tools: needs external tools (node, firefox, java)")
     if not config.option.basetemp and (WORKSPACE / "build").is_dir():
-        config.option.basetemp = str(WORKSPACE / "build" / "xdmod-dev" / "pytest")
+        base = WORKSPACE / "build" / "xdmod-dev"
+        base.mkdir(parents=True, exist_ok=True)       # pytest creates only the last level
+        config.option.basetemp = str(base / "pytest")
