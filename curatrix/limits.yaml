@@ -1,0 +1,26 @@
+# curatrix limits table (D71, command-layer.md §6). Values from claude/notes/toolchain.md.
+# A workspace can override any entry in <workspace>/.xdmod/limits.yaml (same format; entries
+# are merged per use, key by key).
+#
+# memory:   systemd MemoryMax syntax (e.g. 512M, 4G). Swap is off inside the limit.
+# timeout:  coreutils `timeout` syntax (e.g. 90s, 15m, 2h) or "none" (GUI tools, D117).
+# vmem:     only for the fallback without a systemd user session (GitHub runners):
+#           the `ulimit -v` value. Default: same as memory. "none" for tools that reserve
+#           much more address space than they use (JVM, node, Firefox).
+# java_heap: -Xmx passed by curatrix to the Pilot's engine JVM.
+defaults: {memory: 1G, timeout: 5m}
+uses:
+  script:    {memory: 1G, timeout: 5m}      # small scripts, extractors, needs-diff
+  docs:      {memory: 4G, timeout: 15m}     # zdocs / Sphinx build (cmake + ninja)
+  pilot:     {memory: 4G, timeout: 10m, java_heap: 3g, vmem: none}   # SysML Pilot via jshell
+  kicad-cli: {memory: 2G, timeout: 5m}
+  freecad:   {memory: 4G, timeout: 10m}     # FreeCADCmd export / offscreen GUI
+  firefox:   {memory: 2G, timeout: 5m, vmem: none}   # headless SVG export (node + Firefox)
+  elk:       {memory: 1G, timeout: 2m, vmem: none}   # elkjs layout (node)
+  west:      {memory: 2G, timeout: 30m}     # west update (Zephyr is large)
+  west-build: {memory: 4G, timeout: 20m}    # firmware builds
+  tests:     {memory: 4G, timeout: 30m}     # pytest, twister on the host
+  install:   {memory: 4G, timeout: 30m, vmem: none}  # pip/uv, npm, downloads
+  git:       {memory: 1G, timeout: 10m}
+  gui:       {memory: 8G, timeout: none, vmem: none} # KiCad, FreeCAD, drawio (D117)
+  claude:    {memory: 8G, timeout: none, vmem: none} # Claude Code session

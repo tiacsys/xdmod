@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "filename": "board.kicad_pro",
+    "version": 3
+  },
+  "text_variables": {
+    "TraceID": "EE-PCBA-0001",
+    "Realizes": "SYS-EL-0003",
+    "Satisfies": "EE-REQ-0001"
+  }
+}

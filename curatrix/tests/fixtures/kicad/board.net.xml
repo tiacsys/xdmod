@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/tobias/z/wrk/ws-syseng/xdmod/curatrix/tests/fixtures/kicad/board.kicad_sch</source>
+    <date>2026-11-15T01:49:21</date>
+    <tool>Eeschema 10.0.8</tool>
+    <textvar name="Realizes">SYS-EL-0003</textvar>
+    <textvar name="Satisfies">EE-REQ-0001</textvar>
+    <textvar name="TraceID">EE-PCBA-0001</textvar>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>Board</title>
+        <company/>
+        <rev/>
+        <date/>
+        <source>board.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="2" name="/joint1/" tstamps="/cee94821-bb1d-52c9-8104-634fa0534340/">
+      <title_block>
+        <title>Joint</title>
+        <company/>
+        <rev/>
+        <date/>
+        <source>joint.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="3" name="/joint2/" tstamps="/91b45337-5a58-5e59-a821-0d8a2727b420/">
+      <title_block>
+        <title>Joint</title>
+        <company/>
+        <rev/>
+        <date/>
+        <source>joint.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="R1">
+      <value>10k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="TraceID">EE-CMP-0001</field>
+        <field name="Realizes">SYS-EL-0003</field>
+        <field name="PartOf">EE-PCBA-0001</field>
+        <field name="Satisfies">EE-REQ-0001, EE-REQ-0002</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="fx" part="R" description="Resistor"/>
+      <property name="TraceID" value="EE-CMP-0001"/>
+      <property name="Realizes" value="SYS-EL-0003"/>
+      <property name="PartOf" value="EE-PCBA-0001"/>
+      <property name="Satisfies" value="EE-REQ-0001, EE-REQ-0002"/>
+      <property name="Sheetname" value="board"/>
+      <property name="Sheetfile" value="board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a774ee44-e47b-5206-8743-15610525e0ba</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R9">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="fx" part="R" description="Resistor"/>
+      <property name="Sheetname" value="board"/>
+      <property name="Sheetfile" value="board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0044de61-9506-5b78-98e9-2ec8fc30097f</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R2">
+      <value>4k7</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="TraceID">EE-CMP-0003</field>
+        <field name="Satisfies">EE-REQ-0001</field>
+        <field name="Configs">SYS-CFG-0001</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="fx" part="R" description="Resistor"/>
+      <property name="TraceID" value="EE-CMP-0003"/>
+      <property name="Satisfies" value="EE-REQ-0001"/>
+      <property name="Configs" value="SYS-CFG-0001"/>
+      <property name="Sheetname" value="joint1"/>
+      <property name="Sheetfile" value="joint.kicad_sch"/>
+      <property name="TraceID" value="EE-CMP-0002"/>
+      <property name="Realizes" value="SYS-EL-0004"/>
+      <property name="Status" value="draft"/>
+      <sheetpath names="/joint1/" tstamps="/cee94821-bb1d-52c9-8104-634fa0534340/"/>
+      <tstamps>2926c9f3-2ccd-5449-9206-4342090ccb40</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R3">
+      <value>4k7</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="TraceID">EE-CMP-0003</field>
+        <field name="Satisfies">EE-REQ-0001</field>
+        <field name="Configs">SYS-CFG-0001</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="fx" part="R" description="Resistor"/>
+      <property name="TraceID" value="EE-CMP-0003"/>
+      <property name="Satisfies" value="EE-REQ-0001"/>
+      <property name="Configs" value="SYS-CFG-0001"/>
+      <property name="Sheetname" value="joint2"/>
+      <property name="Sheetfile" value="joint.kicad_sch"/>
+      <property name="TraceID" value="EE-CMP-0002"/>
+      <property name="Realizes" value="SYS-EL-0004"/>
+      <property name="Status" value="draft"/>
+      <sheetpath names="/joint2/" tstamps="/91b45337-5a58-5e59-a821-0d8a2727b420/"/>
+      <tstamps>2926c9f3-2ccd-5449-9206-4342090ccb40</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="fx" part="R">
+      <description>Resistor</description>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="unconnected-(R1-Pad1)" class="Default">
+      <node ref="R1" pin="1" pintype="passive"/>
+    </net>
+    <net code="2" name="unconnected-(R1-Pad2)" class="Default">
+      <node ref="R1" pin="2" pintype="passive"/>
+    </net>
+    <net code="3" name="unconnected-(R2-Pad1)" class="Default">
+      <node ref="R2" pin="1" pintype="passive"/>
+    </net>
+    <net code="4" name="unconnected-(R2-Pad2)" class="Default">
+      <node ref="R2" pin="2" pintype="passive"/>
+    </net>
+    <net code="5" name="unconnected-(R3-Pad1)" class="Default">
+      <node ref="R3" pin="1" pintype="passive"/>
+    </net>
+    <net code="6" name="unconnected-(R3-Pad2)" class="Default">
+      <node ref="R3" pin="2" pintype="passive"/>
+    </net>
+    <net code="7" name="unconnected-(R9-Pad1)" class="Default">
+      <node ref="R9" pin="1" pintype="passive"/>
+    </net>
+    <net code="8" name="unconnected-(R9-Pad2)" class="Default">
+      <node ref="R9" pin="2" pintype="passive"/>
+    </net>
+  </nets>
+</export>

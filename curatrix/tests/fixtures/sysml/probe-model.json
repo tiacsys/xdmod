@@ -1,0 +1,6966 @@
+[
+ {
+  "identity": {
+   "@id": "Probe"
+  },
+  "payload": {
+   "@id": "Probe",
+   "@type": "Package",
+   "declaredName": "Probe",
+   "importedMembership": [
+    {
+     "@id": "lib:OwningMembership"
+    },
+    {
+     "@id": "lib:OwningMembership#7"
+    },
+    {
+     "@id": "lib:OwningMembership#3"
+    },
+    {
+     "@id": "lib:OwningMembership#6"
+    },
+    {
+     "@id": "lib:OwningMembership#8"
+    },
+    {
+     "@id": "lib:OwningMembership#2"
+    }
+   ],
+   "isLibraryElement": false,
+   "name": "Probe",
+   "ownedMember": [
+    {
+     "@id": "Probe/2/0"
+    },
+    {
+     "@id": "Probe::Teleoperate"
+    },
+    {
+     "@id": "Probe::Follow"
+    },
+    {
+     "@id": "Probe/5/0"
+    },
+    {
+     "@id": "Probe::AngleOut"
+    },
+    {
+     "@id": "Probe::Sensor"
+    },
+    {
+     "@id": "Probe::JointController"
+    },
+    {
+     "@id": "Probe::LogicalJoint"
+    },
+    {
+     "@id": "Probe::arm"
+    },
+    {
+     "@id": "Probe::jointView"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe/0"
+    },
+    {
+     "@id": "Probe/1"
+    },
+    {
+     "@id": "Probe/2"
+    },
+    {
+     "@id": "Probe/3"
+    },
+    {
+     "@id": "Probe/4"
+    },
+    {
+     "@id": "Probe/5"
+    },
+    {
+     "@id": "Probe/6"
+    },
+    {
+     "@id": "Probe/7"
+    },
+    {
+     "@id": "Probe/8"
+    },
+    {
+     "@id": "Probe/9"
+    },
+    {
+     "@id": "Probe/10"
+    },
+    {
+     "@id": "Probe/11"
+    }
+   ],
+   "qualifiedName": "Probe"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/0"
+  },
+  "payload": {
+   "@id": "Probe/0",
+   "@type": "NamespaceImport",
+   "importedNamespace": {
+    "@id": "lib:XdTrace"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "lib:XdTrace"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:XdTrace"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/1"
+  },
+  "payload": {
+   "@id": "Probe/1",
+   "@type": "NamespaceImport",
+   "importedNamespace": {
+    "@id": "lib:NeedStubs"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "lib:NeedStubs"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:NeedStubs"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/10"
+  },
+  "payload": {
+   "@id": "Probe/10",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm"
+   },
+   "memberName": "arm",
+   "membershipOwningNamespace": {
+    "@id": "Probe"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "Probe::arm"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/11"
+  },
+  "payload": {
+   "@id": "Probe/11",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::jointView"
+   },
+   "memberName": "jointView",
+   "membershipOwningNamespace": {
+    "@id": "Probe"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::jointView"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "Probe::jointView"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::jointView"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/2"
+  },
+  "payload": {
+   "@id": "Probe/2",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe/2/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe/2/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "Probe/2/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe/2/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/2/0"
+  },
+  "payload": {
+   "@id": "Probe/2/0",
+   "@type": "MetadataUsage",
+   "annotatedElement": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "definition": [
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe/2/0/1/0"
+    },
+    {
+     "@id": "lib:XdTrace::Trace::status"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "metadataDefinition": {
+    "@id": "lib:XdTrace::Trace"
+   },
+   "ownedFeature": [
+    {
+     "@id": "Probe/2/0/1/0"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe/2/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe/2/0/0"
+    },
+    {
+     "@id": "Probe/2/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe"
+   },
+   "owningNamespace": {
+    "@id": "Probe"
+   },
+   "owningRelationship": {
+    "@id": "Probe/2"
+   },
+   "type": [
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/2/0/0"
+  },
+  "payload": {
+   "@id": "Probe/2/0/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "lib:XdTrace::Trace"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe/2/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe/2/0"
+    },
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe/2/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe/2/0"
+   },
+   "target": [
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ],
+   "type": {
+    "@id": "lib:XdTrace::Trace"
+   },
+   "typedFeature": {
+    "@id": "Probe/2/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/2/0/1"
+  },
+  "payload": {
+   "@id": "Probe/2/0/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe/2/0/1/0"
+   },
+   "memberName": "layer",
+   "membershipOwningNamespace": {
+    "@id": "Probe/2/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe/2/0/1/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe/2/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe/2/0"
+    },
+    {
+     "@id": "Probe/2/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe/2/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe/2/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/2/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe/2/0/1/0",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "layer",
+   "ownedMember": [
+    {
+     "@id": "Probe/2/0/1/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe/2/0/1/0/0"
+    },
+    {
+     "@id": "Probe/2/0/1/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe/2/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe/2/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe/2/0/1"
+   },
+   "owningType": {
+    "@id": "Probe/2/0"
+   },
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/2/0/1/0/0"
+  },
+  "payload": {
+   "@id": "Probe/2/0/1/0/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdTrace::Trace::layer"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe/2/0/1/0"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdTrace::Trace::layer"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe/2/0/1/0"
+    },
+    {
+     "@id": "lib:XdTrace::Trace::layer"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe/2/0/1/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe/2/0/1/0"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdTrace::Trace::layer"
+   },
+   "target": [
+    {
+     "@id": "lib:XdTrace::Trace::layer"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/2/0/1/0/1"
+  },
+  "payload": {
+   "@id": "Probe/2/0/1/0/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "Probe/2/0/1/0"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe/2/0/1/0/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe/2/0/1/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe/2/0/1/0/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe/2/0/1/0"
+    },
+    {
+     "@id": "Probe/2/0/1/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe/2/0/1/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe/2/0/1/0/1/0"
+    }
+   ],
+   "value": {
+    "@id": "Probe/2/0/1/0/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/2/0/1/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe/2/0/1/0/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe/2/0/1/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe/2/0/1/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe/2/0/1/0/1"
+   },
+   "value": "logical"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/3"
+  },
+  "payload": {
+   "@id": "Probe/3",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::Teleoperate"
+   },
+   "memberName": "Teleoperate",
+   "membershipOwningNamespace": {
+    "@id": "Probe"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::Teleoperate"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "Probe::Teleoperate"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::Teleoperate"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/4"
+  },
+  "payload": {
+   "@id": "Probe/4",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::Follow"
+   },
+   "memberName": "Follow",
+   "membershipOwningNamespace": {
+    "@id": "Probe"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "Probe::Follow"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/5"
+  },
+  "payload": {
+   "@id": "Probe/5",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe/5/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe/5/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "Probe/5/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe/5/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/5/0"
+  },
+  "payload": {
+   "@id": "Probe/5/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe"
+   },
+   "owningNamespace": {
+    "@id": "Probe"
+   },
+   "owningRelationship": {
+    "@id": "Probe/5"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::Follow"
+    },
+    {
+     "@id": "Probe::Teleoperate"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "Probe::Teleoperate"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::Teleoperate"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/6"
+  },
+  "payload": {
+   "@id": "Probe/6",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::AngleOut"
+   },
+   "memberName": "AngleOut",
+   "membershipOwningNamespace": {
+    "@id": "Probe"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/7"
+  },
+  "payload": {
+   "@id": "Probe/7",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::Sensor"
+   },
+   "memberName": "Sensor",
+   "membershipOwningNamespace": {
+    "@id": "Probe"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::Sensor"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "Probe::Sensor"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::Sensor"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/8"
+  },
+  "payload": {
+   "@id": "Probe/8",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::JointController"
+   },
+   "memberName": "JointController",
+   "membershipOwningNamespace": {
+    "@id": "Probe"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe/9"
+  },
+  "payload": {
+   "@id": "Probe/9",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "memberName": "LogicalJoint",
+   "membershipOwningNamespace": {
+    "@id": "Probe"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe"
+    },
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::AngleOut"
+  },
+  "payload": {
+   "@id": "Probe::AngleOut",
+   "@type": "PortDefinition",
+   "conjugatedPortDefinition": {
+    "@id": "Probe::AngleOut::'~AngleOut'"
+   },
+   "declaredName": "AngleOut",
+   "feature": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "AngleOut",
+   "ownedFeature": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    },
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::AngleOut/0"
+    },
+    {
+     "@id": "Probe::AngleOut/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe"
+   },
+   "owningNamespace": {
+    "@id": "Probe"
+   },
+   "owningRelationship": {
+    "@id": "Probe/6"
+   },
+   "qualifiedName": "Probe::AngleOut"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::AngleOut/0"
+  },
+  "payload": {
+   "@id": "Probe::AngleOut/0",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::AngleOut::angle"
+   },
+   "memberName": "angle",
+   "membershipOwningNamespace": {
+    "@id": "Probe::AngleOut"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::AngleOut"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::AngleOut"
+    },
+    {
+     "@id": "Probe::AngleOut::angle"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::AngleOut/1"
+  },
+  "payload": {
+   "@id": "Probe::AngleOut/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::AngleOut::'~AngleOut'"
+   },
+   "memberName": "~AngleOut",
+   "membershipOwningNamespace": {
+    "@id": "Probe::AngleOut"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::AngleOut"
+    },
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::AngleOut::'~AngleOut'"
+  },
+  "payload": {
+   "@id": "Probe::AngleOut::'~AngleOut'",
+   "@type": "ConjugatedPortDefinition",
+   "isAbstract": false,
+   "isConjugated": true,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "~AngleOut",
+   "originalPortDefinition": {
+    "@id": "Probe::AngleOut"
+   },
+   "ownedRelationship": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'/0"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::AngleOut"
+   },
+   "owningNamespace": {
+    "@id": "Probe::AngleOut"
+   },
+   "owningRelationship": {
+    "@id": "Probe::AngleOut/1"
+   },
+   "qualifiedName": "Probe::AngleOut::'~AngleOut'"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::AngleOut::'~AngleOut'/0"
+  },
+  "payload": {
+   "@id": "Probe::AngleOut::'~AngleOut'/0",
+   "@type": "PortConjugation",
+   "conjugatedPortDefinition": {
+    "@id": "Probe::AngleOut::'~AngleOut'"
+   },
+   "isLibraryElement": false,
+   "originalPortDefinition": {
+    "@id": "Probe::AngleOut"
+   },
+   "owningType": {
+    "@id": "Probe::AngleOut::'~AngleOut'"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    },
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::AngleOut::angle"
+  },
+  "payload": {
+   "@id": "Probe::AngleOut::angle",
+   "@type": "AttributeUsage",
+   "declaredName": "angle",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::Real"
+    }
+   ],
+   "direction": "out",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "angle",
+   "ownedMember": [
+    {
+     "@id": "Probe::AngleOut::angle/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::AngleOut::angle/0"
+    },
+    {
+     "@id": "Probe::AngleOut::angle/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::AngleOut"
+   },
+   "owningNamespace": {
+    "@id": "Probe::AngleOut"
+   },
+   "owningRelationship": {
+    "@id": "Probe::AngleOut/0"
+   },
+   "owningType": {
+    "@id": "Probe::AngleOut"
+   },
+   "qualifiedName": "Probe::AngleOut::angle",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::Real"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::AngleOut::angle/0"
+  },
+  "payload": {
+   "@id": "Probe::AngleOut::angle/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "lib:ScalarValues::Real"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::AngleOut::angle"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    },
+    {
+     "@id": "lib:ScalarValues::Real"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::AngleOut::angle"
+   },
+   "target": [
+    {
+     "@id": "lib:ScalarValues::Real"
+    }
+   ],
+   "type": {
+    "@id": "lib:ScalarValues::Real"
+   },
+   "typedFeature": {
+    "@id": "Probe::AngleOut::angle"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::AngleOut::angle/1"
+  },
+  "payload": {
+   "@id": "Probe::AngleOut::angle/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::AngleOut::angle/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::AngleOut::angle"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::AngleOut::angle/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    },
+    {
+     "@id": "Probe::AngleOut::angle/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::AngleOut::angle/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::AngleOut::angle/1/0"
+  },
+  "payload": {
+   "@id": "Probe::AngleOut::angle/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::AngleOut::angle"
+   },
+   "owningNamespace": {
+    "@id": "Probe::AngleOut::angle"
+   },
+   "owningRelationship": {
+    "@id": "Probe::AngleOut::angle/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Follow"
+  },
+  "payload": {
+   "@id": "Probe::Follow",
+   "@type": "PartDefinition",
+   "declaredName": "Follow",
+   "declaredShortName": "SYS-EL-0001",
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "Follow",
+   "ownedMember": [
+    {
+     "@id": "Probe::Follow/0/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::Follow/0"
+    }
+   ],
+   "owner": {
+    "@id": "Probe"
+   },
+   "owningNamespace": {
+    "@id": "Probe"
+   },
+   "owningRelationship": {
+    "@id": "Probe/4"
+   },
+   "qualifiedName": "Probe::Follow",
+   "shortName": "SYS-EL-0001"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Follow/0"
+  },
+  "payload": {
+   "@id": "Probe::Follow/0",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::Follow/0/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::Follow"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::Follow/0/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::Follow"
+    },
+    {
+     "@id": "Probe::Follow/0/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::Follow/0/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Follow/0/0"
+  },
+  "payload": {
+   "@id": "Probe::Follow/0/0",
+   "@type": "MetadataUsage",
+   "annotatedElement": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ],
+   "definition": [
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::Follow/0/0/1/0"
+    },
+    {
+     "@id": "lib:XdTrace::Trace::status"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "metadataDefinition": {
+    "@id": "lib:XdTrace::Trace"
+   },
+   "ownedFeature": [
+    {
+     "@id": "Probe::Follow/0/0/1/0"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::Follow/0/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::Follow/0/0/0"
+    },
+    {
+     "@id": "Probe::Follow/0/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::Follow"
+   },
+   "owningNamespace": {
+    "@id": "Probe::Follow"
+   },
+   "owningRelationship": {
+    "@id": "Probe::Follow/0"
+   },
+   "type": [
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Follow/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::Follow/0/0/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "lib:XdTrace::Trace"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::Follow/0/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::Follow/0/0"
+    },
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::Follow/0/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::Follow/0/0"
+   },
+   "target": [
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ],
+   "type": {
+    "@id": "lib:XdTrace::Trace"
+   },
+   "typedFeature": {
+    "@id": "Probe::Follow/0/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Follow/0/0/1"
+  },
+  "payload": {
+   "@id": "Probe::Follow/0/0/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::Follow/0/0/1/0"
+   },
+   "memberName": "layer",
+   "membershipOwningNamespace": {
+    "@id": "Probe::Follow/0/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::Follow/0/0/1/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::Follow/0/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::Follow/0/0"
+    },
+    {
+     "@id": "Probe::Follow/0/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::Follow/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::Follow/0/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Follow/0/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::Follow/0/0/1/0",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "layer",
+   "ownedMember": [
+    {
+     "@id": "Probe::Follow/0/0/1/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::Follow/0/0/1/0/0"
+    },
+    {
+     "@id": "Probe::Follow/0/0/1/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::Follow/0/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::Follow/0/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::Follow/0/0/1"
+   },
+   "owningType": {
+    "@id": "Probe::Follow/0/0"
+   },
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Follow/0/0/1/0/0"
+  },
+  "payload": {
+   "@id": "Probe::Follow/0/0/1/0/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdTrace::Trace::layer"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::Follow/0/0/1/0"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdTrace::Trace::layer"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::Follow/0/0/1/0"
+    },
+    {
+     "@id": "lib:XdTrace::Trace::layer"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::Follow/0/0/1/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::Follow/0/0/1/0"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdTrace::Trace::layer"
+   },
+   "target": [
+    {
+     "@id": "lib:XdTrace::Trace::layer"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Follow/0/0/1/0/1"
+  },
+  "payload": {
+   "@id": "Probe::Follow/0/0/1/0/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "Probe::Follow/0/0/1/0"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::Follow/0/0/1/0/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::Follow/0/0/1/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::Follow/0/0/1/0/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::Follow/0/0/1/0"
+    },
+    {
+     "@id": "Probe::Follow/0/0/1/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::Follow/0/0/1/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::Follow/0/0/1/0/1/0"
+    }
+   ],
+   "value": {
+    "@id": "Probe::Follow/0/0/1/0/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Follow/0/0/1/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::Follow/0/0/1/0/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::Follow/0/0/1/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::Follow/0/0/1/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::Follow/0/0/1/0/1"
+   },
+   "value": "functional"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController"
+  },
+  "payload": {
+   "@id": "Probe::JointController",
+   "@type": "PartDefinition",
+   "declaredName": "JointController",
+   "declaredShortName": "SYS-EL-0002",
+   "feature": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "JointController",
+   "ownedFeature": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    },
+    {
+     "@id": "Probe::JointController/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::JointController/0"
+    },
+    {
+     "@id": "Probe::JointController/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe"
+   },
+   "owningNamespace": {
+    "@id": "Probe"
+   },
+   "owningRelationship": {
+    "@id": "Probe/8"
+   },
+   "qualifiedName": "Probe::JointController",
+   "shortName": "SYS-EL-0002"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController/0"
+  },
+  "payload": {
+   "@id": "Probe::JointController/0",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::JointController::angleIn"
+   },
+   "memberName": "angleIn",
+   "membershipOwningNamespace": {
+    "@id": "Probe::JointController"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::JointController"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::JointController"
+    },
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController/1"
+  },
+  "payload": {
+   "@id": "Probe::JointController/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::JointController/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::JointController"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::JointController/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::JointController"
+    },
+    {
+     "@id": "Probe::JointController/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::JointController/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController/1/0"
+  },
+  "payload": {
+   "@id": "Probe::JointController/1/0",
+   "@type": "MetadataUsage",
+   "annotatedElement": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "definition": [
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::JointController/1/0/1/0"
+    },
+    {
+     "@id": "lib:XdTrace::Trace::layer"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "metadataDefinition": {
+    "@id": "lib:XdTrace::Trace"
+   },
+   "ownedFeature": [
+    {
+     "@id": "Probe::JointController/1/0/1/0"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::JointController/1/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::JointController/1/0/0"
+    },
+    {
+     "@id": "Probe::JointController/1/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::JointController"
+   },
+   "owningNamespace": {
+    "@id": "Probe::JointController"
+   },
+   "owningRelationship": {
+    "@id": "Probe::JointController/1"
+   },
+   "type": [
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController/1/0/0"
+  },
+  "payload": {
+   "@id": "Probe::JointController/1/0/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "lib:XdTrace::Trace"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::JointController/1/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::JointController/1/0"
+    },
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::JointController/1/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::JointController/1/0"
+   },
+   "target": [
+    {
+     "@id": "lib:XdTrace::Trace"
+    }
+   ],
+   "type": {
+    "@id": "lib:XdTrace::Trace"
+   },
+   "typedFeature": {
+    "@id": "Probe::JointController/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController/1/0/1"
+  },
+  "payload": {
+   "@id": "Probe::JointController/1/0/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::JointController/1/0/1/0"
+   },
+   "memberName": "status",
+   "membershipOwningNamespace": {
+    "@id": "Probe::JointController/1/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::JointController/1/0/1/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::JointController/1/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::JointController/1/0"
+    },
+    {
+     "@id": "Probe::JointController/1/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::JointController/1/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::JointController/1/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController/1/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::JointController/1/0/1/0",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "status",
+   "ownedMember": [
+    {
+     "@id": "Probe::JointController/1/0/1/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::JointController/1/0/1/0/0"
+    },
+    {
+     "@id": "Probe::JointController/1/0/1/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::JointController/1/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::JointController/1/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::JointController/1/0/1"
+   },
+   "owningType": {
+    "@id": "Probe::JointController/1/0"
+   },
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController/1/0/1/0/0"
+  },
+  "payload": {
+   "@id": "Probe::JointController/1/0/1/0/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdTrace::Trace::status"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::JointController/1/0/1/0"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdTrace::Trace::status"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::JointController/1/0/1/0"
+    },
+    {
+     "@id": "lib:XdTrace::Trace::status"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::JointController/1/0/1/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::JointController/1/0/1/0"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdTrace::Trace::status"
+   },
+   "target": [
+    {
+     "@id": "lib:XdTrace::Trace::status"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController/1/0/1/0/1"
+  },
+  "payload": {
+   "@id": "Probe::JointController/1/0/1/0/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "Probe::JointController/1/0/1/0"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::JointController/1/0/1/0/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::JointController/1/0/1/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::JointController/1/0/1/0/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::JointController/1/0/1/0"
+    },
+    {
+     "@id": "Probe::JointController/1/0/1/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::JointController/1/0/1/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::JointController/1/0/1/0/1/0"
+    }
+   ],
+   "value": {
+    "@id": "Probe::JointController/1/0/1/0/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController/1/0/1/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::JointController/1/0/1/0/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::JointController/1/0/1/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::JointController/1/0/1/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::JointController/1/0/1/0/1"
+   },
+   "value": "draft"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController::angleIn"
+  },
+  "payload": {
+   "@id": "Probe::JointController::angleIn",
+   "@type": "PortUsage",
+   "declaredName": "angleIn",
+   "definition": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "angleIn",
+   "ownedMember": [
+    {
+     "@id": "Probe::JointController::angleIn/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::JointController::angleIn/0"
+    },
+    {
+     "@id": "Probe::JointController::angleIn/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::JointController"
+   },
+   "owningNamespace": {
+    "@id": "Probe::JointController"
+   },
+   "owningRelationship": {
+    "@id": "Probe::JointController/0"
+   },
+   "owningType": {
+    "@id": "Probe::JointController"
+   },
+   "qualifiedName": "Probe::JointController::angleIn",
+   "type": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController::angleIn/0"
+  },
+  "payload": {
+   "@id": "Probe::JointController::angleIn/0",
+   "@type": "ConjugatedPortTyping",
+   "conjugatedPortDefinition": {
+    "@id": "Probe::AngleOut::'~AngleOut'"
+   },
+   "general": {
+    "@id": "Probe::AngleOut::'~AngleOut'"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::JointController::angleIn"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    },
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::JointController::angleIn"
+   },
+   "target": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ],
+   "type": {
+    "@id": "Probe::AngleOut::'~AngleOut'"
+   },
+   "typedFeature": {
+    "@id": "Probe::JointController::angleIn"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController::angleIn/1"
+  },
+  "payload": {
+   "@id": "Probe::JointController::angleIn/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::JointController::angleIn/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::JointController::angleIn"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::JointController::angleIn/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    },
+    {
+     "@id": "Probe::JointController::angleIn/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::JointController::angleIn/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::JointController::angleIn/1/0"
+  },
+  "payload": {
+   "@id": "Probe::JointController::angleIn/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::JointController::angleIn"
+   },
+   "owningNamespace": {
+    "@id": "Probe::JointController::angleIn"
+   },
+   "owningRelationship": {
+    "@id": "Probe::JointController::angleIn/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint",
+   "@type": "PartDefinition",
+   "declaredName": "LogicalJoint",
+   "declaredShortName": "SYS-EL-0003",
+   "feature": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "LogicalJoint",
+   "ownedFeature": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    }
+   ],
+   "ownedPart": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/1"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3"
+    }
+   ],
+   "owner": {
+    "@id": "Probe"
+   },
+   "owningNamespace": {
+    "@id": "Probe"
+   },
+   "owningRelationship": {
+    "@id": "Probe/9"
+   },
+   "qualifiedName": "Probe::LogicalJoint",
+   "shortName": "SYS-EL-0003"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/0",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint::sensor"
+   },
+   "memberName": "sensor",
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint"
+    },
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/1"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   },
+   "memberName": "ctrl",
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0",
+   "@type": "ConnectionUsage",
+   "connectorEnd": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "ownedFeature": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/2"
+   },
+   "owningType": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+    }
+   ],
+   "relatedFeature": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/0",
+   "@type": "EndFeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint/2/0/0/0"
+   },
+   "memberName": "source",
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/0/0",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": true,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "source",
+   "ownedMember": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/2/0/0"
+   },
+   "owningType": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "type": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/0",
+   "@type": "ReferenceSubsetting",
+   "general": {
+    "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+   },
+   "isLibraryElement": false,
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::LogicalJoint/2/0/0/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::LogicalJoint/2/0/0/0"
+   },
+   "subsettedFeature": {
+    "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+   },
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/0/0",
+   "@type": "Feature",
+   "chainingFeature": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    },
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::LogicalJoint/2/0/0/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/2/0/0/0/0"
+   },
+   "type": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/0/0/0",
+   "@type": "FeatureChaining",
+   "chainingFeature": {
+    "@id": "Probe::LogicalJoint::sensor"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/0/0/1"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/0/0/1",
+   "@type": "FeatureChaining",
+   "chainingFeature": {
+    "@id": "Probe::Sensor::angleOut"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+    },
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/1"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint/2/0/0/0/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint/2/0/0/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/0/0/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::LogicalJoint/2/0/0/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint/2/0/0/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/2/0/0/0/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/1"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/1",
+   "@type": "EndFeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint/2/0/1/0"
+   },
+   "memberName": "target",
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/1/0",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": true,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "target",
+   "ownedMember": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/2/0/1"
+   },
+   "owningType": {
+    "@id": "Probe::LogicalJoint/2/0"
+   },
+   "type": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/0",
+   "@type": "ReferenceSubsetting",
+   "general": {
+    "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+   },
+   "isLibraryElement": false,
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::LogicalJoint/2/0/1/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::LogicalJoint/2/0/1/0"
+   },
+   "subsettedFeature": {
+    "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+   },
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/0/0",
+   "@type": "Feature",
+   "chainingFeature": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    },
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::LogicalJoint/2/0/1/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/2/0/1/0/0"
+   },
+   "type": [
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/0/0/0",
+   "@type": "FeatureChaining",
+   "chainingFeature": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/0/0/1"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/0/0/1",
+   "@type": "FeatureChaining",
+   "chainingFeature": {
+    "@id": "Probe::JointController::angleIn"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+    },
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/1"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint/2/0/1/0/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint/2/0/1/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/2/0/1/0/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::LogicalJoint/2/0/1/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint/2/0/1/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/2/0/1/0/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/3"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/3",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint/3/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/3/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/3/0",
+   "@type": "SatisfyRequirementUsage",
+   "feature": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001::ears"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001::quantity"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001::unit"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001::max"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001::sys_need_0002"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "ownedFeature": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/3"
+   },
+   "owningType": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "satisfiedRequirement": {
+    "@id": "lib:NeedStubs::sys_req_0001"
+   },
+   "satisfyingFeature": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/3/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/3/0/0",
+   "@type": "ReferenceSubsetting",
+   "general": {
+    "@id": "lib:NeedStubs::sys_req_0001"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::LogicalJoint/3/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::LogicalJoint/3/0"
+   },
+   "subsettedFeature": {
+    "@id": "lib:NeedStubs::sys_req_0001"
+   },
+   "target": [
+    {
+     "@id": "lib:NeedStubs::sys_req_0001"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/3/0/1"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/3/0/1",
+   "@type": "SubjectMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint/3/0/1/0"
+   },
+   "memberName": "subj",
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint/3/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::LogicalJoint/3/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/3/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/3/0/1/0",
+   "@type": "ReferenceUsage",
+   "direction": "in",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "subj",
+   "ownedMember": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::LogicalJoint/3/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint/3/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/3/0/1"
+   },
+   "owningType": {
+    "@id": "Probe::LogicalJoint/3/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/3/0/1/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/3/0/1/0/0",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "Probe::LogicalJoint/3/0/1/0"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint/3/0/1/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+    }
+   ],
+   "value": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/3/0/1/0/0/0",
+   "@type": "FeatureReferenceExpression",
+   "feature": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "ownedFeature": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::LogicalJoint/3/0/1/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint/3/0/1/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0"
+   },
+   "referent": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/3/0/1/0/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/3/0/1/0/0/0/0",
+   "@type": "Membership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1",
+   "@type": "ReturnParameterMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0"
+   },
+   "memberName": "result",
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0",
+   "@type": "Feature",
+   "direction": "out",
+   "feature": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "name": "result",
+   "owner": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1"
+   },
+   "owningType": {
+    "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+   },
+   "type": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint::ctrl"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint::ctrl",
+   "@type": "PartUsage",
+   "declaredName": "ctrl",
+   "definition": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "name": "ctrl",
+   "ownedMember": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/1"
+   },
+   "owningType": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "qualifiedName": "Probe::LogicalJoint::ctrl",
+   "type": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint::ctrl/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint::ctrl/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Probe::JointController"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    },
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   },
+   "target": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "type": {
+    "@id": "Probe::JointController"
+   },
+   "typedFeature": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint::ctrl/1"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint::ctrl/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint::ctrl/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint::ctrl/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint::ctrl/1/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint::ctrl/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint::ctrl"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint::ctrl/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint::sensor"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint::sensor",
+   "@type": "PartUsage",
+   "declaredName": "sensor",
+   "definition": [
+    {
+     "@id": "Probe::Sensor"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "name": "sensor",
+   "ownedMember": [
+    {
+     "@id": "Probe::LogicalJoint::sensor/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::LogicalJoint::sensor/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint::sensor/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint/0"
+   },
+   "owningType": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "qualifiedName": "Probe::LogicalJoint::sensor",
+   "type": [
+    {
+     "@id": "Probe::Sensor"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint::sensor/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint::sensor/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Probe::Sensor"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::LogicalJoint::sensor"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    },
+    {
+     "@id": "Probe::Sensor"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::LogicalJoint::sensor"
+   },
+   "target": [
+    {
+     "@id": "Probe::Sensor"
+    }
+   ],
+   "type": {
+    "@id": "Probe::Sensor"
+   },
+   "typedFeature": {
+    "@id": "Probe::LogicalJoint::sensor"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint::sensor/1"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint::sensor/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::LogicalJoint::sensor/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::LogicalJoint::sensor"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::LogicalJoint::sensor/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    },
+    {
+     "@id": "Probe::LogicalJoint::sensor/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint::sensor/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::LogicalJoint::sensor/1/0"
+  },
+  "payload": {
+   "@id": "Probe::LogicalJoint::sensor/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::LogicalJoint::sensor"
+   },
+   "owningNamespace": {
+    "@id": "Probe::LogicalJoint::sensor"
+   },
+   "owningRelationship": {
+    "@id": "Probe::LogicalJoint::sensor/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Sensor"
+  },
+  "payload": {
+   "@id": "Probe::Sensor",
+   "@type": "PartDefinition",
+   "declaredName": "Sensor",
+   "feature": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "Sensor",
+   "ownedFeature": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::Sensor/0"
+    }
+   ],
+   "owner": {
+    "@id": "Probe"
+   },
+   "owningNamespace": {
+    "@id": "Probe"
+   },
+   "owningRelationship": {
+    "@id": "Probe/7"
+   },
+   "qualifiedName": "Probe::Sensor"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Sensor/0"
+  },
+  "payload": {
+   "@id": "Probe::Sensor/0",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::Sensor::angleOut"
+   },
+   "memberName": "angleOut",
+   "membershipOwningNamespace": {
+    "@id": "Probe::Sensor"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::Sensor"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::Sensor"
+    },
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::Sensor"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Sensor::angleOut"
+  },
+  "payload": {
+   "@id": "Probe::Sensor::angleOut",
+   "@type": "PortUsage",
+   "declaredName": "angleOut",
+   "definition": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::AngleOut::angle"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "angleOut",
+   "ownedMember": [
+    {
+     "@id": "Probe::Sensor::angleOut/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::Sensor::angleOut/0"
+    },
+    {
+     "@id": "Probe::Sensor::angleOut/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::Sensor"
+   },
+   "owningNamespace": {
+    "@id": "Probe::Sensor"
+   },
+   "owningRelationship": {
+    "@id": "Probe::Sensor/0"
+   },
+   "owningType": {
+    "@id": "Probe::Sensor"
+   },
+   "qualifiedName": "Probe::Sensor::angleOut",
+   "type": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Sensor::angleOut/0"
+  },
+  "payload": {
+   "@id": "Probe::Sensor::angleOut/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Probe::AngleOut"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::Sensor::angleOut"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    },
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::Sensor::angleOut"
+   },
+   "target": [
+    {
+     "@id": "Probe::AngleOut"
+    }
+   ],
+   "type": {
+    "@id": "Probe::AngleOut"
+   },
+   "typedFeature": {
+    "@id": "Probe::Sensor::angleOut"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Sensor::angleOut/1"
+  },
+  "payload": {
+   "@id": "Probe::Sensor::angleOut/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::Sensor::angleOut/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::Sensor::angleOut"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::Sensor::angleOut/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    },
+    {
+     "@id": "Probe::Sensor::angleOut/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::Sensor::angleOut"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::Sensor::angleOut/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Sensor::angleOut/1/0"
+  },
+  "payload": {
+   "@id": "Probe::Sensor::angleOut/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::Sensor::angleOut"
+   },
+   "owningNamespace": {
+    "@id": "Probe::Sensor::angleOut"
+   },
+   "owningRelationship": {
+    "@id": "Probe::Sensor::angleOut/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::Teleoperate"
+  },
+  "payload": {
+   "@id": "Probe::Teleoperate",
+   "@type": "UseCaseDefinition",
+   "declaredName": "Teleoperate",
+   "declaredShortName": "SYS-UC-0001",
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "Teleoperate",
+   "owner": {
+    "@id": "Probe"
+   },
+   "owningNamespace": {
+    "@id": "Probe"
+   },
+   "owningRelationship": {
+    "@id": "Probe/3"
+   },
+   "qualifiedName": "Probe::Teleoperate",
+   "shortName": "SYS-UC-0001"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm"
+  },
+  "payload": {
+   "@id": "Probe::arm",
+   "@type": "PartUsage",
+   "declaredName": "arm",
+   "feature": [
+    {
+     "@id": "Probe::arm::joint1"
+    },
+    {
+     "@id": "Probe::arm::joint2"
+    },
+    {
+     "@id": "Probe::arm::f"
+    },
+    {
+     "@id": "Probe::arm::c"
+    },
+    {
+     "@id": "Probe::arm/4/0"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "arm",
+   "ownedFeature": [
+    {
+     "@id": "Probe::arm::joint1"
+    },
+    {
+     "@id": "Probe::arm::joint2"
+    },
+    {
+     "@id": "Probe::arm::f"
+    },
+    {
+     "@id": "Probe::arm::c"
+    },
+    {
+     "@id": "Probe::arm/4/0"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::arm::joint1"
+    },
+    {
+     "@id": "Probe::arm::joint2"
+    },
+    {
+     "@id": "Probe::arm::f"
+    },
+    {
+     "@id": "Probe::arm::c"
+    },
+    {
+     "@id": "Probe::arm/4/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::arm/0"
+    },
+    {
+     "@id": "Probe::arm/1"
+    },
+    {
+     "@id": "Probe::arm/2"
+    },
+    {
+     "@id": "Probe::arm/3"
+    },
+    {
+     "@id": "Probe::arm/4"
+    }
+   ],
+   "owner": {
+    "@id": "Probe"
+   },
+   "owningNamespace": {
+    "@id": "Probe"
+   },
+   "owningRelationship": {
+    "@id": "Probe/10"
+   },
+   "qualifiedName": "Probe::arm"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/0"
+  },
+  "payload": {
+   "@id": "Probe::arm/0",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm::joint1"
+   },
+   "memberName": "joint1",
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm::joint1"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::arm"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm"
+    },
+    {
+     "@id": "Probe::arm::joint1"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm::joint1"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/1"
+  },
+  "payload": {
+   "@id": "Probe::arm/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm::joint2"
+   },
+   "memberName": "joint2",
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm::joint2"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::arm"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm"
+    },
+    {
+     "@id": "Probe::arm::joint2"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm::joint2"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/2"
+  },
+  "payload": {
+   "@id": "Probe::arm/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm::f"
+   },
+   "memberName": "f",
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm::f"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::arm"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm"
+    },
+    {
+     "@id": "Probe::arm::f"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm::f"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/3"
+  },
+  "payload": {
+   "@id": "Probe::arm/3",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm::c"
+   },
+   "memberName": "c",
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm::c"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::arm"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm"
+    },
+    {
+     "@id": "Probe::arm::c"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm::c"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4"
+  },
+  "payload": {
+   "@id": "Probe::arm/4",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm/4/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm/4/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::arm"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm"
+    },
+    {
+     "@id": "Probe::arm/4/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm/4/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0",
+   "@type": "AllocationUsage",
+   "connectorEnd": [
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "ownedFeature": [
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::arm/4/0/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::arm"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm/4"
+   },
+   "owningType": {
+    "@id": "Probe::arm"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm::f"
+    },
+    {
+     "@id": "Probe::arm::c"
+    }
+   ],
+   "relatedFeature": [
+    {
+     "@id": "Probe::arm::f"
+    },
+    {
+     "@id": "Probe::arm::c"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm::f"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm::c"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0/0"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0/0",
+   "@type": "EndFeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm/4/0/0/0"
+   },
+   "memberName": "source",
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm/4/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::arm/4/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm/4/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm/4/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0/0/0",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": true,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "source",
+   "ownedMember": [
+    {
+     "@id": "Probe::arm/4/0/0/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::arm/4/0/0/0/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/0/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::arm/4/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm/4/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm/4/0/0"
+   },
+   "owningType": {
+    "@id": "Probe::arm/4/0"
+   },
+   "type": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0/0/0/0",
+   "@type": "ReferenceSubsetting",
+   "general": {
+    "@id": "Probe::arm::f"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::arm/4/0/0/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    },
+    {
+     "@id": "Probe::arm::f"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::arm/4/0/0/0"
+   },
+   "subsettedFeature": {
+    "@id": "Probe::arm::f"
+   },
+   "target": [
+    {
+     "@id": "Probe::arm::f"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0/0/0/1"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0/0/0/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm/4/0/0/0/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm/4/0/0/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm/4/0/0/0/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/0/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm/4/0/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm/4/0/0/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0/0/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0/0/0/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::arm/4/0/0/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm/4/0/0/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm/4/0/0/0/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0/1"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0/1",
+   "@type": "EndFeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm/4/0/1/0"
+   },
+   "memberName": "target",
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm/4/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::arm/4/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm/4/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm/4/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0/1/0",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": true,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "target",
+   "ownedMember": [
+    {
+     "@id": "Probe::arm/4/0/1/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::arm/4/0/1/0/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/1/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::arm/4/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm/4/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm/4/0/1"
+   },
+   "owningType": {
+    "@id": "Probe::arm/4/0"
+   },
+   "type": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0/1/0/0"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0/1/0/0",
+   "@type": "ReferenceSubsetting",
+   "general": {
+    "@id": "Probe::arm::c"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::arm/4/0/1/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    },
+    {
+     "@id": "Probe::arm::c"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::arm/4/0/1/0"
+   },
+   "subsettedFeature": {
+    "@id": "Probe::arm::c"
+   },
+   "target": [
+    {
+     "@id": "Probe::arm::c"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0/1/0/1"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0/1/0/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm/4/0/1/0/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm/4/0/1/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm/4/0/1/0/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    },
+    {
+     "@id": "Probe::arm/4/0/1/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm/4/0/1/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm/4/0/1/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm/4/0/1/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::arm/4/0/1/0/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::arm/4/0/1/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm/4/0/1/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm/4/0/1/0/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::c"
+  },
+  "payload": {
+   "@id": "Probe::arm::c",
+   "@type": "PartUsage",
+   "declaredName": "c",
+   "definition": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::JointController::angleIn"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "name": "c",
+   "ownedMember": [
+    {
+     "@id": "Probe::arm::c/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::arm::c/0"
+    },
+    {
+     "@id": "Probe::arm::c/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::arm"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm/3"
+   },
+   "owningType": {
+    "@id": "Probe::arm"
+   },
+   "qualifiedName": "Probe::arm::c",
+   "type": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::c/0"
+  },
+  "payload": {
+   "@id": "Probe::arm::c/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Probe::JointController"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::arm::c"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm::c"
+    },
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm::c"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::arm::c"
+   },
+   "target": [
+    {
+     "@id": "Probe::JointController"
+    }
+   ],
+   "type": {
+    "@id": "Probe::JointController"
+   },
+   "typedFeature": {
+    "@id": "Probe::arm::c"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::c/1"
+  },
+  "payload": {
+   "@id": "Probe::arm::c/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm::c/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm::c"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm::c/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::arm::c"
+    },
+    {
+     "@id": "Probe::arm::c/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm::c"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm::c/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::c/1/0"
+  },
+  "payload": {
+   "@id": "Probe::arm::c/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::arm::c"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm::c"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm::c/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::f"
+  },
+  "payload": {
+   "@id": "Probe::arm::f",
+   "@type": "PartUsage",
+   "declaredName": "f",
+   "definition": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "name": "f",
+   "ownedMember": [
+    {
+     "@id": "Probe::arm::f/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::arm::f/0"
+    },
+    {
+     "@id": "Probe::arm::f/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::arm"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm/2"
+   },
+   "owningType": {
+    "@id": "Probe::arm"
+   },
+   "qualifiedName": "Probe::arm::f",
+   "type": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::f/0"
+  },
+  "payload": {
+   "@id": "Probe::arm::f/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Probe::Follow"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::arm::f"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm::f"
+    },
+    {
+     "@id": "Probe::Follow"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm::f"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::arm::f"
+   },
+   "target": [
+    {
+     "@id": "Probe::Follow"
+    }
+   ],
+   "type": {
+    "@id": "Probe::Follow"
+   },
+   "typedFeature": {
+    "@id": "Probe::arm::f"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::f/1"
+  },
+  "payload": {
+   "@id": "Probe::arm::f/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm::f/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm::f"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm::f/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::arm::f"
+    },
+    {
+     "@id": "Probe::arm::f/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm::f"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm::f/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::f/1/0"
+  },
+  "payload": {
+   "@id": "Probe::arm::f/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::arm::f"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm::f"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm::f/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::joint1"
+  },
+  "payload": {
+   "@id": "Probe::arm::joint1",
+   "@type": "PartUsage",
+   "declaredName": "joint1",
+   "definition": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "name": "joint1",
+   "ownedMember": [
+    {
+     "@id": "Probe::arm::joint1/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::arm::joint1/0"
+    },
+    {
+     "@id": "Probe::arm::joint1/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::arm"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm/0"
+   },
+   "owningType": {
+    "@id": "Probe::arm"
+   },
+   "qualifiedName": "Probe::arm::joint1",
+   "type": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::joint1/0"
+  },
+  "payload": {
+   "@id": "Probe::arm::joint1/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::arm::joint1"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm::joint1"
+    },
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm::joint1"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::arm::joint1"
+   },
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "type": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "typedFeature": {
+    "@id": "Probe::arm::joint1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::joint1/1"
+  },
+  "payload": {
+   "@id": "Probe::arm::joint1/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm::joint1/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm::joint1"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm::joint1/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::arm::joint1"
+    },
+    {
+     "@id": "Probe::arm::joint1/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm::joint1"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm::joint1/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::joint1/1/0"
+  },
+  "payload": {
+   "@id": "Probe::arm::joint1/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::arm::joint1"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm::joint1"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm::joint1/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::joint2"
+  },
+  "payload": {
+   "@id": "Probe::arm::joint2",
+   "@type": "PartUsage",
+   "declaredName": "joint2",
+   "definition": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "name": "joint2",
+   "ownedMember": [
+    {
+     "@id": "Probe::arm::joint2/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::arm::joint2/0"
+    },
+    {
+     "@id": "Probe::arm::joint2/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::arm"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm/1"
+   },
+   "owningType": {
+    "@id": "Probe::arm"
+   },
+   "qualifiedName": "Probe::arm::joint2",
+   "type": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::joint2/0"
+  },
+  "payload": {
+   "@id": "Probe::arm::joint2/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::arm::joint2"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::arm::joint2"
+    },
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm::joint2"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::arm::joint2"
+   },
+   "target": [
+    {
+     "@id": "Probe::LogicalJoint"
+    }
+   ],
+   "type": {
+    "@id": "Probe::LogicalJoint"
+   },
+   "typedFeature": {
+    "@id": "Probe::arm::joint2"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::joint2/1"
+  },
+  "payload": {
+   "@id": "Probe::arm::joint2/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::arm::joint2/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::arm::joint2"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::arm::joint2/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::arm::joint2"
+    },
+    {
+     "@id": "Probe::arm::joint2/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::arm::joint2"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::arm::joint2/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::arm::joint2/1/0"
+  },
+  "payload": {
+   "@id": "Probe::arm::joint2/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::arm::joint2"
+   },
+   "owningNamespace": {
+    "@id": "Probe::arm::joint2"
+   },
+   "owningRelationship": {
+    "@id": "Probe::arm::joint2/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView"
+  },
+  "payload": {
+   "@id": "Probe::jointView",
+   "@type": "ViewUsage",
+   "declaredName": "jointView",
+   "declaredShortName": "SYS-VIEW-0001",
+   "exposedElement": [
+    {
+     "@id": "Probe::LogicalJoint"
+    },
+    {
+     "@id": "Probe::LogicalJoint::sensor"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint::sensor/1/0"
+    },
+    {
+     "@id": "Probe::Sensor::angleOut"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl/1/0"
+    },
+    {
+     "@id": "Probe::JointController::angleIn"
+    },
+    {
+     "@id": "Probe::JointController/1/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/1/0"
+    },
+    {
+     "@id": "Probe::Sensor::angleOut/1/0"
+    },
+    {
+     "@id": "Probe::AngleOut::angle"
+    },
+    {
+     "@id": "Probe::AngleOut::'~AngleOut'"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/1/0"
+    },
+    {
+     "@id": "Probe::JointController::angleIn/1/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1/0"
+    },
+    {
+     "@id": "lib:Documentation"
+    },
+    {
+     "@id": "lib:MetadataUsage"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001::ears"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001::quantity"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001::unit"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001::max"
+    },
+    {
+     "@id": "lib:NeedStubs::sys_req_0001::sys_need_0002"
+    }
+   ],
+   "importedMembership": [
+    {
+     "@id": "Probe/9"
+    },
+    {
+     "@id": "Probe::LogicalJoint/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/1"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3"
+    },
+    {
+     "@id": "Probe::LogicalJoint::sensor/1"
+    },
+    {
+     "@id": "Probe::Sensor/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint::ctrl/1"
+    },
+    {
+     "@id": "Probe::JointController/0"
+    },
+    {
+     "@id": "Probe::JointController/1"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/0/0/1"
+    },
+    {
+     "@id": "Probe::Sensor::angleOut/1"
+    },
+    {
+     "@id": "Probe::AngleOut/0"
+    },
+    {
+     "@id": "Probe::AngleOut/1"
+    },
+    {
+     "@id": "Probe::LogicalJoint/2/0/1/0/1"
+    },
+    {
+     "@id": "Probe::JointController::angleIn/1"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/0"
+    },
+    {
+     "@id": "Probe::LogicalJoint/3/0/1/0/0/0/1"
+    },
+    {
+     "@id": "lib:OwningMembership#5"
+    },
+    {
+     "@id": "lib:OwningMembership#4"
+    },
+    {
+     "@id": "lib:FeatureMembership#2"
+    },
+    {
+     "@id": "lib:FeatureMembership#4"
+    },
+    {
+     "@id": "lib:FeatureMembership"
+    },
+    {
+     "@id": "lib:FeatureMembership#3"
+    },
+    {
+     "@id": "lib:FramedConcernMembership"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "jointView",
+   "ownedMember": [
+    {
+     "@id": "Probe::jointView/0/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::jointView/0"
+    },
+    {
+     "@id": "Probe::jointView/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe"
+   },
+   "owningNamespace": {
+    "@id": "Probe"
+   },
+   "owningRelationship": {
+    "@id": "Probe/11"
+   },
+   "qualifiedName": "Probe::jointView",
+   "shortName": "SYS-VIEW-0001"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::jointView"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::jointView/0/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::jointView"
+    },
+    {
+     "@id": "Probe::jointView/0/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::jointView"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::jointView/0/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0",
+   "@type": "MetadataUsage",
+   "annotatedElement": [
+    {
+     "@id": "Probe::jointView"
+    }
+   ],
+   "definition": [
+    {
+     "@id": "lib:XdTrace::XdView"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Probe::jointView/0/0/1/0"
+    },
+    {
+     "@id": "Probe::jointView/0/0/2/0"
+    },
+    {
+     "@id": "lib:XdTrace::XdView::layer"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "metadataDefinition": {
+    "@id": "lib:XdTrace::XdView"
+   },
+   "ownedFeature": [
+    {
+     "@id": "Probe::jointView/0/0/1/0"
+    },
+    {
+     "@id": "Probe::jointView/0/0/2/0"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Probe::jointView/0/0/1/0"
+    },
+    {
+     "@id": "Probe::jointView/0/0/2/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::jointView/0/0/0"
+    },
+    {
+     "@id": "Probe::jointView/0/0/1"
+    },
+    {
+     "@id": "Probe::jointView/0/0/2"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::jointView"
+   },
+   "owningNamespace": {
+    "@id": "Probe::jointView"
+   },
+   "owningRelationship": {
+    "@id": "Probe::jointView/0"
+   },
+   "type": [
+    {
+     "@id": "lib:XdTrace::XdView"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/0"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "lib:XdTrace::XdView"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::jointView/0/0"
+    },
+    {
+     "@id": "lib:XdTrace::XdView"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::jointView/0/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "target": [
+    {
+     "@id": "lib:XdTrace::XdView"
+    }
+   ],
+   "type": {
+    "@id": "lib:XdTrace::XdView"
+   },
+   "typedFeature": {
+    "@id": "Probe::jointView/0/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/1"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::jointView/0/0/1/0"
+   },
+   "memberName": "kind",
+   "membershipOwningNamespace": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::jointView/0/0/1/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::jointView/0/0"
+    },
+    {
+     "@id": "Probe::jointView/0/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::jointView/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::jointView/0/0/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/1/0",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "kind",
+   "ownedMember": [
+    {
+     "@id": "Probe::jointView/0/0/1/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::jointView/0/0/1/0/0"
+    },
+    {
+     "@id": "Probe::jointView/0/0/1/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::jointView/0/0/1"
+   },
+   "owningType": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/1/0/0"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/1/0/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdTrace::XdView::kind"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::jointView/0/0/1/0"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdTrace::XdView::kind"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::jointView/0/0/1/0"
+    },
+    {
+     "@id": "lib:XdTrace::XdView::kind"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::jointView/0/0/1/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::jointView/0/0/1/0"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdTrace::XdView::kind"
+   },
+   "target": [
+    {
+     "@id": "lib:XdTrace::XdView::kind"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/1/0/1"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/1/0/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "Probe::jointView/0/0/1/0"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::jointView/0/0/1/0/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::jointView/0/0/1/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::jointView/0/0/1/0/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::jointView/0/0/1/0"
+    },
+    {
+     "@id": "Probe::jointView/0/0/1/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::jointView/0/0/1/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::jointView/0/0/1/0/1/0"
+    }
+   ],
+   "value": {
+    "@id": "Probe::jointView/0/0/1/0/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/1/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/1/0/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::jointView/0/0/1/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::jointView/0/0/1/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::jointView/0/0/1/0/1"
+   },
+   "value": "interconnection"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/2"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::jointView/0/0/2/0"
+   },
+   "memberName": "root",
+   "membershipOwningNamespace": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::jointView/0/0/2/0"
+    }
+   ],
+   "owningType": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::jointView/0/0"
+    },
+    {
+     "@id": "Probe::jointView/0/0/2/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::jointView/0/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::jointView/0/0/2/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/2/0"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/2/0",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "root",
+   "ownedMember": [
+    {
+     "@id": "Probe::jointView/0/0/2/0/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Probe::jointView/0/0/2/0/0"
+    },
+    {
+     "@id": "Probe::jointView/0/0/2/0/1"
+    }
+   ],
+   "owner": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::jointView/0/0/2"
+   },
+   "owningType": {
+    "@id": "Probe::jointView/0/0"
+   },
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/2/0/0"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/2/0/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdTrace::XdView::root"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Probe::jointView/0/0/2/0"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdTrace::XdView::root"
+   },
+   "relatedElement": [
+    {
+     "@id": "Probe::jointView/0/0/2/0"
+    },
+    {
+     "@id": "lib:XdTrace::XdView::root"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::jointView/0/0/2/0"
+    }
+   ],
+   "specific": {
+    "@id": "Probe::jointView/0/0/2/0"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdTrace::XdView::root"
+   },
+   "target": [
+    {
+     "@id": "lib:XdTrace::XdView::root"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/2/0/1"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/2/0/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "Probe::jointView/0/0/2/0"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Probe::jointView/0/0/2/0/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Probe::jointView/0/0/2/0"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Probe::jointView/0/0/2/0/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Probe::jointView/0/0/2/0"
+    },
+    {
+     "@id": "Probe::jointView/0/0/2/0/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::jointView/0/0/2/0"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe::jointView/0/0/2/0/1/0"
+    }
+   ],
+   "value": {
+    "@id": "Probe::jointView/0/0/2/0/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/0/0/2/0/1/0"
+  },
+  "payload": {
+   "@id": "Probe::jointView/0/0/2/0/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Probe::jointView/0/0/2/0"
+   },
+   "owningNamespace": {
+    "@id": "Probe::jointView/0/0/2/0"
+   },
+   "owningRelationship": {
+    "@id": "Probe::jointView/0/0/2/0/1"
+   },
+   "value": "Probe::LogicalJoint"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Probe::jointView/1"
+  },
+  "payload": {
+   "@id": "Probe::jointView/1",
+   "@type": "MembershipExpose",
+   "importedMembership": {
+    "@id": "Probe/9"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "Probe::jointView"
+    },
+    {
+     "@id": "Probe/9"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Probe::jointView"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Probe/9"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:Documentation"
+  },
+  "payload": {
+   "@id": "lib:Documentation",
+   "@type": "Documentation",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:FeatureMembership"
+  },
+  "payload": {
+   "@id": "lib:FeatureMembership",
+   "@type": "FeatureMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:FeatureMembership#2"
+  },
+  "payload": {
+   "@id": "lib:FeatureMembership#2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:FeatureMembership#3"
+  },
+  "payload": {
+   "@id": "lib:FeatureMembership#3",
+   "@type": "FeatureMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:FeatureMembership#4"
+  },
+  "payload": {
+   "@id": "lib:FeatureMembership#4",
+   "@type": "FeatureMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:FramedConcernMembership"
+  },
+  "payload": {
+   "@id": "lib:FramedConcernMembership",
+   "@type": "FramedConcernMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:MetadataUsage"
+  },
+  "payload": {
+   "@id": "lib:MetadataUsage",
+   "@type": "MetadataUsage",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:NeedStubs"
+  },
+  "payload": {
+   "@id": "lib:NeedStubs",
+   "@type": "LibraryPackage",
+   "declaredName": "NeedStubs",
+   "isLibraryElement": true,
+   "name": "NeedStubs",
+   "qualifiedName": "NeedStubs"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:NeedStubs::sys_req_0001"
+  },
+  "payload": {
+   "@id": "lib:NeedStubs::sys_req_0001",
+   "@type": "RequirementUsage",
+   "declaredName": "sys_req_0001",
+   "declaredShortName": "SYS-REQ-0001",
+   "isLibraryElement": true,
+   "name": "sys_req_0001",
+   "qualifiedName": "NeedStubs::sys_req_0001"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:NeedStubs::sys_req_0001::ears"
+  },
+  "payload": {
+   "@id": "lib:NeedStubs::sys_req_0001::ears",
+   "@type": "AttributeUsage",
+   "declaredName": "ears",
+   "isLibraryElement": true,
+   "name": "ears",
+   "qualifiedName": "NeedStubs::sys_req_0001::ears"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:NeedStubs::sys_req_0001::max"
+  },
+  "payload": {
+   "@id": "lib:NeedStubs::sys_req_0001::max",
+   "@type": "AttributeUsage",
+   "declaredName": "max",
+   "isLibraryElement": true,
+   "name": "max",
+   "qualifiedName": "NeedStubs::sys_req_0001::max"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:NeedStubs::sys_req_0001::quantity"
+  },
+  "payload": {
+   "@id": "lib:NeedStubs::sys_req_0001::quantity",
+   "@type": "AttributeUsage",
+   "declaredName": "quantity",
+   "isLibraryElement": true,
+   "name": "quantity",
+   "qualifiedName": "NeedStubs::sys_req_0001::quantity"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:NeedStubs::sys_req_0001::sys_need_0002"
+  },
+  "payload": {
+   "@id": "lib:NeedStubs::sys_req_0001::sys_need_0002",
+   "@type": "ConcernUsage",
+   "isLibraryElement": true,
+   "name": "sys_need_0002",
+   "qualifiedName": "NeedStubs::sys_req_0001::sys_need_0002"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:NeedStubs::sys_req_0001::unit"
+  },
+  "payload": {
+   "@id": "lib:NeedStubs::sys_req_0001::unit",
+   "@type": "AttributeUsage",
+   "declaredName": "unit",
+   "isLibraryElement": true,
+   "name": "unit",
+   "qualifiedName": "NeedStubs::sys_req_0001::unit"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:OwningMembership"
+  },
+  "payload": {
+   "@id": "lib:OwningMembership",
+   "@type": "OwningMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:OwningMembership#2"
+  },
+  "payload": {
+   "@id": "lib:OwningMembership#2",
+   "@type": "OwningMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:OwningMembership#3"
+  },
+  "payload": {
+   "@id": "lib:OwningMembership#3",
+   "@type": "OwningMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:OwningMembership#4"
+  },
+  "payload": {
+   "@id": "lib:OwningMembership#4",
+   "@type": "OwningMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:OwningMembership#5"
+  },
+  "payload": {
+   "@id": "lib:OwningMembership#5",
+   "@type": "OwningMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:OwningMembership#6"
+  },
+  "payload": {
+   "@id": "lib:OwningMembership#6",
+   "@type": "OwningMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:OwningMembership#7"
+  },
+  "payload": {
+   "@id": "lib:OwningMembership#7",
+   "@type": "OwningMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:OwningMembership#8"
+  },
+  "payload": {
+   "@id": "lib:OwningMembership#8",
+   "@type": "OwningMembership",
+   "isLibraryElement": true
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:ScalarValues::Real"
+  },
+  "payload": {
+   "@id": "lib:ScalarValues::Real",
+   "@type": "DataType",
+   "declaredName": "Real",
+   "isLibraryElement": true,
+   "name": "Real",
+   "qualifiedName": "ScalarValues::Real"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:ScalarValues::String"
+  },
+  "payload": {
+   "@id": "lib:ScalarValues::String",
+   "@type": "DataType",
+   "declaredName": "String",
+   "isLibraryElement": true,
+   "name": "String",
+   "qualifiedName": "ScalarValues::String"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdTrace"
+  },
+  "payload": {
+   "@id": "lib:XdTrace",
+   "@type": "LibraryPackage",
+   "declaredName": "XdTrace",
+   "isLibraryElement": true,
+   "name": "XdTrace",
+   "qualifiedName": "XdTrace"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdTrace::Trace"
+  },
+  "payload": {
+   "@id": "lib:XdTrace::Trace",
+   "@type": "MetadataDefinition",
+   "declaredName": "Trace",
+   "isLibraryElement": true,
+   "name": "Trace",
+   "qualifiedName": "XdTrace::Trace"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdTrace::Trace::layer"
+  },
+  "payload": {
+   "@id": "lib:XdTrace::Trace::layer",
+   "@type": "AttributeUsage",
+   "declaredName": "layer",
+   "isLibraryElement": true,
+   "name": "layer",
+   "qualifiedName": "XdTrace::Trace::layer"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdTrace::Trace::status"
+  },
+  "payload": {
+   "@id": "lib:XdTrace::Trace::status",
+   "@type": "AttributeUsage",
+   "declaredName": "status",
+   "isLibraryElement": true,
+   "name": "status",
+   "qualifiedName": "XdTrace::Trace::status"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdTrace::XdView"
+  },
+  "payload": {
+   "@id": "lib:XdTrace::XdView",
+   "@type": "MetadataDefinition",
+   "declaredName": "XdView",
+   "isLibraryElement": true,
+   "name": "XdView",
+   "qualifiedName": "XdTrace::XdView"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdTrace::XdView::kind"
+  },
+  "payload": {
+   "@id": "lib:XdTrace::XdView::kind",
+   "@type": "AttributeUsage",
+   "declaredName": "kind",
+   "isLibraryElement": true,
+   "name": "kind",
+   "qualifiedName": "XdTrace::XdView::kind"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdTrace::XdView::layer"
+  },
+  "payload": {
+   "@id": "lib:XdTrace::XdView::layer",
+   "@type": "AttributeUsage",
+   "declaredName": "layer",
+   "isLibraryElement": true,
+   "name": "layer",
+   "qualifiedName": "XdTrace::XdView::layer"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdTrace::XdView::root"
+  },
+  "payload": {
+   "@id": "lib:XdTrace::XdView::root",
+   "@type": "AttributeUsage",
+   "declaredName": "root",
+   "isLibraryElement": true,
+   "name": "root",
+   "qualifiedName": "XdTrace::XdView::root"
+  }
+ }
+]

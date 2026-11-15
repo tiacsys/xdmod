@@ -1,0 +1,117 @@
+"""needs/needs_config.toml under a strict Sphinx build: the sample passes, each planted error fails.
+
+These tests run sphinx-build (a few seconds each). Skip them with `-m "not sphinx"`.
+"""
+import json
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+FIXTURE = Path(__file__).parent / "fixtures" / "needsdoc"
+pytestmark = pytest.mark.sphinx
+
+
+def build(tmp_path, extra_rst=""):
+    src = tmp_path / "src"
+    shutil.copytree(FIXTURE, src)
+    if extra_rst:
+        with open(src / "index.rst", "a") as f:
+            f.write("\n" + extra_rst)
+    out = tmp_path / "out"
+    r = subprocess.run([sys.executable, "-m", "sphinx", "-W", "--keep-going", "-q", "-b", "html",
+                        str(src), str(out)], capture_output=True, text=True, timeout=300)
+    return r.returncode, r.stdout + r.stderr, out
+
+
+def test_sample_builds_strict(tmp_path):
+    rc, log, out = build(tmp_path)
+    assert rc == 0, log
+    d = json.loads((out / "needs.json").read_text())
+    needs = d["versions"][d["current_version"]]["needs"]
+    assert needs["SYS-REQ-0001"]["max"] == 50
+    assert needs["SYS-EL-0003"]["configs"] == ["SYS-CFG-0001"]
+    assert needs["SW-REQ-0002"]["derived"] is True
+    # R4 grace (D75): SYS-EL-0003 satisfies the retired SYS-REQ-0002 and the build passes.
+    assert "SYS-REQ-0002" in needs["SYS-EL-0003"]["satisfies"]
+
+
+BAD = {
+    "wrong-side": """
+.. sys-need:: Bad
+   :id: SYS-NEED-0090
+   :status: valid
+   :category: problem
+   :refines: SYS-REQ-0001
+""",
+    "unknown-target": """
+.. sw-req:: Bad
+   :id: SW-REQ-0090
+   :status: valid
+   :refines: SYS-REQ-9999
+""",
+    "wrong-target-type": """
+.. sw-req:: Bad
+   :id: SW-REQ-0091
+   :status: valid
+   :refines: SYS-NEED-0002
+""",
+    "missing-required-link": """
+.. sys-req:: Bad
+   :id: SYS-REQ-0090
+   :status: valid
+""",
+    "bad-enum": """
+.. sys-sth:: Bad
+   :id: SYS-STH-0090
+   :status: obsolete
+""",
+    "bad-id": """
+.. sys-sth:: Bad
+   :id: SYS-STH-12
+   :status: valid
+""",
+    "kind-mismatch": """
+.. sys-sth:: Bad
+   :id: SYS-REQ-0091
+   :status: valid
+""",
+    "orphan-design": """
+.. ee-cmp:: Bad
+   :id: EE-CMP-0090
+   :status: valid
+""",
+    "derived-without-rationale": """
+.. me-req:: Bad
+   :id: ME-REQ-0090
+   :status: valid
+   :derived: true
+""",
+    "need-without-stakeholder": """
+.. sys-need:: Bad
+   :id: SYS-NEED-0091
+   :status: valid
+   :category: need
+""",
+    "functional-without-uc": """
+.. sys-el:: Bad
+   :id: SYS-EL-0090
+   :status: valid
+   :layer: functional
+""",
+    "hil-without-sha": """
+.. tr:: Bad
+   :id: TR-INT-STC-0001-aaaaaaaa
+   :status: valid
+   :result_of: INT-STC-0001
+   :method: hil
+""",
+}
+
+
+@pytest.mark.parametrize("name", sorted(BAD))
+def test_planted_error_fails(tmp_path, name):
+    rc, log, _ = build(tmp_path, BAD[name])
+    assert rc != 0, f"{name} should fail the strict build:\n{log}"
