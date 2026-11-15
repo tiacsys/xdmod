@@ -5,7 +5,7 @@ something names it in *italics*.
 
 ## Decisions
 
-All decisions (D1–D142) are in **`decisions.md`**. Tasks refer to them as `D<n>`.
+All decisions (D1–D143) are in **`decisions.md`**. Tasks refer to them as `D<n>`.
 
 ## Phase 0 — Make the problem statement well-posed
 
@@ -110,8 +110,8 @@ Local repos only; GitHub comes in Phase 4.
 - [x] 4.0 Install the GitHub CLI (`gh`, not installed yet) after you approve, and log in
 - [x] 4.1 Toolchain: find the installed versions of Zephyr SDK, KiCad, FreeCAD, JDK 21 + SysML Pilot jar, sphinx-needs venv, elkjs, (optional) drawio, and record them in *`claude/notes/toolchain.md`* (D19). Install whatever is missing, after you approve it.
 - [x] 4.2 Create the repos in tiacsys (D48, D49, D73: robarm-manifest, xdmod, robarm-syseng, robarm-ee, robarm-me, robarm-sw, robarm-integration), set rulesets (D50, D51), and run `west init` / `west update`. Repos, settings and labels done 2026-11-15; ruleset after the skeletons (4.9); west init in 4.10
-- [ ] 4.2b Move the workspace `claude/` folder into `xdmod/claude/` and keep its history in a first commit (D70). Convert the framework drafts into manual pages, the decision log into `XD-ADR` / `PRJ-DEC` needs, and method rules into `XD-RULE` needs, with real references everywhere (D120, D121)
-- [ ] 4.2c Try the sphinx-llm extension on the xdmod manual (D122)
+- [x] 4.2b Move the workspace `claude/` folder into `xdmod/claude/` and keep its history in a first commit (D70). Convert the framework drafts into manual pages, the decision log into `XD-ADR` / `PRJ-DEC` needs, and method rules into `XD-RULE` needs, with real references everywhere (D120, D121)
+- [x] 4.2c Try the sphinx-llm extension on the xdmod manual (D122)
 - [x] 4.2a CI: sibling checkout by branch name (D52); Pages publishing with versions for the full set (D55)
 - [x] 4.3 zdocs + sphinx-needs skeleton in each repo; upstream docs built locally (D35); full set in the manifest repo
 - [x] 4.3a Pin the zdocs PR branches (#35–#38) in the manifest until they merge
@@ -119,7 +119,7 @@ Local repos only; GitHub comes in Phase 4.
 - [x] 4.4a CI groundwork (Phase 3 review, R9): measure a cold CI run (full Zephyr tree, SDK, JDK/Pilot) and add caching or Zephyr's CI image; limit fallback on runners (`timeout` + `ulimit`); test the sibling resolution of D127 first; check CK-D4 in CI by reading KiCad and FreeCAD trace fields in plain Python
 - [x] 4.4b `curatrix doctor` fails on tool version mismatch (rolling distro vs. D19) and generated files record the tool versions that made them
 - [x] 4.4c Worktree spike (D125): registries with `../../` paths and Zephyr module discovery must see the worktree, not the main checkout
-- [ ] 4.5 Bump bot: a scheduled workflow in robarm-manifest opens or updates the bump PR and builds the full set (D61, D89). Needs the org setting that lets Actions create PRs, a commit status usable as a required check, and a keep-alive against GitHub's 60-day schedule pause
+- [x] 4.5 Bump bot: a scheduled workflow in robarm-manifest opens or updates the bump PR and builds the full set (D61, D89). Needs the org setting that lets Actions create PRs, a commit status usable as a required check, and a keep-alive against GitHub's 60-day schedule pause
 - [x] 4.5a Schema for HIL run records (fields, hashes, SHAs of all pinned repos, config, evidence rule), before the writer
 - [x] 4.6 Orphan evidence branch in robarm-integration (D73) and the HIL run-record writer (D57, D60)
 - [x] 4.8 curatrix core and xdmod tooling: CLI (root detection, env, run with limits and runner fallback, doctor, bootstrap, update, launch, docs, check runner with `checks.yaml`, gen, ids, views), `needs_config.toml`, SysML library, Sphinx extensions, bootstrap template, reusable workflows (port from the spike)
@@ -128,6 +128,19 @@ Local repos only; GitHub comes in Phase 4.
 - [x] 4.7 Open issues on tiacsys/zdocs (#25–#34, D62) and tiacsys/affirmatrix (#10–#18, D59), after the user approved the drafts in *`claude/notes/issue-drafts/`*
 - [ ] 4.7a PRs for those issues, as agreed per issue
       - zdocs PRs opened 2026-11-14, waiting for the user's review: #35 (→ #34, sphinx-needs 9.2), #36 (→ #29, strict mode), #37 (→ #25, version_project), #38 (→ #26, imports). Not stacked; ADR index lines conflict trivially.
+
+### Phase 4 follow-ups (non-blocking review points, to become issues)
+
+- xdmod: convert D143 to an `XD-ADR` (and a `PRJ-DEC` for the Pages URL); remove bare IDs from generated CLI help and API docstrings
+- xdmod: reference extension — register `ids.py` as a build dependency, don't unload foreign curatrix modules, replace the `[!dr]*` exclude
+- xdmod: weak need links — XD-RULE-0042 (also D72/D119), XD-RULE-0041, CK-A1 → XD-RULE-0002; robarm: PRJ-DEC-0006 → D112, PRJ-DEC-0018 refines PRJ-DEC-0017
+- xdmod: sphinx-llm output (HTML entities in llms.txt, duplicate .md/.html.md)
+- xdmod: CI memory-limit smoke test should check a marker, not any non-zero exit
+- xdmod: `curatrix work` always re-execs from the set's xdmod; README wording
+- xdmod#12: provenance — FreeCAD shape records not compared in CI; stale view entries never removed
+- robarm-manifest: publish job keeps the write token in its checkout; dry runs run `prepare` with write scopes; `report` has one permission too many; reusable workflow called `@main` (old baselines may rebuild differently); gh-pages history growth; actions pinned by major tag
+- evidence: no proof that the firmware was built from the recorded trees; staleness compares SHAs only; optional ruleset for the `evidence` branch (owner decision)
+- zdocs PRs #35–#38: review and merge by the owner, then move the zdocs pin from #36's head to zdocs main
 
 ## Phase 5 — Iteration 1 content (T-shape)
 

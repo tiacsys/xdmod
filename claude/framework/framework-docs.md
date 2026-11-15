@@ -33,7 +33,7 @@ xdmod-manual/
     trace-model                 need types, link-type table, rules R1–R7   (generated from needs_config.toml + text)
     id-scheme                   kinds, format, ledger                       (kind table generated)
     variant-rules               F1–F2, V1–V6, T1–T3
-    checks                      check catalogue, stages, levels             (generated from curatrix)
+    checks                      check catalogue, stages, levels, and one generated `XD-CHECK` need per check that `enforces` an `XD-RULE` (D121; kept in the manual, not in xdmod-ref, to avoid a reference cycle)
     sysmod-mapping              SYSMOD steps → work products → files → docs
     repo-layouts                common pattern + per-repo layouts
     workspace                   paths, roles, group filters, environment
@@ -51,7 +51,6 @@ xdmod-ref/
   curatrix CLI                  generated from the argument parser
   curatrix API                  generated from docstrings (Sphinx autodoc)
   sphinx extensions             directives and options
-  checks                        one `XD-CHECK` need per curatrix check, generated, each `enforces` an `XD-RULE` (D121)
   needs config                  rendered needs_config.toml
   SysML library                 XdView, trace metadata
 ```

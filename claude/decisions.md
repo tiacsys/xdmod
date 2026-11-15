@@ -1,5 +1,7 @@
 # Decisions
 
+> **Frozen 2026-11-15 (D120).** Decisions D1–D142 are now sphinx-needs: framework decisions are `XD-ADR` needs in the XDMOD manual (`xdmod/docs/xdmod-manual/explanation/decisions/`), robot-arm decisions are `PRJ-DEC` needs in robarm-manifest's `robarm` doc. D143 is converted in a follow-up. New decisions are written as needs, not here. This file stays as the historical log.
+
 This file is the decision log for the XDMOD framework and its robot-arm example. The work plan is in `plan.md`.
 Each decision has an ID (`D<n>`), which never changes and is never reused. If a decision is changed later, its row stays and says *revised by* or *superseded by*, and a new row records the change.
 
@@ -158,6 +160,7 @@ Rows marked *revised* or *superseded* were changed later. The note in the row na
 | D140 | **Phase 4 merge rights:** initial skeletons go straight to `main` of the new repos before the ruleset is switched on. After that, all Phase 4 work goes through PRs, and the coordinator agent may merge them in xdmod and robarm-* once CI is green and the agent review has no blocking findings. The owner gets a summary of each merge. This is a Phase 4 exception to D51/D58. | 2026-11-15 |
 | D141 | **Rulesets are per repo, not per org.** Org rulesets need the GitHub Team plan. Each of the 7 repos has the same `xdmod-main` ruleset on its default branch: PR required (0 approvals, rebase only), linear history, no force push, no deletion. The admin role may bypass **only through a PR** (no direct pushes to `main`). Required status checks and "branches up to date" (D133) are added in task 4.4, once each repo's CI check names exist. Refines D136. | 2026-11-15 |
 | D142 | **Required checks (task 4.4):** in each repo's `xdmod-main` ruleset, required status checks with "branches up to date" (D133) from the GitHub Actions app: xdmod `tests` + `check / check`; robarm-syseng, -ee, -me, -sw, -integration `check / check`; robarm-manifest `full-set` (check run on normal PRs, commit status on bump PRs). CI installs the pinned Doxygen 1.18.0 from the release tarball, because Ubuntu's 1.9.8 breaks `sw-api`. | 2026-11-15 |
+| D143 | **Pages:** live at https://tiacsys.github.io/robarm-manifest/ (`latest/` from `main`, `vX.Y.Z/` per baseline, `versions.json`, switcher). Publishing builds at the exact pins; **PR dry runs resolve siblings like PR CI** (D127). The bump bot moves a pin only when the compare API says it is behind `main`; a failed compare stops the run unchanged. **Stacked PRs with rebase merge:** after each merge, rebase the next PR onto `main` with only its own commits (`git rebase --onto`), because GitHub's own update conflicts on the rewritten commits. | 2026-11-15 |
 
 ## Review log
 
