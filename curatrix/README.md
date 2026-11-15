@@ -12,7 +12,7 @@ memory limit and a timeout (D71).
 
 Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-catalogue) ·
 [limits.yaml](#limitsyaml) · [tools.yaml](#toolsyaml) · [ids.yaml](#idsyaml-the-ledger) ·
-[Generated files](#generated-files) · [Evidence](#evidence-run-records) · [Model conventions](#sysml-model-conventions) ·
+[Generated files](#generated-files) · [Evidence](#evidence-run-records) · [Worktrees](#worktrees-d125) · [Model conventions](#sysml-model-conventions) ·
 [CAD trace fields](#cad-trace-fields) · [Views](#views-drawiosvg) · [Docs](#docs-layout-and-the-sphinx-extension) ·
 [Tests](#tests)
 
@@ -43,7 +43,7 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 | `curatrix evidence record TWISTER_DIR --config SYS-CFG-n [--kind sim\|hil] [--setup S] [--branch B] [--create] [--dry-run]` | a run record from a Twister output dir + the workspace state, committed onto the orphan branch `evidence` of robarm-integration through a worktree in `build/evidence/` ([Evidence](#evidence-run-records)) |
 | `curatrix evidence read [--repo R] [--branch B] [-o FILE]` | run records → `TR` needs (`build/<repo>/evidence/tr-needs.json`), stale ones tagged |
 | `curatrix evidence validate FILE` | a record against the schema |
-| `curatrix work start\|done` | **stub** (task 4.4c): prints how to create a worktree by hand, exit 2 |
+| `curatrix work start <branch> <repos…>` / `work done <branch> [--force] [--delete-branch]` / `work list` | worktree set `.worktrees/<branch>/` for parallel work (D125): the named repos as git worktrees on `<branch>`, everything else symlinked to the main checkout, its own `.west/`, `build` → `build/<branch>/`. Work from `.worktrees/<branch>/` ([Worktrees](#worktrees-d125)) |
 | `curatrix hook pre-commit` | what the installed git hook runs (CK-C1 warning, CK-H1, `.drawio.svg` freshness, FCStd-without-JSON warning) |
 
 Roles (`--role`, repo-topology.md §4): `syseng` (manifest default, D93), `ee` (`+ee`), `ee3d`
@@ -414,11 +414,35 @@ were not run against a real manifest yet), `launch` (env verified; GUIs not star
 `--shape`, tombstones, cad-exports), `ids`, `views` (interconnection, decomposition), `variants`,
 `needs-diff`, pre-commit hook, Sphinx extension, reusable CI workflow (first version, untested on GitHub).
 
-Stubbed / later: `work start|done` (4.4c); view kinds `context`, `usecases`, `allocation`, `variants`;
+Stubbed / later: view kinds `context`, `usecases`, `allocation`, `variants`;
 coverage per configuration (R2 per cell, `coverage-matrix`), `config-page`, `sysml-element`;
 variant rules V6, T1–T3 and `configs` derivation; FreeCAD TechDraw / GLB exports and the review
 report; CK-F* domain checks (repos add them as `commands`);
 affirmatrix integration for R7 (needs-diff is the interim).
+
+## Worktrees (D125)
+
+`curatrix work start feat/x robarm-ee robarm-syseng` makes `.worktrees/feat/x/` a workspace root
+of its own: `robarm-ee/` and `robarm-syseng/` are git worktrees on `feat/x` (from `main`, or the
+existing local / `origin` branch), all other top-level entries (`xdmod`, other repos, `zephyr`,
+`modules`, `tools`, `libs`, `.venv`, `.xdmod`, `CLAUDE.md`, `.claude`) are relative symlinks to the
+main checkout, `.west/` is a real folder with a copy of the west config, and `build` points to
+`build/feat-x/`. Then `cd .worktrees/feat/x` and use curatrix as usual:
+
+- West finds its topdir from the current directory, so `west list`, `west build` and Zephyr's
+  module discovery (`zephyr_module.py`) see the worktree repos; so does the docs build
+  (`west topdir`).
+- Registry paths `../../<repo>/docs/…` resolve inside `.worktrees/feat/x/`: to the worktree for
+  repos of the change, through the symlink to the main checkout for all others.
+- Builds land in `build/feat-x/<area>/`; the main checkouts are not touched.
+- If `xdmod` is one of the worktree repos, curatrix re-executes itself from the worktree's
+  `xdmod/curatrix/src`, so the branch's own curatrix code runs.
+- Don't run `west update` / `curatrix update` inside a worktree set (it would move the worktrees
+  to the pins). Run commands from the worktree root, not from a symlinked folder inside it.
+
+`curatrix work done feat/x` removes the worktrees (refused with uncommitted changes unless
+`--force`), the links and the folder; `--delete-branch` also deletes merged branches. Tested in
+`tests/test_work.py` (a real west workspace of local repos, incl. `zephyr_module.py`).
 
 ## Tests
 

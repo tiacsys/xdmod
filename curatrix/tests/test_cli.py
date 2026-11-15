@@ -66,12 +66,14 @@ def test_ids_and_placeholders(ws, capsys):
     assert run("ids", "check", "robarm-ee") == 1                               # CK-C2: not in the ledger
 
 
-def test_json_output_and_work_stub(ws, capsys):
+def test_json_output_and_work_needs_west(ws, capsys):
     capsys.readouterr()
     assert run("check", "robarm-ee", "--only", "CK-C2", "--json") == 0
     out = json.loads(capsys.readouterr().out)
     assert out["ok"] and out["checks"][0]["id"] == "CK-C2" and out["checks"][0]["repro"].startswith("curatrix check")
-    assert run("work", "start", "feat/x", "robarm-ee") == 2
+    assert run("work", "start", "feat/x", "robarm-ee") == 1                  # no west workspace here
+    assert "not a west workspace" in capsys.readouterr().err
+    assert not (ws / ".worktrees").exists()
 
 
 def test_env(ws, capsys):
