@@ -80,7 +80,7 @@ def model(ws, cfg: ChecksConfig) -> tuple[Output, Output, pilot.PilotResult]:
     tmp = ws.build(cfg.area) / "model"
     tmp.mkdir(parents=True, exist_ok=True)
     raw = tmp / "pilot-export.json"
-    res = pilot.run(ws, [*libs, *files], export, raw, tmpdir=tmp)
+    res = pilot.run(ws, files, export, raw, tmpdir=tmp, libraries=libs)   # libraries as one set
     (tmp / "pilot.log").write_text(res.log + "\n")
     if not res.ok:
         raise GenError(f"the Pilot reported {res.errors} error(s); see {ws.rel(tmp / 'pilot.log')}:\n{res.log[-3000:]}")

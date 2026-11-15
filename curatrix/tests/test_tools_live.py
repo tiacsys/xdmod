@@ -57,3 +57,23 @@ def test_views_build_is_byte_stable(tmp_path):
     (v,) = views.discover(m)
     assert views.check_file(f, views.to_mxfile(views.graph(m, v))) == []
     assert render.normalize(WS, [f], tmp_path / "norm", check_only=True, log=lambda *_: None) == []
+
+
+def test_pilot_loads_libraries_as_one_set(tmp_path):
+    """Library files that refer to each other resolve when loaded as one set (SYSMOD case)."""
+    need_pilot()
+    d = FIXTURES / "sysml" / "libset"
+    for order in ([d / "LibA.sysml", d / "LibB.sysml"], [d / "LibB.sysml", d / "LibA.sysml"]):
+        r = pilot.run(WS, [d / "UsesLibs.sysml"], [], None, tmpdir=tmp_path, libraries=[XDTRACE, *order])
+        assert r.ok, r.log
+    # one file at a time (the old way) fails for one of the two orders
+    r = pilot.run(WS, [d / "LibA.sysml", d / "LibB.sysml", d / "UsesLibs.sysml"], [], None, tmpdir=tmp_path)
+    assert not r.ok
+
+
+def test_pilot_library_set_errors_name_file_and_line(tmp_path):
+    need_pilot()
+    d = FIXTURES / "sysml" / "libset"
+    r = pilot.run(WS, [], [], None, tmpdir=tmp_path, libraries=[d / "LibA.sysml", d / "LibB.sysml", d / "BadLib.sysml"])
+    assert not r.ok and r.errors == 1
+    assert f"{(d / 'BadLib.sysml').resolve()} line : 3" in r.log, r.log
