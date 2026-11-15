@@ -1,0 +1,344 @@
+"""Test run records and the evidence branch (tasks 4.5a, 4.6; D57, D60, D73, D131; R5, R5a).
+
+A **run record** (schema ``data/run-record.schema.json``, README "Evidence") describes one
+Twister run: the firmware hash, the SHAs of every west project, the configuration (``SYS-CFG``),
+the results, and whether the evidence rule held. Records live on the orphan branch ``evidence``
+of robarm-integration as ``runs/<YYYY>/<run id>/record.json`` (+ the Twister reports), never on
+``main``.
+
+``record``  build a record from a Twister output dir and the workspace state.
+``write``   commit it onto the evidence branch through a git worktree under ``build/evidence/``
+            (the repo's own checkout and its ``main`` are never touched). It refuses a record whose
+            evidence rule failed, unless it goes to another (scratch) branch.
+``read``    turn the records of a branch into ``TR`` needs (sphinx-needs import format) for the
+            docs; a record whose SHAs differ from the current pins is tagged ``stale`` (D131).
+
+Evidence rule (D60): every west project at its manifest pin with a clean tree, and the commits of
+xdmod, the manifest and every robarm repo on ``main`` (or, for the manifest, a ``baseline/*`` tag).
+"""
+from __future__ import annotations
+
+import datetime as dt
+import hashlib
+import json
+import re
+import shutil
+import subprocess
+from pathlib import Path
+
+from curatrix import limits
+from curatrix.ws import Workspace
+
+SCHEMA_FILE = Path(__file__).resolve().parent / "data" / "run-record.schema.json"
+SCHEMA_ID = "xdmod-run-record/1"
+TC_RE = re.compile(r"\b(?:SW|EE|ME|INT|SYS)-(?:TC|ITC|STC)-[0-9]{4,}\b")
+ZTEST_RE = re.compile(
+    r"/\*(?P<c>(?:(?!\*/).)*)\*/\s*ZTEST(?:_F|_USER|_USER_F)?\(\s*(?P<suite>\w+)\s*,\s*(?P<name>\w+)\s*\)", re.S)
+TRACKED = ("xdmod", "robarm-")          # repos whose commits must be on main (D60)
+REPORTS = ("twister.json", "twister_report.xml")
+VERDICT = {"passed": "passed", "failed": "failed", "skipped": "skipped", "error": "error",
+           "blocked": "error", "filtered": "skipped", "not run": "skipped"}
+
+
+class EvidenceError(Exception):
+    pass
+
+
+def _git(args, cwd: Path, ws: Workspace | None = None, check: bool = True, **kw) -> subprocess.CompletedProcess:
+    cmd = ["git", *args]
+    r = (limits.run(cmd, "git", ws, cwd=cwd, capture_output=True, text=True, **kw) if ws is not None
+         else subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, **kw))
+    if check and r.returncode:
+        raise EvidenceError(f"git {' '.join(args)} ({cwd}) failed: {r.stderr.strip()}")
+    return r
+
+
+def sha256_file(p: Path) -> str:
+    h = hashlib.sha256()
+    with open(p, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+# ------------------------------------------------------------------ test case IDs (D80)
+def test_case_map(src_dirs: list[Path]) -> dict[str, str]:
+    """`<ztest suite>.<test name without test_>` -> test case ID, from the comment right above
+    each ZTEST(...) in the C sources of the test folders."""
+    out = {}
+    for d in src_dirs:
+        for f in sorted(Path(d).rglob("*.c")):
+            for m in ZTEST_RE.finditer(f.read_text(errors="replace")):
+                ids = TC_RE.findall(m.group("c").split("/*")[-1])
+                if ids:
+                    name = m.group("name")
+                    out[f"{m.group('suite')}.{name[5:] if name.startswith('test_') else name}"] = ids[0]
+    return out
+
+
+def _tc_for(identifier: str, suite: str, mapping: dict[str, str]) -> str | None:
+    """twister identifier `<yaml scenario>.<ztest suite>.<test>`: match on the last two parts."""
+    if identifier in mapping:
+        return mapping[identifier]
+    rest = identifier[len(suite) + 1:] if identifier.startswith(suite + ".") else identifier
+    return mapping.get(rest)
+
+
+# ------------------------------------------------------------------ twister output
+def parse_twister(outdir: Path) -> dict:
+    p = Path(outdir) / "twister.json"
+    if not p.is_file():
+        raise EvidenceError(f"{p} not found (not a Twister output dir)")
+    return json.loads(p.read_text())
+
+
+def find_firmware(outdir: Path, suite: dict) -> Path:
+    plat = suite.get("platform", "").replace("/", "_")
+    cands = [p for name in ("zephyr.bin", "zephyr.exe")
+             for p in sorted(Path(outdir).rglob(f"{suite['name']}/zephyr/{name}")) if plat in str(p)]
+    if not cands:
+        raise EvidenceError(f"no zephyr.bin / zephyr.exe for {suite['name']} ({suite.get('platform')}) in {outdir}")
+    return cands[0]
+
+
+# ------------------------------------------------------------------ workspace state (D60)
+def _west_projects(ws: Workspace) -> list[dict]:
+    out = subprocess.run([*ws.west(), "list", "-f", "{name}|{path}|{url}|{sha}"], cwd=ws.root,
+                         capture_output=True, text=True, check=True, timeout=120).stdout
+    res = []
+    for line in out.splitlines():
+        name, path, url, sha = (line.split("|") + ["", "", "", ""])[:4]
+        res.append({"name": name, "path": ws.root / path, "url": url, "pin": sha})
+    return res
+
+
+def _on_main_or_baseline(path: Path, url: str, sha: str, ws, manifest: bool) -> str | None:
+    """'main' if sha is in the remote main, 'baseline/vX.Y.Z' if it is a baseline tag (manifest)."""
+    if manifest:
+        tags = _git(["ls-remote", "--tags", url, "refs/tags/baseline/*"], path, ws, check=False).stdout
+        for line in tags.splitlines():
+            obj, ref = line.split("\t")
+            if ref.endswith("^{}") and obj == sha:
+                return ref[len("refs/tags/"):-3]
+            if not ref.endswith("^{}") and obj == sha:
+                return ref[len("refs/tags/"):]
+    if _git(["fetch", "-q", "--no-tags", "--filter=blob:none", url, "+refs/heads/main:refs/remotes/xd-evidence/main"],
+            path, ws, check=False).returncode:
+        if _git(["rev-parse", "-q", "--verify", "refs/remotes/xd-evidence/main"], path, ws, check=False).returncode:
+            return None
+    ok = _git(["merge-base", "--is-ancestor", sha, "refs/remotes/xd-evidence/main"], path, ws, check=False).returncode == 0
+    return "main" if ok else None
+
+
+def workspace_state(ws: Workspace, check_remote: bool = True) -> tuple[dict, dict, list[str], str]:
+    """(manifest entry, {name: repo entry}, problems, base) for the run record."""
+    manifest, repos, problems, base = None, {}, [], "main"
+    for p in _west_projects(ws):
+        path, name = p["path"], p["name"]
+        if not (path / ".git").exists():
+            continue
+        head = _git(["rev-parse", "HEAD"], path, ws).stdout.strip()
+        clean = _git(["status", "--porcelain"], path, ws).stdout.strip() == ""
+        is_manifest = name == "manifest"
+        url = p["url"]
+        if is_manifest:
+            name = path.name
+            url = _git(["config", "--get", "remote.origin.url"], path, ws, check=False).stdout.strip()
+        e = {"sha": head, "pin": head if is_manifest else p["pin"], "clean": clean}
+        if not clean:
+            problems.append(f"{name}: tree not clean")
+        if not is_manifest and head != p["pin"]:
+            problems.append(f"{name}: HEAD {head[:12]} is not the manifest pin {p['pin'][:12]}")
+        if check_remote and (is_manifest or name.startswith(TRACKED)):
+            on = _on_main_or_baseline(path, url, head, ws, is_manifest) if url else None
+            e["on"] = on
+            if on is None:
+                problems.append(f"{name}: {head[:12]} is not on main" + (" or a baseline tag" if is_manifest else ""))
+            elif is_manifest and on.startswith("baseline/"):
+                base = on
+        elif is_manifest or name.startswith(TRACKED):
+            problems.append(f"{name}: main/baseline not checked (offline)")
+        if is_manifest:
+            manifest = e
+        else:
+            repos[name] = e
+    if manifest is None:
+        raise EvidenceError("no manifest repo in `west list`")
+    return manifest, dict(sorted(repos.items())), problems, base
+
+
+# ------------------------------------------------------------------ the record
+def make_record(ws: Workspace, twister_dir: Path, config: str, kind: str = "sim", setup: str | None = None,
+                test_dirs: list[Path] | None = None, overrides: dict[str, str] | None = None,
+                note: str = "", check_remote: bool = True, now: dt.datetime | None = None) -> dict:
+    tw = parse_twister(twister_dir)
+    suites = [s for s in tw.get("testsuites", []) if s.get("status") not in ("filtered",)]
+    if not suites:
+        raise EvidenceError(f"{twister_dir}: no test suites that ran")
+    platforms = sorted({s.get("platform", "") for s in suites})
+    if len(platforms) != 1:
+        raise EvidenceError(f"one platform per record, got {platforms}")
+    fw = {find_firmware(twister_dir, s) for s in suites}
+    if len(fw) != 1:
+        raise EvidenceError("one firmware image per record; run Twister for one test scenario, or record "
+                            f"each separately (images: {', '.join(sorted(str(f) for f in fw))})")
+    fw_path = fw.pop()
+    roots = tw.get("environment", {}).get("options", {}).get("testsuite_root", [])
+    mapping = test_case_map(test_dirs or [Path(r) for r in roots])
+    mapping.update(overrides or {})
+    results = []
+    for s in suites:
+        for tc in s.get("testcases", []):
+            d = tc.get("execution_time")
+            results.append({"test": tc["identifier"], "suite": s["name"],
+                            "test_case": _tc_for(tc["identifier"], s["name"], mapping),
+                            "status": tc.get("status", "not run"),
+                            "duration": float(d) if d not in (None, "") else None})
+    manifest, repos, problems, base = workspace_state(ws, check_remote)
+    now = (now or dt.datetime.now(dt.timezone.utc)).replace(microsecond=0)
+    fw_sha = sha256_file(fw_path)
+    created = now.isoformat().replace("+00:00", "Z")
+    run_id = now.strftime("%Y%m%dT%H%M%SZ") + "-" + hashlib.sha256(
+        (fw_sha + manifest["sha"] + created).encode()).hexdigest()[:8]
+    who = _git(["config", "user.name"], ws.root, ws, check=False).stdout.strip() or "unknown"
+    rec = {
+        "schema": SCHEMA_ID, "run_id": run_id, "kind": kind, "created": created, "recorded_by": who,
+        "config": config, "setup": setup, "platform": platforms[0],
+        "firmware": {"file": str(fw_path.resolve().relative_to(Path(twister_dir).resolve())), "sha256": fw_sha},
+        "workspace": {"manifest": manifest, "repos": repos},
+        "evidence": {"ok": not problems, "base": base, "problems": problems},
+        "results": results,
+        "tool": {"name": "twister", "zephyr_version": tw.get("environment", {}).get("zephyr_version", ""),
+                 "files": {f: sha256_file(Path(twister_dir) / f) for f in REPORTS if (Path(twister_dir) / f).is_file()}},
+    }
+    if note:
+        rec["note"] = note
+    return rec
+
+
+def validate(rec: dict) -> list[str]:
+    """Schema errors (jsonschema), plus the rules a schema can't say."""
+    errs = []
+    try:
+        import jsonschema
+        v = jsonschema.Draft202012Validator(json.loads(SCHEMA_FILE.read_text()))
+        errs += [f"{'/'.join(str(x) for x in e.absolute_path) or '(record)'}: {e.message}" for e in v.iter_errors(rec)]
+    except ImportError:
+        errs.append("jsonschema is not installed (xdmod/requirements.txt)")
+    if not errs and rec["kind"] == "hil" and not rec.get("setup"):
+        errs.append("setup: a hil record names its HIL setup (hil/<setup>)")
+    if not errs and rec["evidence"]["ok"] != (not rec["evidence"]["problems"]):
+        errs.append("evidence.ok must be true exactly when there are no problems")
+    return errs
+
+
+def record_path(rec: dict) -> str:
+    return f"runs/{rec['run_id'][:4]}/{rec['run_id']}"
+
+
+# ------------------------------------------------------------------ writer
+def write(ws: Workspace, rec: dict, twister_dir: Path, repo: Path, url: str, branch: str = "evidence",
+          create: bool = False, trailer: str = "", log=print) -> str:
+    """Commit `rec` (+ Twister reports) onto `branch` of `repo` through a worktree in build/.
+    Returns the new commit SHA. The branch is updated locally; pushing is the caller's step."""
+    errs = validate(rec)
+    if errs:
+        raise EvidenceError("invalid run record:\n  " + "\n  ".join(errs))
+    if branch == "evidence" and not rec["evidence"]["ok"]:
+        raise EvidenceError("the evidence rule failed (D60), so this run is a preview and is not kept:\n  "
+                            + "\n  ".join(rec["evidence"]["problems"]) + "\n(write it to a scratch branch with --branch)")
+    wt = ws.build("evidence") / f"wt-{re.sub(r'[^A-Za-z0-9_.-]+', '-', branch)}"
+    if wt.exists():
+        _git(["worktree", "remove", "--force", str(wt)], repo, ws, check=False)
+        shutil.rmtree(wt, ignore_errors=True)
+    _git(["worktree", "prune"], repo, ws, check=False)
+    remote = _git(["fetch", "-q", "--no-tags", url, f"+refs/heads/{branch}:refs/remotes/xd-evidence/{branch}"],
+                  repo, ws, check=False).returncode == 0
+    local = _git(["rev-parse", "-q", "--verify", f"refs/heads/{branch}"], repo, ws, check=False).returncode == 0
+    wt.parent.mkdir(parents=True, exist_ok=True)
+    if remote:
+        if local:   # keep local records that are not pushed yet, but follow the remote otherwise
+            if _git(["merge-base", "--is-ancestor", f"refs/remotes/xd-evidence/{branch}", f"refs/heads/{branch}"],
+                    repo, ws, check=False).returncode:
+                _git(["branch", "-f", branch, f"refs/remotes/xd-evidence/{branch}"], repo, ws)
+        else:
+            _git(["branch", branch, f"refs/remotes/xd-evidence/{branch}"], repo, ws)
+        _git(["worktree", "add", "-q", str(wt), branch], repo, ws)
+    elif local:
+        _git(["worktree", "add", "-q", str(wt), branch], repo, ws)
+    elif create:
+        _git(["worktree", "add", "-q", "--orphan", "-b", branch, str(wt)], repo, ws)
+    else:
+        raise EvidenceError(f"branch {branch!r} exists neither at {url} nor locally (use --create for a new orphan branch)")
+    try:
+        if _git(["symbolic-ref", "--short", "HEAD"], wt, ws).stdout.strip() != branch:
+            raise EvidenceError(f"worktree {wt} is not on {branch}")
+        d = wt / record_path(rec)
+        d.mkdir(parents=True, exist_ok=False)
+        (d / "record.json").write_text(json.dumps(rec, indent=2, sort_keys=True) + "\n")
+        for f in REPORTS:
+            if (Path(twister_dir) / f).is_file():
+                shutil.copyfile(Path(twister_dir) / f, d / f)
+        _git(["add", "--", record_path(rec)], wt, ws)
+        n_tc = sum(1 for r in rec["results"] if r["test_case"])
+        msg = (f"run {rec['run_id']}: {rec['kind']} {rec['platform']} {rec['config']}, "
+               f"{len(rec['results'])} result(s), {n_tc} traced\n\n"
+               f"firmware sha256 {rec['firmware']['sha256']}\nmanifest {rec['workspace']['manifest']['sha']}\n")
+        if trailer:
+            msg += f"\n{trailer}\n"
+        _git(["commit", "-q", "-m", msg], wt, ws)
+        sha = _git(["rev-parse", "HEAD"], wt, ws).stdout.strip()
+        log(f"  committed {record_path(rec)} on {branch} ({sha[:12]}) in {ws.rel(repo)}")
+        return sha
+    finally:
+        _git(["worktree", "remove", "--force", str(wt)], repo, ws, check=False)
+
+
+# ------------------------------------------------------------------ reader
+def load_records(repo: Path, ref: str, ws: Workspace | None = None) -> list[dict]:
+    files = _git(["ls-tree", "-r", "--name-only", ref, "--", "runs"], repo, ws, check=False).stdout.split()
+    out = []
+    for f in sorted(files):
+        if f.endswith("/record.json"):
+            out.append(json.loads(_git(["show", f"{ref}:{f}"], repo, ws).stdout))
+    return out
+
+
+def shas_of(rec: dict) -> list[str]:
+    ws = rec["workspace"]
+    return [f"{n}={e['sha']}" for n, e in sorted(ws["repos"].items())]
+
+
+def stale_reasons(rec: dict, pins: dict[str, str]) -> list[str]:
+    """D131: the recorded SHAs must equal the current pins (west name -> SHA)."""
+    out = []
+    for n, e in rec["workspace"]["repos"].items():
+        pin = pins.get(n)
+        if pin and pin != e["sha"]:
+            out.append(f"{n} {e['sha'][:12]} != pin {pin[:12]}")
+    return out
+
+
+def to_needs(records: list[dict], pins: dict[str, str] | None = None, project: str = "evidence") -> dict:
+    """TR needs (import format) from run records; untraced results make no need."""
+    needs = {}
+    for rec in records:
+        if not rec.get("evidence", {}).get("ok"):
+            continue                                   # previews never count (D60)
+        stale = stale_reasons(rec, pins) if pins else []
+        for r in rec["results"]:
+            tc = r.get("test_case")
+            if not tc:
+                continue
+            nid = f"TR-{tc}-{rec['run_id'][-8:]}"
+            verdict = VERDICT.get(r["status"], "error")
+            n = {"id": nid, "type": "tr", "title": f"{tc} {verdict} ({rec['platform']}, {rec['config']})",
+                 "content": (f"Run ``{rec['run_id']}`` ({rec['kind']}), test ``{r['test']}``, recorded "
+                             f"{rec['created']} by {rec['recorded_by']} against {rec['evidence']['base']}."
+                             + (f" **Stale** (D131): {'; '.join(stale)}." if stale else "")),
+                 "status": "valid", "result_of": [tc], "method": "hil" if rec["kind"] == "hil" else "test",
+                 "config": rec["config"], "firmware_sha256": rec["firmware"]["sha256"], "shas": shas_of(rec),
+                 "verdict": verdict, "tags": ["stale"] if stale else []}
+            needs[nid] = n
+    return {"created": "", "current_version": "", "project": project,
+            "versions": {"": {"needs": {k: needs[k] for k in sorted(needs)}}}}

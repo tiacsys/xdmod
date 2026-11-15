@@ -12,7 +12,7 @@ memory limit and a timeout (D71).
 
 Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-catalogue) ·
 [limits.yaml](#limitsyaml) · [tools.yaml](#toolsyaml) · [ids.yaml](#idsyaml-the-ledger) ·
-[Generated files](#generated-files) · [Model conventions](#sysml-model-conventions) ·
+[Generated files](#generated-files) · [Evidence](#evidence-run-records) · [Model conventions](#sysml-model-conventions) ·
 [CAD trace fields](#cad-trace-fields) · [Views](#views-drawiosvg) · [Docs](#docs-layout-and-the-sphinx-extension) ·
 [Tests](#tests)
 
@@ -40,6 +40,9 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 | `curatrix views normalize [<repo> \| FILES…] [--check]` | rewrite editor-saved `.drawio.svg` into the normalized form (decompress, drop editor attributes, sort cells, re-render, hash) |
 | `curatrix variants [<repo>] [--model FILE] [-v]` | variant rules F1, F2, V1–V5 on a model JSON (Pilot export or compact) |
 | `curatrix needs-diff BEFORE AFTER [-o FILE]` | change impact between two sets of needs.json (files or folders): changed needs, SUSPECT (direct/transitive), DANGLING. Exit 1 if any |
+| `curatrix evidence record TWISTER_DIR --config SYS-CFG-n [--kind sim\|hil] [--setup S] [--branch B] [--create] [--dry-run]` | a run record from a Twister output dir + the workspace state, committed onto the orphan branch `evidence` of robarm-integration through a worktree in `build/evidence/` ([Evidence](#evidence-run-records)) |
+| `curatrix evidence read [--repo R] [--branch B] [-o FILE]` | run records → `TR` needs (`build/<repo>/evidence/tr-needs.json`), stale ones tagged |
+| `curatrix evidence validate FILE` | a record against the schema |
 | `curatrix work start\|done` | **stub** (task 4.4c): prints how to create a worktree by hand, exit 2 |
 | `curatrix hook pre-commit` | what the installed git hook runs (CK-C1 warning, CK-H1, `.drawio.svg` freshness, FCStd-without-JSON warning) |
 
@@ -269,6 +272,49 @@ pins in tools.yaml (e.g. made on a rolling distro with another Firefox), so afte
 files must be regenerated. Plain-Python outputs (stubs, cad-needs, tombstones) have no entry.
 `curatrix doctor` fails when an installed tool differs from its pin.
 
+## Evidence (run records)
+
+Tasks 4.5a/4.6, D57, D60, D73, D131, trace-model.md R5/R5a. Schema:
+[`src/curatrix/data/run-record.schema.json`](src/curatrix/data/run-record.schema.json)
+(JSON Schema 2020-12, `"schema": "xdmod-run-record/1"`).
+
+**Where.** One folder per run on the orphan branch `evidence` of robarm-integration:
+`runs/<YYYY>/<run id>/record.json` plus the Twister reports (`twister.json`, `twister_report.xml`).
+The branch has no common history with `main`; the writer works in a git worktree under
+`build/evidence/` and only moves the local branch `evidence`, so the checkout and `main` stay as
+they are. Pushing is a separate step (`git -C robarm-integration push origin evidence`).
+
+**Fields** (all required unless noted):
+
+| Field | Meaning |
+|---|---|
+| `schema` | `xdmod-run-record/1` |
+| `run_id` | `<UTC yyyymmddThhmmssZ>-<8 hex>`; the 8 hex digits (from firmware hash, manifest SHA and time) end every `TR` ID of the run |
+| `kind` | `hil` (on the HIL setup; R5 applies) or `sim` (native_sim / QEMU: a test result, **never HIL evidence**) |
+| `created`, `recorded_by` | UTC time; `git config user.name` of whoever recorded it |
+| `config` | the one `SYS-CFG` the run was made on (D103) |
+| `setup` | HIL setup folder `hil/<setup>` (required for `hil`, else null) |
+| `platform` | Twister platform, e.g. `nucleo_g474re`, `native_sim/native` |
+| `firmware` | `{file, sha256}`: `zephyr.bin` (hardware) or `zephyr.exe` (native_sim) of the run; one image per record |
+| `workspace.manifest`, `workspace.repos` | for the manifest and **every west project** (xdmod, robarm-*, Zephyr, modules, tools, libraries): `sha` (HEAD), `pin` (manifest revision), `clean`, and for the manifest, xdmod and robarm-* `on`: `main`, `baseline/vX.Y.Z` or null |
+| `evidence` | `{ok, base, problems}`: the evidence rule at record time; `base` = `main` or the manifest's baseline tag |
+| `results` | per Twister test case: `test` (Twister identifier), `suite`, `test_case` (the traced `SW-TC`/`INT-ITC`/`INT-STC`/`EE-TC`/`ME-TC` from the comment above the `ZTEST`, D80, or `--map TEST=ID`; null = verifies nothing), `status`, `duration` |
+| `tool` | `twister`, the Zephyr version, sha256 of the stored reports |
+| `note` | optional free text |
+
+**Evidence rule (D60).** `evidence.ok` holds only if every west project is at its manifest pin with a
+clean tree (no changes, no untracked files), and the commits of the manifest, xdmod and every
+robarm repo are on their remote `main` (the manifest may instead be at a `baseline/*` tag). The
+writer **refuses** a record that fails the rule on the branch `evidence` (it is a preview, D60);
+`--branch <scratch>` writes it elsewhere, e.g. for a test of the tooling.
+
+**Reader and validity (D131).** `curatrix evidence read` turns every result with a `test_case` of
+every record with `evidence.ok` into a need
+`TR-<test case>-<8 hex>` (`result_of`, `method` = `hil`/`test`, `config`, `firmware_sha256`,
+`shas` = `repo=sha` for all projects, `verdict`). A record whose SHAs differ from the current pins
+(`west list`) gets the tag `stale` and a note in its content; CK-B6 reports the same from `shas`.
+A test report imports the file with `.. xd-needimport:: /…/tr-needs.json` and `:optional:`.
+
 ## SysML model conventions
 
 - Library `xdmod/sysml/XdTrace.sysml` (always loaded first): `NeedRef { needId; status; }` (stubs),
@@ -361,7 +407,7 @@ were not run against a real manifest yet), `launch` (env verified; GUIs not star
 Stubbed / later: `work start|done` (4.4c); view kinds `context`, `usecases`, `allocation`, `variants`;
 coverage per configuration (R2 per cell, `coverage-matrix`), `config-page`, `sysml-element`;
 variant rules V6, T1–T3 and `configs` derivation; FreeCAD TechDraw / GLB exports and the review
-report; CK-F* domain checks (repos add them as `commands`); TR extraction from test reports (4.5a);
+report; CK-F* domain checks (repos add them as `commands`);
 affirmatrix integration for R7 (needs-diff is the interim).
 
 ## Tests
