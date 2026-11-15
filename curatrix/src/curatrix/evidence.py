@@ -257,13 +257,23 @@ def write(ws: Workspace, rec: dict, twister_dir: Path, repo: Path, url: str, bra
     local = _git(["rev-parse", "-q", "--verify", f"refs/heads/{branch}"], repo, ws, check=False).returncode == 0
     wt.parent.mkdir(parents=True, exist_ok=True)
     if remote:
-        if local:   # keep local records that are not pushed yet, but follow the remote otherwise
-            if _git(["merge-base", "--is-ancestor", f"refs/remotes/xd-evidence/{branch}", f"refs/heads/{branch}"],
-                    repo, ws, check=False).returncode:
-                _git(["branch", "-f", branch, f"refs/remotes/xd-evidence/{branch}"], repo, ws)
-        else:
-            _git(["branch", branch, f"refs/remotes/xd-evidence/{branch}"], repo, ws)
+        rref = f"refs/remotes/xd-evidence/{branch}"
+        if not local:
+            _git(["branch", branch, rref], repo, ws)
+        elif _git(["merge-base", "--is-ancestor", f"refs/heads/{branch}", rref], repo, ws, check=False).returncode == 0:
+            _git(["branch", "-f", branch, rref], repo, ws)            # local is behind: fast-forward, nothing lost
         _git(["worktree", "add", "-q", str(wt), branch], repo, ws)
+        if local and _git(["merge-base", "--is-ancestor", rref, "HEAD"], wt, ws, check=False).returncode:
+            # diverged: local records not pushed yet + new remote records. Never drop local ones:
+            # replay them onto the remote head (records are new files only, so this can't conflict).
+            r = _git(["rebase", "-q",
+                      "--committer-date-is-author-date", rref], wt, ws, check=False)
+            if r.returncode:
+                _git(["rebase", "--abort"], wt, ws, check=False)
+                _git(["worktree", "remove", "--force", str(wt)], repo, ws, check=False)
+                raise EvidenceError(f"local branch {branch} and {url} diverged and the local records don't replay "
+                                    f"cleanly ({r.stderr.strip()}); nothing was changed. Resolve by hand, then push")
+            log(f"  replayed unpushed local records of {branch} onto the remote head")
     elif local:
         _git(["worktree", "add", "-q", str(wt), branch], repo, ws)
     elif create:
@@ -319,10 +329,22 @@ def stale_reasons(rec: dict, pins: dict[str, str]) -> list[str]:
     return out
 
 
-def to_needs(records: list[dict], pins: dict[str, str] | None = None, project: str = "evidence") -> dict:
-    """TR needs (import format) from run records; untraced results make no need."""
+def test_suffix(run_id: str, test: str) -> str:
+    """The 8 hex digits of a TR ID: unique per run and Twister test."""
+    return hashlib.sha256(f"{run_id}\0{test}".encode()).hexdigest()[:8]
+
+
+def to_needs(records: list[dict], pins: dict[str, str] | None = None, project: str = "evidence",
+             problems: list[str] | None = None) -> dict:
+    """TR needs (import format) from run records; untraced results make no need. Records that
+    fail the schema are skipped and reported in `problems`."""
     needs = {}
     for rec in records:
+        errs = validate(rec)
+        if errs:
+            if problems is not None:
+                problems.append(f"{rec.get('run_id', '?')}: invalid record, skipped: {'; '.join(errs[:3])}")
+            continue
         if not rec.get("evidence", {}).get("ok"):
             continue                                   # previews never count (D60)
         stale = stale_reasons(rec, pins) if pins else []
@@ -330,7 +352,9 @@ def to_needs(records: list[dict], pins: dict[str, str] | None = None, project: s
             tc = r.get("test_case")
             if not tc:
                 continue
-            nid = f"TR-{tc}-{rec['run_id'][-8:]}"
+            # one TR per Twister test, also when several tests trace to the same test case:
+            # the suffix hashes run and test, so a later pass can't overwrite an earlier fail
+            nid = f"TR-{tc}-{test_suffix(rec['run_id'], r['test'])}"
             verdict = VERDICT.get(r["status"], "error")
             n = {"id": nid, "type": "tr", "title": f"{tc} {verdict} ({rec['platform']}, {rec['config']})",
                  "content": (f"Run ``{rec['run_id']}`` ({rec['kind']}), test ``{r['test']}``, recorded "

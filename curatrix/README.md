@@ -306,11 +306,21 @@ they are. Pushing is a separate step (`git -C robarm-integration push origin evi
 clean tree (no changes, no untracked files), and the commits of the manifest, xdmod and every
 robarm repo are on their remote `main` (the manifest may instead be at a `baseline/*` tag). The
 writer **refuses** a record that fails the rule on the branch `evidence` (it is a preview, D60);
-`--branch <scratch>` writes it elsewhere, e.g. for a test of the tooling.
+`--branch <scratch>` writes it elsewhere, e.g. for a test of the tooling. Local records that were
+not pushed yet are never dropped: if the remote branch moved meanwhile, the writer replays them
+onto the remote head (records are new files only) or refuses without changing anything.
 
-**Reader and validity (D131).** `curatrix evidence read` turns every result with a `test_case` of
-every record with `evidence.ok` into a need
-`TR-<test case>-<8 hex>` (`result_of`, `method` = `hil`/`test`, `config`, `firmware_sha256`,
+**Known limits (iteration 1).** The record proves which trees were checked out and which image
+was tested (its sha256), not that the image was built from those trees: Twister builds it in the
+same run, but nothing re-checks that link later (a reproducible rebuild would). Staleness (D131)
+compares only the recorded SHAs with the current pins; it doesn't rebuild to compare the firmware
+hash, and a changed pin of an unrelated project (e.g. a KiCad library) also makes a run stale.
+
+**Reader and validity (D131).** `curatrix evidence read` validates every record against the
+schema (invalid ones are skipped and reported, exit 1) and turns every result with a `test_case`
+of every record with `evidence.ok` into a need
+`TR-<test case>-<8 hex>`, one per Twister test (the 8 hex digits hash run id and test, so two tests
+of one test case keep both results) (`result_of`, `method` = `hil`/`test`, `config`, `firmware_sha256`,
 `shas` = `repo=sha` for all projects, `verdict`). A record whose SHAs differ from the current pins
 (`west list`) gets the tag `stale` and a note in its content; CK-B6 reports the same from `shas`.
 A test report imports the file with `.. xd-needimport:: /…/tr-needs.json` and `:optional:`.
