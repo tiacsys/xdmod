@@ -15,7 +15,8 @@
 #      zdocs' HTML header), from the release tarball, sha256-checked and cached;
 #   2. a west workspace from the manifest (default: its main) with the role's group filter
 #      (repo-topology.md §4, §7), shallow (--narrow --depth=1); Zephyr and its modules come from
-#      a cache keyed on the Zephyr submanifest;
+#      a cache keyed on the Zephyr submanifest, libs/ from a cache keyed on all submanifests
+#      (falling back to the newest one, so a pin bump only fetches the difference);
 #   3. sibling revisions (D127, `curatrix ci siblings`): same-name branch -> main if the manifest
 #      pin is an ancestor -> the pin; the repo under check at the PR head. xdmod itself is
 #      resolved first in shell, because curatrix comes from it;
@@ -130,6 +131,14 @@ jobs:
             ws/zephyr
             ws/modules
           key: xd-zephyr-${{ hashFiles('ws/robarm-manifest/submanifests/10-zephyr.yml') }}
+
+      - name: Library cache (libs/: KiCad, SYSMOD, PLEML, ...)
+        uses: actions/cache@v4
+        with:
+          path: ws/libs
+          key: xd-libs-${{ inputs.role }}-${{ hashFiles('ws/robarm-manifest/submanifests/*.yml') }}
+          restore-keys: |
+            xd-libs-${{ inputs.role }}-
 
       - name: West workspace (role ${{ inputs.role }})
         working-directory: ws
