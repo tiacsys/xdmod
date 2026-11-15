@@ -123,6 +123,11 @@ with `status` = `pass | fail | warn | report | skip`. A stage fails iff a check 
 
 ## Check catalogue
 
+Each built-in check is also an `XD-CHECK` need (D121). Its need ID and the method rules (`XD-RULE`) it
+`enforces` are in `src/curatrix/data/checks.yaml` (IDs from xdmod's ledger; a test keeps it in step with
+`checks.BUILTIN`). The XDMOD manual renders the needs and the table with the `xd-check-needs` and
+`xd-check-table` directives (`sphinx/xdmod_sphinx/reference.py`).
+
 Stages from `checks.md`. "own" = curatrix's graph check over all needs.json files of the docs build
 (own and imported needs, so it also sees upstream needs, which sphinx-needs' schema skips).
 

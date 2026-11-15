@@ -38,8 +38,21 @@ description = "Generated needs: source path relative to the repo."
 schema = { type = "string" }
 
 [needs.fields.legacy_id]
-description = "The old D-number of a decision (D120)."
+description = "The old name of a decision or rule before it became a need, e.g. D37 or R3 (D120)."
 schema = { type = "string" }
+
+# ------------------------------------------------------------------ decision, rule and check fields (D120, D121)
+[needs.fields.date]
+description = "XD-ADR / PRJ-DEC: the day the decision was made (YYYY-MM-DD)."
+schema = { type = "string", pattern = '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' }
+
+[needs.fields.decision_status]
+description = "XD-ADR / PRJ-DEC: accepted | revised (a newer decision changed part of it) | superseded (a newer decision replaced it). The newer decision holds the link."
+schema = { type = "string", enum = ["accepted", "revised", "superseded"] }
+
+[needs.fields.check_id]
+description = "XD-CHECK: the check's ID in curatrix (CK-...), as used by `curatrix check --only`."
+schema = { type = "string", pattern = '^CK-[A-Z][0-9]+$' }
 
 [needs.fields.instances]
 description = "Usages of a definition need (D128), e.g. leader.joint1."
@@ -427,6 +440,21 @@ prefix = "XD-ADR-"
 id_regex = '^XD-ADR-[0-9]{4,}$'
 color = "#EDEDED"
 style = "node"
+# A newer decision holds the link to the older one it changes (D5); "revised by" and
+# "superseded by" on the older decision are computed backlinks.
+[needs.types.links.refines]
+description = "The newer decision adds detail to an older one, which stays in force."
+target_types = ["xd-adr"]
+[needs.types.links.revises]
+description = "The newer decision changes part of an older one (the older one gets decision_status revised)."
+target_types = ["xd-adr"]
+outgoing = "revises"
+incoming = "revised by"
+[needs.types.links.supersedes]
+description = "The newer decision replaces an older one completely (decision_status superseded)."
+target_types = ["xd-adr"]
+outgoing = "supersedes"
+incoming = "superseded by"
 
 [[needs.types]]
 directive = "xd-rule"
@@ -462,9 +490,16 @@ id_regex = '^PRJ-DEC-[0-9]{4,}$'
 color = "#EDEDED"
 style = "node"
 [needs.types.links.follows]
+description = "The project decision applies or tailors a framework decision."
 target_types = ["xd-adr"]
 outgoing = "follows"
 incoming = "followed by"
+[needs.types.links.refines]
+target_types = ["prj-dec"]
+[needs.types.links.revises]
+target_types = ["prj-dec"]
+[needs.types.links.supersedes]
+target_types = ["prj-dec"]
 
 # ------------------------------------------------------------------ verification results
 [[needs.types]]
