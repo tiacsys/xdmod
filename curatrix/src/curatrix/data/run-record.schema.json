@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tiacsys/xdmod/curatrix/run-record/1",
+  "title": "XDMOD test run record (version 1)",
+  "description": "One test run (HIL or simulation), kept on the orphan branch `evidence` of robarm-integration (D57, D73) as runs/<YYYY>/<run id>/record.json. Written by `curatrix evidence record`, read into TR needs by `curatrix evidence read`. Evidence rule: D60 (clean tree, pinned versions, only commits on main or a baseline tag); validity: D131 (SHAs must match the current pins, else stale). Documented in xdmod/curatrix/README.md, section 'Evidence'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "run_id", "kind", "created", "recorded_by", "config", "platform", "firmware",
+               "workspace", "evidence", "results", "tool"],
+  "properties": {
+    "schema": {"const": "xdmod-run-record/1"},
+    "run_id": {
+      "description": "<UTC time>-<8 hex>; the 8 hex digits are the first 8 of sha256(firmware sha256 + manifest SHA + created). They become the suffix of every TR ID of this run.",
+      "type": "string", "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$"
+    },
+    "kind": {
+      "description": "hil = on the hardware setup (method hil, R5 applies); sim = native_sim/QEMU (method test). A sim record is never HIL evidence.",
+      "enum": ["hil", "sim"]
+    },
+    "created": {"type": "string", "format": "date-time"},
+    "recorded_by": {"description": "git user.name of whoever ran the writer (person or agent).", "type": "string", "minLength": 1},
+    "config": {"description": "The single SYS-CFG the run was made on (D103).", "type": "string", "pattern": "^SYS-CFG-[0-9]{4,}$"},
+    "setup": {"description": "HIL setup folder hil/<setup> in robarm-integration (hil runs).", "type": ["string", "null"]},
+    "platform": {"description": "Zephyr board target, e.g. nucleo_g474re or native_sim/native.", "type": "string", "minLength": 1},
+    "firmware": {
+      "type": "object", "additionalProperties": false, "required": ["file", "sha256"],
+      "properties": {
+        "file": {"description": "Path of the image relative to the Twister output dir (zephyr.bin for hardware, zephyr.exe for native_sim).", "type": "string"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "workspace": {
+      "type": "object", "additionalProperties": false, "required": ["manifest", "repos"],
+      "properties": {
+        "manifest": {"$ref": "#/$defs/repo"},
+        "repos": {
+          "description": "Every west project of the workspace (all pinned repos: xdmod, robarm-*, Zephyr, modules, tools, libraries), by west name.",
+          "type": "object", "minProperties": 1,
+          "additionalProperties": {"$ref": "#/$defs/repo"}
+        }
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false, "required": ["ok", "problems", "base"],
+      "properties": {
+        "ok": {"description": "The evidence rule held when the run was recorded (D60). The writer refuses to write to the evidence branch otherwise.", "type": "boolean"},
+        "base": {"description": "What the run counts against: 'main' or a baseline tag 'baseline/vX.Y.Z' of the manifest.", "type": "string", "pattern": "^(main|baseline/v[0-9]+\\.[0-9]+\\.[0-9]+)$"},
+        "problems": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "results": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["test", "status"],
+        "properties": {
+          "test": {"description": "Twister test case identifier, e.g. robarm.smoke.robarm_smoke.runs.", "type": "string"},
+          "suite": {"type": "string"},
+          "test_case": {"description": "The traced test case (SW-TC, INT-ITC, INT-STC, EE-TC, ME-TC) from the comment above the ZTEST (D80), or null if the test verifies nothing (no TR is made).", "type": ["string", "null"], "pattern": "^(SW|EE|ME|INT|SYS)-(TC|ITC|STC)-[0-9]{4,}$"},
+          "status": {"enum": ["passed", "failed", "skipped", "error", "blocked", "filtered", "not run"]},
+          "duration": {"type": ["number", "null"]}
+        }
+      }
+    },
+    "tool": {
+      "type": "object", "additionalProperties": false, "required": ["name", "zephyr_version"],
+      "properties": {
+        "name": {"const": "twister"},
+        "zephyr_version": {"type": "string"},
+        "files": {"description": "sha256 of the Twister reports stored next to record.json.", "type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+      }
+    },
+    "note": {"type": "string"}
+  },
+  "$defs": {
+    "repo": {
+      "type": "object", "additionalProperties": false, "required": ["sha", "pin", "clean"],
+      "properties": {
+        "sha": {"description": "HEAD at the run.", "type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "pin": {"description": "The manifest revision (west manifest-rev); equals sha under the evidence rule.", "type": "string"},
+        "clean": {"description": "No changed or untracked files.", "type": "boolean"},
+        "on": {"description": "Where the commit is: 'main', 'baseline/vX.Y.Z', or null if checked and on neither; absent if not checked (third-party repos are pinned by tag or SHA only).", "type": ["string", "null"]}
+      }
+    }
+  }
+}

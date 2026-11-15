@@ -108,6 +108,56 @@ def cmd_ci(a):
     return 2
 
 
+def cmd_evidence(a):
+    """Run records and the evidence branch (4.5a, 4.6; D57, D60, D73, D131)."""
+    from curatrix import evidence as ev
+    ws = _ws()
+    if a.action == "validate":
+        rec = json.loads(Path(a.target).read_text())
+        errs = ev.validate(rec)
+        for e in errs:
+            print(f"  {e}")
+        print(f"{a.target}: {'INVALID' if errs else 'valid'} ({ev.SCHEMA_ID})")
+        return 1 if errs else 0
+    repo = ws.repo(a.repo)
+    url = next((p["url"] for p in ev._west_projects(ws) if p["name"] == repo.name), "") if ws.has_west else ""
+    url = url or str(repo.path)
+    if a.action == "read":
+        ref = a.ref or f"refs/heads/{a.branch}"
+        if not a.ref and ev._git(["fetch", "-q", "--no-tags", url, f"+refs/heads/{a.branch}:refs/remotes/xd-evidence/{a.branch}"],
+                                 repo.path, ws, check=False).returncode == 0:
+            ref = f"refs/remotes/xd-evidence/{a.branch}"
+        recs = ev.load_records(repo.path, ref, ws)
+        pins = {r.name: r.sha for r in ws.repos if r.sha}
+        doc = ev.to_needs(recs, pins, project=f"{repo.name}-evidence")
+        out = Path(a.out) if a.out else ws.build(repo.name) / "evidence" / "tr-needs.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+        n = doc["versions"][""]["needs"]
+        stale = sum(1 for x in n.values() if "stale" in x["tags"])
+        print(f"  {len(recs)} record(s) on {ref}: {len(n)} TR need(s), {stale} stale -> {ws.rel(out)}")
+        return 0
+    # record
+    if not a.target or not a.config:
+        raise SystemExit("usage: curatrix evidence record TWISTER_DIR --config SYS-CFG-nnnn [--kind sim|hil] ...")
+    tdir = Path(a.target).resolve()
+    overrides = dict(m.split("=", 1) for m in a.map or [])
+    rec = ev.make_record(ws, tdir, a.config, a.kind, a.setup, [Path(d) for d in a.tests] if a.tests else None,
+                         overrides, a.note or "", check_remote=not a.offline)
+    print(f"  run {rec['run_id']}: {rec['kind']} {rec['platform']} {rec['config']}, firmware {rec['firmware']['sha256'][:16]}…, "
+          f"{len(rec['results'])} result(s), {sum(1 for r in rec['results'] if r['test_case'])} traced")
+    print(f"  evidence rule (D60): {'ok, against ' + rec['evidence']['base'] if rec['evidence']['ok'] else 'FAILED'}")
+    for pr in rec["evidence"]["problems"]:
+        print(f"    - {pr}")
+    if a.dry_run:
+        print(json.dumps(rec, indent=2, sort_keys=True))
+        errs = ev.validate(rec)
+        return 1 if errs else 0
+    sha = ev.write(ws, rec, tdir, repo.path, url, a.branch, a.create, a.trailer or "")
+    print(f"  push with: git -C {repo.rel} push {url} {a.branch}   ({sha[:12]})")
+    return 0
+
+
 # ------------------------------------------------------------------ docs / check
 def cmd_docs(a):
     from curatrix import docs
@@ -449,6 +499,25 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--sha", default="", help="its PR head commit")
     s.set_defaults(func=cmd_ci)
 
+    s = sub.add_parser("evidence", help="test run records: record (Twister dir -> evidence branch), read (-> TR needs), validate")
+    s.add_argument("action", choices=["record", "read", "validate"])
+    s.add_argument("target", nargs="?", default="", help="record: Twister output dir; validate: record.json")
+    s.add_argument("--config", help="record: the SYS-CFG of the run (required)")
+    s.add_argument("--kind", choices=["sim", "hil"], default="sim", help="hil: on the HIL setup; sim: native_sim/QEMU (never HIL evidence)")
+    s.add_argument("--setup", help="record --kind hil: the setup folder hil/<setup>")
+    s.add_argument("--tests", action="append", help="test source folders for the ZTEST -> test case IDs (default: Twister's testsuite roots)")
+    s.add_argument("--map", action="append", help="TEST=ID: test case ID for a Twister test (overrides the source comments)")
+    s.add_argument("--note")
+    s.add_argument("--repo", default="robarm-integration")
+    s.add_argument("--branch", default="evidence", help="evidence (default) or a scratch branch for records that are not evidence")
+    s.add_argument("--create", action="store_true", help="create the branch as an orphan if it does not exist")
+    s.add_argument("--trailer", help="trailer line for the commit (agents: Co-Authored-By: ...)")
+    s.add_argument("--dry-run", action="store_true", help="record: print the record, write nothing")
+    s.add_argument("--offline", action="store_true", help="record: don't check main/baseline at the remotes (the rule then fails)")
+    s.add_argument("--ref", help="read: a git ref instead of the remote branch")
+    s.add_argument("-o", "--out", help="read: output file (default build/<repo>/evidence/tr-needs.json)")
+    s.set_defaults(func=cmd_evidence)
+
     s = sub.add_parser("hook", help=argparse.SUPPRESS)
     s.add_argument("name")
     s.add_argument("args", nargs="*")
@@ -468,8 +537,8 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         return 130
     except Exception as e:  # noqa: BLE001
-        from curatrix import checkcfg, setup, tools
-        if isinstance(e, (checkcfg.ConfigError, setup.SetupError, tools.ToolsError)):
+        from curatrix import checkcfg, evidence, setup, tools
+        if isinstance(e, (checkcfg.ConfigError, setup.SetupError, tools.ToolsError, evidence.EvidenceError)):
             print(f"curatrix: {e}", file=sys.stderr)
             return 1
         raise
