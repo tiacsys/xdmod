@@ -13,6 +13,7 @@ sphinx_rtd_theme==3.1.0
 sphinx-needs==9.2.0
 sphinx-test-reports==4.0.0
 sphinxcontrib-doxylink==1.13.0
+sphinx-llm==1.1.0                 # llms.txt + Markdown copy of the XDMOD manual (D122)
 pypdf==6.15.0
 Pygments==2.20.0
 docutils==0.22.4
@@ -61,3 +62,7 @@ ub-needs-exchange==1.1.0
 ub-project==1.2.0
 ub-test-reports==2.0.0
 urllib3==2.8.0
+markdown-it-py==4.3.0
+mdurl==0.1.2
+sphinx-markdown-builder==0.6.11
+tabulate==0.10.0

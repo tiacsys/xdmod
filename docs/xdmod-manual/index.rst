@@ -36,6 +36,10 @@ The manual follows Diátaxis:
 The command line and the Sphinx extensions are documented in the curatrix reference
 (``xdmod-ref``).
 
+For agents and other tools, the build also writes ``llms.txt`` (a list of all pages),
+``llms-full.txt`` (all pages in one file) and a Markdown copy of every page (``<page>.md``) next
+to the HTML (:need:`XD-ADR-0111`). The needs themselves are best read from ``needs.json``.
+
 .. toctree::
    :maxdepth: 2
 
