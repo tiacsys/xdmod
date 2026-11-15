@@ -86,7 +86,7 @@ def test_ls_remote_failure_is_an_error_not_no_branch(tmp_path, upstream):
 
 
 def test_tags_are_fetched(tmp_path, upstream):
-    git(Path(upstream["url"]), "tag", "-a", "-m", "b", "baseline/v0.1.0", upstream["pin"])
+    git(Path(upstream["url"]), "-c", "user.name=t", "-c", "user.email=t@x", "tag", "-a", "-m", "b", "baseline/v0.1.0", upstream["pin"])
     p = clone(tmp_path, upstream, upstream["pin"])
     ci.resolve_one(p, "feat/other", "robarm-sw", "")
     assert git(p.path, "describe", "--tags", upstream["pin"]) == "baseline/v0.1.0"
