@@ -93,6 +93,10 @@ package XdmodViews {
         doc /* A change from the first branch to the published documents. */
         @XdView { kind = "actionflow"; root = "XdmodWorkflow::ChangeProcess"; direction = "DOWN"; }
     }
+    view pinBump {
+        doc /* The scheduled bump of the manifest pins, and publishing. */
+        @XdView { kind = "actionflow"; root = "XdmodWorkflow::PinBump"; direction = "DOWN"; }
+    }
     view needStatus {
         @XdView { kind = "statetransition"; root = "XdmodLifecycle::NeedStatus"; direction = "RIGHT"; }
     }

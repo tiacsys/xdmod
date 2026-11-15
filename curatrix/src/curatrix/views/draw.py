@@ -58,7 +58,8 @@ LEGEND = {
                "Hollow triangle = specialization (points to the general type); filled diamond = composite feature; "
                "hollow diamond with open arrow = reference feature, held by the diamond end and labelled with the "
                "link type and multiplicity. A box with a need ID links to its page.",
-    "actionflow": "Legend (SysML v2 action flow view): rounded box = action (name : performer type); small squares = "
+    "actionflow": "Legend (SysML v2 action flow view): rounded box = action (name : its action definition, here the "
+                  "kind of task, which says who may do it); small squares = "
                   "parameters (in on the entry side, out on the exit side); filled circle = start, bull's eye = done, "
                   "diamond = decide; open arrow = succession with [guard]; thick filled arrow = flow of an item.",
     "statetransition": "Legend (SysML v2 state transition view): frame = state definition; rounded box = state; "
@@ -120,8 +121,11 @@ def to_elk(g: dict) -> dict:
                               "elk.spacing.nodeNode": "28", "elk.layered.spacing.nodeNodeBetweenLayers": "56",
                               "elk.spacing.edgeNode": "14", "elk.spacing.edgeEdge": "10", "elk.spacing.portPort": "18",
                               "elk.spacing.edgeLabel": "4", "elk.edgeLabels.placement": "CENTER",
-                              "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
                               "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+                              # NETWORK_SIMPLEX gives straighter lines, but elkjs 0.12 fails with it
+                              # on some nested graphs ("NEdge must have a source and target")
+                              **({"elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX"}
+                                 if set(children_of) <= {"1"} else {}),
                               **({"elk.layered.cycleBreaking.strategy": "MODEL_ORDER"}
                                  if g["kind"] in ("actionflow", "statetransition") else {}),
                               **({"elk.spacing.nodeNode": "44"} if g["kind"] == "usecases" else {})}}
@@ -250,7 +254,7 @@ def to_mxfile(g: dict, pos: dict | None, normalize) -> str:
         for p in n["ports"]:
             px, py, pw, ph = geom(p["id"], n["id"], PIN, PIN)
             cell(p["id"], p["label"], BASE + "rounded=0;fillColor=#FFFFFF;fontSize=9;" + PIN_STYLE[p["side"]],
-                 n["id"], {"sysml_kind": "pin"}, (px, py, pw, ph))
+                 n["id"], {"sysml_kind": p.get("kind", "pin")}, (px, py, pw, ph))
     for e in g["edges"]:
         info = pos.get(e["id"]) or {}
         pts = list(info.get("points") or [])

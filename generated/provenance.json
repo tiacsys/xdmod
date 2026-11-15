@@ -70,6 +70,14 @@
         "firefox": "160.0"
       }
     },
+    "views/pinBump.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
     "views/roleKinds.drawio.svg": {
       "made_by": "curatrix views build",
       "tools": {

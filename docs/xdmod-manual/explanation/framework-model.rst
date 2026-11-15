@@ -48,9 +48,10 @@ pins every repo (:need:`XD-ADR-0033`) and builds the full set.
    :caption: workspaceInterconnection: needs, pins and the framework between the repos
              (interconnection view)
 
-XDMOD knows two kinds of files. **Source** files are written by people and agents. **Generated**
-files are written by curatrix, committed, and compared by ``curatrix check``
-(:need:`XD-ADR-0100`).
+XDMOD knows three kinds of files. **Source** files are written by people and agents.
+**Generated** files are written by curatrix, committed, and compared by ``curatrix check``
+(:need:`XD-RULE-0033`). **Build output** goes to ``build/<area>/`` and is never committed
+(:need:`XD-RULE-0040`).
 
 .. sysml-view:: /views/artifactKinds.drawio.svg
    :caption: artifactKinds: source and generated files (general view)
@@ -71,8 +72,10 @@ Trace links
 
 The concrete side holds the link (:need:`XD-ADR-0004`, :need:`XD-RULE-0001`). In these
 diagrams the concrete types stand on the right and the abstract types on the left, so every
-reference points from right to left, as in the V. ``[1..*]`` marks a link that is required
-(:need:`XD-RULE-0008`, :need:`XD-RULE-0009`).
+reference points from right to left, as in the V. ``[1..*]`` marks a link that is required; the
+need schema in ``needs_config.toml`` enforces it (:need:`XD-RULE-0002`, :need:`XD-RULE-0007`).
+Some links may point to more than one need type. The model then has one reference per target
+type, each ``[0..*]``, and "(>= 1 in total)" says that at least one of them is required.
 
 .. sysml-view:: /views/traceSystem.drawio.svg
    :caption: traceSystem: systems engineering and integration tests (general view)
@@ -110,19 +113,29 @@ passing check leads to publishing.
 The change process
 ------------------
 
-A change runs on one branch name in every repo it touches (:need:`XD-ADR-0045`), is checked
-locally, reviewed by a second agent (:need:`XD-ADR-0115`) and merged by the owner
-(:need:`XD-ADR-0043`, :need:`XD-ADR-0051`). The bump bot then moves the manifest pins
-(:need:`XD-ADR-0081`). The type after each action name says who does it.
+A change runs on one branch name in every repo it touches (:need:`XD-ADR-0045`). It is checked
+locally and in CI, and reviewed by a second agent (:need:`XD-ADR-0115`). Then a person, the owner
+or a domain engineer, reviews and merges it (:need:`XD-ADR-0043`, :need:`XD-ADR-0051`). If the
+change made links suspect, an agent prepares the affirmations and a person confirms them
+(:need:`XD-RULE-0014`). After each action name comes its action definition: the kind of task
+(agent work, agent review, a person's decision, a CI run), which says who may do it.
 
 .. sysml-view:: /views/changeProcess.drawio.svg
-   :caption: changeProcess: from the first branch to the published documents (action flow view)
+   :caption: changeProcess: one change, from the first branch to the merge (action flow view)
+
+The bump bot runs on a schedule, not as a step of one change (:need:`XD-ADR-0081`). It collects
+the new SHAs of all repos into one bump PR, whose full-set check must pass before the owner merges
+it. Then the documents are published.
+
+.. sysml-view:: /views/pinBump.drawio.svg
+   :caption: pinBump: the scheduled bump of the manifest pins (action flow view)
 
 Life cycles
 -----------
 
-A need starts as ``draft``. Only ``valid`` needs count for coverage, and a need is retired before
-it is deleted (:need:`XD-RULE-0020`).
+A need starts as ``draft``. A merged change sets it to ``valid``; only ``valid`` needs count for
+coverage. A need is retired before it is deleted, and its ID is never issued again
+(:need:`XD-RULE-0020`, :need:`XD-RULE-0011`).
 
 .. sysml-view:: /views/needStatus.drawio.svg
    :caption: needStatus (state transition view)
@@ -141,7 +154,8 @@ A link becomes suspect when its target changes. Only a person's commit confirms 
    :caption: traceLinkStatus (state transition view)
 
 HIL evidence counts only when it was recorded from ``main`` or a baseline, and only while the
-pinned SHAs still match (:need:`XD-ADR-0053`, :need:`XD-ADR-0120`, :need:`XD-RULE-0013`).
+pinned SHAs still match (:need:`XD-ADR-0053`, :need:`XD-ADR-0120`, :need:`XD-RULE-0013`). A record
+never changes: a new run writes a new record.
 
 .. sysml-view:: /views/evidenceStatus.drawio.svg
    :caption: evidenceStatus (state transition view)

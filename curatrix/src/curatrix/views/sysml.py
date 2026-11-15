@@ -218,6 +218,17 @@ def general(m: Model, v, opts: dict) -> dict:
            and (p.get("@type", "").endswith(("Definition", "Usage")) or p.get("@type") == "Package")]
     shown = {p["@id"] for p in els}
     g = {"nodes": [], "edges": []}
+
+    def required_in_total(owner: dict, link: str) -> bool:
+        """A link split into one feature per target type (subsetting) can still be required as a
+        whole: the owner redefines the general link feature with a lower bound >= 1."""
+        for f in features(m, owner):
+            if related(m, f, "Redefinition") and link_name(m, f) == link:
+                lo = multiplicity(m, f).strip("[]").split("..")[0]
+                if lo not in ("", "0", "*"):
+                    return True
+        return False
+
     for p in sorted(els, key=lambda p: p.get("qualifiedName") or p["@id"]):
         pid = p["qualifiedName"] if p.get("qualifiedName") else p["@id"]
         sections = {}
@@ -230,6 +241,9 @@ def general(m: Model, v, opts: dict) -> dict:
             if to_shown and not f.get("isAbstract") and rel in show and ft not in ("AttributeUsage", "PortUsage"):
                 for t in to_shown:
                     lbl = (link_name(m, f) if is_ref else name(f)) + (" " + multiplicity(m, f) if multiplicity(m, f) else "")
+                    if is_ref and not related(m, f, "Redefinition") and link_name(m, f) != name(f) \
+                            and required_in_total(p, link_name(m, f)):
+                        lbl += " (>= 1 in total)"
                     g["edges"].append(edge(pid, t["qualifiedName"], rel, "ReferenceUsage" if is_ref else ft, lbl,
                                            eid=f"{pid}->{t['qualifiedName']}:{name(f) or link_name(m, f)}"))
                 continue
@@ -275,7 +289,10 @@ def general(m: Model, v, opts: dict) -> dict:
 
 # ------------------------------------------------------------------ action flow view
 def _guard_label(m: Model, t: dict) -> str:
-    for _, x in m.owned(t):
+    owned = [x for _, x in m.owned(t)]
+    # the guard expression is the member named `guard`; fall back to the first expression
+    owned.sort(key=lambda x: 0 if name(x) == "guard" else 1)
+    for x in owned:
         if x.get("@type") in ("SuccessionAsUsage", "ReferenceUsage") or x.get("@type") in SKIP_OWNED:
             continue
         if x.get("@type", "").endswith("Expression") or x.get("@type", "").startswith("Literal"):
@@ -420,7 +437,8 @@ def usecases(m: Model, v, opts: dict) -> dict:
     if not ucs:
         raise GraphError(f"view {v.name}: no use case definitions under {v.root}")
     g = {"nodes": [], "edges": []}
-    subject = None
+    subjects: dict[str, dict] = {}      # subject type -> a subject usage (one frame per type)
+    subject_of: dict[str, str] = {}     # use case -> subject frame id
     actors: dict[str, dict] = {}
     for uc in sorted(ucs, key=lambda u: u["qualifiedName"]):
         uid = uc["qualifiedName"]
@@ -429,8 +447,11 @@ def usecases(m: Model, v, opts: dict) -> dict:
             for x in (m.get(y) for y in rel.get("ownedRelatedElement", []) or []):
                 if not x:
                     continue
-                if rel.get("@type") == "SubjectMembership" and subject is None:
-                    subject = x
+                if rel.get("@type") == "SubjectMembership":
+                    st = (m.types_of(x) or [x])[0]
+                    sid_ = st.get("qualifiedName") or st["@id"]
+                    subjects.setdefault(sid_, x)
+                    subject_of[uid] = sid_
                 elif rel.get("@type") == "ActorMembership":
                     for t in m.types_of(x) or [x]:
                         aid = t.get("qualifiedName") or t["@id"]
@@ -440,10 +461,14 @@ def usecases(m: Model, v, opts: dict) -> dict:
                 elif x.get("@type") == "IncludeUseCaseUsage":
                     for t in m.types_of(x):
                         g["edges"].append(edge(uid, t["qualifiedName"], "include", "IncludeUseCaseUsage", "«include»"))
-    sid = (subject.get("qualifiedName") if subject else None) or f"{root.get('qualifiedName')}::subject"
-    stitle = f"{name(subject)} : {type_names(m, subject)}" if subject else "subject"
-    g["nodes"].append(node(sid, f"«subject»\n{stitle}", "SubjectMembership", shape="subject", w=10, h=10))
+    no_subject = f"{root.get('qualifiedName')}::(no subject)"
+    for sid, subj in sorted(subjects.items()):
+        g["nodes"].append(node(sid, f"«subject»\n{name(subj)} : {type_names(m, subj)}", "SubjectMembership",
+                               shape="subject", w=10, h=10))
+    if any(uc["qualifiedName"] not in subject_of for uc in ucs):
+        g["nodes"].append(node(no_subject, "«subject»\n(none)", "SubjectMembership", shape="subject", w=10, h=10))
     for uc in sorted(ucs, key=lambda u: u["qualifiedName"]):
+        sid = subject_of.get(uc["qualifiedName"], no_subject)
         lab = f"«use case def»\n{name(uc)}"
         w, h = size_for(lab.split("\n"), min_w=150)
         g["nodes"].append(node(uc["qualifiedName"], lab, "UseCaseDefinition", parent=sid, shape="usecase",

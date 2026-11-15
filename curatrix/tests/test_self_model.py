@@ -101,7 +101,8 @@ def test_general_view_trace_links_point_from_concrete_to_abstract(m):
     g = _view(m, "traceSystem")
     edges = {(e["src"].split("::")[-1], e["dst"].split("::")[-1], e["label"]) for e in g["edges"]}
     assert ("SystemRequirement", "StakeholderNeed", "refines [1..*]") in edges
-    assert ("IntegrationTestCase", "Interface", "verifies [0..*]") in edges   # subsetting: the link type's name
+    # one reference per target type, named after the link type; at least one link is required
+    assert ("IntegrationTestCase", "Interface", "verifies [0..*] (>= 1 in total)") in edges
     labels = {n["label"] for n in g["nodes"]}
     assert "«item def»\n<sys-req> SystemRequirement" in labels
     assert not any("Software" in n["id"] for n in g["nodes"])                 # expose only what is asked
@@ -119,7 +120,8 @@ def test_general_view_compartments_and_values(m):
 def test_action_flow_guards_pins_and_flows(m):
     g = _view(m, "changeProcess")
     labels = sorted(e["label"] for e in g["edges"] if e["label"])
-    assert labels == ["[approved]", "[else]", "[else]", "[else]", "[localChecksPass]", "[reviewClean]"]
+    assert labels == ["[approved]", "[ciPasses]", *["[else]"] * 5, "[linksSuspect]", "[localChecksPass]",
+                      "[reviewClean]"]
     assert {n["shape"] for n in g["nodes"]} >= {"initial", "final", "decision", "action"}
     g = _view(m, "buildAndCheck")
     flows = [e for e in g["edges"] if e["rel"] == "flow"]
@@ -129,7 +131,7 @@ def test_action_flow_guards_pins_and_flows(m):
 def test_state_transition_triggers_and_guards(m):
     g = _view(m, "evidenceStatus")
     labels = {e["label"] for e in g["edges"]}
-    assert {"[fromMainOrBaseline]", "[not fromMainOrBaseline]", "PinsChanged", "RunRecorded"} <= labels
+    assert {"[fromMainOrBaseline]", "[not fromMainOrBaseline]", "PinsChanged", "PinsMatch"} <= labels
     assert g["nodes"][0]["shape"] == "frame" and all(n["parent"] == g["nodes"][0]["id"] for n in g["nodes"][1:])
 
 

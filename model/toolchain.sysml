@@ -7,11 +7,6 @@ package XdmodToolchain {
     private import ScalarValues::*;
     private import XdmodDomains::*;
 
-    item def HtmlSite { doc /* the linked HTML documents, with llms.txt for agents */ }
-    item def CheckReport { doc /* curatrix check results; each failure prints its reproduce command */ }
-    item def CadSource { doc /* KiCad projects and FreeCAD files, with trace fields */ }
-    item def CodeSource { doc /* Zephyr application and tests, with Doxygen and ZTEST IDs */ }
-
     action def BuildAndCheck {
         @See { needId = "XD-ADR-0040"; }
         doc /* One pass over a repo or the full set. The same steps run locally and in CI. */
@@ -27,12 +22,12 @@ package XdmodToolchain {
         action 'docs build: export needs' {
             doc /* sphinx-needs writes each document's needs.json. */
             in item rst : Document;
-            out item needs : NeedsJson;
+            out item needs : NeedsExport;
         }
         action 'gen stubs' {
             @See { needId = "XD-ADR-0036"; }
             doc /* Read-only SysML stubs of the requirements. */
-            in item needs : NeedsJson;
+            in item needs : NeedsExport;
             out item stubs : NeedStubs;
         }
         action 'gen model (Pilot)' {
@@ -40,17 +35,17 @@ package XdmodToolchain {
             in item sysml : SysmlModel;
             in item stubs : NeedStubs;
             out item modelJson : ModelJson;
-            out item modelNeeds : NeedsJson;
+            out item modelNeeds : GeneratedNeeds;
         }
         action 'gen cad-needs' {
             @See { needId = "XD-ADR-0100"; }
             in item cad : CadSource;
-            out item cadNeeds : NeedsJson;
+            out item cadNeeds : GeneratedNeeds;
         }
         action 'extract code needs' {
             doc /* Doxygen groups and ZTEST annotations become SW-IMPL and SW-TC needs. */
             in item code : CodeSource;
-            out item codeNeeds : NeedsJson;
+            out item codeNeeds : NeedsExport;
         }
         action 'views build (elkjs, drawio)' {
             @See { needId = "XD-ADR-0087"; }
@@ -59,9 +54,9 @@ package XdmodToolchain {
         }
         action 'docs build: strict, linked' {
             @See { needId = "XD-RULE-0034"; }
-            in item modelNeeds : NeedsJson;
-            in item cadNeeds : NeedsJson;
-            in item codeNeeds : NeedsJson;
+            in item modelNeeds : GeneratedNeeds;
+            in item cadNeeds : GeneratedNeeds;
+            in item codeNeeds : NeedsExport;
             in item views : DrawioView;
             out item site : HtmlSite;
         }

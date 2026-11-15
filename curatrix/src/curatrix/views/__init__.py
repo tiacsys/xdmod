@@ -120,7 +120,8 @@ def _ports(m: Model, u: dict) -> list[dict]:
             continue
         seen.add(pu["name"])
         conj = any((m.get(t) or {}).get("@type") == "ConjugatedPortDefinition" for t in pu.get("type", []) or [])
-        out.append({"id": f"{u['qualifiedName']}.{pu['name']}", "label": pu["name"], "side": "WEST" if conj else "EAST"})
+        out.append({"id": f"{u['qualifiedName']}.{pu['name']}", "label": pu["name"], "side": "WEST" if conj else "EAST",
+                    "kind": "PortUsage"})
     return sorted(out, key=lambda p: p["id"])
 
 
