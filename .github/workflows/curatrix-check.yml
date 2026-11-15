@@ -19,7 +19,8 @@
 #      (falling back to the newest one, so a pin bump only fetches the difference);
 #   3. sibling revisions (D127, `curatrix ci siblings`): same-name branch -> main if the manifest
 #      pin is an ancestor -> the pin; the repo under check at the PR head. xdmod itself is
-#      resolved first in shell, because curatrix comes from it;
+#      resolved first in shell, because curatrix comes from it. `resolve-siblings: false` skips
+#      this, so every repo stays exactly at the manifest pins (full set, Pages, bump PRs);
 #   4. the venv (.venv, with .venv/opt: JDK, Pilot, Zephyr SDK ...) from a cache keyed on every
 #      requirements.txt and tools.yaml; `curatrix bootstrap --no-west` installs what is missing
 #      (sha256-checked downloads), `curatrix doctor --ci` checks the tools.yaml versions;
@@ -61,6 +62,10 @@ on:
       doxygen-sha256:
         type: string
         default: 14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
+      resolve-siblings:
+        description: D127 sibling resolution; false = every repo exactly at the manifest pins (full-set / Pages / bump builds, D55, D89)
+        type: boolean
+        default: true
       extra-apt:
         description: extra apt packages for this repo
         type: string
@@ -73,6 +78,11 @@ jobs:
     env:
       WS: ${{ github.workspace }}/ws
       PYTHONDONTWRITEBYTECODE: "1"
+      ROLE: ${{ inputs.role }}
+      REPO: ${{ inputs.repo }}
+      STAGE: ${{ inputs.stage }}
+      EXTRA_ARGS: ${{ inputs.extra-args }}
+      EXTRA_APT: ${{ inputs.extra-apt }}
       HEAD_REF: ${{ github.head_ref || github.ref_name }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -80,8 +90,8 @@ jobs:
         id: plan
         run: |
           pkgs="graphviz ninja-build"
-          [ "${{ inputs.repo }}" = robarm-sw ] && pkgs="$pkgs gcc-multilib g++-multilib"   # native_sim (D101)
-          echo "apt=$pkgs ${{ inputs.extra-apt }}" >> "$GITHUB_OUTPUT"
+          if [ "$REPO" = robarm-sw ]; then pkgs="$pkgs gcc-multilib g++-multilib"; fi   # native_sim (D101)
+          echo "apt=$pkgs $EXTRA_APT" >> "$GITHUB_OUTPUT"
 
       - name: System packages
         run: |
@@ -145,7 +155,7 @@ jobs:
         run: |
           python -m pip install -q west==1.4.0 PyYAML==6.0.3
           west init -l robarm-manifest
-          case "${{ inputs.role }}" in
+          case "$ROLE" in
             syseng) ;;
             ee) west config manifest.group-filter -- +ee ;;
             me) west config manifest.group-filter -- +me ;;
@@ -153,10 +163,11 @@ jobs:
             full) west config manifest.group-filter -- +ee,+me,+sw,+integration,+kicad-3d,+freecad-parts ;;
             *) west config manifest.group-filter -- +ee,+me,+sw,+integration ;;
           esac
-          west config xdmod.role "${{ inputs.role }}"
+          west config xdmod.role "$ROLE"
           west update --narrow -o=--depth=1 || { sleep 10; west update --narrow -o=--depth=1; }
 
       - name: Sibling revisions (D127)
+        if: inputs.resolve-siblings
         working-directory: ws
         run: |
           # xdmod first, in shell: curatrix (and its resolver) comes from the xdmod checkout.
@@ -164,7 +175,7 @@ jobs:
           git -C xdmod fetch -q --unshallow --filter=blob:none "$url" \
             +refs/heads/main:refs/remotes/xd-ci/main 2>/dev/null \
             || git -C xdmod fetch -q --filter=blob:none "$url" +refs/heads/main:refs/remotes/xd-ci/main
-          if [ "${{ inputs.repo }}" = xdmod ]; then
+          if [ "$REPO" = xdmod ]; then
             git -C xdmod fetch -q "$url" "$HEAD_SHA" && git -C xdmod checkout -q --detach "$HEAD_SHA"
           elif [ "$HEAD_REF" != main ] && git ls-remote --exit-code --heads "$url" "refs/heads/$HEAD_REF" >/dev/null; then
             git -C xdmod fetch -q "$url" "+refs/heads/$HEAD_REF:refs/remotes/xd-ci/branch"
@@ -173,7 +184,7 @@ jobs:
             git -C xdmod checkout -q --detach xd-ci/main
           fi
           PYTHONPATH=xdmod/curatrix/src python -m curatrix ci siblings \
-            --branch "$HEAD_REF" --repo "${{ inputs.repo }}" --sha "$HEAD_SHA"
+            --branch "$HEAD_REF" --repo "$REPO" --sha "$HEAD_SHA"
 
       - name: Venv and tools cache
         uses: actions/cache@v4
@@ -189,7 +200,7 @@ jobs:
           [ -x .venv/bin/python ] || python -m venv .venv
           .venv/bin/pip install -q west==1.4.0
           .venv/bin/pip install -q -e xdmod/curatrix
-          .venv/bin/curatrix bootstrap --role "${{ inputs.role }}" --no-west --no-doctor
+          .venv/bin/curatrix bootstrap --role "$ROLE" --no-west --no-doctor
           .venv/bin/curatrix doctor --ci
           .venv/bin/curatrix limits
 
@@ -207,7 +218,8 @@ jobs:
       - name: curatrix check ${{ inputs.repo }} --stage ${{ inputs.stage }} --no-cad
         working-directory: ws
         run: |
-          .venv/bin/curatrix check "${{ inputs.repo }}" --stage "${{ inputs.stage }}" --no-cad ${{ inputs.extra-args }}
+          # EXTRA_ARGS is split on purpose (several options)
+          .venv/bin/curatrix check "$REPO" --stage "$STAGE" --no-cad $EXTRA_ARGS
 
       - name: Upload check results and docs
         if: always()
