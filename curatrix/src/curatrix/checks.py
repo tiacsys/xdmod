@@ -78,7 +78,7 @@ BUILTIN = [
     ("CK-E1", "the Pilot parses the model (0 errors)", _lv({"local": "error", "pr": "error", "baseline": "error"}), "model", False, "c_model"),
     ("CK-D2", "model.json and model-needs.json match the model", _lv({"local": "error", "pr": "error", "baseline": "error"}), "model", False, "c_model"),
     ("CK-D3", "views match the model (content), fresh, uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), "views", False, "c_views"),
-    ("CK-D4", "cad-needs.json matches the CAD files", _lv({"local": "error", "baseline": "error"}), "cad", False, "c_cadneeds"),
+    ("CK-D4", "cad-needs.json matches the CAD files", _lv({"local": "error", "pr": "error", "baseline": "error"}), "cad", False, "c_cadneeds"),
     ("CK-E2", "requirement values agree with the sentence", _lv({"local": "error", "pr": "error", "baseline": "error"}), "requirements", False, "c_ears"),
     ("CK-E3", "EARS pattern matches the sentence", _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "requirements", False, "c_ears"),
     ("CK-G1", "needs-diff against the base (change impact)", _lv({"pr": "report", "full": "report"}), "docs", False, "c_diff"),

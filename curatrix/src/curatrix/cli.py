@@ -74,7 +74,7 @@ def cmd_limits(a):
 
 def cmd_doctor(a):
     from curatrix import setup
-    return setup.doctor(_ws())
+    return setup.doctor(_ws(), ci=a.ci)
 
 
 def cmd_bootstrap(a):
@@ -95,6 +95,16 @@ def cmd_launch(a):
 def cmd_work(a):
     print("curatrix work start/done: not implemented yet (plan task 4.4c, D125). Until then create worktrees by hand:\n"
           "  git -C <repo> worktree add ../.worktrees/<branch>/<repo> -b <branch>", file=sys.stderr)
+    return 2
+
+
+def cmd_ci(a):
+    from curatrix import ci
+    ws = _ws()
+    if a.action == "siblings":
+        print(f"curatrix ci siblings: branch {a.branch!r}, under check {a.repo} @ {a.sha[:12] or '-'}")
+        ci.siblings(ws, a.branch, a.repo, a.sha)
+        return 0
     return 2
 
 
@@ -336,6 +346,8 @@ def parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_limits)
 
     s = sub.add_parser("doctor", help="check tools, versions (tools.yaml), paths, hooks, west state")
+    s.add_argument("--ci", action="store_true",
+                   help="CI runner: system tool mismatches are warnings (tools.yaml tools must still match)")
     s.set_defaults(func=cmd_doctor)
 
     s = sub.add_parser("bootstrap", help="set up the workspace for a role (group filter, venv, tools, hooks)")
@@ -414,6 +426,13 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("action", choices=["start", "done"])
     s.add_argument("args", nargs="*")
     s.set_defaults(func=cmd_work)
+
+    s = sub.add_parser("ci", help="CI helpers: `ci siblings` resolves sibling revisions (D127)")
+    s.add_argument("action", choices=["siblings"])
+    s.add_argument("--branch", required=True, help="the PR's head branch name (push: the branch pushed)")
+    s.add_argument("--repo", required=True, help="west name of the repo under check")
+    s.add_argument("--sha", default="", help="its PR head commit")
+    s.set_defaults(func=cmd_ci)
 
     s = sub.add_parser("hook", help=argparse.SUPPRESS)
     s.add_argument("name")

@@ -59,3 +59,24 @@ def test_hooks_and_textconv(tmp_path):
     tc = subprocess.run(["git", "-C", str(repo), "config", "diff.fcstd.textconv"], capture_output=True, text=True).stdout
     assert "gen freecad-json --textconv" in tc
     assert setup.install_hooks(ws) == ["robarm-me"]          # only repos of this workspace, never the real xdmod
+
+
+def test_doctor_ci_mode_downgrades_system_mismatch(tmp_path, monkeypatch, capsys):
+    """Locally a wrong system tool version FAILs (4.4b); on a CI runner (--ci) it is a warning,
+    while a tools.yaml tool that is not installed still FAILs."""
+    from curatrix import setup
+    from curatrix.ws import Workspace
+    from helpers import make_ws
+    root = make_ws(tmp_path, monkeypatch)
+    (root / "xdmod").mkdir()
+    (root / "xdmod" / "tools.yaml").write_text(
+        "tools: []\nsystem:\n  - {name: git, version: '0.0.1'}\n")
+    ws = Workspace(root)
+    assert setup.doctor(ws) == 1
+    assert "git" in capsys.readouterr().out
+    assert setup.doctor(ws, ci=True) == 0
+    out = capsys.readouterr().out
+    assert "warn git" in out and "runner image" in out
+    (root / "xdmod" / "tools.yaml").write_text(
+        "tools:\n  - {name: jdk, version: '1', kind: file, url: 'https://x', sha256: 'ab', location: opt/jdk}\nsystem: []\n")
+    assert setup.doctor(ws, ci=True) == 1
