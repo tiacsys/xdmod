@@ -24,9 +24,18 @@
 #   4. the venv (.venv, with .venv/opt: JDK, Pilot, Zephyr SDK ...) from a cache keyed on every
 #      requirements.txt and tools.yaml; `curatrix bootstrap --no-west` installs what is missing
 #      (sha256-checked downloads), `curatrix doctor --ci` checks the tools.yaml versions;
-#   5. the check. Limits: GitHub runners have no systemd user session, so curatrix falls back to
-#      `timeout` + `ulimit -v` (command-layer.md §6); timeout-minutes caps the whole job.
+#   5. the check. Limits: curatrix picks its backend itself. GitHub's ubuntu-24.04 runners answer
+#      `systemd-run --user`, so the systemd backend (MemoryMax, no swap) is used there; the
+#      `timeout` + `ulimit -v` fallback (command-layer.md §6) is still proven by a smoke step.
+#      timeout-minutes caps the whole job.
+#
+# Clone depth (D64 g): xdmod, the manifest and every robarm repo get their full history
+# (blobless) and tags, as D64 g asks; Zephyr, its modules, tools/ and libs/ stay --depth=1
+# (third-party, pinned by tag/SHA; nothing in PR CI reads their history, and the KiCad
+# GIT_REV export, the reason for D64 g, runs only locally with CAD content, D56).
 name: curatrix-check
+permissions:
+  contents: read
 on:
   workflow_call:
     inputs:
@@ -94,9 +103,12 @@ jobs:
           echo "apt=$pkgs $EXTRA_APT" >> "$GITHUB_OUTPUT"
 
       - name: System packages
+        env:
+          APT: ${{ steps.plan.outputs.apt }}
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends ${{ steps.plan.outputs.apt }}
+          # APT is split on purpose (a package list)
+          sudo apt-get install -y -q --no-install-recommends $APT
 
       - name: Doxygen cache
         id: doxygen-cache
@@ -172,12 +184,24 @@ jobs:
         run: |
           # xdmod first, in shell: curatrix (and its resolver) comes from the xdmod checkout.
           url=$(west list -f '{url}' xdmod); pin=$(west list -f '{sha}' xdmod)
-          git -C xdmod fetch -q --unshallow --filter=blob:none "$url" \
-            +refs/heads/main:refs/remotes/xd-ci/main 2>/dev/null \
-            || git -C xdmod fetch -q --filter=blob:none "$url" +refs/heads/main:refs/remotes/xd-ci/main
+          unshallow=""
+          if [ "$(git -C xdmod rev-parse --is-shallow-repository)" = true ]; then unshallow=--unshallow; fi
+          git -C xdmod fetch -q $unshallow --filter=blob:none "$url" \
+            +refs/heads/main:refs/remotes/xd-ci/main "+refs/tags/*:refs/tags/*"
+          has_branch=no
+          if [ "$HEAD_REF" != main ]; then
+            # exit 0 = branch exists, 2 = no such branch, anything else = error (fail loudly)
+            set +e; git ls-remote --exit-code --heads "$url" "refs/heads/$HEAD_REF" >/dev/null; rc=$?; set -e
+            case $rc in
+              0) has_branch=yes ;;
+              2) ;;
+              *) echo "::error::git ls-remote $url failed ($rc)"; exit 1 ;;
+            esac
+          fi
           if [ "$REPO" = xdmod ]; then
-            git -C xdmod fetch -q "$url" "$HEAD_SHA" && git -C xdmod checkout -q --detach "$HEAD_SHA"
-          elif [ "$HEAD_REF" != main ] && git ls-remote --exit-code --heads "$url" "refs/heads/$HEAD_REF" >/dev/null; then
+            git -C xdmod fetch -q "$url" "$HEAD_SHA"
+            git -C xdmod checkout -q --detach "$HEAD_SHA"
+          elif [ "$has_branch" = yes ]; then
             git -C xdmod fetch -q "$url" "+refs/heads/$HEAD_REF:refs/remotes/xd-ci/branch"
             git -C xdmod checkout -q --detach xd-ci/branch
           elif git -C xdmod merge-base --is-ancestor "$pin" xd-ci/main; then
@@ -210,9 +234,13 @@ jobs:
           # The backend above is what the check uses (systemd if a user session answers). Prove
           # the fallback too: 64M address space must stop a 256 MB allocation, 2 s must stop a sleep.
           export XD_LIMIT_BACKEND=ulimit
-          ! .venv/bin/curatrix run -m 64M -- python3 -c "b = bytearray(256 * 1024 * 1024)" 2>/dev/null
+          if .venv/bin/curatrix run -m 64M -- python3 -c "b = bytearray(256 * 1024 * 1024)" 2>/dev/null; then
+            echo "::error::ulimit fallback: the memory limit was not enforced"; exit 1
+          fi
           set +e; .venv/bin/curatrix run -t 2s -- sleep 30; rc=$?; set -e
-          test "$rc" = 124
+          if [ "$rc" != 124 ]; then
+            echo "::error::ulimit fallback: the timeout was not enforced (exit $rc, expected 124)"; exit 1
+          fi
           echo "ulimit fallback: memory and timeout limits enforced"
 
       - name: curatrix check ${{ inputs.repo }} --stage ${{ inputs.stage }} --no-cad
