@@ -43,7 +43,7 @@ Starting values (the machine has 16 cores and 29 GiB RAM; several agents may run
 | graphviz | 16.1.1 | needflow (D95) |
 | Doxygen | 1.18.0 (≥ 1.16: native `\satisfies`/`\verifies`) | robarm-sw API docs |
 | CMake / Ninja | 4.5.0 / 1.13.2 | zdocs, Zephyr |
-| OpenOCD | 0.12.0 | HIL flashing (Phase 5) |
+| OpenOCD | 0.12.0 | HIL flashing (Phase 6) |
 | dtc | 1.8.1 | devicetree |
 | Firefox | 160.0 | headless SVG render of views |
 | Node.js | 26.13.1 | elkjs layout |

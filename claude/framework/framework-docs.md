@@ -68,7 +68,7 @@ xdmod-ref/
 | howto/add-a-view | `views.md` |
 | howto/add-a-part | `freecad-storage.md` |
 | explanation/humans-and-agents, howto/work-as-an-agent | `workflow.md` (3.11) |
-| tutorials | the spike (`../notes/spike.md`), redone on the real repos in Phase 5 |
+| tutorials | the spike (`../notes/spike.md`), redone on the real repos in Phase 6 |
 
 The `claude/framework/*.md` drafts are converted to rst pages when xdmod is created (Phase 4, task 4.2b). After that, **the manual is the master**, and the drafts are not kept up to date.
 
