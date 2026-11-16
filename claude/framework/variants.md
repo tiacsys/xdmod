@@ -75,6 +75,6 @@ Bundles in iteration 2 can filter by configuration.
 - `SYS-FEAT-nnnn`: features of the feature model, used in `where` conditions (e.g. `where: SYS-FEAT-0002`). They are written as SysML short names.
 - `SYS-PROTO` is dropped. It was never issued.
 
-## 7. To confirm in task 5.5
+## 7. To confirm in task 6.5
 
 - **Prototype mechanics.** The research assumed the prototype uses a bench rig, not the printed arm. If the prototype uses the printed arm too, only the `mechanics` binding changes.

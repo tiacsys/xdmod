@@ -79,17 +79,17 @@ SYSMOD's requirement boilerplates (`MaxValue`, `RangeValue`, …) give requireme
 
 The `requirement` stub carries the values as attributes, so a model constraint or a test can read them (D83). A check compares the fields with the EARS sentence, e.g. that the number and unit in the text match `max` and `unit`.
 
-## 5. How SYSMOD steps map to the Phase 5 tasks
+## 5. How SYSMOD steps map to the Phase 6 tasks
 
-| Phase 5 task | SYSMOD steps |
+| Phase 6 task | SYSMOD steps |
 |---|---|
-| 5.1 Problem statement, stakeholders, system context | 01, 03, 04, 06, 07 |
-| 5.2 Stakeholder needs and use cases | 05, 08 |
-| 5.3 System requirements | 09 |
-| 5.4 Functional, logical and product architecture, PCBA trade study | 10a, 10b, 10c |
-| 5.5 Prototype and product variants | 10d |
-| 5.6 Generated views | views over 07–10 |
-| 5.12 Verification | 11 |
+| 6.1 Problem statement, stakeholders, system context | 01, 03, 04, 06, 07 |
+| 6.2 Stakeholder needs and use cases | 05, 08 |
+| 6.3 System requirements | 09 |
+| 6.4 Functional, logical and product architecture, PCBA trade study | 10a, 10b, 10c |
+| 6.5 Prototype and product variants | 10d |
+| 6.6 Generated views | views over 07–10 |
+| 6.12 Verification | 11 |
 
 ## 6. Agent support (input for task 3.11)
 

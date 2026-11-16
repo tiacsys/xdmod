@@ -49,7 +49,7 @@ GitHub's PR view ignores textconv. So for every PR that changes `.FCStd` files, 
 - Rebuilding a part from a script changes object ids and UUIDs. So scripted parts (option 2 in the research) are not used in iteration 1.
 - glTF/GLB export needs a tessellate step first.
 - TechDraw export may change between FreeCAD versions. The version is pinned in `tools.yaml` (D19).
-- Assemblies and BOM were not tested in the research. This is a task for Phase 5 (5.10).
+- Assemblies and BOM were not tested in the research. The tooling is Phase 5 (5.23–5.27), the joint assembly task 6.10.
 
 ## 6. Answered review question (2026-11-14)
 

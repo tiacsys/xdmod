@@ -45,7 +45,7 @@ docs/se-req/  docs/se-arch/
 ```
 pcba/<name>/             one KiCad project per PCBA: <name>.kicad_pro/.kicad_sch/.kicad_pcb, sym-lib-table, fp-lib-table
 proto/<config>/          prototype wiring per prototype configuration: KiCad schematic or WireViz YAML (D112)
-harness/<name>/          WireViz cables between boards (if adopted, 5.7a)
+harness/<name>/          WireViz cables between boards (adopted 2026-11-17, plan 5.14, 5.22)
 lib/                     project-local symbols, footprints, 3D models that aren't in the tiacsys libraries (D88)
 tests/                   scripted EE checks (netlist vs. pin map, ERC) → JUnit
 generated/               cad-needs.json (D110)
