@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "version": 1
+  },
+  "jobs": [
+    {
+      "id": "sch-pdf",
+      "type": "sch_export_plot_pdf",
+      "description": "",
+      "settings": {
+        "output_filename": "__NAME__-schematic.pdf",
+        "format": "pdf",
+        "plot_all": true,
+        "plot_drawing_sheet": true
+      }
+    },
+    {
+      "id": "bom",
+      "type": "sch_export_bom",
+      "description": "",
+      "settings": {
+        "output_filename": "bom.csv",
+        "fields_ordered": [
+          "Reference",
+          "Value",
+          "Footprint",
+          "${QUANTITY}",
+          "${DNP}",
+          "Manufacturer",
+          "MPN"
+        ],
+        "fields_labels": [
+          "Refs",
+          "Value",
+          "Footprint",
+          "Qty",
+          "DNP",
+          "Manufacturer",
+          "MPN"
+        ],
+        "fields_group_by": [
+          "Value",
+          "Footprint"
+        ],
+        "field_delimiter": ",",
+        "string_delimiter": "\"",
+        "ref_delimiter": ",",
+        "ref_range_delimiter": "-"
+      }
+    },
+    {
+      "id": "netlist",
+      "type": "sch_export_netlist",
+      "description": "",
+      "settings": {
+        "output_filename": "netlist.xml",
+        "format": "xml"
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out",
+      "type": "folder",
+      "only": [],
+      "description": "all",
+      "settings": {
+        "output_path": "out"
+      }
+    }
+  ]
+}

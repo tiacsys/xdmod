@@ -1,0 +1,5 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "Device")(type "KiCad")(uri "${XD_KICAD_SYMBOLS}/Device.kicad_symdir")(options "")(descr ""))
+  (lib (name "Connector_Generic")(type "KiCad")(uri "${XD_KICAD_SYMBOLS}/Connector_Generic.kicad_symdir")(options "")(descr ""))
+)

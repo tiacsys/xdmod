@@ -41,6 +41,8 @@ PLANTED = {
     "CK-D5": "curatrix/tests/test_provenance.py::test_made_with_another_version_is_reported",
     "CK-E4": f"{HERE}::test_e4_conformance",
     "CK-B8": f"{HERE}::test_b8_variants_across_levels",
+    "CK-F6": "curatrix/tests/test_eeprojects.py::test_f6_folder_rule",
+    "CK-F7": "curatrix/tests/test_eeprojects.py::test_f7_one_to_one",
     "CK-E2": f"{HERE}::test_e2_value_not_in_sentence",
     "CK-E3": f"{HERE}::test_e3_wrong_ears_pattern",
     "CK-G1": f"{HERE}::test_g1_g2_changed_need_makes_links_suspect",

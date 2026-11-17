@@ -138,3 +138,11 @@ The principles of the trace model and the rules on the trace graph.
    :decided_by: XD-ADR-0130, XD-ADR-0132
 
    A domain def (board, connector, cable, assembly, mechanical port) specializes the system def it realizes or the interface def it meets. Every port it inherits from a system def is redefined somewhere in the chain by a port whose def specializes the inherited port's def; inside port defs the same holds for the signal ports. A port name inherited more than once is redefined by one port that redefines all of them. The trace link of a specialization comes from the pair of kinds (``realizes`` to a ``SYS-EL``, ``conforms`` to a ``SYS-IF``); a pair without a link type is a finding.
+
+.. xd-rule:: One KiCad project per board def
+   :id: XD-RULE-NEW-eeproj
+   :tags: trace, cad
+   :status: valid
+   :decided_by: XD-ADR-0128, XD-ADR-0135
+
+   A KiCad project is the ``.kicad_pro`` in its own folder ``pcba/<name>/`` or ``proto/<name>/``, named like the folder, with the root sheet ``<name>.kicad_sch``; no KiCad project file lies outside these folders. Each board def of the EE model (a def that specializes ``XdDomain::Pcba`` directly; a board variant, which specializes its board def, is not a board def of its own) has exactly one ``pcba/`` project, in the folder named after the def (``JointController`` → ``joint-controller``), whose text variable ``TraceID`` is the def's ``EE-PCBA`` ID; every ``pcba/`` project names exactly one board def. External parts have no project. Links of a board come from the model, not from project variables.

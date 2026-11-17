@@ -138,7 +138,8 @@ def cad_needs(ws, cfg: ChecksConfig) -> Output:
             needs[nid] = n
 
     refs: list[tuple[str, str]] = []
-    for sch in cfg.globs(s.get("kicad") or []):
+    from curatrix import eeprojects
+    for sch in eeprojects.root_sheets(cfg):
         add(*cad.kicad_needs(cad.kicad_items(sch, cfg.repo), refs))
     for fc in cfg.globs(s.get("freecad") or []):
         add(*cad.freecad_needs(fc, str(fc.resolve().relative_to(cfg.repo.resolve())), refs))
@@ -204,7 +205,8 @@ def cad_exports(ws, cfg: ChecksConfig, log=print) -> list[str]:
     errs = []
     rev = subprocess.run(["git", "-C", str(cfg.repo), "describe", "--always", "--dirty"],
                          capture_output=True, text=True).stdout.strip() or "unknown"
-    for sch in cfg.globs(s.get("kicad") or []):
+    from curatrix import eeprojects
+    for sch in eeprojects.root_sheets(cfg):
         d = out / sch.stem
         d.mkdir(parents=True, exist_ok=True)
         for argv in (["kicad-cli", "sch", "export", "svg", "-D", f"GIT_REV={rev}", "-o", str(d), str(sch)],
