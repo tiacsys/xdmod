@@ -10,6 +10,10 @@
 # The board frame origin lands on KiCad's grid origin if the board sets one, else on the lower-left
 # corner of the existing Edge.Cuts outline, so a push keeps the board where EE placed it. Afterwards:
 # kicad-cli pcb upgrade --force on the copy (re-save by KiCad 10), DRC, then copy it back.
+# Board items are read as balanced s-expressions, so single-line (StepUp) and multi-line (KiCad)
+# items both count. The anchor uses the points of gr_line, gr_rect and gr_arc (start, mid, end) on
+# Edge.Cuts; an arc's bulge beyond these points and gr_poly / gr_curve outlines are not taken into
+# account (set a grid origin on such a board).
 import json, os, re, sys, traceback
 import FreeCAD as App, Part
 
@@ -21,17 +25,37 @@ def say(*a):
     out["log"].append(" ".join(str(x) for x in a))
 
 
+def items(text, kinds=("line", "rect", "arc", "circle", "poly", "curve")):
+    """Top-level graphic items (gr_<kind>) on Edge.Cuts, each as (kind, s-expression text)."""
+    found = []
+    for m in re.finditer(r"\(gr_(%s)\b" % "|".join(kinds), text):
+        depth, i, quoted = 0, m.start(), False
+        while i < len(text):
+            c = text[i]
+            if c == '"' and text[i - 1] != "\\":
+                quoted = not quoted
+            elif not quoted and c == "(":
+                depth += 1
+            elif not quoted and c == ")":
+                depth -= 1
+                if depth == 0:
+                    break
+            i += 1
+        item = text[m.start():i + 1]
+        if re.search(r'\(layer\s+"Edge\.Cuts"\)', item):
+            found.append((m.group(1), item))
+    return found
+
+
 def anchor(text):
     m = re.search(r"\(grid_origin\s+([-\d.]+)\s+([-\d.]+)\)", text)
     if m and (float(m.group(1)), float(m.group(2))) != (0.0, 0.0):
         return float(m.group(1)), float(m.group(2)), "grid_origin"
     xs, ys = [], []
-    for blk in re.finditer(r"\(gr_(?:rect|line)\s+\(start ([-\d.]+) ([-\d.]+)\)\s+\(end ([-\d.]+) ([-\d.]+)\)(.*?)\(layer \"Edge\.Cuts\"\)",
-                           text, re.S):
-        if "(gr_" in blk.group(5):
-            continue
-        xs += [float(blk.group(1)), float(blk.group(3))]
-        ys += [float(blk.group(2)), float(blk.group(4))]
+    for _, item in items(text, ("line", "rect", "arc")):
+        for x, y in re.findall(r"\((?:start|mid|end)\s+([-\d.]+)\s+([-\d.]+)\)", item):
+            xs.append(float(x))
+            ys.append(float(y))
     if not xs:
         raise RuntimeError("no grid origin and no Edge.Cuts outline: cannot place the board frame")
     return min(xs), max(ys), "outline lower-left"
@@ -84,7 +108,7 @@ try:
     ksu.export_pcb(board, "Edge.Cuts", "PCB_Sketch")
     say("export_pcb done")
     new = open(board, encoding="utf-8").read()
-    out["edge_items"] = re.findall(r"\(gr_(?:line|circle|arc|rect)[^\n]*Edge\.Cuts[^\n]*", new)
+    out["edge_items"] = [" ".join(item.split()) for _, item in items(new)]
     out["pushed"] = new != text
     out["ok"] = True
 except Exception:

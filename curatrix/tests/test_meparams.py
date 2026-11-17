@@ -90,21 +90,32 @@ def test_model_params():
 
 
 def test_budget_values_do_not_count():
-    """A port whose def specializes a SYS-IF space budget: the copied values are not counted toward
-    the ten parameters, its placement is (co-design, XD-ADR-0134)."""
-    def model(conforms):
+    """A port whose def specializes a SYS-IF space budget: only the attributes that redefine an
+    attribute of the budget are not counted toward the ten parameters; its placement and the
+    attributes ME adds itself are (co-design, XD-ADR-0134)."""
+    budget = ("width", "depth", "holeDiameter", "hole1X", "hole1Y", "hole2X", "hole2Y")
+
+    def model(conforms, own=1):
         data = canary_model()
         b = M()
         b.data = data
-        b.el("lib:Sys::BoardSpace", {"@type": "PortDefinition", "name": "BoardSpace", "qualifiedName": "Sys::BoardSpace",
-                                     "declaredShortName": "SYS-IF-0001", "isLibraryElement": True})
+        sp = b.el("lib:Sys::BoardSpace", {"@type": "PortDefinition", "name": "BoardSpace", "qualifiedName": "Sys::BoardSpace",
+                                          "declaredShortName": "SYS-IF-0001", "isLibraryElement": True})
+        for n in budget:
+            b.el(f"lib:Sys::BoardSpace::{n}", {"@type": "AttributeUsage", "name": n, "qualifiedName": f"Sys::BoardSpace::{n}",
+                                               "isLibraryElement": True})
         seat = b.el("Me::BoardSeat", {"@type": "PortDefinition", "name": "BoardSeat", "qualifiedName": "Me::BoardSeat",
                                       "declaredShortName": "ME-PORT-0002"})
         if conforms:
-            sub = b.el("Me::BoardSeat/sub", {"@type": "Subclassification", "superclassifier": {"@id": "lib:Sys::BoardSpace"}})
+            sub = b.el("Me::BoardSeat/sub", {"@type": "Subclassification", "superclassifier": {"@id": sp["@id"]}})
             seat["ownedRelationship"].append({"@id": sub["@id"]})
-        for i, n in enumerate(("width", "depth", "holeDiameter", "hole1X", "hole1Y", "hole2X", "hole2Y")):
-            b.attr(seat, n, 10 + i, "millimetre")
+        for i, n in enumerate(budget):
+            a = b.attr(seat, n, 10 + i, "millimetre")
+            a["qualifiedName"] = f"Me::BoardSeat::{n}"
+            red = b.el(f"{a['@id']}/red", {"@type": "Redefinition", "redefinedFeature": {"@id": f"lib:Sys::BoardSpace::{n}"}})
+            a["ownedRelationship"].append({"@id": red["@id"]})
+        for i in range(own):                                  # chosen in ME: a seat clearance, a standoff
+            b.attr(seat, f"clearance{i}", 1, "millimetre")
         asm = next(x["payload"] for x in data if x["identity"]["@id"] == "Me::CanaryAssembly")
         su = b.own(asm, b.el("Me::CanaryAssembly::boardSeat", {"@type": "PortUsage", "name": "boardSeat",
                                                                "type": [{"@id": seat["@id"]}]}))
@@ -114,10 +125,13 @@ def test_budget_values_do_not_count():
 
     m = model(conforms=True)
     params, findings = meparams.model_params(m, m.get("Me::CanaryAssembly"))
-    assert len(params) == 14 and not findings, findings          # 4 + 3 placement counted, 7 budget values not
+    assert len(params) == 15 and not findings, findings  # 4 + 3 placement + 1 own counted, 7 budget values not
+    m = model(conforms=True, own=4)
+    _, findings = meparams.model_params(m, m.get("Me::CanaryAssembly"))
+    assert any("11 parameters (without 7 values" in f for f in findings), findings   # ME's own attributes count
     m = model(conforms=False)
     _, findings = meparams.model_params(m, m.get("Me::CanaryAssembly"))
-    assert any("14 parameters" in f for f in findings), findings
+    assert any("15 parameters" in f for f in findings), findings
 
 
 def test_cell_values_and_placements():

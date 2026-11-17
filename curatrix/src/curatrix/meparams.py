@@ -3,9 +3,11 @@
 The parameters of a top-level assembly come from its def in the ME model: every attribute with a
 value of a part or port usage the def owns, or of the usage's def (``attribute holeSpacing = 12
 [mm];``), is one parameter with the alias ``<usage>_<attribute>`` (``mount_holeSpacing``). At most
-ten per assembly (iteration 1); the values a port takes over from a ``SYS-IF`` space budget its def
-specializes (co-design, XD-ADR-0134) are copied from the system model, not chosen in ME, and do not
-count (its placement does). Ports (``XdDomain::MechanicalPort``) give their placement in the
+ten per assembly (iteration 1); the attributes of a port that redefine an attribute of a ``SYS-IF``
+space budget its def specializes (co-design, XD-ADR-0134) are copied from the system model, not
+chosen in ME, and do not count. Its placement and every attribute ME adds itself (a seat clearance,
+a standoff height) count. Leaving the copies out interprets the ten parameters of XD-ADR-0137;
+that is an open owner decision. Ports (``XdDomain::MechanicalPort``) give their placement in the
 assembly by the attributes ``x``, ``y``, ``z`` (lengths) and ``yaw``, ``pitch``, ``roll`` (angles,
 FreeCAD's order: about z, then y, then x).
 
@@ -111,6 +113,24 @@ def _attributes(m, el, seen=None) -> list[dict]:
     return out
 
 
+def _redefines(m, a, budgets: tuple[str, ...], seen=None) -> bool:
+    """Whether attribute ``a`` redefines an attribute of one of the defs ``budgets`` (qualified
+    names), directly or through redefinitions in between (a usage redefining its def's attribute)."""
+    seen = seen if seen is not None else set()
+    if not budgets or a is None or a.get("@id") in seen:
+        return False
+    seen.add(a["@id"])
+    for r in m.rels(a, "Redefinition"):
+        t = m.get(r.get("redefinedFeature"))
+        if t is None:
+            continue
+        if (t.get("qualifiedName") or "").startswith(tuple(f"{b}::" for b in budgets)):
+            return True
+        if not t.get("isLibraryElement") and _redefines(m, t, budgets, seen):
+            return True
+    return False
+
+
 def model_params(m, asm) -> tuple[list[Param], list[str]]:
     """The parameters of an assembly def (see the module doc) and findings."""
     params, findings, aliases = [], [], set()
@@ -118,14 +138,15 @@ def model_params(m, asm) -> tuple[list[Param], list[str]]:
     for _, u in m.owned(asm):
         if u.get("@type") not in ("PartUsage", "PortUsage") or not u.get("name"):
             continue
-        port, conforms = None, False
+        port, budgets = None, ()
         if u["@type"] == "PortUsage":
             t = next(iter(m.declared_types(u)), None)
             pdef = m.port_def(t)[0] if t else None
             pid = modelmod.element_id(m, pdef) if pdef else None
             port = pid if pid and idmod.kind_of(pid) == "ME-PORT" else None
-            conforms = bool(pdef) and any(s.get("isLibraryElement") and idmod.kind_of(modelmod.element_id(m, s) or "") == "SYS-IF"
-                                          for s in m.supers(pdef))
+            budgets = tuple(s["qualifiedName"] for s in (m.supers(pdef) if pdef else [])
+                            if s.get("isLibraryElement") and s.get("qualifiedName")
+                            and idmod.kind_of(modelmod.element_id(m, s) or "") == "SYS-IF")
         for a in _attributes(m, u):
             alias = f"{u['name']}_{a['name']}"
             if alias in aliases:
@@ -139,7 +160,7 @@ def model_params(m, asm) -> tuple[list[Param], list[str]]:
                 findings.append(f"model {m.qn(a)}: {a['name']} needs a {'angle' if a['name'] in PLACEMENT[3:] else 'length'} "
                                 f"with a unit")
             params.append(Param(alias, u["name"], a["name"], value, kind, _tolerance(m, a, kind, factor), port))
-            budget += conforms and a["name"] not in PLACEMENT
+            budget += _redefines(m, a, budgets)
     if len(params) - budget > MAX_PARAMS:
         findings.append(f"model {m.qn(asm)}: {len(params) - budget} parameters (without {budget} values of SYS-IF budgets); "
                         f"at most {MAX_PARAMS} per assembly in iteration 1 (XD-ADR-0137)")

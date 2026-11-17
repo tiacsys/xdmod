@@ -59,10 +59,23 @@ Steps
       curatrix gen freecad-params robarm-me      # Params, the sketch BoardOutline follows
       curatrix gen all robarm-me                 # semantic JSON of the skeleton
 
-4. **Push** (into robarm-ee), always on a copy under ``build/``: copy the skeleton and the
-   ``.kicad_pcb`` (with its ``.kicad_pro`` and library tables) to ``build/<area>/co-design/``, run
-   the StepUp push (StepUp pinned by commit under ``.xdmod/stepup/``, ``HOME`` only for this
-   process under ``.xdmod/``):
+4. **Push** (into robarm-ee), always on a copy under ``build/``. Get StepUp once, at its pin
+   (easyw/kicadStepUpMod, commit ``3db98be23aae40413eab041f19de5ab2e168157e``), next to FreeCAD,
+   not into FreeCAD's ``Mod/``, until ``tools.yaml`` holds the pin and ``curatrix update`` clones it:
+
+   .. code-block:: sh
+
+      git clone https://github.com/easyw/kicadStepUpMod .xdmod/stepup/kicadStepUpMod
+      git -C .xdmod/stepup/kicadStepUpMod checkout 3db98be23aae40413eab041f19de5ab2e168157e
+      mkdir -p .xdmod/stepup/home
+
+   **Licence gap:** the repo has no ``LICENSE`` file; AGPL-3.0 is only claimed in its README and
+   ``package.xml``. Record it in the StepUp licence record (task 5.29) before StepUp becomes a
+   pinned tool.
+
+   Copy the skeleton and the ``.kicad_pcb`` (with its ``.kicad_pro`` and library tables) to
+   ``build/<area>/co-design/`` and run the StepUp push (``HOME`` only for this process under
+   ``.xdmod/``):
 
    .. code-block:: sh
 
@@ -83,6 +96,11 @@ Steps
       curatrix run --use kicad-cli -- kicad-cli pcb drc --format json --severity-all \
         -o build/<area>/co-design/drc.json build/<area>/co-design/<board>.kicad_pcb
       cp build/<area>/co-design/<board>.kicad_pcb robarm-ee/pcba/<board>/
+      test ! -e ~/ksu-config.ini && echo "home untouched"
+
+   StepUp leaves a backup ``<board>-bkp-<time>.kicad_pcb-bak`` next to the copy. It stays in
+   ``build/``; copy back only the ``.kicad_pcb``. ``~/ksu-config.ini`` must not exist afterwards
+   (if it does, StepUp ran with your own ``HOME``: delete it and check the sandbox).
 
 5. **Check** all three repos with CAD content, then ``curatrix ids fix`` where new IDs came in:
 
