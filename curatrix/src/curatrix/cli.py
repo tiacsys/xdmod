@@ -384,12 +384,30 @@ def cmd_new(a):
 
 
 def cmd_cam(a):
-    from curatrix import cam
+    """Design output of a pcba/ project or a harness (`name`), or of all of them."""
+    from curatrix import cam, eeprojects, harness
     ws = _ws()
     repo = _repo(ws, a.repo)
+    cfg = _cfg(ws, repo)
+    boards = {p.name for p in eeprojects.discover(cfg) if p.kind == "pcba"}
+    harnesses = {h.name for h in harness.discover(cfg)} if harness.patterns(cfg) else set()
     try:
-        cam.run(ws, repo, _cfg(ws, repo), a.project, update=a.update_jobset)
-    except cam.CamError as e:
+        if a.name and a.name in boards and a.name in harnesses:
+            raise cam.CamError(f"{a.name} is both a pcba/ project and a harness; rename one (tags <name>/vX.Y.Z "
+                               f"must be unique in the repo)")
+        if a.name and a.name not in boards | harnesses:
+            raise cam.CamError(f"no pcba/ project or harness {a.name} in {repo.name} (checks.yaml cad.projects, "
+                               f"cad.harnesses)")
+        if a.update_jobset and (a.name in harnesses or not boards):
+            raise cam.CamError("--update-jobset applies to pcba/ projects only")
+        if boards and (a.name is None or a.name in boards):
+            cam.run(ws, repo, cfg, a.name, update=a.update_jobset)
+        if harnesses and not a.update_jobset and (a.name is None or a.name in harnesses):
+            harness.run(ws, repo, cfg, a.name)
+        if not boards and not harnesses:
+            raise cam.CamError(f"{repo.name} has no pcba/ project and no harness (checks.yaml cad.projects, "
+                               f"cad.harnesses)")
+    except (cam.CamError, harness.HarnessError) as e:
         print(f"curatrix cam: {e}", file=sys.stderr)
         return 1
     return 0
@@ -591,10 +609,11 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--no-kicad", action="store_true", help="do not let KiCad save the new files (tests)")
     s.set_defaults(func=cmd_new)
 
-    s = sub.add_parser("cam", help="EE design output: copy a pcba/ project into build/<area>/cam/<project>/<version>/, "
-                                   "write the version, run its jobset there (local, needs KiCad)")
+    s = sub.add_parser("cam", help="EE design output into build/<area>/cam/<name>/<version>/: a pcba/ project (copy, "
+                                   "version, its jobset; local, needs KiCad) or a harness (WireViz diagram and BOM, "
+                                   "a separate process)")
     s.add_argument("repo", help="the EE repo")
-    s.add_argument("project", nargs="?", help="one pcba/ project (default: all)")
+    s.add_argument("name", nargs="?", help="one pcba/ project or harness (default: all)")
     s.add_argument("--update-jobset", action="store_true",
                    help="write the project's jobset from the shared template and its variants, then stop")
     s.set_defaults(func=cmd_cam)

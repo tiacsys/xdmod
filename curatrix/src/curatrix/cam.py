@@ -421,7 +421,7 @@ def run_project(ws, repo, cfg, pr, log=print) -> dict:
     shutil.rmtree(tmp, ignore_errors=True)
     files = sorted(str(f.relative_to(top)) for f in out.rglob("*") if f.is_file())
     head = _git(repo.path, "rev-parse", "HEAD").stdout.strip()
-    rec = {"project": pr.name, "version": ver, "release": release, "commit": head,
+    rec = {"kind": "board", "project": pr.name, "version": ver, "release": release, "commit": head,
            "date": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
            "jobs": n_jobs, "single_exports": singles, "variants": variants, "stackup": source,
            "warnings": [t for _, t in found] + version_findings(pr), "files": files}

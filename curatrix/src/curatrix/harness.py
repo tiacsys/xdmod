@@ -459,29 +459,6 @@ def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, timeout=60)
 
 
-def version(repo: Path, name: str, folder: Path) -> tuple[str, bool]:
-    """(version, is_release): ``git describe --tags --match '<name>/*'``; without a tag
-    ``<name>/v0.0.0-<n>-g<sha>``; a release only on an exact tag on main with a clean folder,
-    otherwise ``-dirty`` (uncommitted changes in the folder) and ``-preview``. Same rule as the
-    boards (XD-ADR-0140)."""
-    d = _git(repo, "describe", "--tags", "--match", f"{name}/*")
-    exact = _git(repo, "describe", "--tags", "--exact-match", "--match", f"{name}/*").returncode == 0
-    if d.returncode == 0:
-        v = d.stdout.strip()
-    else:
-        n = _git(repo, "rev-list", "--count", "HEAD").stdout.strip() or "0"
-        sha = _git(repo, "rev-parse", "--short=7", "HEAD").stdout.strip() or "0000000"
-        v = f"{name}/v0.0.0-{n}-g{sha}"
-    rel = str(folder.resolve().relative_to(repo.resolve()))
-    dirty = bool(_git(repo, "status", "--porcelain", "--", rel).stdout.strip())
-    main = next((r for r in ("origin/main", "main") if _git(repo, "rev-parse", "--verify", "-q", r).returncode == 0), None)
-    on_main = bool(main) and _git(repo, "merge-base", "--is-ancestor", "HEAD", main).returncode == 0
-    release = exact and on_main and not dirty
-    if not release:
-        v += ("-dirty" if dirty else "") + "-preview"
-    return v, release
-
-
 def out_dir(ws, cfg, name: str) -> Path:
     return ws.build(cfg.area) / "cam" / name
 
@@ -505,7 +482,8 @@ def run_one(ws, repo, cfg, h: Harness, log=print) -> dict:
     from curatrix import limits
     if h.error:
         raise HarnessError(f"{h.name}: {h.error}")
-    ver, release = version(repo.path, h.name, h.folder)
+    from curatrix.cam import version
+    ver, release = version(repo.path, h.name, h.folder)       # the boards' rule (XD-ADR-0140, XD-ADR-0142)
     short = ver.split("/", 1)[1] if "/" in ver else ver
     top = out_dir(ws, cfg, h.name) / short
     if top.exists():

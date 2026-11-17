@@ -209,6 +209,7 @@ def test_cam_run(tmp_path):
     ws = Workspace(root)
     cfg = checkcfg.load(repo / "checks.yaml", root)
     rec = cam.run(ws, Repo("r", repo, "r"), cfg)[0]
+    assert rec["kind"] == "board"
     assert rec["version"].startswith("drc/v0.0.0-1-g") and rec["version"].endswith("-preview")
     top = ws.build("r") / "cam" / "drc" / rec["version"].split("/", 1)[1]
     out = top / "drc"

@@ -220,6 +220,7 @@ def test_cam_runs_wireviz(tmp_path):
     ws = Workspace(root)
     cfg = checkcfg.load(repo / "checks.yaml", root)
     rec = harness.run(ws, Repo("r", repo, "r"), cfg)[0]
+    assert rec["kind"] == "harness"
     assert rec["version"].startswith("servo-cable/v0.0.0-1-g") and rec["version"].endswith("-preview")
     top = ws.build(cfg.area) / "cam" / "servo-cable" / rec["version"].split("/", 1)[1]
     assert {"servo-cable/servo-cable.svg", "servo-cable/servo-cable.png", "servo-cable/servo-cable.bom.tsv"} <= set(rec["files"])
@@ -227,3 +228,21 @@ def test_cam_runs_wireviz(tmp_path):
     assert "Lapp" in (top / "servo-cable" / "servo-cable.bom.tsv").read_text()
     assert harness.latest(ws, cfg, "servo-cable")["version"] == rec["version"]
     assert not (repo / "harness/servo-cable/servo-cable.svg").exists()
+
+
+def test_cam_command_names_a_board_or_a_harness(tmp_path, monkeypatch, capsys):
+    """One `cam` command: an unknown name and --update-jobset on a harness are refused before
+    any tool runs; a name that is both a board and a harness is refused."""
+    from curatrix import cli, eeprojects
+    root, repo = _repo(tmp_path)
+    ws = Workspace(root)
+    monkeypatch.setattr(cli, "_ws", lambda: ws)
+    monkeypatch.setattr(cli, "_repo", lambda w, n: Repo("r", repo, "r"))
+    assert cli.main(["cam", "r", "nope"]) == 1
+    assert "no pcba/ project or harness nope" in capsys.readouterr().err
+    assert cli.main(["cam", "r", "servo-cable", "--update-jobset"]) == 1
+    assert "--update-jobset applies to pcba/ projects only" in capsys.readouterr().err
+    pr = eeprojects.Project("servo-cable", "pcba", repo, repo / "x.kicad_pro", repo / "x.kicad_sch")
+    monkeypatch.setattr(eeprojects, "discover", lambda cfg: [pr])
+    assert cli.main(["cam", "r", "servo-cable"]) == 1
+    assert "both a pcba/ project and a harness" in capsys.readouterr().err
