@@ -216,3 +216,21 @@ Repos, the west workspace, names, tags and paths.
 
    ``tools.yaml`` and the roles of ``curatrix bootstrap`` follow; ``curatrix doctor`` warns when a role
    with ``kicad-cli`` has no KiCad 3D models (STEP and renderings then show bare boards).
+
+.. xd-adr:: KiCad and FreeCAD never run outside curatrix; shims in .venv/bin
+   :id: XD-ADR-0145
+   :date: 2026-11-17
+   :decision_status: accepted
+   :status: valid
+   :refines: XD-ADR-0080
+
+   **Never run KiCad or FreeCAD outside curatrix or its shims, not even** ``--version``. A bare
+   ``kicad-cli --version`` rewrites ``~/.config/kicad/10.0/kicad_common.json``; agents did this twice.
+   As a safety net, ``curatrix bootstrap`` and ``update`` write shims into ``<workspace>/.venv/bin`` for
+   ``kicad-cli``, ``kicad``, ``eeschema``, ``pcbnew``, ``FreeCAD``, ``FreeCADCmd`` and ``freecad`` (each one
+   that exists on the machine). A shim sets the workspace-local config that ``curatrix run`` sets and
+   runs the real binary, found by absolute path when the shim is written (never ``.venv/bin`` itself or
+   another shim). ``curatrix env`` puts ``.venv/bin`` first on ``PATH``; ``curatrix doctor`` warns when
+   a KiCad or FreeCAD name on ``PATH`` is not the shim. Nothing outside the workspace changes: no
+   user-global files, no ``PATH`` edits in shell profiles. The shims set no limits, so the tools still
+   run through curatrix (:need:`XD-ADR-0064`).

@@ -112,6 +112,14 @@ command with this environment and the default limits.
 No user-global configuration is used. KiCad, FreeCAD and drawio get workspace-local config
 folders under ``.xdmod/`` through ``curatrix launch`` (:need:`XD-ADR-0080`).
 
+``curatrix bootstrap`` and ``update`` also write shims into ``.venv/bin`` for ``kicad-cli``,
+``kicad``, ``eeschema``, ``pcbnew``, ``FreeCAD``, ``FreeCADCmd`` and ``freecad``, for each one found on
+the machine (:need:`XD-ADR-0145`). A shim sets the same variables as ``curatrix run`` (``KICAD_*``,
+``KICAD10_*`` and ``LC_ALL`` for KiCad, ``XDG_*`` for FreeCAD) and runs the real binary by its absolute
+path. With ``eval "$(curatrix env)"`` the shims come first on ``PATH``; ``curatrix doctor`` warns when
+they do not. Nothing outside the workspace changes. The shims set no limits: still run the tools
+through curatrix.
+
 Limits
 ------
 
