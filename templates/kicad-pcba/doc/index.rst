@@ -11,11 +11,18 @@ Overview
 
 .. xd-pcba-overview:: __NAME__
 
+Block diagram
+-------------
+
+The board def of the EE model with its connector ports (from the model; ``curatrix views build``):
+
+__BLOCK_DIAGRAM__
 Variants
 --------
 
 .. xd-pcba-variants:: __NAME__
 
+__VARIANTS_VIEW__
 Renderings
 ----------
 

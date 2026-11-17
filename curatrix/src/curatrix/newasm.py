@@ -4,7 +4,8 @@ ME model (task 5.23; XD-ADR-0128, XD-ADR-0137).
 Makes ``assemblies/<name>/`` with the top document ``<name>.FCStd`` and ``<name>-skeleton.FCStd``, both
 written by FreeCAD itself (``FreeCADCmd`` runs ``xdmod/templates/freecad-asm/new-asm.py`` under the
 ``freecad`` limits and the workspace-local config), then the document ``docs/asm-<name>/`` and its
-entry in the docs registry. ``<name>`` is the def's name in kebab case (``CanaryAssembly`` ->
+entry in the docs registry (it embeds the assembly's decomposition and interconnection views, or
+says which views to add). ``<name>`` is the def's name in kebab case (``CanaryAssembly`` ->
 ``canary-assembly``).
 """
 from __future__ import annotations
@@ -14,11 +15,12 @@ import shutil
 from pathlib import Path
 
 from curatrix import eeprojects, meassemblies, model as modelmod
-from curatrix.newpcba import NewError, _subst, add_registry_entry, title_of
+from curatrix.newpcba import NewError, _subst, add_registry_entry, title_of, views_block
 
 
-def find_assembly(cfg, element: str) -> tuple[str, str]:
-    """(def name, ME-ASM ID) of an assembly def in the repo's committed model.json."""
+def find_assembly(cfg, element: str) -> dict:
+    """The assembly def (model element) of a def name, qualified name or ME-ASM ID in the repo's
+    committed model.json."""
     s = cfg.section("model")
     if s is None:
         raise NewError(f"{cfg.repo.name} has no model section in checks.yaml; an assembly document names an "
@@ -29,7 +31,7 @@ def find_assembly(cfg, element: str) -> tuple[str, str]:
     asms, _ = meassemblies.model_defs(modelmod.Model.load(mj))
     for aid, p in asms.items():
         if element in (p.get("name"), p.get("qualifiedName"), aid):
-            return p.get("name"), aid
+            return p
     known = ", ".join(sorted(p.get("name") for p in asms.values())) or "none"
     raise NewError(f"no assembly def {element!r} in {cfg.repo.name}/{mj.relative_to(cfg.repo)} (assembly defs: "
                    f"{known}); add `part def <'ME-ASM-NEW-x'> {element} :> <system block>, XdDomain::Assembly` to "
@@ -58,7 +60,8 @@ def run_script(ws, script: Path, env_vars: dict[str, str], result: Path, use: st
 
 
 def new_asm(ws, repo, cfg, element: str, freecad: bool = True, log=print) -> Path:
-    name_el, aid = find_assembly(cfg, element)
+    adef = find_assembly(cfg, element)
+    name_el, aid = adef.get("name"), adef.get("declaredShortName") or adef.get("shortName") or ""
     name = eeprojects.kebab(name_el)
     folder = cfg.repo / "assemblies" / name
     if folder.exists():
@@ -85,7 +88,10 @@ def new_asm(ws, repo, cfg, element: str, freecad: bool = True, log=print) -> Pat
         ddir = reg.parent / doc_id
         ddir.mkdir(parents=True, exist_ok=True)
         rst_title = f"{title} ({doc_id})"
-        dv = {**values, "__TITLE_RST__": f"{rst_title}\n{'=' * len(rst_title)}"}
+        dv = {**values, "__TITLE_RST__": f"{rst_title}\n{'=' * len(rst_title)}",
+              "__BLOCK_DIAGRAMS__": views_block(cfg, adef["qualifiedName"], [
+                  ("decomposition", "Parts", f"Parts of the {title.lower()}"),
+                  ("interconnection", "", f"The {title.lower()} and its ports")], log)}
         for f in ("conf.py", "index.rst"):
             (ddir / f).write_text(_subst((tmpl / "doc" / f).read_text(encoding="utf-8"), dv), encoding="utf-8")
         log(f"  wrote {ws.rel(ddir)}/ (conf.py, index.rst)")

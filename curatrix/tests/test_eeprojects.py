@@ -186,7 +186,12 @@ def test_new_pcba(tmp_path):
         uris = [u for u in (folder / t).read_text().split('(uri "')[1:]]
         assert uris and all(u.startswith("${XD_KICAD_") for u in uris)
     assert "pcba-joint-controller" in (repo / "docs/documents.yaml").read_text()
-    assert (repo / "docs/pcba-joint-controller/index.rst").read_text().startswith("Joint Controller (pcba-joint-controller)\n===")
+    idx = (repo / "docs/pcba-joint-controller/index.rst").read_text()
+    assert idx.startswith("Joint Controller (pcba-joint-controller)\n===") and "__" not in idx
+    # no view of the board in the model yet: the document says what to add (no missing file)
+    assert "The model has no interconnection view of ``JointController`` yet" in idx
+    assert 'kind = "interconnection"; root = "Ee::JointController"' in idx and "\n.. sysml-view::" not in idx
+    assert '(REPO, "views/*.drawio.svg")' in (repo / "docs/pcba-joint-controller/conf.py").read_text()
     assert _run(root, repo, "CK-F6", "c_ee_projects") == []
     f7 = _run(root, repo, "CK-F7", "c_ee_one_to_one")
     assert not any("JointController" in x for x in f7), f7
@@ -196,6 +201,23 @@ def test_new_pcba(tmp_path):
         newpcba.new_pcba(ws, r, cfg, "ServoMotor", kicad=False, log=lambda *_: None)
     with pytest.raises(newpcba.NewError, match="no board def 'Nope'"):
         newpcba.new_pcba(ws, r, cfg, "Nope", kicad=False, log=lambda *_: None)
+
+
+def test_new_pcba_embeds_the_board_views(tmp_path, monkeypatch):
+    """With an interconnection and a variants view of the board in the model, the document embeds
+    both (tiacsys/xdmod#69 finding 3)."""
+    from curatrix import views
+    root, repo = _new_pcba_repo(tmp_path)
+    vd = [views.ViewDef(name=n, short_id=None, kind=k, root="Ee::JointController", layer=None, qualified_name=n)
+          for n, k in (("jointController", "interconnection"), ("jointControllerVariants", "variants"),
+                       ("other", "decomposition"))]
+    monkeypatch.setattr(views, "discover", lambda m: vd)
+    cfg = checkcfg.load(repo / "checks.yaml", root)
+    newpcba.new_pcba(Workspace(root), Repo("r", repo, "r"), cfg, "JointController", kicad=False, log=lambda *_: None)
+    idx = (repo / "docs/pcba-joint-controller/index.rst").read_text()
+    assert ".. sysml-view:: /views/jointController.drawio.svg" in idx
+    assert ".. sysml-view:: /views/jointControllerVariants.drawio.svg" in idx
+    assert "other.drawio.svg" not in idx and "has no" not in idx and "__" not in idx
 
 
 @pytest.mark.tools
