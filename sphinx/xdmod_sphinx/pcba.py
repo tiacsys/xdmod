@@ -23,7 +23,6 @@ when the output is missing or stale, so the strict docs build never depends on i
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -59,8 +58,25 @@ class _Board:
             env.note_dependency(str(f))
 
     def variants(self) -> list[dict]:
+        """KiCad's variants (``.kicad_pro``) in the order of the model, not KiCad's: ``default``
+        first, then the variants that serve a configuration (by configuration), then the other
+        variants of the board def; a variant the model does not name keeps KiCad's order after them.
+        Without model variants for this board, KiCad's order with ``default`` first."""
         d = json.loads(self.pr.pro.read_text(encoding="utf-8"))
-        return [v for v in ((d.get("schematic") or {}).get("variants") or []) if v.get("name")]
+        vs = [v for v in ((d.get("schematic") or {}).get("variants") or []) if v.get("name")]
+        rank = {n: i for i, n in enumerate(self.model_variants())}
+        return sorted(vs, key=lambda v: (v["name"] != "default", rank.get(v["name"], len(rank))))
+
+    def model_variants(self) -> list[str]:
+        """The ``variantName`` of each variant def of this board in the domain model, in order."""
+        s = self.cfg.section("model") or {}
+        mj = self.cfg.resolve(s.get("json", "generated/model.json"))
+        tid = (self.pr.variables().get("TraceID") or "").strip()
+        if not tid or not mj.is_file():
+            return []
+        self.env.note_dependency(str(mj))
+        vs = [v for v in _cur("domvariants").variants(_cur("model").Model.load(mj))[0] if v.owner == tid and v.name]
+        return [v.name for v in sorted(vs, key=lambda v: (not v.configs, sorted(v.configs), v.qn))]
 
     def parts(self):
         return _cur("bom").read(self.pr.sch)
@@ -201,9 +217,9 @@ class Bom(Directive):
 
 
 class Renderings(Directive):
-    """Top, bottom and 3D per variant, each distinct image once: Sphinx image nodes, so the PNGs are
-    copied to ``_images/`` and not embedded in the page; an image equal to one shown before is
-    named instead."""
+    """Top, bottom and 3D for every variant, in the order of ``_Board.variants`` (``default``
+    first), each variant with its full set (no "same as" shortcut, xdmod#69 finding 11): Sphinx
+    image nodes, so the PNGs are copied to ``_images/`` and not embedded in the page."""
     required_arguments = 1
     VIEWS = (("render-top", "top"), ("render-bottom", "bottom"), ("render-3d", "3D"))
 
@@ -214,26 +230,16 @@ class Renderings(Directive):
         if rec is None:
             return [nodes.paragraph(text=LOCAL)]
         docdir = Path(env.doc2path(env.docname)).parent
-        result, seen = [], {}
+        result = []
         for v in [x["name"] for x in b.variants()] or [None]:
             cap = f"Variant {v}" if v else "Board"
-            imgs, same = [], []
-            for stem, what in self.VIEWS:
-                f = out / f"{stem}{'-' + v if v else ''}.png"
-                if not f.is_file():
-                    continue
-                key = hashlib.sha256(f.read_bytes()).hexdigest()
-                if key in seen:
-                    same.append(f"{what}: same as {seen[key]}")
-                    continue
-                seen[key] = f"{cap.lower()} {what}"
-                imgs.append(nodes.image(uri=os.path.relpath(f, docdir), alt=f"{cap}, {what}", width="32%"))
-            if not imgs and not same:
+            shown = [(what, f) for stem, what in self.VIEWS
+                     if (f := out / f"{stem}{'-' + v if v else ''}.png").is_file()]
+            if not shown:
                 continue
-            shown = [i["alt"].split(", ")[-1] for i in imgs]
-            para = nodes.paragraph(text=f"{cap}, {_version(rec)}: " + "; ".join(
-                ([", ".join(shown)] if shown else []) + same) + ".")
-            result += [para, *imgs]
+            result.append(nodes.paragraph(text=f"{cap}, {_version(rec)}: {', '.join(w for w, _ in shown)}."))
+            result += [nodes.image(uri=os.path.relpath(f, docdir), alt=f"{cap}, {what}", width="32%")
+                       for what, f in shown]
         return result or [nodes.paragraph(text=NO_DATA)]
 
 
@@ -241,7 +247,7 @@ class Schematic(Directive):
     required_arguments = 1
 
     def run(self):
-        from xdmod_sphinx import inline_svg
+        from xdmod_sphinx import inline_svg, svg_figure
         b = _Board(self)
         rec, out = b.cam()
         if rec is None:
@@ -250,8 +256,7 @@ class Schematic(Directive):
         sheets = ([root] if root.is_file() else []) + sorted(f for f in out.glob("*.svg") if f != root)
         if not sheets:
             return [nodes.paragraph(text=NO_DATA)]
-        html = [f'<figure class="xd-cad">{inline_svg(f.read_text(encoding="utf-8"))}<figcaption>{f.stem}, '
-                f"{_version(rec)}</figcaption></figure>" for f in sheets]
+        html = [svg_figure(inline_svg(f.read_text(encoding="utf-8")), f"{f.stem}, {_version(rec)}") for f in sheets]
         pdfs = sorted(out.glob(f"{b.name}-schematic*.pdf"))
         out_nodes = [nodes.raw("", "\n".join(html), format="html")]
         if pdfs:                           # a file:// link would be dead on any other machine

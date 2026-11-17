@@ -1,0 +1,18 @@
+# Third-party files vendored into the Sphinx extension (decision of the owner, tiacsys/xdmod#69 Q16):
+# copied unchanged from the release tarball, no CDN. To update: download the tarball, compare its
+# sha512 with the npm `integrity`, copy the files, update version and hashes here
+# (test_sphinx_ext.py::test_vendored_files_match_the_record compares them).
+svg-pan-zoom:
+  version: "3.6.2"
+  license: BSD-2-Clause
+  homepage: https://github.com/bumbu/svg-pan-zoom
+  tarball: https://registry.npmjs.org/svg-pan-zoom/-/svg-pan-zoom-3.6.2.tgz
+  tarball_sha256: 1e4c077505a0fdd125c191e93c1843a66db0d2de840d0d94cbc1e8c3823bb61a
+  npm_integrity: sha512-JwnvRWfVKw/Xzfe6jriFyfey/lWJLq4bUh2jwoR5ChWQuQoOH8FEh1l/bEp46iHHKHEJWIyFJETbazraxNWECg==
+  files:                                  # path below static/ <- path in the tarball
+    svg-pan-zoom/svg-pan-zoom.min.js:
+      from: package/dist/svg-pan-zoom.min.js
+      sha256: 9c8fc41b3359e699990766dd7a943595d234a80c880a90dfc14b920a273b99d8
+    svg-pan-zoom/LICENSE:
+      from: package/LICENSE
+      sha256: a4fbaf0b818914459316cb22e1a9d01e0f8786fc10cfe355077cca048daa028a

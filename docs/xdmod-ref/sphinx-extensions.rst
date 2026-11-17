@@ -101,6 +101,22 @@ Examples:
 
    .. tracechain:: sys-need <-refines- sys-req <-satisfies- sys-el <-realizes- ee-cmp
 
+SVG viewer
+----------
+
+Every inline SVG figure gets a small viewer in the HTML build: ``sysml-view``, the SVG of
+``kicad-sheet`` and ``freecad-drawing``, and in the board, harness and assembly documents the
+schematic sheets, the WireViz diagram, the drawing sheet and the exploded view. In the page you
+drag to pan and use the +, -, reset buttons to zoom; the mouse wheel still scrolls the page.
+"Enlarge" (or a double-click) opens the picture in a pop-up that uses most of the screen, with
+pan, zoom and the mouse wheel; Esc, the close button or a click outside the picture closes it.
+Links in a block diagram still work. Without JavaScript the figure is a plain inline SVG.
+
+The pan and zoom come from `svg-pan-zoom <https://github.com/bumbu/svg-pan-zoom>`__ (BSD-2-Clause),
+vendored at a pinned release with its licence file in ``xdmod_sphinx/static/svg-pan-zoom/``; no
+CDN. ``xdmod_sphinx/vendor.yaml`` records the version and the sha256 of each file, and a test
+compares them. The pop-up is our own ``static/xd-svgview.js`` and ``xd-svgview.css``.
+
 Reference directives
 --------------------
 

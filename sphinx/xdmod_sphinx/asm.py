@@ -273,7 +273,7 @@ class Drawing(Directive):
     option_spec = SUB
 
     def run(self):
-        from xdmod_sphinx import inline_svg
+        from xdmod_sphinx import inline_svg, svg_figure
         a = _Asm(self)
         if a.node is not a.tree:
             return [nodes.paragraph(text=TOP_ONLY)]
@@ -284,8 +284,7 @@ class Drawing(Directive):
         for v in rec.get("variants") or []:
             f = top / a.name / v / "drawing.svg"
             if f.is_file():
-                html.append(f'<figure class="xd-cad">{inline_svg(f.read_text(encoding="utf-8"))}<figcaption>'
-                            f'Drawing, variant {v}, {rec["version"]}</figcaption></figure>')
+                html.append(svg_figure(inline_svg(f.read_text(encoding="utf-8")), f'Drawing, variant {v}, {rec["version"]}'))
             if (top / a.name / v / "drawing.pdf").is_file():
                 pdfs.append(f"{a.name}/{v}/drawing.pdf")
         if not html:
@@ -303,7 +302,7 @@ class Exploded(Directive):
     option_spec = SUB
 
     def run(self):
-        from xdmod_sphinx import inline_svg
+        from xdmod_sphinx import inline_svg, svg_figure
         a = _Asm(self)
         if a.node is not a.tree:
             return [nodes.paragraph(text=TOP_ONLY)]
@@ -316,8 +315,8 @@ class Exploded(Directive):
         for v in rec.get("variants") or []:
             f = top / a.name / v / "exploded.svg"
             if f.is_file():
-                html.append(f'<figure class="xd-cad">{inline_svg(f.read_text(encoding="utf-8"))}<figcaption>'
-                            f'Exploded view, variant {v}, {rec["version"]}, {src}</figcaption></figure>')
+                html.append(svg_figure(inline_svg(f.read_text(encoding="utf-8")),
+                                       f'Exploded view, variant {v}, {rec["version"]}, {src}'))
         return [nodes.raw("", "\n".join(html), format="html")] if html else [nodes.paragraph(text=NO_DATA)]
 
 

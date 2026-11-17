@@ -9,6 +9,12 @@ Directives
     hosting is versioned, D55). An unknown ID is a warning (fails a strict build).
     Options: ``:caption:``. No browser is needed: the picture is in the committed file.
 
+SVG viewer
+    Every inline SVG figure (``sysml-view``, ``kicad-sheet``, ``freecad-drawing``, the schematic,
+    harness diagram, drawing and exploded view of the board, harness and assembly documents) has the
+    class ``xd-zoom``: in HTML it gets pan and zoom (vendored svg-pan-zoom, ``vendor.yaml``) and an
+    "Enlarge" pop-up (``static/xd-svgview.js``). No CDN; without JavaScript it stays a plain SVG.
+
 ``xd-needimport``
     ``.. xd-needimport:: /generated/retired-needs.json`` with ``:optional:`` -- like ``needimport``
     (all other options are passed on), but an optional file that does not exist is skipped
@@ -85,6 +91,22 @@ def _src_path(directive, arg: str) -> tuple[str, Path]:
     return rel, Path(path)
 
 
+ZOOM = "xd-zoom"                    # class of an inline SVG figure that gets the viewer (static/xd-svgview.js)
+STATIC = Path(__file__).resolve().parent / "static"
+
+
+def svg_figure(svg: str, caption: str = "", cls: str = "xd-cad") -> str:
+    """An inline SVG as an HTML figure with the pan/zoom viewer; ``caption`` is HTML."""
+    cap = f"<figcaption>{caption}</figcaption>" if caption else ""
+    return f'<figure class="{cls} {ZOOM}">{svg}{cap}</figure>'
+
+
+def _add_static(app, config):
+    """The viewer's files go to ``_static/`` of an HTML build (after the conf.py's own paths)."""
+    if str(STATIC) not in [str(p) for p in config.html_static_path]:
+        config.html_static_path.append(str(STATIC))
+
+
 def notice(text: str, cls: str = "xd-notice") -> nodes.Node:
     n = nodes.note()
     n["classes"].append(cls)
@@ -136,10 +158,7 @@ def resolve(app, doctree, fromdoc):
             return m.group(1) + need_url(app, fromdoc, needs[nid]) + '"'
 
         svg = re.sub(r'((?:xlink:)?href=")need:([^"]+)"', repl, node["svg"])
-        html = f'<figure class="sysml-view">{svg}'
-        if node["caption"]:
-            html += f"<figcaption>{node['caption']}</figcaption>"
-        node.replace_self(nodes.raw("", html + "</figure>", format="html"))
+        node.replace_self(nodes.raw("", svg_figure(svg, node["caption"], "sysml-view"), format="html"))
     for node in list(doctree.findall(tracechain)):
         needs = needs if needs is not None else _needs(app)
         node.replace_self(_tracechain_table(app, fromdoc, needs, node["types"], node["links"]))
@@ -230,9 +249,7 @@ def make_cad_directive(name: str):
             env.note_dependency(str(f))
             cap = self.options.get("caption", "")
             if f.suffix == ".svg":
-                html = f'<figure class="xd-cad">{inline_svg(f.read_text(encoding="utf-8"))}'
-                html += f"<figcaption>{cap}</figcaption></figure>" if cap else "</figure>"
-                return [nodes.raw("", html, format="html")]
+                return [nodes.raw("", svg_figure(inline_svg(f.read_text(encoding="utf-8")), cap), format="html")]
             if f.suffix == ".csv":
                 with open(f, newline="", encoding="utf-8") as fh:
                     rows = list(csv.reader(fh))
@@ -395,4 +412,8 @@ def setup(app):
     pcba.setup(app)
     asm.setup(app)
     app.connect("doctree-resolved", resolve)
+    app.connect("config-inited", _add_static)
+    app.add_js_file("svg-pan-zoom/svg-pan-zoom.min.js")
+    app.add_js_file("xd-svgview.js")
+    app.add_css_file("xd-svgview.css")
     return {"version": __version__, "parallel_read_safe": True, "parallel_write_safe": True}
