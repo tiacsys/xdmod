@@ -172,8 +172,8 @@ checks:
     enforces: [XD-RULE-0062]
     description: "Each board model in an assembly (a link to an object with an EE-PCBA TraceID) stays inside its SYS-IF space budget; the budget's form comes from the co-design task 5.28, so until then the check is a skip with its reason (no board model, or board models placed but not checked), never a finding (local, needs FreeCAD)."
   CK-F19:
-    need: XD-CHECK-NEW-f19
-    enforces: [XD-RULE-NEW-version]
+    need: XD-CHECK-0056
+    enforces: [XD-RULE-0063]
     description: "Every FreeCAD document with a printed part (an object with a PrintProfile property) has exactly one version mark: an LCS with Role = version-emboss (TextSize, MaxWidth), where curatrix cam embosses the assembly version at export (plain Python)."
   CK-F10:
     need: XD-CHECK-0044

@@ -4,6 +4,8 @@
 #   XD_TOP, XD_SKELETON  the top document and its skeleton (opened skeleton first, XD-ADR-0146)
 #   XD_OUT               the output folder of this variant (fresh, made by curatrix)
 #   XD_VARIANT           the variant: links whose own Configs do not name it are left out; "" = all
+#                        links; "base" = only the links without Configs (every configuration that
+#                        no link names)
 #   XD_VERSION           the full version (drawing title block); XD_SHORT the short one (embossed)
 #   XD_FONT              the pinned font file for the emboss
 #   XD_EXPLODE           JSON {link name: [dx, dy, dz]} of the exploded view, or {} (automatic)
@@ -27,7 +29,10 @@ res = os.environ.get("XD_RESULT", "")
 out = {"ok": False}
 LCS_TYPES = ("Part::LocalCoordinateSystem", "PartDesign::CoordinateSystem")
 BOM_PROPS = ("TraceID", "PrintProfile", "Material", "Standard", "Manufacturer", "MPN")
-VIEWS = {"front": (0, -1, 0), "top": (0, 0, 1), "right": (1, 0, 0), "iso": (1, -1, 1)}
+# view: (Direction, the view normal towards the viewer; XDirection, the model direction that points
+# right in the view). Up is Direction x XDirection: +z for front, right and iso, +y for top.
+VIEWS = {"front": ((0, -1, 0), (1, 0, 0)), "top": ((0, 0, 1), (1, 0, 0)), "right": ((1, 0, 0), (0, 1, 0)),
+         "iso": ((1, -1, 1), (1, 1, 0))}
 
 
 def prop(o, name):
@@ -36,6 +41,8 @@ def prop(o, name):
 
 def present(link, variant):
     cfgs = [c.strip() for c in prop(link, "Configs").replace(";", ",").split(",") if c.strip()]
+    if variant == "base":
+        return not cfgs
     return not variant or not cfgs or variant in cfgs
 
 
@@ -60,7 +67,7 @@ def walk(asm, variant, path, rows, placement):
                      "label": t.Label if t else c.Label, **{p: prop(t, p) for p in BOM_PROPS}, "_obj": t, "_pl": pl})
 
 
-def view_svg(shape, direction, name, d):
+def view_svg(shape, view, name, d):
     """A TechDraw view of a shape as SVG (FreeCAD spike §5: a page with a template is needed, the
     view computes in a thread, so wait for its edges; no GUI, no event loop)."""
     import TechDraw
@@ -76,7 +83,8 @@ def view_svg(shape, direction, name, d):
     v = d.addObject("TechDraw::DrawViewPart", f"XdView_{name}")
     page.addView(v)
     v.Source = [holder]
-    v.Direction = App.Vector(*direction)
+    v.Direction = App.Vector(*view[0])
+    v.XDirection = App.Vector(*view[1])
     d.recompute()
     for _ in range(120):
         if v.getVisibleEdges():
@@ -87,7 +95,9 @@ def view_svg(shape, direction, name, d):
 
 
 def emboss(part, text, font):
-    """(shape, info) of a part with the text embossed on its version mark, or (None, why)."""
+    """(shape, info) of a part with the text embossed on its version mark, or (None, why). The mark
+    is the LCS with Role = version-emboss of the part's document, not tied to one object: one mark per
+    document (CK-F19), so one printed part per document."""
     import Draft
     import Part
     mark = next((o for o in part.Document.Objects if o.TypeId in LCS_TYPES and prop(o, "Role") == "version-emboss"),
@@ -172,8 +182,8 @@ try:
     comp = Part.makeCompound(shapes)
     os.makedirs(os.path.join(dest, "views"), exist_ok=True)
     edges = {}
-    for v, direction in VIEWS.items():
-        svg, n = view_svg(comp, direction, v, top)
+    for v, view in VIEWS.items():
+        svg, n = view_svg(comp, view, v, top)
         edges[v] = n
         p = os.path.join(dest, "views", f"{v}.svg")
         with open(p, "w") as f:

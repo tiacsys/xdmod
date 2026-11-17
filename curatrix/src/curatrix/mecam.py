@@ -12,17 +12,21 @@ workspace-local config) once per variant into ``build/<area>/cam/<asm>/<version>
   solid; the print profile ``print/<PrintProfile>.ini`` is copied next to them
   (``print/<profile>.ini``), because a 3MF from FreeCAD carries no slicer settings;
 * ``views/front|top|right|iso.svg``: TechDraw views computed in ``FreeCADCmd``, and the drawing
-  ``drawing.svg`` and ``drawing.pdf``: one sheet with the four views, a frame and the title block
-  (assembly, ID, full version, variant, date; ``PREVIEW`` unless a release), composed here in plain
-  Python. A full TechDraw page needs the GUI binary, which hangs offscreen when it waits for the
+  ``drawing.svg`` and ``drawing.pdf``: a plain-Python view sheet, not a TechDraw page: no
+  dimensions, no TechDraw template; front, top and right in first-angle projection, aligned, at one
+  standard scale, the iso view, a frame and the title block (assembly, ID, full version, variant,
+  date, scale, projection symbol, that note; ``PREVIEW`` unless a release). A full TechDraw page needs the GUI binary, which hangs offscreen when it waits for the
   views (FreeCAD spike §5, again in task 5.26), so this is the fallback of XD-ADR-0137;
 * ``exploded.svg``: a TechDraw view of the exploded compound with explosion lines (spike §5
   fallback); the moves come from ``assemblies/<asm>/explode.yaml`` (``{link name: [dx, dy, dz]}``
   in mm), or automatically away from the assembly's centre;
 * ``bom.csv``: the flat BOM with totals, one row per part (sub-assemblies resolved).
 
-Variants: the ``Configs`` of the links (presence, XD-ADR-0137); without any ``Configs`` one variant
-``all``. The parameter rows of a configuration table are not switched yet (the canary has none).
+Variants: the ``Configs`` of the links (presence, XD-ADR-0137; only a link's own property, as the ME
+checks read it): one output per configuration a link names, and ``base`` with only the links
+without ``Configs`` (every configuration no link names); without any ``Configs`` one variant
+``all``. The model's configuration list and the parameter rows of a configuration table are not
+read yet (the canary has none). A view without a visible edge fails the run.
 
 Version (XD-ADR-0140): ``git describe --match '<asm>/*'`` (``cam.version``), preview unless an exact
 tag on main with a clean tree; here "clean" covers the assembly folder and the shared ``parts/``,
@@ -52,6 +56,7 @@ FONT = Path("templates") / "freecad-asm" / "fonts" / "DejaVuSansMono-Bold.ttf"
 SHARED = ("parts", "lib", "print")
 LCS_TYPES = ("Part::LocalCoordinateSystem", "PartDesign::CoordinateSystem")
 VIEWS = ("front", "top", "right", "iso")
+ALL, BASE = "all", "base"   # variants: no Configs anywhere; only the links without Configs
 BOM_COLS = ("item", "id", "name", "kind", "qty", "material", "print_profile", "standard", "manufacturer", "mpn", "file")
 
 
@@ -97,11 +102,20 @@ def _md5(paths: list[Path]) -> dict[str, str]:
 
 
 def variants(doc: meassemblies.Doc) -> list[str]:
+    """The variants of a top document: each configuration named in the ``Configs`` of a link (the
+    link's own property), and ``base`` for every configuration no link names (only the links
+    without ``Configs``); without any ``Configs`` one variant ``all``. The model's configuration
+    list is not read yet, so a configuration is known here only when a link names it."""
     cs = set()
     for o in doc.sem["objects"].values():
         if o.get("type") in meassemblies.LINK_TYPES:
             cs |= set(cad._list(str((o.get("trace") or {}).get("Configs") or "")))
-    return sorted(cs)
+    return sorted(cs) + [BASE] if cs else [ALL]
+
+
+def empty_views(res: dict) -> list[str]:
+    """The views of a cam-asm.py result without a visible edge (TechDraw did not compute them)."""
+    return sorted(k for k, n in (res.get("edges") or {}).items() if not n)
 
 
 def bom_rows(rows: list[dict], repo: Path) -> list[dict]:
@@ -249,44 +263,91 @@ def _arc(p0, p1, rx, ry, rot, large, sweep, n=16) -> list[tuple]:
 
 
 W, H = 420.0, 297.0                       # A3 landscape, mm
-CELLS = {"front": (10, 10, 195, 120), "top": (10, 135, 195, 120), "right": (215, 10, 195, 120), "iso": (215, 135, 195, 120)}
+STANDARD_SCALES = (50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01)   # ISO 5455
+MARGIN, GAP = 20.0, 15.0                  # mm: from the frame to the views; between views (labels)
+BLOCK_W, BLOCK_H = 185.0, 47.0            # the title block, bottom right
+NOTE = "views only, no dimensions; sheet composed by curatrix from FreeCADCmd views (no TechDraw template)"
+
+
+def standard_scale(fit: float) -> float:
+    """The largest standard scale (ISO 5455) that is not larger than ``fit``."""
+    return next((s for s in STANDARD_SCALES if s <= fit + 1e-9), STANDARD_SCALES[-1])
+
+
+def scale_text(s: float) -> str:
+    return "1:1" if abs(s - 1) < 1e-9 else f"{s:g}:1" if s > 1 else f"1:{1 / s:g}"
+
+
+def _bbox(ps) -> tuple[float, float, float, float] | None:
+    pts = [p for pl in ps for p in pl]
+    if not pts:
+        return None
+    return min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts)
+
+
+def projection_symbol(x: float, y: float) -> list[list[tuple]]:
+    """The first-angle projection symbol (ISO 128-30 / ISO 5456-2) with its top left at (x, y):
+    the end view (two circles) left of the side view of the truncated cone."""
+    def circle(cx, cy, r):
+        return [(cx + r * math.cos(2 * math.pi * k / 32), cy + r * math.sin(2 * math.pi * k / 32)) for k in range(33)]
+    cy = y + 5
+    return [circle(x + 5, cy, 5), circle(x + 5, cy, 2.5),
+            [(x + 13, cy - 5), (x + 23, cy - 2.5), (x + 23, cy + 2.5), (x + 13, cy + 5), (x + 13, cy - 5)]]
 
 
 def sheet(views: dict[str, str], title: dict[str, str], preview: bool) -> tuple[list[tuple], list[tuple]]:
-    """(polylines, texts) of the drawing sheet in mm, y downwards: frame, views fitted into their
-    cells (one common scale), title block. texts: (x, y, size, text, red)."""
+    """(polylines, texts) of the drawing sheet in mm, y downwards. A plain-Python view sheet, not a
+    TechDraw page: frame, the views front, top and right in first-angle projection (ISO 128 method 1:
+    top view below the front view, the view from the right left of it), aligned and at one standard
+    scale; the iso view in the larger free area, at the same scale or a smaller standard one; no
+    dimensions. Title block with the scale, the projection symbol and that note. texts: (x, y, size,
+    text, red)."""
     lines: list[list[tuple]] = [[(5, 5), (W - 5, 5), (W - 5, H - 5), (5, H - 5), (5, 5)]]
     texts = []
     polys = {k: _paths(v) for k, v in views.items()}
-    scale = None
-    for k, ps in polys.items():
-        pts = [p for pl in ps for p in pl]
-        if not pts:
-            continue
-        x0, x1 = min(p[0] for p in pts), max(p[0] for p in pts)
-        y0, y1 = min(p[1] for p in pts), max(p[1] for p in pts)
-        _, _, cw, ch = CELLS[k]
-        s = min((cw - 10) / max(x1 - x0, 1e-6), (ch - 15) / max(y1 - y0, 1e-6))
-        scale = s if scale is None else min(scale, s)
-    scale = scale or 1.0
-    for k, ps in polys.items():
-        cx0, cy0, cw, ch = CELLS[k]
-        pts = [p for pl in ps for p in pl]
-        texts.append((cx0 + 2, cy0 + 5, 3.5, k, False))
-        if not pts:
-            continue
-        mx = (min(p[0] for p in pts) + max(p[0] for p in pts)) / 2
-        my = (min(p[1] for p in pts) + max(p[1] for p in pts)) / 2
-        for pl in ps:
-            lines.append([(cx0 + cw / 2 + (x - mx) * scale, cy0 + ch / 2 + 4 + (y - my) * scale) for x, y in pl])
+    box = {k: _bbox(ps) for k, ps in polys.items()}
+
+    def size(k):
+        b = box.get(k)
+        return (b[2] - b[0], b[3] - b[1]) if b else (0.0, 0.0)
+    (fw, fh), (tw, th), (rw, rh) = size("front"), size("top"), size("right")
+    bottom = H - 5 - BLOCK_H - 5                          # the views stay above the title block
+    aw, ah = W - 2 * MARGIN, bottom - MARGIN
+    fit = min((aw - GAP) / max(rw + max(fw, tw), 1e-6), (ah - GAP) / max(max(fh, rh) + th, 1e-6))
+    scale = standard_scale(fit)
+
+    def place(k, x0, y0, s):
+        """Draw view k at scale s with the top left of its bounding box at (x0, y0)."""
+        b = box.get(k)
+        if b is None:
+            return
+        for pl in polys[k]:
+            lines.append([(x0 + (x - b[0]) * s, y0 + (y - b[1]) * s) for x, y in pl])
+    xr, xf, yf = MARGIN, MARGIN + rw * scale + GAP, MARGIN + 5
+    yt = yf + max(fh, rh) * scale + GAP
+    place("right", xr, yf, scale)
+    place("front", xf, yf, scale)
+    place("top", xf, yt, scale)
+    texts += [(xr, yf - 2, 3.5, "right", False), (xf, yf - 2, 3.5, "front", False), (xf, yt - 2, 3.5, "top", False)]
+    # iso: below the right view, or right of the front and top views, whichever gives the larger scale
+    iw, ih = size("iso")
+    cands = [(MARGIN, yt, xf - GAP - MARGIN, bottom - yt),
+             (xf + max(fw, tw) * scale + GAP, MARGIN + 5, W - MARGIN - (xf + max(fw, tw) * scale + GAP), bottom - MARGIN - 5)]
+    best = max(cands, key=lambda c: min(c[2] / max(iw, 1e-6), c[3] / max(ih, 1e-6)) if c[2] > 0 and c[3] > 0 else -1)
+    iscale = min(scale, standard_scale(min(best[2] / max(iw, 1e-6), best[3] / max(ih, 1e-6))))
+    if best[2] > 0 and best[3] > 0:
+        place("iso", best[0], best[1], iscale)
+        texts.append((best[0], best[1] - 2, 3.5, "iso" + ("" if iscale == scale else f" ({scale_text(iscale)})"), False))
     # title block, bottom right
-    bx, by, bw = W - 185, H - 37, 180
-    lines.append([(bx, by), (bx + bw, by), (bx + bw, H - 5), (bx, H - 5), (bx, by)])
+    bx, by = W - 5 - BLOCK_W, H - 5 - BLOCK_H
+    lines.append([(bx, by), (W - 5, by), (W - 5, H - 5), (bx, H - 5), (bx, by)])
     rows = [("Assembly", title.get("assembly", "")), ("ID", title.get("id", "")), ("Version", title.get("version", "")),
-            ("Variant", title.get("variant", "")), ("Date", title.get("date", "")),
-            ("Scale", f"1:{1 / scale:.3g}" if scale < 1 else f"{scale:.3g}:1")]
+            ("Variant", title.get("variant", "")), ("Date", title.get("date", "")), ("Scale", scale_text(scale)),
+            ("Projection", "first angle (ISO 128 method 1)")]
     for i, (k, v) in enumerate(rows):
         texts.append((bx + 2, by + 5 + i * 5, 3, f"{k}: {v}", False))
+    texts.append((bx + 2, by + 5 + len(rows) * 5 + 1, 2.2, NOTE, False))
+    lines += projection_symbol(W - 5 - 30, by + 26)
     if preview:
         texts.append((bx + 120, by + 12, 8, "PREVIEW", True))
     return lines, texts
@@ -374,13 +435,13 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
         if not isinstance(moves, dict) or not all(isinstance(v, list) and len(v) == 3 for v in moves.values()):
             raise CamError(f"{ws.rel(explode_file)}: a mapping {{link name: [dx, dy, dz]}} in mm")
     top_rel = str(top_doc.resolve().relative_to(cfg.repo.resolve()))
-    vs = variants(docs[top_rel]) if top_rel in docs else []
+    vs = variants(docs[top_rel]) if top_rel in docs else [ALL]
     head = _git(repo.path, "rev-parse", "HEAD").stdout.strip()
     date = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     aid = next(iter(docs[top_rel].asm_ids), "") if top_rel in docs else ""
     per, profiles = {}, {}
-    for v in vs or [""]:
-        vname = v or "all"
+    for vname in vs:
+        v = "" if vname == ALL else vname
         dest = out / vname
         dest.mkdir(parents=True)
         log(f"  {name} {ver} variant {vname}: FreeCADCmd cam-asm.py")
@@ -391,6 +452,9 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
                 "XD_EXPLODE": json.dumps(moves)}, top / f"{vname}.result.json")
         except NewError as e:
             raise CamError(f"{name} (variant {vname}): {e}") from None
+        if empty_views(res):
+            raise CamError(f"{name} (variant {vname}): no visible edge in the view(s) {', '.join(empty_views(res))} "
+                           f"(TechDraw did not compute them in FreeCADCmd); an empty view is never written as output")
         for f in ("views/" + x + ".svg" for x in VIEWS):
             (dest / f).write_text(wrap_svg((dest / f).read_text(encoding="utf-8")), encoding="utf-8")
         (dest / "exploded.svg").write_text(wrap_svg((dest / "exploded.svg").read_text(encoding="utf-8")),
@@ -420,7 +484,7 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
         raise CamError(f"{name}: the CAM run changed the source documents {', '.join(changed)} (it must never save)")
     files = sorted(str(f.relative_to(top)) for f in out.rglob("*") if f.is_file())
     rec = {"kind": "assembly", "project": name, "assembly": aid, "version": ver, "release": release,
-           "emboss": short, "commit": head, "date": date, "variants": [v or "all" for v in vs or [""]],
+           "emboss": short, "commit": head, "date": date, "variants": vs,
            "print_profiles": profiles, "sources_unchanged": True, "per_variant": per, "warnings": warnings,
            "files": files}
     (top / "cam.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
