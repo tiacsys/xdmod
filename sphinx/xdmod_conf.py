@@ -77,5 +77,5 @@ def apply(ns: dict, conf_file: str, generated=(), cad_dir: str | None = None):
     repo = repo_root(conf_file)
     ns["xd_repo"] = str(repo)
     ns["xd_cad_dir"] = cad_dir or os.environ.get("XD_CAD_DIR") or str(workspace() / "build" / area_of(repo) / "cad")
-    # local design output of `curatrix cam` (harness diagrams); absent in CI, the directive shows a notice
+    # local design output of `curatrix cam` (board documents, harness diagrams); absent in CI
     ns["xd_cam_dir"] = os.environ.get("XD_CAM_DIR") or str(workspace() / "build" / area_of(repo) / "cam")

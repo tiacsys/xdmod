@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "filename": "bom.kicad_pro",
+    "version": 3
+  },
+  "schematic": {
+    "variants": [
+      {
+        "name": "a",
+        "description": "R1 4k7"
+      },
+      {
+        "name": "b",
+        "description": "R3 DNP, JP1 bridged, shunt 2-3"
+      }
+    ]
+  },
+  "text_variables": {
+    "TraceID": "EE-PCBA-0001"
+  }
+}
