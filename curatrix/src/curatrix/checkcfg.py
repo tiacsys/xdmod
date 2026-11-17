@@ -45,6 +45,10 @@ with ``{ws}/`` (the workspace root).
         stages: [local, baseline]
         cad: true
         level: error
+      - id: CK-F5b
+        name: unit tests (Twister)
+        run: ["{python}", "{ws}/zephyr/scripts/twister", "-T", "{repo}/tests", "-O", "{build}/twister"]
+        before_docs: true            # runs before CK-A6, so the docs build sees this run's results
 """
 from __future__ import annotations
 
@@ -67,7 +71,7 @@ SECTION_KEYS = {
     "cad": {"kicad", "freecad", "needs", "freecad_json"},
     "code": {"sources", "tests", "needs"},
 }
-COMMAND_KEYS = {"id", "name", "run", "use", "stages", "cad", "level", "cwd"}
+COMMAND_KEYS = {"id", "name", "run", "use", "stages", "cad", "level", "cwd", "before_docs"}
 
 
 class ConfigError(Exception):
@@ -84,6 +88,7 @@ class Command:
     cad: bool = False
     level: str = "error"
     cwd: str = "{repo}"
+    before_docs: bool = False   # run before the docs build (CK-A6), e.g. tests whose results the docs show
 
 
 @dataclass
@@ -225,6 +230,8 @@ def validate(raw: dict, path: Path) -> list[str]:
         for s in c.get("stages", []):
             if s not in STAGES:
                 errs.append(f"{where}: unknown stage {s!r}")
+        if "before_docs" in c and not isinstance(c["before_docs"], bool):
+            errs.append(f"{where}: before_docs must be true or false")
         if c.get("level", "error") not in LEVELS:
             errs.append(f"{where}: level must be one of {LEVELS}")
     return errs

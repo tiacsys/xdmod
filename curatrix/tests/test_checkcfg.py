@@ -94,6 +94,7 @@ def test_defaults_of_an_empty_file(tmp_path):
     ({"commands": [{"id": "X", "name": "x", "run": ["a"], "stages": ["nightly"]}]}, "unknown stage"),
     ({"commands": [{"id": "X", "name": "x", "run": ["a"]}, {"id": "X", "name": "y", "run": ["b"]}]}, "duplicate id"),
     ({"commands": [{"id": "X", "name": "x", "run": ["a"], "level": "fatal"}]}, "level"),
+    ({"commands": [{"id": "X", "name": "x", "run": ["a"], "before_docs": "yes"}]}, "before_docs must be true or false"),
     ({"bootstrap_template": ["a"]}, "bootstrap_template must be a path"),
     ({"requirements": "yes"}, "requirements must be true or false"),
     ({"expect": "CK-A6"}, "expect must be a list"),

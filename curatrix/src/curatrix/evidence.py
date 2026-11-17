@@ -10,6 +10,8 @@ of the integration repo (``<project>-integration``) as ``runs/<YYYY>/<run id>/re
 ``write``   commit it onto the evidence branch through a git worktree under ``build/evidence/``
             (the repo's own checkout and its ``main`` are never touched). It refuses a record whose
             evidence rule failed, unless it goes to another (scratch) branch.
+``preview`` turn a local Twister output dir straight into preview ``TR`` needs for the docs build
+            of the same run (no record, no evidence rule: previews never count, D60).
 ``read``    turn the records of a branch into ``TR`` needs (sphinx-needs import format) for the
             docs; a record whose SHAs differ from the current pins is tagged ``stale`` (D131).
 
@@ -362,6 +364,40 @@ def to_needs(records: list[dict], pins: dict[str, str] | None = None, project: s
                  "status": "valid", "result_of": [tc], "method": "hil" if rec["kind"] == "hil" else "test",
                  "config": rec["config"], "firmware_sha256": rec["firmware"]["sha256"], "shas": shas_of(rec),
                  "verdict": verdict, "run_id": rec["run_id"], "tags": ["stale"] if stale else []}
+            needs[nid] = n
+    return {"created": "", "current_version": "", "project": project,
+            "versions": {"": {"needs": {k: needs[k] for k in sorted(needs)}}}}
+
+
+# ------------------------------------------------------------------ preview (task 5.10)
+def preview_needs(twister_dir: Path, test_dirs: list[Path] | None = None, config: str | None = None,
+                  project: str = "preview") -> dict:
+    """Preview TR needs (import format) from a local Twister output dir, for the docs build of the
+    same check run. Unlike a record it takes every suite and platform, needs no firmware hash and
+    no workspace state. The IDs are stable for a test (suffix of "preview" and the Twister test),
+    the needs carry the tag ``preview``. Untraced results make no need."""
+    tw = parse_twister(twister_dir)
+    roots = tw.get("environment", {}).get("options", {}).get("testsuite_root", [])
+    mapping = test_case_map(test_dirs or [Path(r) for r in roots])
+    when = tw.get("environment", {}).get("run_date", "")
+    needs = {}
+    for suite in tw.get("testsuites", []):
+        if suite.get("status") == "filtered":
+            continue
+        plat = suite.get("platform", "")
+        for tc in suite.get("testcases", []):
+            tcid = _tc_for(tc["identifier"], suite["name"], mapping)
+            if not tcid:
+                continue
+            verdict = VERDICT.get(tc.get("status", "not run"), "error")
+            nid = f"TR-{tcid}-{test_suffix('preview', tc['identifier'] + '@' + plat)}"
+            n = {"id": nid, "type": "tr", "title": f"{tcid} {verdict} ({plat}, local preview)",
+                 "content": (f"Local Twister run{(' of ' + when) if when else ''}, test ``{tc['identifier']}`` on "
+                             f"``{plat}``. A preview from this build, not evidence (D60): published results "
+                             f"come from the evidence branch."),
+                 "status": "valid", "result_of": [tcid], "method": "test", "verdict": verdict, "tags": ["preview"]}
+            if config:
+                n["config"] = config
             needs[nid] = n
     return {"created": "", "current_version": "", "project": project,
             "versions": {"": {"needs": {k: needs[k] for k in sorted(needs)}}}}

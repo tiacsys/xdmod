@@ -612,11 +612,12 @@ def plan(cfg: checkcfg.ChecksConfig, stage: str, no_cad: bool, only: list[str] |
         if only and not selected:
             continue
         items.append((cid, name, levels.get(stage, "error"), is_cad, fn, None))
+    first = []          # commands with before_docs: true run before every built-in check
     for c in cfg.commands:
         selected = only and any(c.id == o or c.id.startswith(o) for o in only)
         if (stage in c.stages and not only) or selected:
-            items.append((c.id, c.name, c.level, c.cad, "c_command", c))
-    return items
+            (first if c.before_docs else items).append((c.id, c.name, c.level, c.cad, "c_command", c))
+    return first + items
 
 
 def run(ws, repo, stage: str = "local", no_cad: bool = False, only: list[str] | None = None,
@@ -630,7 +631,8 @@ def run(ws, repo, stage: str = "local", no_cad: bool = False, only: list[str] | 
     need_docs = any(fn in ("c_graph", "c_stale", "c_stubs", "c_ears", "c_diff") for _, _, _, _, fn, _ in items)
     if need_docs and not any(i[0] == "CK-A6" for i in items) and cfg.section("docs") is not None \
             and not gen.docs_needs_json(ws, cfg):
-        items.insert(0, next((cid, n, lv.get(stage, "error"), c, fn, None)
+        pos = sum(1 for i in items if i[5] is not None and i[5].before_docs)
+        items.insert(pos, next((cid, n, lv.get(stage, "error"), c, fn, None)
                              for cid, n, lv, need, c, fn in BUILTIN if cid == "CK-A6"))
     if not items:
         (out / "summary.json").write_text(json.dumps({"repo": repo.name, "area": cfg.area, "stage": stage,

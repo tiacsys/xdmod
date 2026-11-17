@@ -147,3 +147,15 @@ def test_empty_plan_writes_a_failed_summary(tmp_path):
     with pytest.raises(checkcfg.ConfigError):
         checks.run(ws, repo, only=["CK-XX"], log=lambda *_: None)
     assert json.loads((ws.build("r") / "checks" / "summary.json").read_text())["ok"] is False
+
+
+def test_before_docs_commands_run_first(tmp_path):
+    """A command with before_docs: true runs before the docs build (CK-A6) and every other check,
+    so the docs of the same run can show its output (task 5.10: Twister results in the docs)."""
+    ws, repo = _repo(tmp_path, "version: 1\ndocs: {registry: docs/documents.yaml}\nids: {ledger: ids.yaml}\n"
+                     "commands:\n"
+                     "  - {id: CK-X1, name: after, run: [a]}\n"
+                     "  - {id: CK-X2, name: tests, run: [b], before_docs: true}\n")
+    cfg = checkcfg.load(repo.path / "checks.yaml", ws.root)
+    ids = [i[0] for i in checks.plan(cfg, "local", False, None)]
+    assert ids[0] == "CK-X2" and ids.index("CK-A6") == 1 and ids[-1] == "CK-X1"
