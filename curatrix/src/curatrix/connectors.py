@@ -10,11 +10,20 @@ without KiCad:
   connect; inside a wire only junctions and labels join it (a wire end or a pin on the middle of
   another wire does not, as in KiCad 10 without a junction); crossing wires do not connect;
 * labels join by name: local labels within one sheet instance, global labels and power symbols
-  everywhere, hierarchical labels with the sheet pin of the same name on the parent sheet;
-* net names as KiCad 10 writes them in the XML netlist: global label or power symbol name; else
+  everywhere, hierarchical labels with the sheet pin of the same name on the parent sheet. Only a
+  power symbol with a ``power_in`` pin names and joins (``PWR_FLAG`` does not); a hidden
+  ``power_in`` pin of a normal symbol joins the global net of its pin name (older libraries);
+* net names as KiCad 10 writes them in the XML netlist: a global label; else a power symbol; else
   the local or hierarchical label of the shallowest sheet with its sheet path (``/CANARY_A``,
-  ``/sub/X``); else ``Net-(<ref>-<pin name or Pad<n>>)`` of the smallest reference; a pin alone
-  ``unconnected-(<ref>-<pin name>-Pad<n>)``.
+  ``/sub/X``); else ``Net-(<ref><unit>-<pin name>)`` or ``Net-(<ref><unit>-Pad<n>)`` of one of its
+  pins (pins with a name first); a pin alone ``unconnected-(<ref>-<pin name>-Pad<n>)``;
+* the library symbol of a placed symbol is its ``lib_name`` if it has one, else its ``lib_id``;
+* buses are not read: a sheet with a bus is listed under ``unsupported`` in the file, and CK-D7
+  and CK-F1 report it.
+
+The extraction equals KiCad's netlist (every pin of every symbol) on the KiCad demos
+complex_hierarchy, ecc83-pp, multichannel_mixer, StickHub and interf_u; on video (buses through
+hierarchical sheets) it does not, and says so.
 
 KiCad's XML netlist is the reference: CK-D8 compares this extraction with
 ``kicad-cli sch export netlist --format kicadxml`` (local, P5-15). CK-D7 regenerates the file
@@ -23,7 +32,6 @@ with the pin maps of the EE model.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import re
@@ -109,8 +117,9 @@ class _UF:
             self.p[ra] = rb
 
 
-def _lib_pins(lib_sym, unit: int, body: int) -> list[tuple[str, str, float, float]]:
-    """(number, name, x, y) of a library symbol's pins for one unit and body style."""
+def _lib_pins(lib_sym, unit: int, body: int) -> list[tuple[str, str, float, float, str, bool]]:
+    """(number, name, x, y, electrical type, hidden) of a library symbol's pins for one unit and
+    body style."""
     out = []
     for sub in _children(lib_sym, "symbol"):
         m = re.search(r"_(\d+)_(\d+)$", sub[1] if len(sub) > 1 else "")
@@ -124,9 +133,27 @@ def _lib_pins(lib_sym, unit: int, body: int) -> list[tuple[str, str, float, floa
             num = _children(p, "number")
             nm = _children(p, "name")
             name = nm[0][1] if nm and len(nm[0]) > 1 else ""
+            hidden = "hide" in p[1:] or _flag(p, "hide")
             out.append((num[0][1] if num and len(num[0]) > 1 else "", "" if name == "~" else name,
-                        float(at[0]), float(at[1])))
+                        float(at[0]), float(at[1]), p[1] if len(p) > 1 and isinstance(p[1], str) else "", hidden))
     return out
+
+
+def _units(lib_sym) -> int:
+    us = set()
+    for sub in _children(lib_sym, "symbol"):
+        m = re.search(r"_(\d+)_(\d+)$", sub[1] if len(sub) > 1 else "")
+        if m and int(m.group(1)) > 0:
+            us.add(int(m.group(1)))
+    return len(us)
+
+
+def _power_kind(lib_sym) -> str | None:
+    """global | local for a power symbol (``(power)``, ``(power global)``, ``(power local)``)."""
+    c = _children(lib_sym, "power")
+    if not c:
+        return None
+    return "local" if len(c[0]) > 1 and c[0][1] == "local" else "global"
 
 
 def _on_segment(p, a, b) -> bool:
@@ -141,6 +168,12 @@ class Netlist:
     symbols: list[Sym]
     nets: dict[tuple[str, str], str]           # (ref, pin number) -> net name
     files: list[Path]
+    findings: list[str] = field(default_factory=list)   # what the reader does not support (buses)
+
+
+# net name priority of the items that can name a net (KiCad 10: a global label wins over a power
+# symbol, a power symbol over a local label)
+PRIORITY = {"global_label": 7, "power": 6, "power_local": 5, "label": 4, "hierarchical_label": 3, "sheet_pin": 2}
 
 
 def netlist(root_sch: Path) -> Netlist:
@@ -149,7 +182,9 @@ def netlist(root_sch: Path) -> Netlist:
     symbols: list[Sym] = []
     labels: list[tuple[str, str, int, str, object]] = []      # (kind, name, depth, sheet path, node)
     files: list[Path] = []
+    findings: list[str] = []
     pending_sheet_pins: dict[tuple[str, str], object] = {}    # (child inst, pin name) -> parent node
+    unit_letter: dict[int, str] = {}                           # id(sym) -> "A", "B", ... (multi-unit symbols)
 
     def uuid_of(node) -> str:
         u = _children(node, "uuid")
@@ -165,6 +200,9 @@ def netlist(root_sch: Path) -> Netlist:
             inst = "/" + uuid_of(tree)
         libs = {s[1]: s for s in (_children(tree, "lib_symbols")[0][1:] if _children(tree, "lib_symbols") else [])
                 if isinstance(s, list) and len(s) > 1}
+        if _children(tree, "bus") or _children(tree, "bus_entry"):
+            findings.append(f"{sch.name}: buses are not read yet; nets through a bus are missing here "
+                            f"(CK-D8 compares with KiCad)")
         mid_ok: set[tuple[int, int]] = set()      # points that join a wire also inside it
 
         def pnode(xy, inside=False):
@@ -192,7 +230,9 @@ def netlist(root_sch: Path) -> Netlist:
             lid = _children(s, "lib_id")
             if not lid:
                 continue
-            lib = libs.get(lid[0][1])
+            ln = _children(s, "lib_name")          # the cached symbol's name when it differs from the library
+            lib = libs.get(ln[0][1]) if ln and len(ln[0]) > 1 else None
+            lib = lib or libs.get(lid[0][1])
             props = _props(s)
             ref = props.get("Reference", "")
             for ins in _children(s, "instances"):
@@ -200,18 +240,29 @@ def netlist(root_sch: Path) -> Netlist:
                     for p in _children(proj, "path"):
                         if len(p) > 1 and p[1] == inst and _children(p, "reference"):
                             ref = _children(p, "reference")[0][1]
+            if lib is None:
+                findings.append(f"{sch.name}: {ref}: library symbol {lid[0][1]} is not in the sheet's lib_symbols")
+                continue
             at = _at(s)
             mir = _children(s, "mirror")
             unit = int((_children(s, "unit") or [[0, 1]])[0][1])
             body = int((_children(s, "body_style") or _children(s, "convert") or [[0, 1]])[0][1])
+            power = _power_kind(lib)
             sym = Sym(ref, props, lid[0][1], props.get("Value", ""), props.get("Footprint", ""), path, inst,
-                      bool(lib and _children(lib, "power")))
-            for num, name, x, y in (_lib_pins(lib, unit, body) if lib else []):
+                      power is not None or ref.startswith("#"))
+            if _units(lib) > 1:
+                unit_letter[id(sym)] = chr(ord("A") + unit - 1)
+            for num, name, x, y, etype, hidden in _lib_pins(lib, unit, body):
                 pos = transform(x, y, at, mir[0][1] if mir and len(mir[0]) > 1 else None)
                 sym.pins.append(Pin(num, name, pos))
                 uf.union(("pin", inst, ref, num, id(sym)), pnode(pos))
-                if sym.power:
-                    labels.append(("power", sym.value, depth, path, ("pt", inst, pos)))
+                if etype == "power_in" and power is not None:
+                    # a power symbol names and joins its net (PWR_FLAG, power_out, does not)
+                    labels.append(("power" if power == "global" else "power_local", sym.value, depth, path,
+                                   ("pt", inst, pos)))
+                elif etype == "power_in" and hidden and name:
+                    # a hidden power input of a normal symbol joins the global net of its name
+                    labels.append(("power", name, depth, path, ("pt", inst, pos)))
             symbols.append(sym)
         sheets = []
         for sh in _children(tree, "sheet"):
@@ -232,9 +283,12 @@ def netlist(root_sch: Path) -> Netlist:
         for sub, sp, child in sheets:
             if sub.is_file():
                 visit(sub, sp, child, depth + 1)
+            else:
+                findings.append(f"{sch.name}: sheet file {sub.name} not found")
 
     visit(root_sch, "/", None, 0)
-    # labels of the same name join: local and hierarchical within a sheet instance, global and power everywhere
+    # labels of the same name join: local, local power and hierarchical within a sheet instance;
+    # global labels and power symbols everywhere
     first: dict = {}
     for kind, name, _d, path, node in labels:
         if kind == "sheet_pin":
@@ -244,10 +298,9 @@ def netlist(root_sch: Path) -> Netlist:
             uf.union(first[key], node)
         else:
             first[key] = node
-    prio = {"power": 6, "global_label": 5, "label": 4, "hierarchical_label": 3, "sheet_pin": 2}
     named: dict = {}
     for kind, name, d, path, node in labels:
-        cand = (-prio[kind], d, name if kind in ("power", "global_label") else path + name)
+        cand = (-PRIORITY[kind], d, name if kind in ("power", "global_label") else path + name)
         r = uf.find(node)
         if r not in named or cand < named[r]:
             named[r] = cand
@@ -262,13 +315,25 @@ def netlist(root_sch: Path) -> Netlist:
         if r in named:
             name = named[r][2]
         else:
-            s, p = min(ms, key=lambda m: (_ref_key(m[0].ref), _ref_key(m[1].number)))
-            pin = p.name if p.name else f"Pad{p.number}"
-            name = (f"unconnected-({s.ref}-{pin}-Pad{p.number})" if len(ms) == 1
-                    else f"Net-({s.ref}-{pin})")
+            name = _default_net_name(ms, unit_letter)
         for s, p in ms:
             nets[(s.ref, p.number)] = name
-    return Netlist([s for s in symbols if not s.power], nets, files)
+    return Netlist([s for s in symbols if not s.power], nets, files, findings)
+
+
+def _default_net_name(ms, unit_letter) -> str:
+    """KiCad's name of a net without a label: from one of its pins; a pin with a name (other than
+    its number) is preferred, then the smallest name."""
+    def pin_name(s, p, unconnected):
+        ref = s.ref + unit_letter.get(id(s), "")
+        named = bool(p.name) and p.name != p.number
+        if unconnected:
+            return f"unconnected-({ref}-{p.name}-Pad{p.number})" if named else f"unconnected-({ref}-Pad{p.number})"
+        return f"Net-({ref}-{p.name})" if named else f"Net-({ref}-Pad{p.number})"
+    if len(ms) == 1:
+        return pin_name(*ms[0], True)
+    cands = [(not (p.name and p.name != p.number), pin_name(s, p, False)) for s, p in ms]
+    return min(cands)[1]
 
 
 def _ref_key(s: str):
@@ -291,11 +356,15 @@ def connectors(nl: Netlist) -> list[dict]:
 
 
 def document(project: str, root_sch: Path, repo: Path) -> dict:
+    """The content of generated/<project>.connectors.json. It lists its input files but no hash of
+    them, so an edit that changes no connector (a moved label) does not make it stale."""
     nl = netlist(root_sch)
     rel = lambda p: str(p.resolve().relative_to(repo.resolve()))  # noqa: E731
-    return {"project": project, "root_sheet": rel(root_sch),
-            "inputs": {rel(f): hashlib.sha256(f.read_bytes()).hexdigest() for f in nl.files},
-            "connectors": connectors(nl)}
+    doc = {"project": project, "root_sheet": rel(root_sch), "inputs": sorted(rel(f) for f in nl.files),
+           "connectors": connectors(nl)}
+    if nl.findings:
+        doc["unsupported"] = nl.findings
+    return doc
 
 
 def dumps(doc: dict) -> str:
@@ -421,6 +490,7 @@ def conformance(doc: dict, board_id: str | None, m, where: str) -> list[str]:
     board = boards.get(board_id or "")
     if board is None:
         return [f"{where}: TraceID {board_id!r} names no board def of the EE model (see CK-F7)"]
+    findings += [f"{where}: {u}" for u in doc.get("unsupported", [])]
     want: dict[str, list[str]] = {}
     for pname, pid in board_ports(m, board):
         if pid:
@@ -438,6 +508,10 @@ def conformance(doc: dict, board_id: str | None, m, where: str) -> list[str]:
             continue
         have.setdefault(port, []).append(c["ref"])
         pins = {p["number"]: p for p in c["pins"]}
+        for num, p in sorted(pins.items(), key=lambda kv: _ref_key(kv[0])):
+            if num not in maps[port] and not p["net"].startswith("unconnected-"):
+                findings.append(f"{where}: {c['ref']} ({names[port]}): pin {num} is on net {p['net']!r}, but the "
+                                f"pin map has no pin {num}; add it to the port def or leave the pin unconnected")
         for num, net in sorted(maps[port].items(), key=lambda kv: _ref_key(kv[0])):
             p = pins.get(num)
             if p is None:

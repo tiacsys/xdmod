@@ -49,6 +49,34 @@ def test_extraction_equals_kicad_netlist():
     assert j1["2"]["net"] == "Net-(J1-Pin_2)"                   # the T without a junction did not join GND
 
 
+HIER = FIXTURES / "kicad" / "hier"
+
+
+def test_hierarchy_power_flags_and_lib_name_equal_kicad():
+    """A sheet used twice (sheet pins, hierarchical labels, a local label inside the sheet), a
+    PWR_FLAG on GND (it joins nothing), a global label on the GND net (it names the net over the
+    power symbol), and a connector placed with lib_name: every pin's net equals KiCad's netlist."""
+    import xml.etree.ElementTree as ET
+    nl = conn.netlist(HIER / "hier.kicad_sch")
+    kicad = {(n2.get("ref"), n2.get("pin")): n.get("name")
+             for n in ET.parse(HIER / "hier.net.xml").getroot().iter("net") for n2 in n.iter("node")}
+    assert nl.nets == kicad and nl.findings == []
+    assert kicad[("J1", "1")] == "/ch1/MID" and kicad[("J1", "3")] == "ZZZ"
+    j1 = conn.connectors(nl)[0]
+    assert j1["ref"] == "J1" and len(j1["pins"]) == 3          # pins found through lib_name
+    assert conn.compare(conn.connectors(nl), conn.from_xml(HIER / "hier.net.xml"), "hier") == []
+
+
+def test_buses_are_reported(tmp_path):
+    """A bus is not read: the extraction says so instead of writing a silently wrong table."""
+    sch = tmp_path / "b.kicad_sch"
+    sch.write_text((CONN / "conn.kicad_sch").read_text().replace(
+        "(sheet_instances", '(bus (pts (xy 10 10) (xy 20 10)) (stroke (width 0) (type default)) (uuid "b"))\n\t(sheet_instances', 1))
+    doc = conn.document("b", sch, tmp_path)
+    assert any("buses are not read yet" in u for u in doc["unsupported"])
+    assert doc["inputs"] == ["b.kicad_sch"]
+
+
 def test_d8_compare_reports_differences():
     """CK-D8 planted: a pin on another net, a missing connector, another Port."""
     mine = conn.connectors(conn.netlist(CONN / "conn.kicad_sch"))
@@ -104,6 +132,7 @@ def _doc_for_controller():
     fixture: J1 = ServoHeader (pin 1 SERVO_PWM, pin 3 GND), J2 = BusHeader (pin 1 DATA)."""
     doc = {"connectors": conn.connectors(conn.netlist(CONN / "conn.kicad_sch"))}
     doc["connectors"][0]["pins"][0]["net"] = "/SERVO_PWM"
+    doc["connectors"][0]["pins"][1]["net"] = "unconnected-(J1-Pin_2-Pad2)"     # not in the pin map
     doc["connectors"][1]["port"] = "EE-PORT-0002"
     doc["connectors"][1]["pins"][0]["net"] = "DATA"
     return doc
@@ -124,12 +153,14 @@ def test_f1_against_the_model():
     assert conn.conformance(good, "EE-PCBA-0001", m, "c") == []
     bad = copy.deepcopy(good)
     bad["connectors"][0]["pins"][0]["net"] = "/CANARY_A"
+    bad["connectors"][0]["pins"][1]["net"] = "/EXTRA"
     bad["connectors"][0]["pins"] = bad["connectors"][0]["pins"][:2]
     bad["connectors"][1]["port"] = None
     bad["connectors"].append({"ref": "J9", "port": "EE-PORT-0077", "pins": []})
     text = "\n".join(conn.conformance(bad, "EE-PCBA-0001", m, "c"))
     assert "J1 (EePorts::ServoHeader): pin 1 is on net '/CANARY_A', the pin map says 'SERVO_PWM'" in text
     assert "J1 (EePorts::ServoHeader): pin 3 of the pin map is not on the connector" in text
+    assert "J1 (EePorts::ServoHeader): pin 2 is on net '/EXTRA', but the pin map has no pin 2" in text
     assert "J2 has no Port field" in text
     assert "J9: Port EE-PORT-0077 is no connector port def" in text
     assert "1 port(s) of EePorts::BusHeader (bus), 0 connector(s) name it" in text
