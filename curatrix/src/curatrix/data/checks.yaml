@@ -107,6 +107,14 @@ checks:
     need: XD-CHECK-0033
     enforces: [XD-RULE-0047]
     description: "A domain model conforms to its upstream model: every port a domain def inherits from an upstream def is redefined in the chain by a port whose def specializes the inherited one (also at signal level), inherited name clashes are solved, and every specialization between two IDs has a link type."
+  CK-F6:
+    need: XD-CHECK-NEW-f6
+    enforces: [XD-RULE-NEW-eeproj]
+    description: "KiCad projects are found by their .kicad_pro (cad.projects); one project per folder, named like the folder, with its root sheet of the same name; no KiCad project file outside these folders."
+  CK-F7:
+    need: XD-CHECK-NEW-f7
+    enforces: [XD-RULE-NEW-eeproj]
+    description: "Each board def of the EE model has exactly one pcba/ project whose TraceID is its EE-PCBA ID, in the folder named after the def; every pcba/ project names one board def; external parts have no project; no link variables on projects."
   CK-G1:
     need: XD-CHECK-0023
     enforces: [XD-RULE-0038]

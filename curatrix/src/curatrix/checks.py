@@ -89,6 +89,10 @@ BUILTIN = [
     ("CK-E3", "EARS pattern matches the sentence", _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "requirements", False, "c_ears"),
     ("CK-G1", "needs-diff against the base (change impact)", _lv({"pr": "report", "full": "report"}), "docs", False, "c_diff"),
     ("CK-G2", "suspect links against the last baseline (R7)", _lv({"full": "report", "baseline": "error"}), "docs", False, "c_diff"),
+    ("CK-F6", "KiCad projects: one per folder, named like it; no KiCad files elsewhere",
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects", False, "c_ee_projects"),
+    ("CK-F7", "KiCad projects 1:1 with the board defs of the EE model",
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects+model", False, "c_ee_one_to_one"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
     ("CK-H2", "no build output inside the repo", _lv({"local": "error", "pr": "error"}), None, False, "c_hygiene_build"),
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
@@ -102,7 +106,8 @@ BUILTIN = [
 NEED_TEXT = {"model.variants": "model.variants: true", "model.upstream": "model.upstream", "generated": "a model, cad or code section",
              "requirements": "requirements: true and a docs section", "provenance": "a model section or cad.freecad_json",
              "views": "views and model sections",
-             "variants": "a variants section (domain repos, with model.upstream)"}
+             "variants": "a variants section (domain repos, with model.upstream)",
+             "cad.projects": "cad.projects", "cad.projects+model": "cad.projects and a model section"}
 
 
 def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
@@ -121,6 +126,10 @@ def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
         return cfg.section("model") is not None or bool((cfg.section("cad") or {}).get("freecad_json"))
     if need == "views":
         return cfg.section("views") is not None and cfg.section("model") is not None
+    if need == "cad.projects":
+        return bool((cfg.section("cad") or {}).get("projects"))
+    if need == "cad.projects+model":
+        return bool((cfg.section("cad") or {}).get("projects")) and cfg.section("model") is not None
     return cfg.section(need) is not None
 
 
@@ -254,7 +263,8 @@ def c_domain_variants(ctx: Ctx, r: Result):
     c = ctx.cfg.section("cad") or {}
     v = ctx.cfg.section("variants") or {}
     z = v.get("zephyr") or []
-    kicad = ctx.cfg.globs(c.get("kicad") or [])
+    from curatrix import eeprojects
+    kicad = eeprojects.root_sheets(ctx.cfg)     # cad.kicad and the root sheets of cad.projects
     freecad = ctx.cfg.globs(c.get("freecad") or [])
     r.findings, rows = domvariants.check(modelmod.Model.load(mj), ups, kicad, freecad,
                                          ctx.cfg.globs([z] if isinstance(z, str) else z))
@@ -307,6 +317,23 @@ def c_provenance(ctx: Ctx, r: Result):
 def c_cadneeds(ctx: Ctx, r: Result):
     o = gen.cad_needs(ctx.ws, ctx.cfg)
     r.findings = o.findings + _compare(o, "the CAD files", ctx.ws, f"curatrix gen cad-needs {ctx.repo.name}")
+
+
+def c_ee_projects(ctx: Ctx, r: Result):
+    """CK-F6 (task 5.17): the folder rule of the KiCad projects."""
+    from curatrix import eeprojects
+    r.findings = eeprojects.folder_findings(ctx.cfg)
+
+
+def c_ee_one_to_one(ctx: Ctx, r: Result):
+    """CK-F7 (XD-ADR-0128, XD-ADR-0135): board defs of the committed model.json <-> pcba/ projects."""
+    from curatrix import eeprojects
+    s = ctx.cfg.section("model") or {}
+    mj = ctx.cfg.resolve(s.get("json", "generated/model.json"))
+    if not mj.exists():
+        r.findings = [f"{ctx.ws.rel(mj)} missing; run `curatrix gen model {ctx.repo.name}`"]
+        return
+    r.findings = eeprojects.one_to_one(ctx.cfg, modelmod.Model.load(mj))
 
 
 def c_codeneeds(ctx: Ctx, r: Result):

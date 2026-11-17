@@ -33,6 +33,7 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 | `curatrix gen stubs\|model\|cad-needs\|freecad-json\|tombstones\|all [<repo>] [--check]` | regenerate committed generated files ([Generated files](#generated-files)); `--check` only compares |
 | `curatrix gen cad-exports [<repo>]` | kicad-cli sheet SVGs + BOM CSV into `build/<area>/cad/` (local, not committed) for the CAD directives |
 | `curatrix gen freecad-json --textconv FILE` | semantic JSON of one `.FCStd` on stdout (git textconv driver, installed by bootstrap) |
+| `curatrix new pcba <BoardDef> [--repo R] [--no-kicad]` | a KiCad project for a board def of the repo's EE model (task 5.17): `pcba/<board-def>/` from `xdmod/templates/kicad-pcba/` (`.kicad_pro` with `TraceID` = the def's `EE-PCBA` and `XD_VERSION = unversioned`, ERC/DRC severities, library tables with workspace variables only, the jobset), schematic and board saved by KiCad (`kicad-cli sch\|pcb upgrade --force`, `kicad-cli` limits), the document `docs/pcba-<board-def>/` and its registry entry. External parts get no project |
 | `curatrix ids new KIND [FILE] [--repo R]` | issue the next ID of KIND from the owning ledger; with FILE, replace that file's first `KIND-NEW-…` placeholder |
 | `curatrix ids fix [<repo>] [--dry-run]` | replace every placeholder `<KIND>-NEW-<tag>` in the repo (same tag → same ID in every file) |
 | `curatrix ids check [<repo>]` | CK-C1 + CK-C2 |
@@ -105,7 +106,8 @@ views:                              # CK-D3 (needs `model` too)
   model: generated/model.json       # default: model.json
 
 cad:                                # CK-D4 (plain Python: runs without CAD tools), CK-H1
-  kicad: ["pcba/*/*.kicad_sch"]     # ROOT schematics; hierarchical sheets are followed
+  projects: ["pcba/*/*.kicad_pro", "proto/*/*.kicad_pro"]   # CK-F6, CK-F7 (with `model`); root sheet = <name>.kicad_sch
+  kicad: ["pcba/*/*.kicad_sch"]     # extra ROOT schematics (the projects' root sheets are read anyway); sheets are followed
   freecad: ["parts/*.FCStd", "assemblies/**/*.FCStd"]
   needs: generated/cad-needs.json   # default
   freecad_json: generated/freecad   # optional: semantic JSON per .FCStd (<path>.FCStd.json)
@@ -177,6 +179,8 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-E4 | conformance of a domain model to its upstream (inherited ports redefined, port defs specialize, name clashes solved, link type per kind pair) on the committed JSON, no Java | `model.upstream` | local, pr (warning) | yes |
 | CK-D3 | views: content, uncompressed, geometry sane, picture fresh | `views` | local, pr, baseline | yes (kinds `interconnection`, `decomposition`) |
 | CK-D4 | `cad-needs.json` matches KiCad/FreeCAD files (plain Python, so also in PR CI) | `cad` | local, pr, baseline | yes |
+| CK-F6 | KiCad projects by `.kicad_pro`: one per folder, named like the folder, root sheet of the same name; no KiCad project file outside the project folders (plain Python) | `cad.projects` | local, pr, baseline (warning) | yes |
+| CK-F7 | board defs of the EE model (`XdDomain::Pcba`) 1:1 with `pcba/` projects by `TraceID` = `EE-PCBA`, folder named after the def; external parts have none (plain Python, committed `model.json`) | `cad.projects` + `model` | local, pr, baseline (warning) | yes (`proto/` projects: not yet) |
 | CK-D6 | `code-needs.json` matches the code: `@xdid` blocks, comments above `ZTEST` (plain Python) | `code` | local, pr, baseline | yes |
 | CK-D5 | generated files record the pinned tool versions (`generated/provenance.json`, 4.4b) | `model` or `cad.freecad_json` | local/pr/full warning, baseline error | yes |
 | CK-E2 | value fields appear in the sentence as numbers (any format, `a ± b`), the unit once as symbol or name | `requirements` | local, pr, baseline (warning until it ran on real requirements) | yes |

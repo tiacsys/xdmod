@@ -366,6 +366,19 @@ def cmd_gen(a):
     return rc
 
 
+# ------------------------------------------------------------------ new
+def cmd_new(a):
+    from curatrix import newpcba
+    ws = _ws()
+    repo = _repo(ws, a.repo)
+    try:
+        newpcba.new_pcba(ws, repo, _cfg(ws, repo), a.element, kicad=not a.no_kicad)
+    except newpcba.NewError as e:
+        print(f"curatrix new {a.what}: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
 # ------------------------------------------------------------------ ids
 def _excl(ws, repo_path: Path) -> list[str]:
     from curatrix import checkcfg
@@ -553,6 +566,14 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--textconv", metavar="FCSTD", help="freecad-json: print the trace JSON of one file (git textconv)")
     s.add_argument("--shape", action="store_true", help="freecad-json: add the shape part (needs FreeCAD)")
     s.set_defaults(func=cmd_gen)
+
+    s = sub.add_parser("new", help="scaffolds: `new pcba <BoardDef>` makes the KiCad project, jobset, library tables "
+                                   "and the pcba-<name> document of a board def of the EE model")
+    s.add_argument("what", choices=["pcba"])
+    s.add_argument("element", help="the board def (name, qualified name or EE-PCBA ID) in the repo's model.json")
+    s.add_argument("--repo", help="the EE repo (name or path; default: the repo of the current folder)")
+    s.add_argument("--no-kicad", action="store_true", help="do not let KiCad save the new files (tests)")
+    s.set_defaults(func=cmd_new)
 
     s = sub.add_parser("trace", help="trace report per SYS-REQ (refined, satisfied, verified, latest result, gaps) "
                                      "from the last docs build; the canary configuration in its own section")

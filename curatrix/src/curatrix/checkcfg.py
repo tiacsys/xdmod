@@ -28,7 +28,8 @@ with ``{ws}/`` (the workspace root).
     views:                           # CK-D3
       dir: views
     cad:                             # CK-D4 (plain Python, no CAD tools), CK-H1
-      kicad: ["pcba/*/*.kicad_sch"]
+      projects: ["pcba/*/*.kicad_pro", "proto/*/*.kicad_pro"]   # CK-F6, CK-F7 (with model): KiCad projects
+      kicad: ["pcba/*/*.kicad_sch"]  # extra root schematics (the projects' root sheets are read anyway)
       freecad: ["parts/*.FCStd", "assemblies/**/*.FCStd"]
       needs: generated/cad-needs.json
       freecad_json: generated/freecad
@@ -71,7 +72,7 @@ SECTION_KEYS = {
     "model": {"libraries", "files", "export", "json", "needs", "variants", "upstream"},
     "stubs": {"out", "docs", "package"},
     "views": {"dir", "model"},
-    "cad": {"kicad", "freecad", "needs", "freecad_json"},
+    "cad": {"kicad", "freecad", "needs", "freecad_json", "projects"},
     "code": {"sources", "tests", "needs"},
     "variants": {"zephyr"},
 }
@@ -191,7 +192,8 @@ def validate(raw: dict, path: Path) -> list[str]:
         for k in v:
             if k not in keys:
                 errs.append(f"{path}: {sec}: unknown key {k!r} (known: {', '.join(sorted(keys))})")
-        for k in ("files", "libraries", "export", "docs", "kicad", "freecad", "exclude", "sources", "tests", "zephyr"):
+        for k in ("files", "libraries", "export", "docs", "kicad", "freecad", "exclude", "sources", "tests", "zephyr",
+                  "projects"):
             if k in v and not (isinstance(v[k], list) and all(isinstance(x, str) for x in v[k])):
                 errs.append(f"{path}: {sec}.{k} must be a list of strings")
     for k in ("requirements",):
