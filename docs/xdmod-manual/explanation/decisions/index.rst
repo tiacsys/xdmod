@@ -16,7 +16,7 @@ How to read a decision
 - ``legacy_id`` is the number the decision had in the planning log (``D1`` to ``D142``) before it
   became a need. Old texts and commit messages use these numbers.
 - ``date`` is the day it was made.
-- ``decision_status`` is ``accepted``, ``revised`` (a newer decision changed part of it) or
+- ``decision_status`` is ``proposed`` (written, but waiting for a spike or the owner), ``accepted``, ``revised`` (a newer decision changed part of it) or
   ``superseded`` (a newer decision replaced it). Changed decisions are never deleted or edited
   into something new: they keep their need, and the newer decision holds the link to them
   (``refines``, ``revises`` or ``supersedes``). The older need shows the link back as
@@ -39,6 +39,7 @@ How to add a decision
 
    method
    traces
+   domains
    documents
    repos
    checks

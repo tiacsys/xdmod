@@ -28,9 +28,9 @@ The principles of the trace model and the rules on the trace graph.
    :legacy_id: trace-model 1.3
    :tags: trace
    :status: valid
-   :decided_by: XD-ADR-0030
+   :decided_by: XD-ADR-0030, XD-ADR-0131, XD-ADR-0134
 
-   Interfaces between peer domains (for example EE and SW, or EE and ME) are interface needs (``SYS-IF``) in the systems engineering repo. Both domains link to the interface; neither domain links to the other.
+   Interfaces between peer domains (for example EE and ME) are interface needs (``SYS-IF``) in the systems engineering repo. Both domains link to the interface; neither domain links to the other. Two exceptions: SW reads the board pin maps from the EE model and may link to ``EE-PCBA`` and ``EE-PORT`` needs, while EE never links to SW; and ME writes board geometry into EE's KiCad project, but only inside a co-design change, without any trace link from ME to EE.
 
 .. xd-rule:: Allocation is stored on the concrete side
    :id: XD-RULE-0004

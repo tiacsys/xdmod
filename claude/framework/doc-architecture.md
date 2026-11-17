@@ -23,12 +23,13 @@ Status: **AGREED 2026-11-14** (review answers → D109–D112). Built on D13, D2
 | | `sw-test-spec` | SW Test Specification | test cases from ZTEST annotations (zdocs `testmodule`, test-ID ledger) | `sw-req`, `sw-arch` |
 | | `sw-test-report` | SW Test Report | Twister results (`native_sim` in CI, D101), coverage | `sw-test-spec` |
 | robarm-ee | `ee-req` | EE Requirements Specification | EE requirements (rst, EARS) | `se-req`, `se-arch` |
-| | `pcba-<name>` | PCBA Design: <name> (one per PCBA, D21) | schematic sheets (SVG), BOM, nets vs. interfaces, ERC (all from KiCad) | `ee-req`, `se-arch` |
-| | `proto-<config>` | Prototype Setup: <config> (one per prototype configuration, D27, D74, D112) | wiring (KiCad schematic, or WireViz harness diagrams, see D112), modules, build steps | `ee-req`, `se-arch` |
+| | `pcba-<name>` | PCBA Design: <name> (one per board, from the start, XD-ADR-0129) | overview with version; renderings and schematic (local, placeholder in CI); stackup and design-rule tables, connector pin tables (plain Python); ERC/DRC findings with acceptance (local); variants table; BOM with a column per variant in the appendix | `ee-req`, `se-arch` |
+| | `proto-<name>` | Prototype Setup: <name> (one per `proto/` project, D27, D74, XD-ADR-0135) | wiring between external parts (KiCad schematic), modules, build steps | `ee-req`, `se-arch` |
+| | `harness-<name>` | Harness: <name> (one per harness, XD-ADR-0127) | WireViz diagram, pin-to-pin table, harness BOM, version; links to the `pcba-<name>` documents and `EE-PORT`s it connects | `pcba-<name>` of both ends, `se-arch` |
 | | `ee-test-spec` | EE Test Specification | EE test cases (rst, scripted checks) | `ee-req` |
 | | `ee-test-report` | EE Test Report | results of scripted checks (JUnit) | `ee-test-spec` |
 | robarm-me | `me-req` | ME Requirements Specification | ME requirements (rst, EARS) | `se-req`, `se-arch` |
-| | `me-asm` | ME Assembly Design | assemblies, parts, parameters, drawings (TechDraw SVG), 3D views (GLB) (from FreeCAD) | `me-req`, `se-arch` |
+| | `asm-<name>` | Assembly Design: <name> (one per top-level assembly, a chapter per sub-assembly, XD-ADR-0129) | drawings, exploded view, mass and center of gravity (local, placeholder in CI); parameters, materials, interfaces (plain Python); findings; indented BOM in the appendix (boards and harnesses one line each, with version and link) | `me-req`, `se-arch`, `pcba-<name>`, `harness-<name>` |
 | | `me-test-spec` | ME Test Specification | ME test cases (rst) | `me-req` |
 | | `me-test-report` | ME Test Report | results (JUnit, measurements) | `me-test-spec` |
 | robarm-integration | `int-test-spec` | System & Integration Test Specification | system and integration test cases, HIL setups (rst) | `se-req`, `se-arch`, and every domain spec |
@@ -39,7 +40,7 @@ Status: **AGREED 2026-11-14** (review answers → D109–D112). Built on D13, D2
 
 The robarm documents link to `xdmod-manual` (method references). xdmod never links to robarm, because the framework doesn't know its users (D5 spirit).
 
-**Iteration 1 (D135):** robarm-ee and robarm-me each start with **one document** (requirements + design). Test spec and report documents, and the split into the documents above, come once tests exist. The PCBA and prototype documents are added when the first PCBA or prototype wiring exists.
+**Iteration 1 (D135, changed by XD-ADR-0129):** robarm-ee and robarm-me each keep **one document** for requirements and overview (`ee-design`, `me-design`). Each board, harness and top-level assembly gets its own document from the start, created with its registry entry by `curatrix new pcba` / `new asm`. One directive set per document type; a section without data prints one fixed sentence. Test spec and report documents come once tests exist.
 
 ## 3. Registries (zdocs `documents.yaml`, D26, D35)
 
@@ -59,8 +60,9 @@ The robarm documents link to `xdmod-manual` (method references). xdmod never lin
 | `sysml-element` | table of an element's attributes, ports and relations | model JSON | yes (model JSON is committed) |
 | `config-page` (generator) | one page per configuration (D106) | model JSON + needs | yes |
 | `coverage-matrix` | requirement × configuration matrix (D104) | needs + test results | yes |
-| `kicad-sheet`, `kicad-bom`, `kicad-nets` | schematic SVGs, BOM, nets vs. interfaces | `kicad-cli` | notice only |
-| `freecad-drawing`, `freecad-3d`, `freecad-params` | TechDraw SVG, GLB viewer, parameter table | FreeCAD exporter / semantic JSON | params: yes (plain Python); drawings and 3D: notice only |
+| `xd-pcba-*` (overview, renderings, schematic, stackup, rules, connectors, findings, variants, BOM) | the `pcba-<name>` document (task 5.21) | KiCad files (plain Python), `generated/<project>.connectors.json`, local CAM output | stackup, rules, connectors, variants, BOM: yes; renderings, schematic, findings: placeholder |
+| `xd-harness` | the `harness-<name>` document (task 5.22) | WireViz YAML (plain Python + Graphviz) | yes |
+| `xd-asm-*` (drawings, exploded view, mass, parameters, materials, interfaces, findings, BOM) | the `asm-<name>` document (task 5.27) | semantic JSON (plain Python), local CAM output | parameters, materials, interfaces, BOM: yes; drawings, exploded view, mass, findings: placeholder |
 | `testmodule` (zdocs), `test-report` (sphinx-test-reports) | test specs from ZTEST, results from JUnit / run records | code, results | yes |
 | `needflow` (graphviz) | trace graphs (D95) | needs | yes |
 
@@ -75,4 +77,4 @@ The robarm documents link to `xdmod-manual` (method references). xdmod never lin
 1. **Test reports** are separate documents, one per domain plus integration (D109).
 2. **CAD-derived needs** are generated locally, committed (`generated/cad-needs.json`), and checked locally and at the baseline (check CK-D4). CI imports them and sees the full trace graph (D110).
 3. **The XDMOD manual** is part of the robarm full set, built from the pinned xdmod (D111).
-4. **One doc per PCBA and one per prototype configuration** (D112). For wiring harnesses, **WireViz** (YAML → harness diagram + BOM) is evaluated as an option.
+4. **One doc per PCBA and one per prototype configuration** (D112). For wiring harnesses, **WireViz** (YAML → harness diagram + BOM) is evaluated as an option. Adopted 2026-11-17 (XD-ADR-0127): one `harness-<name>` document per harness.

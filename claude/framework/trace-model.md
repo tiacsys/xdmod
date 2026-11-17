@@ -10,12 +10,13 @@ IDs follow the scheme in `id-scheme.md` (task 3.2).
    Backlinks ("refined by", "verified by") are only ever computed.
 2. **Every link type is declared only on the need type that owns it** (D36, D64h). There is no global link table.
    A link written on the wrong side is a build error, and so is a link to an unknown ID or a wrong target type. The spike proved all three.
-3. **Interfaces between peer domains live in syseng** as interface needs (`SYS-IF`). Both domains link to them; neither domain links to the other (D36).
+3. **Interfaces between peer domains live in syseng** as interface needs (`SYS-IF`). Both domains link to them; neither domain links to the other (D36). Two exceptions (Phase 5): **SW reads the board pin maps from the EE model** and may link to `EE-PCBA` / `EE-PORT`, EE never links to SW (XD-ADR-0131); **ME writes board geometry into EE's KiCad project**, only inside a co-design change and without any trace link (XD-ADR-0134, proposed).
 4. **Allocation is stored on the concrete side.** A product-layer element `realizes` the logical element it was allocated from (D36, D102).
 5. **Variants follow VAMOS through PLEML** (D102, `variants.md`). The core is the functional and logical architecture. Variants live in the 150 % product architecture. Elements carry `configs`, and requirements carry `where` (D103).
 6. **Generated needs** (from SysML, KiCad, FreeCAD, code and test results) follow the same rules as authored needs.
    Their links come from the source files: SysML `satisfy`, KiCad fields, FreeCAD properties, Doxygen `\satisfies`, and ZTEST `\verifies`.
 7. **One shared module** in xdmod defines all need types and link types (`needs_config.toml` plus schema rules). Every repo uses it, and a table document is generated from it.
+8. **Domain repos refine the system model in their own `model/` by specialization** (XD-ADR-0130). The domain model owns the IDs of boards, assemblies, ports and harnesses; CAD files carry them only as references (XD-ADR-0128). See §2a.
 
 ## 2. Need types per domain
 
@@ -57,8 +58,10 @@ Columns: the need type, its ID kind (`id-scheme.md`), its home repo, whether it 
 | Need type | ID kind | Authored / generated | Document |
 |---|---|---|---|
 | EE requirement | `EE-REQ` | authored (rst, EARS) | EE requirements spec |
-| PCBA | `EE-PCBA` | generated from the KiCad project (title block / project fields) | PCBA design doc (one per PCBA) |
-| Circuit block / component | `EE-CMP` | generated from KiCad hidden symbol or sheet fields (D29) | PCBA design doc |
+| PCBA | `EE-PCBA` | authored in the EE model (board def that specializes a system block) → generated need; the KiCad project's `TraceID` refers to it (XD-ADR-0128) | `pcba-<name>` (one per PCBA) |
+| Port (connector, or port of an external part) | `EE-PORT` | authored in the EE model (port def that specializes a `SYS-IF`) → generated need; the KiCad connector's `Port` field refers to it (XD-ADR-0133) | `pcba-<name>` |
+| Wiring harness | `EE-HAR` | authored in the EE model (cable def) → generated need; the WireViz YAML in `harness/<name>/` refers to it (XD-ADR-0127) | `harness-<name>` |
+| Circuit block / component | `EE-CMP` | generated from KiCad hidden symbol or sheet fields (D29); stays CAD-owned | `pcba-<name>` |
 | Prototype wiring (modules, jumpers) | `EE-CMP` with `configs: [SYS-CFG-0001]` | generated from a KiCad schematic of the prototype (D74) | Prototype doc (one per setup) |
 | EE test case | `EE-TC` | authored (rst) or generated from scripted checks | EE test spec |
 
@@ -67,8 +70,9 @@ Columns: the need type, its ID kind (`id-scheme.md`), its home repo, whether it 
 | Need type | ID kind | Authored / generated | Document |
 |---|---|---|---|
 | ME requirement | `ME-REQ` | authored (rst, EARS) | ME requirements spec |
-| Assembly | `ME-ASM` | generated from FreeCAD object properties (D29) | ME assembly design |
-| Part | `ME-PART` | generated from FreeCAD object properties | ME assembly design |
+| Assembly | `ME-ASM` | authored in the ME model (assembly or sub-assembly def) → generated need; the top FreeCAD document's `TraceID` refers to it (XD-ADR-0128) | `asm-<name>` (one per top-level assembly) |
+| Port (mechanical interface) | `ME-PORT` | authored in the ME model (port def that specializes a `SYS-IF`, with geometry) → generated need; a FreeCAD LCS with a `Port` property refers to it (XD-ADR-0133) | `asm-<name>` |
+| Part | `ME-PART` | generated from FreeCAD object properties; stays CAD-owned | `asm-<name>` |
 | ME test case | `ME-TC` | authored (rst) or generated from scripted checks | ME test spec |
 
 ### Framework and project items (D120, D121)
@@ -93,6 +97,18 @@ Columns: the need type, its ID kind (`id-scheme.md`), its home repo, whether it 
 - **Only model elements with links become `SYS-EL` needs.** A model element becomes a need only if it takes part in a trace link: `satisfy`, `allocate`, or a link from another repo. Other model elements stay model-only. When an element gets its first link, `curatrix ids fix` gives it a short-name ID.
 - **`layer: context`** is added for actors, system ports and the system of interest in the specification context (SYSMOD step 07). Interfaces stay `SYS-IF`.
 
+## 2a. Levels of detail (Phase 5, XD-ADR-0130 to XD-ADR-0138)
+
+| Level | Where | Holds | IDs it owns |
+|---|---|---|---|
+| System model | `robarm-syseng/model/` | what crosses a domain boundary: blocks down to the product level (one part def per board, assembly, SW component), their ports, interface defs at signal level (names, direction, kind, values). No connector types, pin numbers or part numbers | `SYS-EL`, `SYS-IF`, `SYS-CFG`, ... |
+| Domain model | `robarm-ee/model/`, `robarm-me/model/` | how a domain realizes a block. EE: board defs, connector port defs with connector type and pin map, cable defs, external parts, board variants (with shunt settings). ME: assembly and sub-assembly defs, mechanical port defs with geometry, assembly variants. No circuit block diagrams inside a board in iteration 1 | `EE-PCBA`, `EE-PORT`, `EE-HAR`, `ME-ASM`, `ME-PORT` |
+| Implementation | `pcba/`, `proto/`, `harness/`, `assemblies/`, `parts/` | KiCad projects, WireViz YAML, FreeCAD documents; they name the domain model elements by ID | `EE-CMP`, `ME-PART` |
+
+- **Specialization:** a domain def specializes the system def it realizes (`part def JointControllerBoard :> JointController`) and redefines every inherited port with a port whose def specializes the interface def. curatrix checks this (CK-E4, XD-ADR-0132) and derives the links by kind pair: `EE-PCBA` / `ME-ASM` / `EE-HAR` → `SYS-EL` = `realizes`; `EE-PORT` / `ME-PORT` → `SYS-IF` = `conforms`; any other pair is a finding.
+- **1:1:** each board def has one KiCad project, each cable def one harness folder, each assembly or sub-assembly def one FreeCAD document, each block of the prototype configuration one `proto/` project; external parts (bought boards, servos, pots) have ports but no project (XD-ADR-0128, XD-ADR-0135).
+- **Instances:** syseng owns the usages it sees; the domain model owns its internal usages (XD-ADR-0138). Instances differ only through variants; the domain variant names the configurations and usages it serves, the table is computed (XD-ADR-0136).
+
 ## 3. Link-type table
 
 The **owner** is the need type that holds the link (the source). The **targets** are the types it may point to.
@@ -110,11 +126,14 @@ The **owner** is the need type that holds the link (the source). The **targets**
 | `realizes` | `SYS-EL` (`layer: logical`) | `SYS-EL` (`layer: functional`) | 0 ² | Allocation `functional2logical`, stored on the concrete side (D85). |
 | `realizes` | `SYS-EL` (`layer: product`, any variant) | `SYS-EL` (`layer: logical`) | 0 ² | Allocation `logical2product`, stored on the concrete side. |
 | `configures` | `SYS-CFG` | `SYS-EL` (`layer: product`, the 150 % architecture) | 1 | The configuration is one product of this product line. |
-| `realizes` | `SW-ARCH`, `EE-PCBA`, `EE-CMP`, `ME-ASM`, `ME-PART` | `SYS-EL` | 1 ³ | The domain element realizes a product-layer system element. |
+| `realizes` | `SW-ARCH`, `EE-PCBA`, `EE-CMP`, `EE-HAR`, `ME-ASM`, `ME-PART` | `SYS-EL` | 1 ³ | The domain element realizes a product-layer system element. |
 | `satisfies` | `SW-ARCH`, `SW-DD`, `EE-PCBA`, `EE-CMP`, `ME-ASM`, `ME-PART` | the same domain's `*-REQ` | 0 ³ | The design element satisfies a domain requirement. |
-| `conforms` | `SW-ARCH`, `SW-DD`, `EE-CMP`, `ME-PART`, `ME-ASM`, `EE-PCBA` | `SYS-IF` | 0 | The element meets a peer interface (pin map, connector, mounting). |
+| `conforms` | `SW-ARCH`, `SW-DD`, `EE-CMP`, `ME-PART`, `ME-ASM`, `EE-PCBA`, `EE-PORT`, `ME-PORT`, `EE-HAR` | `SYS-IF` | 0 | The element meets a peer interface (pin map, connector, mounting). For ports it is derived from specialization. |
+| `conforms` | `SW-ARCH`, `SW-DD` | `EE-PCBA`, `EE-PORT` | 0 | SW meets the board's pin map in the EE model (exception to the peer rule, XD-ADR-0131). |
+| `connects` | `EE-HAR` | `EE-PORT` | 2 | The ports the harness ends mate with, also ports of external parts (XD-ADR-0133). |
 | `refines` | `SW-DD` | `SW-ARCH` | 1 | The detailed design element belongs to this architecture element. |
 | `part_of` | `EE-CMP` → `EE-PCBA`; `ME-PART` → `ME-ASM` | as listed | 1 | Structure of the domain design. |
+| `part_of` | `EE-PORT` → `EE-PCBA`; `ME-PORT` → `ME-ASM` | as listed | 0 | The board or assembly that has the port. Ports of external parts have none. |
 | `implements` | `SW-IMPL` | `SW-DD`, `SW-ARCH` | 1 | The code unit implements this design element. |
 | `satisfies` | `SW-IMPL` | `SW-REQ` | 0 | Optional direct link from code to a requirement (Doxygen `\satisfies`, as in safety). `implements` is still required (D77). |
 | `verifies` | `INT-STC` | `SYS-REQ` | 1 | |

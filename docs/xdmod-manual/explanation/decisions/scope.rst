@@ -54,11 +54,11 @@ What is in iteration 1 and what moved to iteration 2.
    :id: XD-ADR-0037
    :legacy_id: D43
    :date: 2026-11-14
-   :decision_status: accepted
+   :decision_status: revised
    :status: valid
    :revises: XD-ADR-0002, XD-ADR-0018, XD-ADR-0019
 
-   **Moved to iteration 2:** CAM pipeline and bundle, the PDF document set, layout keeping in drawio, product PCB layout. Iteration 1 builds HTML docs only.
+   **Moved to iteration 2:** CAM pipeline and bundle, the PDF document set, layout keeping in drawio, product PCB layout. Iteration 1 builds HTML docs only. Changed by :need:`XD-ADR-0142`, :need:`XD-ADR-0143` (CAM in iteration 1) and :need:`XD-ADR-0144` (a PCB layout without routing).
 
 .. xd-adr:: FreeCAD review report as a Pages preview
    :id: XD-ADR-0098
@@ -73,9 +73,80 @@ What is in iteration 1 and what moved to iteration 2.
    :id: XD-ADR-0124
    :legacy_id: D135
    :date: 2026-11-14
-   :decision_status: accepted
+   :decision_status: revised
    :status: valid
    :refines: XD-ADR-0095
    :revises: XD-ADR-0098
 
-   **Scope cuts for iteration 1:** variants start with ``buildKind`` and rules :need:`XD-RULE-0021`, :need:`XD-RULE-0022`, :need:`XD-RULE-0023` to :need:`XD-RULE-0027`; the FreeCAD review report stays local (:need:`XD-ADR-0098` deferred); robarm-ee and robarm-me start with one doc each.
+   **Scope cuts for iteration 1:** variants start with ``buildKind`` and rules :need:`XD-RULE-0021`, :need:`XD-RULE-0022`, :need:`XD-RULE-0023` to :need:`XD-RULE-0027`; the FreeCAD review report stays local (:need:`XD-ADR-0098` deferred); robarm-ee and robarm-me start with one doc each. Changed by :need:`XD-ADR-0129` (one document per board, harness and assembly).
+
+.. xd-adr:: EE design output in iteration 1
+   :id: XD-ADR-0142
+   :date: 2026-11-17
+   :decision_status: accepted
+   :status: valid
+   :revises: XD-ADR-0037
+   :refines: XD-ADR-0018
+
+   **The EE part of the CAM pipeline moves into iteration 1.** ``curatrix cam <repo> [<project>]``
+   copies the KiCad project into ``build/<repo>/cam/<project>/<version>/``, writes the version into
+   the copy's ``.kicad_pro`` text variable ``XD_VERSION`` and runs the jobset there with ``kicad-cli
+   jobset run``. The committed project keeps ``XD_VERSION = "unversioned"``.
+
+   - **Version:** ``git describe --match '<project>/*'`` (:need:`XD-ADR-0140`). A dirty tree, or a
+     commit that is not on ``main`` or a baseline, gives a version marked as preview; without a tag
+     it is ``<project>/v0.0.0-<n>-g<sha>-preview``. The full version goes into a title-block comment
+     line and a silkscreen text; the ``Rev`` field cuts long strings off, so it holds only the short
+     version or nothing.
+   - **Jobset:** one shared template in xdmod, copied by ``curatrix new pcba``. A job can name a
+     variant (KiCad 10.0.8, KiCad spike §2.2), so the jobset holds one job per variant-dependent output
+     and variant, copied from its base job except for the variant and file name; the variant names in
+     the jobs equal those of the project. No "Execute Command" jobs, no "Copy Files" outside the
+     output folder, no statistics job, BOM delimiters set, ERC and DRC not in the jobset (the checks
+     evaluate them). curatrix fails the run when fewer jobs ran than the jobset has (a job KiCad
+     cannot parse drops all jobs with exit code 0).
+   - **Outputs:** Gerber and drill, pick-and-place, netlist, STEP, top and bottom renderings
+     (orthographic) and one 3D rendering, schematic PDF and SVG, BOM CSV. The stackup table (and an
+     optional SVG cross-section) and the design-rule table come from plain Python, because KiCad
+     exports neither.
+   - **Where:** output only under ``build/``, never committed, no release asset, run only locally (no
+     KiCad in CI). The bundle stays in iteration 2. KiCad batch runs use the workspace-local
+     configuration, cache and documents folders, the C locale and a ``TMPDIR`` under ``build/``, one
+     after the other.
+
+.. xd-adr:: ME design output in iteration 1
+   :id: XD-ADR-0143
+   :date: 2026-11-17
+   :decision_status: proposed
+   :status: valid
+   :revises: XD-ADR-0037
+   :refines: XD-ADR-0018, XD-ADR-0024
+
+   **The ME part of the CAM pipeline moves into iteration 1.** ``curatrix cam <repo> <asm>`` runs
+   FreeCAD headless under limits into ``build/<repo>/cam/<asm>/<version>/``: STEP of the assembly; 3MF
+   and STL per printed part with its print profile (:need:`XD-ADR-0024`); TechDraw drawings as PDF and
+   SVG; the exploded view as a TechDraw view (GUI binary offscreen, :need:`XD-ADR-0137`); a flat BOM
+   CSV with totals. Per variant: set the variant row, recompute, export, close without saving;
+   presence by ``Configs``. The version comes from the assembly tags (:need:`XD-ADR-0140`), with the
+   same preview marking as EE. A shared part from ``parts/`` carries the version of the assembly
+   being exported.
+
+   **Version on printed parts:** a part marks the face for it with an LCS (``Role =
+   version-emboss``, text size, maximum width). At export, and only there, curatrix embosses the
+   short version (the full string goes into the drawing) with a font pinned in xdmod; the
+   ``.FCStd`` stays unchanged, and the export fails unless the result is exactly one valid solid.
+   GLB is deferred; renderings come at the end of Phase 5 (task 5.30). Output only under ``build/``,
+   only locally. Proposed until the FreeCAD spike is merged.
+
+.. xd-adr:: A PCB layout in iteration 1, without routing
+   :id: XD-ADR-0144
+   :date: 2026-11-17
+   :decision_status: accepted
+   :status: valid
+   :revises: XD-ADR-0037
+
+   **Iteration 1 includes a PCB layout** for the product board: placement, board outline and
+   silkscreen. Routing is not completed. The DRC errors of unrouted nets (one ``unconnected_items``
+   entry per missing connection, so pads − 1 per net) are accepted in **one** entry of the board's
+   ``accepted.yaml`` (:need:`XD-ADR-0126`), not as KiCad exclusions, which change with every move.
+   All other DRC errors must be fixed or accepted one by one.

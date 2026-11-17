@@ -96,8 +96,8 @@ The manifest default is **minimal** (D93): framework, syseng and Zephyr only. A 
 | (none) / syseng | — | framework, syseng, SYSMOD library, Zephyr |
 | ee | `+ee` | + robarm-ee, KiCad libraries (no 3D models) |
 | ee + 3D | `+ee,+kicad-3d` | + KiCad 3D models |
-| me | `+me,+freecad-parts` | + robarm-me, FreeCAD parts |
-| sw | `+sw` | + robarm-sw |
+| me | `+me,+freecad-parts,+ee` | + robarm-me, FreeCAD parts, robarm-ee and the KiCad libraries (StepUp push, XD-ADR-0141) |
+| sw | `+sw,+ee` | + robarm-sw, robarm-ee (board pin maps, XD-ADR-0131) |
 | integration | `+ee,+me,+sw,+integration` | everything except the big libraries (D90) |
 | full (local, baseline) | `+ee,+me,+sw,+integration,+kicad-3d,+freecad-parts` | everything |
 | CI full set (bump job) | same as integration | everything except the big libraries: CI builds without CAD content (D56) |

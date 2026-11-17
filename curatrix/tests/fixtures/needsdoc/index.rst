@@ -109,6 +109,12 @@ Needs config test
    :status: valid
    :refines: SW-ARCH-0001
 
+.. sw-dd:: Servo pins in the devicetree
+   :id: SW-DD-0002
+   :status: valid
+   :refines: SW-ARCH-0001
+   :conforms: EE-PCBA-0001, EE-PORT-0001
+
 .. sw-impl:: pid.c
    :id: SW-IMPL-0001
    :status: valid
@@ -129,6 +135,21 @@ Needs config test
    :id: EE-PCBA-0001
    :status: valid
    :realizes: SYS-EL-0003
+
+.. ee-port:: Servo header
+   :id: EE-PORT-0001
+   :status: valid
+   :conforms: SYS-IF-0001
+   :part_of: EE-PCBA-0001
+
+.. ee-port:: Servo cable plug (external part)
+   :id: EE-PORT-0002
+   :status: valid
+
+.. ee-har:: Servo cable
+   :id: EE-HAR-0001
+   :status: valid
+   :connects: EE-PORT-0001, EE-PORT-0002
 
 .. ee-cmp:: Servo connector
    :id: EE-CMP-0001
@@ -152,6 +173,12 @@ Needs config test
    :status: valid
    :realizes: SYS-EL-0003
 
+.. me-port:: Servo mount
+   :id: ME-PORT-0001
+   :status: valid
+   :conforms: SYS-IF-0001
+   :part_of: ME-ASM-0001
+
 .. me-part:: Link
    :id: ME-PART-0001
    :status: valid
@@ -167,6 +194,11 @@ Needs config test
    :id: XD-ADR-0001
    :status: valid
    :legacy_id: D1
+
+.. xd-adr:: A decision that waits for a spike
+   :id: XD-ADR-0002
+   :status: valid
+   :decision_status: proposed
 
 .. xd-rule:: Concrete side holds the link
    :id: XD-RULE-0001

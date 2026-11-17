@@ -43,27 +43,47 @@ docs/se-req/  docs/se-arch/
 
 ### robarm-ee
 ```
-pcba/<name>/             one KiCad project per PCBA: <name>.kicad_pro/.kicad_sch/.kicad_pcb, sym-lib-table, fp-lib-table
-proto/<config>/          prototype wiring per prototype configuration: KiCad schematic or WireViz YAML (D112)
-harness/<name>/          WireViz cables between boards (adopted 2026-11-17, plan 5.14, 5.22)
+model/                   EE domain model (*.sysml): board defs that specialize system blocks, connector port defs
+                         with connector type and pin map, cable defs, external parts, board variants (XD-ADR-0130)
+model/generated/         as in syseng, if the EE model needs stubs
+pcba/<name>/             one KiCad project per board def (1:1, XD-ADR-0128): <name>.kicad_pro (entry point)/.kicad_sch/
+                         .kicad_pcb, sym-lib-table, fp-lib-table, <name>.kicad_jobset (copied from the xdmod
+                         template, XD-ADR-0142), accepted.yaml (accepted ERC/DRC findings, XD-ADR-0126)
+proto/<name>/            one KiCad project per block of the prototype configuration (XD-ADR-0135): wiring between
+                         external parts; same files as pcba/<name>/
+harness/<name>/          one WireViz harness per cable def: <name>.yml, both ends name their EE-PORT (XD-ADR-0127)
 lib/                     project-local symbols, footprints, 3D models that aren't in the tiacsys libraries (D88)
-tests/                   scripted EE checks (netlist vs. pin map, ERC) → JUnit
-generated/               cad-needs.json (D110)
-docs/ee-req/  docs/pcba-<name>/  docs/proto-<config>/  docs/ee-test-spec/  docs/ee-test-report/
+tests/                   scripted EE checks → JUnit
+generated/               cad-needs.json (D110), model.json and model-needs.json, <project>.connectors.json (CK-D7)
+docs/ee-design/  docs/pcba-<name>/  docs/proto-<name>/  docs/harness-<name>/  docs/ee-test-spec/  docs/ee-test-report/
 ```
+Board, harness and prototype tags `<name>/vX.Y.Z`, made by the owner only (XD-ADR-0140). Design output (`curatrix cam`) goes to `build/robarm-ee/cam/<name>/<version>/`, never into the repo. KiCad and WireViz files carry the model's IDs only as references: the project's `TraceID` text variable, each connector's `Port` field, the port names at the harness ends; no `Realizes` / `Conforms` fields on projects.
 KiCad library tables refer to the shared libraries only through variables (`${XD_KICAD_SYMBOLS}`, …) and to `lib/` through `${KIPRJMOD}`. The launcher sets the variables (`command-layer.md`).
 
 ### robarm-me
 ```
-parts/<part>.FCStd       single parts (compression 0, D63)
-assemblies/<asm>/        <asm>.FCStd plus assembly-specific parts
+model/                   ME domain model (*.sysml): assembly and sub-assembly defs that specialize system blocks,
+                         mechanical port defs with geometry, assembly variants (XD-ADR-0130)
+parts/<part>.FCStd       shared parts (compression 0, D63)
+assemblies/<name>/       one folder per top-level assembly: <name>.FCStd (top document, TraceID = its ME-ASM),
+                         skeleton.FCStd (spreadsheet Params with the variant table, master sketch; parts refer only
+                         to it, XD-ADR-0137, proposed), parts/ (own parts), accepted.yaml (accepted findings, XD-ADR-0126)
 lib/                     project-local parts not in FreeCAD-library (D88)
 templates/               TechDraw templates with git fields (freecad-storage.md §4)
-print/                   print-settings profiles (D30; CAM itself is iteration 2)
-tests/                   scripted ME checks (parameters vs. model, interference) → JUnit
-generated/               cad-needs.json, <file>.json semantic exports (D110, textconv)
-docs/me-req/  docs/me-asm/  docs/me-test-spec/  docs/me-test-report/
+print/                   print-settings profiles (D30)
+tests/                   scripted ME checks → JUnit
+generated/               cad-needs.json, <file>.json semantic exports (D110, textconv), model.json and model-needs.json
+docs/me-design/  docs/asm-<name>/  docs/me-test-spec/  docs/me-test-report/
 ```
+Only assemblies are tagged (`<name>/vX.Y.Z`, owner only, XD-ADR-0140). Design output (`curatrix cam`, XD-ADR-0143) goes to `build/robarm-me/cam/<name>/<version>/`. Board models come at fixed versions from robarm-freecad-pcba.
+
+### robarm-freecad-pcba (board library, XD-ADR-0139, proposed; created in task 5.29 after the owner's approval)
+```
+<board>/<board>-<version>.FCStd   one file per tagged board version and variant: board body, connectors, tall parts,
+                                  no tracks; properties EE-PCBA ID and version; at most 5 MB per file to start
+checks.yaml  ids.yaml  claude/  .github/
+```
+Path `libs/freecad-pcba`, a west group that the ee and me roles both get. The EE agent opens the PR that adds a board version (STEP from `kicad-cli pcb export step`, headless FreeCAD import). CK-F20 checks that every file names an existing board tag.
 
 ### robarm-sw
 ```

@@ -45,13 +45,21 @@ Where the need types live
      - ``EE-REQ``, ``EE-TC``
      - authored in rst (test cases also from scripted checks)
    * -
-     - ``EE-PCBA``, ``EE-CMP``
-     - generated from KiCad project and symbol or sheet fields (:need:`XD-ADR-0023`)
+     - ``EE-PCBA``, ``EE-PORT``, ``EE-HAR``
+     - authored in the EE domain model, generated as needs; KiCad and WireViz files refer to them
+       (:need:`XD-ADR-0128`, :need:`XD-ADR-0133`)
+   * -
+     - ``EE-CMP``
+     - generated from KiCad symbol or sheet fields (:need:`XD-ADR-0023`)
    * - Mechanical
      - ``ME-REQ``, ``ME-TC``
      - authored in rst
    * -
-     - ``ME-ASM``, ``ME-PART``
+     - ``ME-ASM``, ``ME-PORT``
+     - authored in the ME domain model, generated as needs; FreeCAD documents and LCS refer to them
+       (:need:`XD-ADR-0128`, :need:`XD-ADR-0133`)
+   * -
+     - ``ME-PART``
      - generated from FreeCAD object properties
    * - Framework and project
      - ``XD-ADR``, ``XD-RULE``, ``PRJ-DEC``
@@ -67,6 +75,23 @@ Prototype wiring is EE content: a KiCad schematic of the prototype, whose elemen
 ``EE-CMP`` with ``configs`` set to the prototype configuration (:need:`XD-ADR-0067`). Code units must
 ``implements`` a design element and may also ``satisfies`` a SW requirement directly
 (:need:`XD-ADR-0070`).
+
+Levels of detail
+----------------
+
+Domain repos refine the system model in their own ``model/`` folder by SysML specialization
+(:need:`XD-ADR-0130`). The system model holds what crosses a domain boundary: blocks down to the
+product level, their ports, and interface defs at signal level. A domain model holds how the domain
+realizes a block: board defs with connector ports and pin maps, cable defs, external parts and board
+variants for EE; assembly defs with mechanical ports and assembly variants for ME. KiCad, WireViz and
+FreeCAD files implement the domain model and name its elements by ID. curatrix checks that every
+inherited port is redefined with a conforming port def, and derives ``realizes`` and ``conforms``
+from the specialization (:need:`XD-ADR-0132`). Each board def has one KiCad project, each cable def one
+harness, each assembly def one FreeCAD document; external parts have none (:need:`XD-ADR-0135`).
+
+Two exceptions to the peer rule (:need:`XD-RULE-0003`): SW reads the board pin maps from the EE model
+(:need:`XD-ADR-0131`), and ME writes board geometry into the KiCad files inside a co-design change
+(:need:`XD-ADR-0134`, proposed).
 
 Definitions and instances
 -------------------------

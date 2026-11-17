@@ -66,11 +66,11 @@ the framework (:need:`XD-ADR-0079`).
      - ``+ee`` / ``+ee,+kicad-3d``
      - plus the EE repo and KiCad libraries (with 3D models)
    * - ``me``
-     - ``+me,+freecad-parts``
-     - plus the ME repo and the FreeCAD parts library
+     - ``+me,+freecad-parts,+ee``
+     - plus the ME repo, the FreeCAD parts library, the EE repo and KiCad libraries
    * - ``sw``
-     - ``+sw``
-     - plus the SW repo
+     - ``+sw,+ee``
+     - plus the SW repo and the EE repo
    * - ``integration``
      - ``+ee,+me,+sw,+integration``
      - every repo without the big libraries (:need:`XD-ADR-0082`)

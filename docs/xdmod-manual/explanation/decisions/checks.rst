@@ -240,3 +240,31 @@ Where checks run, CI, tool limits, generated files and test evidence.
    :status: valid
 
    **A check run passes only if it checked something** (Phase 4 review P4-4, P4-14; plan Phase 5, task 5.1). A missing ``checks.yaml`` and an empty plan fail. Each repo lists the checks it runs in ``expect:``, so a lost section is an error (CK-H6); ``curatrix check`` prints the checks that are off and why. An error-level check that is skipped at the baseline stage fails. Failures of git and west are reported, never treated as "nothing found". A pull request gets a warning when it changes more than 600 hand-written lines or 15 files against its base (CK-H7): one SYSMOD step or one tool feature per PR.
+
+.. xd-adr:: One accepted.yaml format, with Accepted-by
+   :id: XD-ADR-0126
+   :date: 2026-11-17
+   :decision_status: accepted
+   :status: valid
+   :refines: XD-ADR-0051, XD-ADR-0123
+
+   **Accepted CAD findings live in one file format for EE and ME:** ``pcba/<name>/accepted.yaml`` and
+   ``assemblies/<name>/accepted.yaml``, read by the same check code. An entry names the check, the
+   rule, the items (designators or part names, never positions, so the entry survives a move; or all
+   findings of one rule, as for unrouted nets) and the reason.
+
+   **Only a human accepts.** An entry counts as accepted only when the commit that added it carries an
+   explicit ``Accepted-by: <name>`` trailer, has no agent trailer, and changes nothing but acceptance
+   entries. Agents never write ``Accepted-by:``; an entry from an agent commit, or not yet committed,
+   is a proposal (:need:`XD-ADR-0051`): a warning locally, an error at the baseline. Real enforcement
+   (commits signed with a key only the owner holds) stays in iteration 2 (:need:`XD-ADR-0123`).
+
+   - Only errors must be accepted; warnings are listed and never fail.
+   - KiCad's own exclusions stay for single, stable findings. Stated rule: a KiCad exclusion is lost
+     when its items move. An ERC exclusion counts only if no finding of the same type and items is
+     reported as not excluded, because KiCad turns a stale ERC exclusion into an excluded phantom
+     finding (KiCad spike §4.4).
+   - A board's ERC and DRC severities must equal those of the ``curatrix new pcba`` template (a
+     missing ``erc`` section counts as KiCad's defaults). A difference is a finding that needs
+     acceptance, so a severity cannot silently switch a rule off.
+   - The reports stay local; CI and Pages show a placeholder in the findings section.

@@ -138,11 +138,11 @@ The linked document set, zdocs, and how documents get their content.
    :id: XD-ADR-0102
    :legacy_id: D112
    :date: 2026-11-14
-   :decision_status: accepted
+   :decision_status: revised
    :status: valid
    :refines: XD-ADR-0016, XD-ADR-0022
 
-   **One EE design doc per PCBA** and **one per prototype configuration**. **WireViz** is evaluated for wiring harnesses (prototype jumper wiring, cables between boards).
+   **One EE design doc per PCBA** and **one per prototype configuration**. **WireViz** is evaluated for wiring harnesses (prototype jumper wiring, cables between boards). Changed by :need:`XD-ADR-0127` (WireViz adopted for cables between parts; prototype wiring stays KiCad).
 
 .. xd-adr:: Agent-readable docs with sphinx-llm
    :id: XD-ADR-0111
@@ -152,3 +152,44 @@ The linked document set, zdocs, and how documents get their content.
    :status: valid
 
    **Agent-readable docs:** the **sphinx-llm** extension is tried for llms.txt / Markdown output of the doc sets.
+
+.. xd-adr:: WireViz for harnesses
+   :id: XD-ADR-0127
+   :date: 2026-11-17
+   :decision_status: accepted
+   :status: valid
+   :revises: XD-ADR-0102
+
+   **WireViz is adopted** for cables between boards and external parts. It is a pinned pip package
+   (xdmod ``requirements.txt``), plain Python with Graphviz, so CI and Pages can draw the diagrams
+   too. Each harness is one folder ``harness/<name>/`` with one WireViz YAML ``<name>.yml`` as entry
+   point, 1:1 with a cable def in the EE model (``EE-HAR``, :need:`XD-ADR-0128`). The connectors at
+   both ends name the ``EE-PORT`` they mate with, also on external parts; CK-F1 checks pin to pin
+   against both ends. ``curatrix cam`` makes the diagram, the harness BOM (with Manufacturer and MPN)
+   and the version from tags ``<name>/vX.Y.Z``. One harness in iteration 1. The harness length and
+   route are a co-design value between EE and ME (task 5.28). Prototype jumper wiring stays a KiCad
+   schematic per prototype setup (:need:`XD-ADR-0067`).
+
+.. xd-adr:: One document per board, harness and assembly
+   :id: XD-ADR-0129
+   :date: 2026-11-17
+   :decision_status: accepted
+   :status: valid
+   :refines: XD-ADR-0102
+   :revises: XD-ADR-0124
+
+   **Each board, harness and top-level assembly gets its own document from the start:**
+   ``pcba-<name>`` (and ``proto-<name>`` per prototype project), ``harness-<name>`` and ``asm-<name>``
+   (with one chapter per sub-assembly). ``ee-design`` and ``me-design`` keep the requirements and the
+   overview. ``curatrix new pcba`` / ``new asm`` create the document and its registry entry. One
+   directive set per document type, so all documents of one type look the same; a section without
+   data prints one fixed sentence.
+
+   **What CI can show:** everything read in plain Python appears everywhere: stackup and design-rule
+   tables, connector pin tables (from the committed ``generated/<project>.connectors.json``), the
+   BOM (in the appendix, one column per variant), the variants table, parameters, materials and
+   interfaces of assemblies, the harness diagram and pin-to-pin table. What needs KiCad or FreeCAD
+   (schematic, renderings, ERC/DRC findings, drawings, exploded view, mass and center of gravity) is
+   included only in local builds, from ``build/<repo>/cam/``, with the version it shows; CI and Pages
+   show a placeholder. At the baseline stage, missing or stale local output is an error. A board or
+   harness appears in the assembly BOM as one line with its version and a link to its document.

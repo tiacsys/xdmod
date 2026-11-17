@@ -71,11 +71,11 @@ Check IDs use the prefix `CK-` (e.g. `CK-D4`) so that they can't be confused wit
 
 | # | Check | Stages | Level |
 |---|---|---|---|
-| CK-F1 | KiCad netlist matches the pin maps of the interfaces (spike: working check) | local, baseline | error |
+| CK-F1 | KiCad connectors and harness ends match the pin maps of the domain model (net name and pin number per signal); extended in Phase 5, see §2a | local, PR, baseline | warning until it ran on the canary, then error |
 | CK-F2 | Zephyr devicetree matches the model (pins, buses, channels, `trace-id` in our own binding, D64f) | local, PR (robarm-sw CI builds the firmware with the Zephyr SDK, D101) | error |
 | CK-F5 | Firmware builds for `nucleo_g474re`; unit tests pass on `native_sim` (Twister) | local, PR (robarm-sw, D101) | error |
-| CK-F3 | FreeCAD spreadsheet parameters match model attributes (link lengths, servo envelope) | local, baseline | error |
-| CK-F4 | KiCad ERC passes; FreeCAD documents recompute without errors | local, baseline | error |
+| CK-F3 | FreeCAD spreadsheet parameters and LCS placements match model attributes, every variant row; extended in Phase 5, see §2a | local, PR, baseline | warning until it ran on the canary, then error |
+| ~~CK-F4~~ | KiCad ERC passes; FreeCAD documents recompute. Split 2026-11-17 into CK-F4a (ERC), CK-F4b (DRC), CK-F4c (FreeCAD recompute), see §2a; never built | — | — |
 
 ### CK-G. Change and suspect links
 
@@ -95,6 +95,51 @@ Check IDs use the prefix `CK-` (e.g. `CK-D4`) so that they can't be confused wit
 | CK-H5 | A copy of an xdmod template (`scripts/bootstrap.sh`) equals the template (D118) | all | warning |
 | CK-H6 | `checks.yaml` lists in `expect:` exactly the checks the repo runs (task 5.1) | all | error |
 | CK-H7 | PR size: hand-written lines and files against the base (task 5.1) | local, PR | warning |
+
+## 2a. New checks of Phase 5 (task 5.14)
+
+Every check that Phase 5 adds, with its ID, before its code (`claude/CLAUDE.md`, "How to add a
+built-in check"). **Every new check starts as a warning** and becomes an error (the "target" column)
+only after it ran on the canary. "PR" means the check is plain Python and runs in CI without KiCad or
+FreeCAD; a check without "PR" needs the tool and runs locally (`curatrix fixtures` records its
+planted error, P5-13). Decisions: XD-ADR-0126 to XD-ADR-0144 in the manual
+(`explanation/decisions/`). IDs: CK-D6 is taken by xdmod#40 (SW-IMPL and SW-TC from the code, task
+5.10, not merged yet), so the new CK-D checks start at CK-D7.
+
+| ID | Name | Area | What it checks | Stages | Start | Target | Task |
+|---|---|---|---|---|---|---|---|
+| CK-D6 | code-needs | SW | committed code needs match the code (xdmod#40) | local, PR | as in xdmod#40 | | 5.10 |
+| CK-E4 | conformance | model | every port a domain def inherits from a system def is redefined in the chain, by a port whose def specializes the inherited one; the same at signal level; name clashes solved; every (domain kind, system kind) pair of a specialization has a link type (XD-ADR-0132) | local, PR | warning | error | 5.15 |
+| CK-F6 | ee-projects | EE | projects found by `pcba/*/*.kicad_pro` and `proto/*/*.kicad_pro`; one `.kicad_pro` per folder, file name = folder name, root schematic of the same name; no KiCad files outside these folders | local, PR | warning | error | 5.17 |
+| CK-F7 | ee-one-to-one | EE | each board def (not external) has exactly one project whose `TraceID` is its `EE-PCBA`, each cable def one `harness/<name>/`, each block of the prototype configuration one `proto/` project; and back; no `Realizes` / `Conforms` fields left on projects (XD-ADR-0128, XD-ADR-0135) | local, PR | warning | error | 5.17, 5.22 |
+| CK-F1 | connectors | EE | every connector has a `Port` field (`-` = none); each port of the board def is named by exactly one connector; net names and pin numbers equal the pin map in the EE model; harness ends pin to pin against both ports, also on external parts | local, PR, baseline | warning | error | 5.18, 5.22 |
+| CK-D7 | connectors-fresh | EE | committed `generated/<project>.connectors.json` matches the KiCad files (locally by regeneration; in CI by the input hash written into the file) | local, PR | warning | error | 5.18 |
+| CK-D8 | connectors-vs-netlist | EE | the plain-Python connector extraction equals KiCad's XML netlist (`kicad-cli sch export netlist --format kicadxml`), every board (P5-15) | local, baseline | warning | error | 5.18 |
+| CK-F4a | erc | EE | KiCad ERC per board and per prototype schematic: no error that is neither excluded in KiCad nor accepted (XD-ADR-0126); warnings listed only | local, baseline | warning | error | 5.19 |
+| CK-F4b | drc | EE | KiCad DRC per board, same rule; unrouted nets accepted in one `accepted.yaml` entry (XD-ADR-0144) | local, baseline | warning | error | 5.19 |
+| CK-F8 | severities | EE | the project's ERC and DRC severities equal the `curatrix new pcba` template (a missing `erc` section = KiCad 10.0.8 defaults); a difference needs acceptance | local, PR | warning | error | 5.19 |
+| CK-F9 | acceptance | EE, ME | `accepted.yaml` entries are well formed and keyed by rule and items; an entry counts only if added by a human commit with `Accepted-by:`, no agent trailer, and nothing but acceptance entries; else a proposal (XD-ADR-0126) | local, PR: warning; baseline: error | warning | error at baseline | 5.19, 5.25 |
+| CK-F10 | jobset | EE | jobset rules: no "Execute Command" job, no "Copy Files" outside the output folder, no statistics job, BOM delimiters set, variant names in jobs = the project's variants, each variant job = its base job except variant and file name (XD-ADR-0142) | local, PR | warning | error | 5.20 |
+| CK-F11 | version-variable | EE | `XD_VERSION` is used in a title-block comment line of every sheet and in a silkscreen text; the committed value is `unversioned` | local, PR | warning | error | 5.20 |
+| CK-F12 | bom-fields | EE, ME | every BOM part has Manufacturer and MPN; standard fasteners carry their standard designation instead | local, PR | warning | warning (owner) | 5.21, 5.27 |
+| CK-D9 | bom-vs-kicad | EE | the plain-Python BOM reader equals `kicad-cli sch export bom --variant`, every board and variant (P5-15) | local, baseline | warning | error | 5.21 |
+| CK-F13 | ee-variants | EE | variant names equal in the EE model, `.kicad_pro`, `.kicad_sch` and `.kicad_pcb`; per-reference overrides agree between schematic and board; every shunt part has a `Setting` per variant equal to the EE model (XD-ADR-0136) | local, PR | warning | error | 5.16 |
+| CK-B8 | variants-across-levels | cross-domain | against the published syseng needs: exactly one domain variant per usage and configuration; the picked variant exists in the domain model and in KiCad / FreeCAD; Zephyr board variants map to board variants by name (canary) (XD-ADR-0136) | local, PR, full | warning | error | 5.16 |
+| CK-F14 | me-one-to-one | ME | `assemblies/<name>/` with `<name>.FCStd` and `skeleton.FCStd`; each assembly or sub-assembly def has exactly one document whose `TraceID` is its `ME-ASM`, and back; no reference from a part to the top document (XD-ADR-0128, XD-ADR-0137) | local, PR | warning | error | 5.23 |
+| CK-F15 | link-counts | ME | FreeCAD links per part or sub-assembly equal the usages (syseng for the blocks it sees, the ME model for internal ones), per variant filtered by `Configs` (XD-ADR-0138) | local, PR | warning | error | 5.23 |
+| CK-F3 | freecad-params | ME | spreadsheet aliases `<port>_<attribute>` of every variant row and LCS placements (with `Port`) equal the model, default tolerance per kind (lengths, angles), overridable per attribute | local, PR, baseline | warning | error | 5.24 |
+| CK-F4c | recompute | ME | every FreeCAD document recomputes without errors (exploded-view proxy error ignored in `FreeCADCmd`) | local, baseline | warning | error | 5.25 |
+| CK-F16 | solids | ME | every part shape is a valid solid | local, baseline | warning | error | 5.25 |
+| CK-F17 | collisions | ME | no overlap above a small tolerance between direct children of one assembly, per variant; parts joined by an assembly joint may touch; library fasteners left out; other overlaps need acceptance | local, baseline | warning | error | 5.25 |
+| CK-F18 | space-budget | ME | each board model stays inside its `SYS-IF` space budget in the assembly; details from the co-design spike | local, baseline | warning | error | 5.25, 5.28 |
+| CK-F19 | version-face | ME | every printed part has a version mark (LCS with `Role = version-emboss`) | local, PR | warning | warning | 5.26 |
+| CK-F20 | board-library | library | every file of the board library names an existing board tag and its `EE-PCBA`; at most 5 MB per file | local, PR | warning | error | 5.29 |
+| CK-D10 | local-cad-output | EE, ME | the local CAM output the documents include (schematic, renderings, ERC/DRC reports, drawings) exists and is not older than the CAD files; never in CI | local: warning; baseline: error | warning | error at baseline | 5.21, 5.27 |
+
+Changed by these decisions: CK-D4 reads no `Realizes` / `Conforms` fields from KiCad projects and
+FreeCAD top documents any more (XD-ADR-0128). Not checks but guards inside `curatrix cam`: the
+number of jobs KiCad ran equals the jobset's job count; an embossed part is exactly one valid solid.
+Co-design checks (KiCad outline and holes against the `SYS-IF`) get their IDs from task 5.28.
 
 ## 3. The check runner
 

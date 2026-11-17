@@ -27,20 +27,20 @@ The trace rule, link types, need kinds and the ID scheme.
    :id: XD-ADR-0023
    :legacy_id: D29
    :date: 2026-11-14
-   :decision_status: accepted
+   :decision_status: revised
    :status: valid
 
-   Trace IDs for CAD elements live **inside the CAD files** (KiCad symbol/sheet fields, FreeCAD object properties). Doc extraction reads them.
+   Trace IDs for CAD elements live **inside the CAD files** (KiCad symbol/sheet fields, FreeCAD object properties). Doc extraction reads them. Changed by :need:`XD-ADR-0128`: the IDs of boards, assemblies, ports and harnesses are owned by the domain model, and CAD files carry them only as references.
 
 .. xd-adr:: Link-type table and interface elements
    :id: XD-ADR-0030
    :legacy_id: D36
    :date: 2026-11-14
-   :decision_status: accepted
+   :decision_status: revised
    :status: valid
    :refines: XD-ADR-0004
 
-   **Link-type table:** :need:`XD-ADR-0004` stays the default. A table of link types names the owner side of each. Peer interfaces (e.g. EE↔SW pin map, EE↔ME connector positions) are **interface elements in syseng**, and both domains link to them. Allocation is stored on the concrete side.
+   **Link-type table:** :need:`XD-ADR-0004` stays the default. A table of link types names the owner side of each. Peer interfaces (e.g. EE↔SW pin map, EE↔ME connector positions) are **interface elements in syseng**, and both domains link to them. Allocation is stored on the concrete side. Changed by :need:`XD-ADR-0131` (SW reads the board pin maps from EE) and :need:`XD-ADR-0134` (ME writes board geometry into KiCad in a co-design change).
 
 .. xd-adr:: Small corrections from research
    :id: XD-ADR-0057
