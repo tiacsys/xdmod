@@ -83,6 +83,10 @@ checks:
     need: XD-CHECK-0019
     enforces: [XD-RULE-0033]
     description: "The committed cad-needs.json matches the trace fields in the KiCad and FreeCAD files (plain Python, no CAD tools)."
+  CK-D6:
+    need: XD-CHECK-0032
+    enforces: [XD-RULE-0033]
+    description: "The committed code-needs.json matches the code: code units from the @xdid Doxygen blocks, test cases from the comments above ZTEST (plain Python)."
   CK-D5:
     need: XD-CHECK-0020
     enforces: [XD-RULE-0041]

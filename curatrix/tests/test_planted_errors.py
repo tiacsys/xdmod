@@ -37,6 +37,7 @@ PLANTED = {
     "CK-D2": f"{HERE}::test_d2_stale_model_json",
     "CK-D3": "curatrix/tests/test_views.py::test_content_change_and_stale_picture",
     "CK-D4": "curatrix/tests/test_cli.py::test_gen_and_check_cad_needs",
+    "CK-D6": f"{HERE}::test_d6_code_changed_after_gen",
     "CK-D5": "curatrix/tests/test_provenance.py::test_made_with_another_version_is_reported",
     "CK-E2": f"{HERE}::test_e2_value_not_in_sentence",
     "CK-E3": f"{HERE}::test_e3_wrong_ears_pattern",
@@ -168,6 +169,19 @@ def test_d1_stale_stubs(tmp_path, monkeypatch):
     stale.write_text("package NeedStubs {}\n")                       # the need is missing in it
     f = _run(ctx, "CK-D1", checks.c_stubs)
     assert f and "does not match the needs" in f[0], f
+
+
+def test_d6_code_changed_after_gen(tmp_path):
+    ctx = _ctx(tmp_path, yaml_text="version: 1\ncode: {sources: ['src/*.h'], needs: generated/code-needs.json}\n")
+    h = ctx.repo.path / "src" / "a.h"
+    h.parent.mkdir()
+    h.write_text("/**\n * @xdid{SW-IMPL-0001}\n * Implements SW-DD-0001.\n */\nint a(void);\n")
+    o = gen.code_needs(ctx.ws, ctx.cfg)
+    o.write()
+    assert not _run(ctx, "CK-D6", checks.c_codeneeds)
+    h.write_text(h.read_text().replace("SW-DD-0001", "SW-DD-0002"))   # the link changes in the code
+    f = _run(ctx, "CK-D6", checks.c_codeneeds)
+    assert f and "does not match the code" in f[0], f
 
 
 @pytest.mark.tools

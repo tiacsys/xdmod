@@ -57,6 +57,7 @@ Check IDs use the prefix `CK-` (e.g. `CK-D4`) so that they can't be confused wit
 | CK-D2 | `model-needs.json` matches the model (needs the Pilot / Java) | local, PR (syseng only) | error |
 | CK-D3 | drawio views (`.drawio.svg`) match the model in **content**, not geometry; uncompressed; geometry sane; picture fresh (hash) (D38, D64a, D96) | local, PR | error |
 | CK-D4 | Committed CAD-derived needs (`generated/cad-needs.json`) match the CAD files (KiCad netlist fields, FreeCAD `Document.xml`) (D110) | local, PR (plain-Python readers of the trace fields, no CAD tools; xdmod#11), baseline | error |
+| CK-D6 | Committed code-derived needs (`generated/code-needs.json`) match the code: code units from `@xdid` Doxygen blocks, test cases from the comment above each `ZTEST` (D77, D80; task 5.10) | local, PR (plain Python), baseline | error |
 | CK-D5 | `generated/provenance.json` records the tool versions that made the generated files; mismatch with `tools.yaml` | local, PR, full: warning; baseline: error (xdmod#12) |
 
 ### CK-E. Model
