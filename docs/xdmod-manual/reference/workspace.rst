@@ -71,7 +71,7 @@ A role decides which repos a workspace checks out, through west's group filter
      - same as ``integration``
      - what the full-set CI job uses; CI builds without CAD content (:need:`XD-ADR-0049`)
 
-Set or change the role with ``curatrix bootstrap --role <role>``. Repos that become inactive are
+Set or change the role with ``curatrix bootstrap --role <role>``. ``curatrix update`` applies the group filter of the current role again, so a role that gains groups (for example ``me`` and ``sw`` in Phase 5) gets them on the next update. Repos that become inactive are
 left on disk.
 
 Bootstrap

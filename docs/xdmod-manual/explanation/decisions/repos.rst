@@ -194,7 +194,7 @@ Repos, the west workspace, names, tags and paths.
    ``joint-controller/v1.2.0``) in their domain repo, next to the repo tags (:need:`XD-ADR-0047`). The
    design output takes its version from ``git describe --match '<name>/*'``. ME tags only assemblies;
    an exported part carries the version of the assembly. **Only the owner creates these tags**, like
-   baselines; an agent proposes a tag in its PR. Unfinished designs use ``v0.x`` tags.
+   baselines; an agent proposes a tag in its PR. Unfinished designs use ``v0.x`` tags, as the owner set for the canary (Phase 5 plan review, P5-12).
 
 .. xd-adr:: Roles: EE gets FreeCAD, ME gets the KiCad files, SW gets the EE model
    :id: XD-ADR-0141

@@ -150,6 +150,7 @@ Needs config test
    :id: EE-HAR-0001
    :status: valid
    :connects: EE-PORT-0001, EE-PORT-0002
+   :satisfies: EE-REQ-0001
 
 .. ee-cmp:: Servo connector
    :id: EE-CMP-0001

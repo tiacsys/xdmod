@@ -260,8 +260,10 @@ Where checks run, CI, tool limits, generated files and test evidence.
    (commits signed with a key only the owner holds) stays in iteration 2 (:need:`XD-ADR-0123`).
 
    - Only errors must be accepted; warnings are listed and never fail.
-   - KiCad's own exclusions stay for single, stable findings. Stated rule: a KiCad exclusion is lost
-     when its items move. An ERC exclusion counts only if no finding of the same type and items is
+   - KiCad's own exclusions stay for single, stable findings, under the same rule: an exclusion
+     counts as accepted only when the commit that added it to the ``.kicad_pro`` carries
+     ``Accepted-by:``, has no agent trailer and changes nothing but exclusions or acceptance entries;
+     otherwise it is a proposal. Stated rule: a KiCad exclusion is lost when its items move. An ERC exclusion counts only if no finding of the same type and items is
      reported as not excluded, because KiCad turns a stale ERC exclusion into an excluded phantom
      finding (KiCad spike §4.4).
    - A board's ERC and DRC severities must equal those of the ``curatrix new pcba`` template (a

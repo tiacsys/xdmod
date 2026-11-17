@@ -127,7 +127,7 @@ The **owner** is the need type that holds the link (the source). The **targets**
 | `realizes` | `SYS-EL` (`layer: product`, any variant) | `SYS-EL` (`layer: logical`) | 0 ² | Allocation `logical2product`, stored on the concrete side. |
 | `configures` | `SYS-CFG` | `SYS-EL` (`layer: product`, the 150 % architecture) | 1 | The configuration is one product of this product line. |
 | `realizes` | `SW-ARCH`, `EE-PCBA`, `EE-CMP`, `EE-HAR`, `ME-ASM`, `ME-PART` | `SYS-EL` | 1 ³ | The domain element realizes a product-layer system element. |
-| `satisfies` | `SW-ARCH`, `SW-DD`, `EE-PCBA`, `EE-CMP`, `ME-ASM`, `ME-PART` | the same domain's `*-REQ` | 0 ³ | The design element satisfies a domain requirement. |
+| `satisfies` | `SW-ARCH`, `SW-DD`, `EE-PCBA`, `EE-CMP`, `EE-HAR`, `ME-ASM`, `ME-PART` | the same domain's `*-REQ` | 0 ³ | The design element satisfies a domain requirement. |
 | `conforms` | `SW-ARCH`, `SW-DD`, `EE-CMP`, `ME-PART`, `ME-ASM`, `EE-PCBA`, `EE-PORT`, `ME-PORT`, `EE-HAR` | `SYS-IF` | 0 | The element meets a peer interface (pin map, connector, mounting). For ports it is derived from specialization. |
 | `conforms` | `SW-ARCH`, `SW-DD` | `EE-PCBA`, `EE-PORT` | 0 | SW meets the board's pin map in the EE model (exception to the peer rule, XD-ADR-0131). |
 | `connects` | `EE-HAR` | `EE-PORT` | 2 | The ports the harness ends mate with, also ports of external parts (XD-ADR-0133). |
@@ -159,7 +159,7 @@ The schema (per need type) checks the shape of each single need. These rules che
 |---|---|---|
 | R1 Every `SYS-REQ` is refined by at least one domain requirement or satisfied by at least one `SYS-EL`. | own coverage check, full set | error in the full set |
 | R2 Every requirement (`SYS-REQ`, `*-REQ`) has at least one `verifies` link pointing at it, **per applicable configuration** (D104, `variants.md` §4). | own coverage check | warning in iteration 1, error later |
-| R3 No orphans: every product-layer `SYS-EL`, `SW-ARCH`, `EE-PCBA`, `EE-CMP`, `ME-ASM` and `ME-PART` has a `realizes` or `satisfies` link. | schema rule (local) | error |
+| R3 No orphans: every product-layer `SYS-EL`, `SW-ARCH`, `EE-PCBA`, `EE-CMP`, `EE-HAR`, `ME-ASM` and `ME-PART` has a `realizes` or `satisfies` link. Ports (`EE-PORT`, `ME-PORT`) are not in this rule: a port of an external part may conform to nothing. | schema rule (local) | error |
 | R4 A link to a need with `status: retired` is reported (D64e). | own check (non-failing on `main`); baseline gate | **Grace until the next baseline (D75):** on `main` and in PRs it is a reported warning that does not fail the build. The baseline build (manifest tag `baseline/vX.Y.Z`) fails while any such link remains. So the schema rule must not use a severity that `-W` turns into an error. |
 | R5 Every `TR` from a HIL run carries `firmware_sha256` and the SHAs of all pinned repos it depends on (run-record schema, task 4.5a; D57, D60). | schema rule | error |
 | R5a **Evidence validity (D131):** a `TR` counts only if its recorded SHAs (and firmware sha256) match the current manifest pins on `main`, or the baseline being built. Otherwise it is shown as `stale` and doesn't count for coverage. | own check | stale results: report; at baseline: they don't count |
