@@ -253,6 +253,7 @@ def c_provenance(ctx: Ctx, r: Result):
     doc = provenance.load(cfg)
     shaped = [cfg.repo / f for f, e in doc["files"].items() if e.get("made_by") == provenance.KINDS["freecad-shapes"][0]]
     r.findings += provenance.check(ctx.ws, cfg, shaped, "freecad-shapes")
+    r.findings += provenance.stale(cfg)
 
 
 def c_cadneeds(ctx: Ctx, r: Result):

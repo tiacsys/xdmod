@@ -59,3 +59,22 @@ def test_drop_and_check_runner(tmp_path, monkeypatch):
     assert checks.enabled(cfg, "provenance")
     lv = [b for b in checks.BUILTIN if b[0] == "CK-D5"][0][2]
     assert lv["pr"] == "warning" and lv["baseline"] == "error"
+
+
+def test_minimum_versions():
+    from curatrix import tools
+    assert tools.version_ok(">=2.43", "2.56.1") and tools.version_ok(">=22", "22.23.4")
+    assert not tools.version_ok(">=3.28", "3.27.9") and not tools.version_ok(">=2.43", None)
+    assert tools.version_ok(">=2.43", "2.43.0") and not tools.version_ok(">=1", "")
+
+
+def test_stale_records_are_reported(tmp_path, monkeypatch):
+    ws, cfg = setup_ws(tmp_path, monkeypatch)
+    (cfg.repo / "views").mkdir(exist_ok=True)
+    gone = cfg.repo / "views" / "old.drawio.svg"
+    gone.write_text("x")
+    provenance.record(ws, cfg, [gone], "views", versions={"elkjs": "1"})
+    gone.unlink()
+    assert any("views/old.drawio.svg" in f for f in provenance.stale(cfg))
+    provenance.record(ws, cfg, [], "views", drop=[gone])
+    assert not any("views/old.drawio.svg" in f for f in provenance.stale(cfg))

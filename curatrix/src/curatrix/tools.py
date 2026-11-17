@@ -18,7 +18,7 @@ all active repos; one tool name with two different versions is an error. Format 
         roles: [sw]             # optional: install only for these roles
     system:                     # used from the machine (D19); `doctor` fails on a mismatch
       - name: kicad-cli
-        version: "10.0.8"       # exact; "any"; or a prefix wildcard like "10.0.*"
+        version: "10.0.8"       # exact; "any"; a prefix wildcard like "10.0.*"; or a minimum ">=10.0"
         cmd: [kicad-cli, --version]   # default [<name>, --version]
         regex: '(\\d+\\.\\d+\\.\\d+)'  # default: the first x.y[.z] in the output
         optional: true          # missing = warning (a wrong version is still an error)
@@ -144,11 +144,18 @@ def for_role(ts: ToolSet, role: str | None) -> ToolSet:
 
 
 # ------------------------------------------------------------------ version checks
+def _vtuple(v: str) -> tuple[int, ...]:
+    return tuple(int(x) for x in re.findall(r"\d+", v)[:4])
+
+
 def version_ok(want: str, have: str | None) -> bool:
+    """`want`: an exact version, "any", a prefix wildcard ("10.0.*") or a minimum (">=2.43")."""
     if have is None:
         return False
     if want in ("any", ""):
         return True
+    if want.startswith(">="):
+        return bool(_vtuple(have)) and _vtuple(have) >= _vtuple(want[2:])
     if want.endswith(".*"):
         return have == want[:-2] or have.startswith(want[:-1])
     return have == want

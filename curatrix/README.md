@@ -217,7 +217,7 @@ tools:                        # installed into <ws>/.venv/<location>
     roles: [sw]               # optional: only for these roles
 system:                       # used from the machine (D19)
   - name: kicad-cli
-    version: "10.0.8"         # exact | "any" | prefix wildcard "10.0.*"
+    version: "10.0.8"         # exact | "any" | prefix wildcard "10.0.*" | minimum ">=10.0"
     cmd: [kicad-cli, --version]   # default [name, --version]
     regex: '(\d+\.\d+\.\d+)'  # default: first x.y[.z] in the output
     optional: true            # missing = warning; a wrong version is always a FAIL

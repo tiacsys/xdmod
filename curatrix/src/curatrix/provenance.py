@@ -70,7 +70,9 @@ def used(ws, kind: str) -> dict[str, str]:
 
 
 def pinned(ws, kind: str) -> dict[str, str]:
-    ts = _toolset(ws)
+    """The pins of tools.yaml for `kind`, for every role: CI checks records of tools it does not
+    install (FreeCAD shapes in a CI without FreeCAD, xdmod#23)."""
+    ts = toolsmod.load_all(ws)
     out = {}
     for name in KINDS[kind][1]:
         if name in ts.tools:
@@ -123,3 +125,9 @@ def check(ws, cfg: ChecksConfig, files: list[Path], kind: str) -> list[str]:
         if bad:
             out.append(f"{rel}: made with {', '.join(bad)}; run `{fix}` with the pinned tools and commit")
     return out
+
+
+def stale(cfg: ChecksConfig) -> list[str]:
+    """CK-D5: records of files that no longer exist (a removed view, a deleted model file)."""
+    return [f"{rel}: recorded in {REL}, but the file is gone; run the generator again (it drops the entry) "
+            f"or remove the entry" for rel in sorted(load(cfg)["files"]) if not (cfg.repo / rel).exists()]
