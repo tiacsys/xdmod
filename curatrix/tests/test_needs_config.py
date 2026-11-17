@@ -132,12 +132,8 @@ BAD = {
    :status: valid
    :part_of: ME-ASM-0001
 """,
-    "harness-with-one-end": """
-.. ee-har:: Bad
-   :id: EE-HAR-0090
-   :status: valid
-   :connects: EE-PORT-0001
-""",
+    # a harness with one `connects` target is valid: an extension cable has the same port def at
+    # both ends; CK-F1 counts the ends of the cable def (task 5.22 review)
     "harness-to-a-board": """
 .. ee-har:: Bad
    :id: EE-HAR-0091
@@ -192,7 +188,6 @@ BAD = {
 REASON = {
     "ee-port-conforms-to-element": "needs.link_target_type",
     "ee-port-part-of-assembly": "needs.link_target_type",
-    "harness-with-one-end": "schema violations",
     "harness-to-a-board": "needs.link_target_type",
     "me-port-part-of-board": "needs.link_target_type",
     "ee-links-to-sw": "needs.link_target_type",

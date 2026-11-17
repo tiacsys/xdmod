@@ -79,8 +79,44 @@ def test_f1_harness_ends():
     assert "X1 (EePorts::ServoHeader): pin 3 (GND) is not wired, but another end carries GND" in text
     assert "has 1 end(s) at EePorts::ServoHeader (boardEnd), 2 connector(s) name it (X1, X2)" in text
     assert "has 1 end(s) at EeCables::ServoPlug (servoEnd), 0 connector(s) name it (none)" in text
+    # a loop that shorts two signals of one connector (WireViz `loops`)
+    bad3 = yaml.safe_load(yaml.safe_dump(GOOD))
+    bad3["connectors"]["X1"]["loops"] = [[1, 3]]
+    text = "\n".join(harness.conformance(_h(bad3), m, "h.yml"))
+    assert "one conductor joins different nets: GND (X1:3 X2:3), SERVO_PWM (X1:1 X2:1)" in text
     bad2["metadata"]["TraceID"] = "EE-HAR-0042"
     assert any("TraceID EE-HAR-0042 names no cable def" in x for x in harness.conformance(_h(bad2), m, "h.yml"))
+
+
+def test_wires_by_color_and_label():
+    """Wires named by a unique color or a wire label are the wire of that number (as in WireViz);
+    a name that maps to no wire is reported, never a new conductor."""
+    d = yaml.safe_load(yaml.safe_dump(GOOD))
+    d["cables"]["W1"]["wirelabels"] = ["PWM", "RET"]
+    d["connections"] = [[{"X1": [1, 3]}, {"W1": ["OG", "RET"]}, {"X2": [1, 3]}]]
+    assert harness.conformance(_h(d), _model(), "h.yml") == []
+    assert [r[2:4] for r in harness.pin_table(_h(d))] == [("W1:1", "OG"), ("W1:2", "BK")]
+    d["connections"] = [[{"X1": 1}, {"W1": 1}], [{"W1": "OG"}, {"X2": 1}], [{"X1": 3}, {"W1": "PK"}, {"X2": 3}]]
+    w = harness.wiring(_h(d))
+    assert any(set(g) == {("X1", "1"), ("W1", "1"), ("X2", "1")} for g in w.groups)
+    assert w.unsupported == ["connection set 3: W1 wire 'PK' is no wire number, unique wire label or unique color "
+                             "of the cable (color codes are not read)"]
+
+
+def test_cable_ends_need_ids_and_two_ends():
+    data = json.loads((DOMAIN / "ee-model.json").read_text())
+    # the cable def keeps one end: a finding, also when the YAML is fine otherwise
+    keep = [x for x in data if x["identity"]["@id"] != "EeCables::ServoCable::servoEnd"]
+    m = modelmod.Model(keep)
+    good = yaml.safe_load(yaml.safe_dump(GOOD))
+    text = "\n".join(harness.conformance(_h(good), m, "h.yml"))
+    assert "the cable def EeCables::ServoCable has 1 end(s); a cable has at least two" in text
+
+
+def test_bom_with_part_data_per_wire():
+    d = yaml.safe_load(yaml.safe_dump(GOOD))
+    d["cables"]["W1"]["mpn"] = ["A1", "A2"]
+    assert harness.bom(_h(d))[0][5] == "A1; A2"
 
 
 def _repo(tmp_path, data=GOOD, name="servo-cable"):

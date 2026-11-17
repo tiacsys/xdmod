@@ -126,7 +126,7 @@ checks:
   CK-F1:
     need: XD-CHECK-0039
     enforces: [XD-RULE-0050]
-    description: "Every connector of a pcba/ project has a Port field (- = none); each Port names a connector port def of the board def; each port of the board def is named by one connector; pin numbers and net names equal the pin map of the EE model. Each harness end (a WireViz connector) names its EE-PORT (`Port:` in its notes); its pins and pin labels equal that pin map; every conductor joins pins of one net; the ends are the ports of the cable def (also ports of external parts)."
+    description: "Every connector of a pcba/ project has a Port field (- = none); each Port names a connector port def of the board def; each port of the board def is named by one connector; pin numbers and net names equal the pin map of the EE model. Each harness end (a WireViz connector) names its EE-PORT (`Port:` in its notes); its pins and pin labels contain that pin map (pin numbers and net names; both ends use the same net names, also an external part); every conductor, loops included, joins pins of one net and no wired pin is outside the pin map; the ends are the ports of the cable def (also ports of external parts)."
   CK-F4a:
     need: XD-CHECK-0040
     enforces: [XD-RULE-0051]
