@@ -97,12 +97,12 @@ Old curatrix rejects an unknown key; new curatrix may require it. So:
 
 - **Hard rule: never run KiCad or FreeCAD outside curatrix or its shims, not even `--version`**
   (owner decision 2026-11-17, `XD-ADR-0145`). Use `curatrix launch
-  kicad|freecad` or `curatrix run --use kicad-cli|freecad`. Any bare call of `kicad-cli`,
-  `kicad`, `eeschema`, `pcbnew`, `FreeCAD`, `FreeCADCmd` or `freecad` (by `/usr/bin/...` path,
+  kicad|freecad` or `curatrix run --use kicad-cli|freecad`. Any bare call of a KiCad or FreeCAD
+  program (`kicad-cli`, `kicad`, `eeschema`, `pcbnew`, `gerbview`, `FreeCADCmd`, `freecadcmd`, ...; by `/usr/bin/...` path,
   or without `eval "$(curatrix env)"`) writes `~/.config/kicad` or `~/.config/FreeCAD`: even
   `kicad-cli --version` rewrites `kicad_common.json` (the canary C0 incident, twice more on
   2026-11-17). Never touch `~/.config`. The shims in `.venv/bin` (written by `curatrix
-  bootstrap` / `update`, `setup.write_shims`) are a safety net, not a licence: they set the
+  bootstrap` / `update`, `setup.write_shims`, always for the main workspace) are a safety net, not a licence: they set the
   config but no limits. `curatrix doctor` warns when a KiCad/FreeCAD name on PATH is not the shim.
   To try a KiCad call by hand, use a fake workspace and `HOME` under `build/`.
 - A test that runs `git` in a temp repo must not see the caller's environment by accident:
