@@ -10,4 +10,4 @@ from xdmod_conf import configure, repo_root  # noqa: E402
 
 REPO = repo_root(__file__)
 configure(globals(), __file__, "__TITLE__",
-          generated=[(REPO, "generated/*.json")])
+          generated=[(REPO, "generated/*.json"), (REPO, "views/*.drawio.svg")])

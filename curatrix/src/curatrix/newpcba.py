@@ -11,7 +11,9 @@ Creates, from ``xdmod/templates/kicad-pcba/``:
   upgrade --force`` under the ``kicad-cli`` limits and the workspace-local KiCad config);
 * ``sym-lib-table`` and ``fp-lib-table`` with workspace libraries only;
 * ``<name>.kicad_jobset`` (the shared jobset template);
-* the document ``docs/pcba-<name>/`` and its entry in the docs registry.
+* the document ``docs/pcba-<name>/`` and its entry in the docs registry; the document embeds the
+  board's interconnection view (block diagram) and variants view from the model, or says which
+  view to add (tiacsys/xdmod#69 finding 3).
 
 ``<name>`` is the def's name in kebab case (``JointController`` -> ``joint-controller``).
 """
@@ -38,8 +40,12 @@ def title_of(element: str) -> str:
     return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", element)
 
 
-def find_board(cfg, element: str) -> tuple[str, str]:
-    """(def name, EE-PCBA ID) of a board def in the repo's committed model.json."""
+def element_id_of(p: dict) -> str:
+    return p.get("declaredShortName") or p.get("shortName") or ""
+
+
+def find_board_def(cfg, element: str) -> dict:
+    """The board def (model element) of a board def name, qualified name or ID."""
     s = cfg.section("model")
     if s is None:
         raise NewError(f"{cfg.repo.name} has no model section in checks.yaml; a board project names a board "
@@ -51,13 +57,46 @@ def find_board(cfg, element: str) -> tuple[str, str]:
     boards, externals, _ = eeprojects.model_defs(m)
     for bid, p in boards.items():
         if element in (p.get("name"), p.get("qualifiedName"), bid):
-            return p.get("name"), bid
+            return p
     for p in externals.values():
         if element in (p.get("name"), p.get("qualifiedName")):
             raise NewError(f"{element} is an external part: it has ports, but no KiCad project (XD-ADR-0135)")
     known = ", ".join(sorted(p.get("name") for p in boards.values())) or "none"
     raise NewError(f"no board def {element!r} in {cfg.repo.name}/{mj.relative_to(cfg.repo)} (board defs: {known}); add `part def <'EE-PCBA-NEW-x'> "
                    f"{element} :> <system block>, XdDomain::Pcba` to the model, `curatrix ids fix`, `curatrix gen model`")
+
+
+def lower_camel(name: str) -> str:
+    return name[:1].lower() + name[1:]
+
+
+def views_block(cfg, qname: str, wanted: list[tuple[str, str, str]], log=print, optional: bool = False) -> str:
+    """The rst that embeds the views of one def (tiacsys/xdmod#69 finding 3): for each wanted
+    (kind, view name suffix, caption), the model's view of that kind with ``root`` = the def, as a
+    ``sysml-view`` directive. A view the model does not have yet is a short paragraph with the
+    SysML to add (a missing file would fail the strict docs build); the log says the same.
+    ``optional``: a missing view is left out silently (a board without variants)."""
+    from curatrix import views
+    s = cfg.section("model") or {}
+    mj = cfg.resolve(s.get("json", "generated/model.json"))
+    have = [v for v in views.discover(modelmod.Model.load(mj))] if mj.exists() else []
+    simple = qname.split("::")[-1]
+    out = []
+    for kind, suffix, caption in wanted:
+        hit = sorted(v.name for v in have if v.kind == kind and v.root == qname)
+        if hit:
+            out.append(f".. sysml-view:: /views/{hit[0]}.drawio.svg\n   :caption: {caption} (view ``{hit[0]}``)\n")
+            continue
+        if optional:
+            continue
+        name = lower_camel(simple) + suffix
+        snippet = f'view {name} {{ @XdView {{ kind = "{kind}"; root = "{qname}"; }} }}'
+        out.append(f"The model has no {kind} view of ``{simple}`` yet. Add ``{snippet}`` to the model, run "
+                   f"``curatrix gen model`` and ``curatrix views build``, and replace this paragraph with "
+                   f"``.. sysml-view:: /views/{name}.drawio.svg``.\n")
+        log(f"  no {kind} view of {simple} in the model: add `{snippet}`, then `curatrix views build` "
+            f"(the document says where it goes)")
+    return "\n".join(out)
 
 
 def _subst(text: str, values: dict[str, str]) -> str:
@@ -114,7 +153,8 @@ def _make_project(ws, folder: Path, tmpl: Path, values: dict, name: str, kicad: 
 
 
 def new_pcba(ws, repo, cfg, element: str, kicad: bool = True, log=print) -> Path:
-    name_el, bid = find_board(cfg, element)
+    bdef = find_board_def(cfg, element)
+    name_el, bid = bdef.get("name"), element_id_of(bdef)
     name = eeprojects.kebab(name_el)
     folder = cfg.repo / "pcba" / name
     if folder.exists():
@@ -136,7 +176,12 @@ def new_pcba(ws, repo, cfg, element: str, kicad: bool = True, log=print) -> Path
         ddir = reg.parent / doc_id
         ddir.mkdir(parents=True, exist_ok=True)
         rst_title = f"{title} ({doc_id})"
-        dv = {**values, "__TITLE_RST__": f"{rst_title}\n{'=' * len(rst_title)}"}
+        dv = {**values, "__TITLE_RST__": f"{rst_title}\n{'=' * len(rst_title)}",
+              "__BLOCK_DIAGRAM__": views_block(cfg, bdef["qualifiedName"], [
+                  ("interconnection", "", f"The {title.lower()} and its ports")], log),
+              "__VARIANTS_VIEW__": views_block(cfg, bdef["qualifiedName"], [
+                  ("variants", "Variants", f"The variants of the {title.lower()} and what each serves")], log,
+                  optional=True)}
         for f in ("conf.py", "index.rst"):
             (ddir / f).write_text(_subst((tmpl / "doc" / f).read_text(encoding="utf-8"), dv), encoding="utf-8")
         log(f"  wrote {ws.rel(ddir)}/ (conf.py, index.rst)")

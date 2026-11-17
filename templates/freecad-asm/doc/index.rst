@@ -13,6 +13,12 @@ Overview
 
 .. xd-asm-overview:: __NAME__
 
+Block diagrams
+--------------
+
+The assembly def of the ME model: its parts, and its ports (from the model; ``curatrix views build``):
+
+__BLOCK_DIAGRAMS__
 Drawings
 --------
 
