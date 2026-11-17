@@ -53,8 +53,11 @@ Skills and checklists
 The bootstrap links skills and commands from ``xdmod/claude/`` and each active repo's
 ``claude/`` folder into ``<workspace>/.claude/`` (:need:`XD-ADR-0103`).
 
-.. note:: The SYSMOD step skills, the review checklists and commands such as ``/review-pr`` are
-   written in Phase 5.
+Skills and commands are linked with the prefix of their repo: ``xd-`` for xdmod. The review
+command is ``/xd-review-pr <repo> <PR>``; its checklists are in ``xdmod/claude/checklists/``. The
+first skills cover stakeholders and needs, EARS requirements and IDs; the KiCad and FreeCAD skills
+are completed after their spikes. The rules for changing xdmod itself are in
+``xdmod/claude/CLAUDE.md``.
 
 Pitfalls
 --------

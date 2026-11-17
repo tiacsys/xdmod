@@ -155,7 +155,7 @@ Agent material
      - skills per SYSMOD step, EARS writing, ID issuing, change workflow
      - shared
    * - ``xdmod/claude/commands/``
-     - slash commands, e.g. ``/review-pr``
+     - slash commands, linked as ``/xd-<name>``, e.g. ``/xd-review-pr``
      - shared
    * - ``<repo>/claude/CLAUDE.md``
      - repo rules: layout, checks, pitfalls

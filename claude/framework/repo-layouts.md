@@ -111,7 +111,7 @@ docs/xdmod-manual/  docs/xdmod-ref/
 |---|---|---|
 | `xdmod/launch/CLAUDE.md` → `<workspace>/CLAUDE.md` | workspace rules (run from the root, curatrix limits, build paths, trace rule, trailers), pointers to each repo's `claude/` | shared |
 | `xdmod/claude/skills/` | one skill per SYSMOD step, EARS writing, ID issuing, review checklists, change workflow | shared |
-| `xdmod/claude/commands/` | slash commands, e.g. `/new-requirement`, `/review-pr`, `/affirm-proposal` | shared |
+| `xdmod/claude/commands/` | slash commands, linked as `/xd-<name>`, e.g. `/xd-review-pr` | shared |
 | `<repo>/claude/CLAUDE.md` | repo-specific rules: layout, checks, pitfalls | local |
 | `<repo>/claude/skills/`, `commands/` | domain skills, e.g. KiCad edits through scripts, FreeCAD parameter changes, ZTEST annotation (from safety's `annotate-ztest`) | local |
 | `<repo>/claude/glossary.md` | domain terms | local |
