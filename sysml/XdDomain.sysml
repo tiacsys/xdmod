@@ -45,5 +45,25 @@ library package XdDomain {
     // An assembly or sub-assembly: exactly one FreeCAD document (ME-ASM).
     part def Assembly;
     // A mechanical interface of an assembly (ME-PORT); in FreeCAD an LCS with a Port property.
-    port def MechanicalPort;
+    // Its placement in the assembly (the LCS in the skeleton) by optional attributes: position
+    // x, y, z and the angles yaw, pitch, roll (FreeCAD's order: about z, then y, then x). A port
+    // usage gives the values (`:>> x = 10 [mm];`); other attributes of the port def or usage with a
+    // value are parameters too. Each becomes the alias <usage>_<attribute> in the skeleton's
+    // spreadsheet Params (`curatrix gen freecad-params`, CK-F3, XD-ADR-0137, XD-ADR-0146).
+    port def MechanicalPort {
+        attribute x : ISQ::LengthValue[0..1];
+        attribute y : ISQ::LengthValue[0..1];
+        attribute z : ISQ::LengthValue[0..1];
+        attribute yaw : ISQ::AngularMeasureValue[0..1];
+        attribute pitch : ISQ::AngularMeasureValue[0..1];
+        attribute roll : ISQ::AngularMeasureValue[0..1];
+    }
+    // How far the value in the FreeCAD file may differ from the model value of one attribute
+    // (CK-F3), in the attribute's own unit. It is the model-to-CAD agreement of a copied number,
+    // NOT a manufacturing or print tolerance of the part: keep it small. Without it the default
+    // per kind applies (lengths 0.001 mm, angles 0.001 deg):
+    //   :>> holeSpacing = 16 [mm] { @XdDomain::ModelMatchTolerance { value = 0.01; } }
+    metadata def ModelMatchTolerance {
+        attribute value : Real;
+    }
 }

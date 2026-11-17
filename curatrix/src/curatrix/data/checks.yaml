@@ -115,6 +115,10 @@ checks:
     need: XD-CHECK-0036
     enforces: [XD-RULE-0049]
     description: "Each board def of the EE model has exactly one pcba/ project whose TraceID is its EE-PCBA ID, in the folder named after the def; every pcba/ project names one board def; external parts have no project; no link variables on projects. Each cable def (XdDomain::Cable, EE-HAR) has exactly one harness/<name>/<name>.yml whose metadata TraceID is its EE-HAR, in the folder named after the def, and back (cad.harnesses)."
+  CK-F3:
+    need: XD-CHECK-0048
+    enforces: [XD-RULE-0057]
+    description: "The aliases <usage>_<attribute> in the spreadsheet Params of assemblies/<name>/<name>-skeleton.FCStd equal the attribute values of the assembly def's part and port usages in the ME model, and each LCS with a Port property sits where the port's x, y, z, yaw, pitch, roll say; tolerance per kind (lengths 0.001 mm, angles 0.001 deg) or @XdDomain::ModelMatchTolerance on the attribute (in its own unit; model-to-CAD agreement, not a part tolerance); at most ten parameters; no alias the model does not know."
   CK-F14:
     need: XD-CHECK-0046
     enforces: [XD-RULE-0055]

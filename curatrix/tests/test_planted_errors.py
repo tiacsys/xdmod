@@ -55,6 +55,7 @@ PLANTED = {
     "CK-F9": "curatrix/tests/test_ercdrc.py::test_f9_acceptance",
     "CK-F10": "curatrix/tests/test_cam.py::test_f10_jobset",
     "CK-F11": "curatrix/tests/test_cam.py::test_f11_version_variable",
+    "CK-F3": "curatrix/tests/test_meparams.py::test_f3_freecad_params",
     "CK-F14": "curatrix/tests/test_meassemblies.py::test_f14_one_to_one",
     "CK-F15": "curatrix/tests/test_meassemblies.py::test_f15_link_counts",
     "CK-E2": f"{HERE}::test_e2_value_not_in_sentence",

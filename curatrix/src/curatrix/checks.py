@@ -115,6 +115,8 @@ BUILTIN = [
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.freecad+model", False, "c_me_one_to_one"),
     ("CK-F15", "FreeCAD links per part or sub-assembly equal the usages (ME model and system model)",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.freecad+model", False, "c_link_counts"),
+    ("CK-F3", "FreeCAD Params aliases and LCS placements equal the ME model (tolerance per kind)",
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.freecad+model", False, "c_freecad_params"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
     ("CK-H2", "no build output inside the repo", _lv({"local": "error", "pr": "error"}), None, False, "c_hygiene_build"),
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
@@ -395,6 +397,14 @@ def c_link_counts(ctx: Ctx, r: Result):
     if m is not None:
         ups, missing = gen.upstream_models(ctx.cfg)
         r.findings = missing + meassemblies.link_counts(ctx.cfg, m, ups)
+
+
+def c_freecad_params(ctx: Ctx, r: Result):
+    """CK-F3 (XD-ADR-0137): skeleton Params and LCS with Port against the committed model.json."""
+    from curatrix import meparams
+    m = _model_or_finding(ctx, r)
+    if m is not None:
+        r.findings = meparams.check(ctx.cfg, m)
 
 
 def c_connectors_fresh(ctx: Ctx, r: Result):
