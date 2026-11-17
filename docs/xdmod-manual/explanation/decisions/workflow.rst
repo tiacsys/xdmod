@@ -105,7 +105,7 @@ Branches, merging, reviews, and what agents may do.
    :decision_status: accepted
    :status: valid
 
-   **Parallel agents work in git worktrees** under ``<ws>/.worktrees/<branch>/<repo>`` (``curatrix work start/done``). Shared parts aren't duplicated, and builds go to ``build/<branch>/``.
+   **Parallel agents work in git worktrees** under ``<ws>/.worktrees/<branch>/<repo>`` (``curatrix work start/done``). Shared parts aren't duplicated, and builds go to ``build/wt-<slug>/`` (the branch with ``/`` as ``-``: ``feat/x`` -> ``build/wt-feat-x/``).
 
 .. xd-adr:: Every PR gets an agent review
    :id: XD-ADR-0115

@@ -45,10 +45,11 @@ From the set root (the set links `.venv`):
 ```
 
 - For **robarm-ee and robarm-me** run it **with CAD content** (no `--no-cad`, P5-11). PR CI has no
-  KiCad or FreeCAD, so this is the second run of every check that needs one. **Today no check
-  needs KiCad or FreeCAD** (no built-in CAD check, no `cad: true` command in robarm-ee/me yet; they
-  come with tasks 5.17-5.27). Say so in the table: "checks that needed a CAD tool: none". Do not
-  present the run as a KiCad or FreeCAD validation.
+  KiCad or FreeCAD, so this is the second run of every check that needs one: EE CK-D8, CK-D9,
+  CK-F4a, CK-F4b; ME CK-F4c, CK-F16, CK-F17, CK-F18; both CK-D10. Name them in the table with the
+  KiCad / FreeCAD versions. Run `curatrix cam` before the check when CK-D10 should see the design
+  output, and build the documents as in the manual's how-to "Review an EE or ME pull request from a
+  local docs build" when the PR changes what they show.
 - For xdmod the check runs the curatrix tests (XD-T1, XD-T2) and the strict manual build. If the PR
   adds or changes a check, also run `.venv/bin/curatrix fixtures`.
 - For each failure, run the printed `reproduce:` command and read the log before you write a finding.

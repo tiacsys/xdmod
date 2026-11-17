@@ -18,10 +18,13 @@ Steps
       curatrix work start feat/latency robarm-syseng robarm-sw
       cd .worktrees/feat/latency
 
-   Builds of the set go to ``build/wt-feat-latency/``.
-
-   .. note:: ``curatrix work`` is being added (task 4.4c). Until it is on ``main``, make the
-      worktrees by hand: ``git -C <repo> worktree add ../.worktrees/<branch>/<repo> -b <branch>``.
+   The set holds the named repos as worktrees on the branch (new branches start from ``main``) and
+   the other framework repos as detached worktrees; shared trees (Zephyr, libraries, ``.venv``) are
+   links to the main checkout. Run every command from the set root, and curatrix as
+   ``.venv/bin/curatrix``. Builds of the set go to ``build/wt-<branch>/`` in the workspace, with
+   ``/`` in the branch name as ``-`` (here ``build/wt-feat-latency/``); from the set root that is
+   ``build/``, through the set's ``build`` link. To add a repo later, run ``work start`` again with
+   that repo. For a stacked PR, ``--base <parent branch>`` starts the branch from the parent.
 
 2. **Author** the change in each repo, run ``curatrix gen`` and ``curatrix ids fix`` where
    needed.
@@ -41,11 +44,16 @@ Steps
    before the repos that use them. Every PR is rebase-merged (:need:`XD-ADR-0043`).
 7. **Bump.** The bump bot in the manifest repo collects the new ``main`` SHAs into one bump PR and
    builds the full set (:need:`XD-ADR-0054`, :need:`XD-ADR-0081`). Merging it moves the pins (:need:`XD-ADR-0033`).
-8. When everything is merged:
+8. **Clean up after the merge.** When every PR of the branch is merged, remove the set from the
+   workspace root:
 
    .. code-block:: sh
 
-      curatrix work done feat/latency
+      curatrix work done feat/latency                   # removes the worktrees, links and folder
+      curatrix work done feat/latency --delete-branch   # also deletes the merged local branches
+
+   ``work done`` refuses while a worktree has uncommitted changes (``--force`` overrides). The
+   main checkouts move to the new pins with ``curatrix update`` once the bump PR is merged.
 
 Roles
 -----
@@ -83,4 +91,6 @@ Pitfalls
 
 - ``west update`` moves repos back to their pins (detached HEAD). On branches use
   ``curatrix update``. Never run either inside a worktree set.
+- ``curatrix work list`` shows the sets of the workspace; a set left behind keeps its build area
+  ``build/wt-<branch>/`` until ``work done``.
 - A ledger conflict after a rebase means two PRs issued the same ID. Rerun ``curatrix ids fix``.

@@ -110,7 +110,16 @@ Steps
       curatrix check robarm-me --stage local
       curatrix check robarm-ee --stage local
 
-6. **Three PRs**, each naming the other two. Merge order: robarm-syseng, then robarm-me, then
+6. **Design output and documents** of the board and the assembly, to see the moved hole in the
+   renderings and drawings (:ref:`howto-design-output`):
+
+   .. code-block:: sh
+
+      curatrix cam robarm-ee <board> && curatrix docs robarm-ee
+      curatrix cam robarm-me <asm> && curatrix docs robarm-me
+
+7. **Three PRs**, each naming the other two. The reviewers build them locally
+   (:ref:`howto-review-a-domain-pr`). Merge order: robarm-syseng, then robarm-me, then
    robarm-ee (the push result). A PR that needs a newer curatrix waits for the xdmod merge and the
    manifest bump.
 
@@ -141,11 +150,13 @@ Checks
 
 - CK-F3: the seat's values in the skeleton's ``Params`` and its LCS equal the ME model.
 - CK-F4b: DRC of the pushed board (the push itself adds no findings on the canary).
-- Planned (ME checks, task 5.25), "board inside its space budget": the seat's restated values
-  equal the budget's; the KiCad outline and ``Edge.Cuts`` circles equal ``width``, ``depth`` and the
-  hole list; each connector named in the budget sits at its position (footprint pin 1, in the
-  board frame); the board model (STEP) placed at the seat's LCS fits the box and does not collide
-  with the direct children of the assembly.
+- CK-F18, "board inside its space budget", exists but is still a skip with its reason (it skips
+  without a board model in the assembly, and reports "not checked yet" with one). Its rules, for
+  iteration 2: the seat's restated values equal the budget's; the KiCad outline and ``Edge.Cuts``
+  circles equal ``width``, ``depth`` and the hole list; each connector named in the budget sits at
+  its position (footprint pin 1, in the board frame); the board model (STEP) placed at the seat's LCS
+  fits the box and does not collide with the direct children of the assembly. Until then, the
+  reviewers compare these values by eye.
 
 Pitfalls
 --------

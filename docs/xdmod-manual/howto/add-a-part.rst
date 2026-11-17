@@ -3,11 +3,89 @@
 Add a FreeCAD part or assembly
 ==============================
 
-Use this guide when you add a FreeCAD part (``ME-PART``) or assembly (``ME-ASM``) that takes part
-in trace links.
+Use this guide when you, in the ME role, add a new assembly (``ME-ASM``) with its skeleton,
+parameters, interfaces, checks, design output and assembly document, or a FreeCAD part
+(``ME-PART``) that takes part in trace links. The example is the canary assembly
+``canary-assembly`` of robarm-me.
 
-Steps
------
+Work on a branch in a worktree set (:ref:`howto-cross-repo-change`):
+
+.. code-block:: sh
+
+   .venv/bin/curatrix work start feat/my-assembly robarm-me
+   cd .worktrees/feat/my-assembly
+
+New assembly
+------------
+
+1. **Assembly def.** Add it to ``model/`` in the ME repo: ``part def <'ME-ASM-NEW-a'> MyAssembly
+   :> <the SYS-EL def>, XdDomain::Assembly``, with a part usage per part or sub-assembly and a port
+   usage per interface (a port def that specializes ``XdDomain::MechanicalPort``, ``ME-PORT``; the
+   usage gives ``x``, ``y``, ``z`` and the angles). The assembly's driving parameters are attributes
+   of its usages, at most ten per top-level assembly (:need:`XD-ADR-0137`). Then:
+
+   .. code-block:: sh
+
+      curatrix ids fix robarm-me
+      curatrix gen model robarm-me
+
+2. **FreeCAD documents and the assembly document.** ``curatrix new asm`` writes them with
+   ``FreeCADCmd`` (:need:`XD-ADR-0137`, :need:`XD-ADR-0146`):
+
+   .. code-block:: sh
+
+      curatrix new asm MyAssembly --repo robarm-me
+
+   It makes ``assemblies/<name>/`` (``<name>`` = the def's name in kebab case) with the top document
+   ``<name>.FCStd`` (an assembly with ``TraceID`` = the def's ``ME-ASM``, a ``Joints`` group and a
+   link to the skeleton) and ``<name>-skeleton.FCStd`` (the spreadsheet ``Params`` and the master
+   sketch ``MasterSketch`` in the part ``Skeleton``), plus the document ``docs/asm-<name>/`` and its
+   registry entry.
+
+3. **Parameters from the model.** Write the model values into ``Params`` (aliases
+   ``<usage>_<attribute>``, e.g. ``canaryPart_length``); parts and the master sketch take their
+   dimensions from there by expressions:
+
+   .. code-block:: sh
+
+      curatrix gen freecad-params robarm-me
+
+   Change a value in the model and run this command again; never type it into ``Params``.
+
+4. **Parts.** Own parts of the assembly go to ``assemblies/<name>/parts/``, shared parts to
+   ``parts/``, bought parts and fasteners to ``lib/`` (a fastener has a ``Standard`` property such as
+   ``ISO 4762 M3x10, A2``). Each part gets a ``TraceID`` (``ME-PART``, see "New part" below), an own
+   part a ``Material``, a bought part ``Manufacturer`` and ``MPN``. A printed part names its print
+   profile in ``PrintProfile`` (a file in ``print/``) and has one LCS with ``Role = version-emboss``
+   where ``curatrix cam`` embosses the version (CK-F19).
+
+5. **Links and interfaces.** Add one FreeCAD link per usage of the model to the top document; a part
+   that exists only in some configurations names them in the link's ``Configs`` property (on the
+   link, not on the part, :need:`XD-ADR-0138`). Every port usage is an LCS in the skeleton named
+   ``LCS_<usage>`` with a ``Port`` property = its ``ME-PORT`` ID; its placement comes from
+   ``Params``.
+
+6. **Regenerate and check.** Write the CAD needs and the semantic JSON, then run the checks with
+   CAD content:
+
+   .. code-block:: sh
+
+      curatrix gen all robarm-me
+      curatrix check robarm-me --stage local
+
+   The FreeCAD checks (CK-F4c recompute, CK-F16 valid solids, CK-F17 collisions between the direct
+   children, CK-F18 boards in their space budget) run only locally. Accept a finding that is
+   intended in ``assemblies/<name>/accepted.yaml`` (same format as the EE file,
+   :need:`XD-ADR-0126`): **agents only propose** the entry, the ME engineer or the owner accepts it
+   with an own commit carrying ``Accepted-by: <name>``.
+
+7. **Design output and the document.** ``curatrix cam robarm-me <name>``, then ``curatrix docs
+   robarm-me`` (:ref:`howto-design-output`). The PR names the proposed ``accepted.yaml`` entries;
+   the reviewer follows :ref:`howto-review-a-domain-pr`.
+
+New part
+--------
+
 
 1. Start FreeCAD with the launcher. It uses a workspace-local config that saves ``.FCStd`` files
    **uncompressed** and points at the pinned parts library (:need:`XD-ADR-0056`, :need:`XD-ADR-0080`):
@@ -41,6 +119,12 @@ Checks
 - :need:`XD-CHECK-0025`: the ``.FCStd`` is stored uncompressed (:need:`XD-RULE-0039`).
 - :need:`XD-CHECK-0019`: ``cad-needs.json`` matches the FreeCAD files.
 - :need:`XD-CHECK-0020`: the generated files record the tool versions that made them.
+- CK-F14, CK-F15: one document per assembly def and back; FreeCAD links per part equal the usages.
+- CK-F3: the skeleton's ``Params`` and the LCS placements equal the ME model.
+- CK-F4c, CK-F16, CK-F17, CK-F18 (local, FreeCAD): recompute, valid solids, collisions, boards in
+  their space budget; CK-F9 the acceptance of their findings.
+- CK-F12, CK-F19: Manufacturer and MPN or ``Material``; one version mark per printed part.
+- CK-D10 (local): the ``curatrix cam`` output of the current commit exists.
 
 For review, ``git diff`` shows ``.FCStd`` changes as semantic JSON through the textconv driver
 that the bootstrap installs. GitHub does not, so reviewers read the committed JSON.
@@ -136,23 +220,9 @@ bought part without them and about an own part without ``Material`` (:need:`XD-R
 Design output and renderings
 ----------------------------
 
-``curatrix cam`` writes the design output of a top-level assembly under
-``build/<repo>/cam/<assembly>/<version>/`` (:need:`XD-ADR-0143`): STEP, the printed parts, the
-drawing, the exploded view, the BOM and four renderings per variant
-(``renderings/front|top|right|iso.png``):
-
-.. code-block:: sh
-
-   curatrix cam robarm-me canary-assembly                # Blender if installed, else the fallback
-   curatrix cam robarm-me canary-assembly --no-blender   # always the renderer without Blender
-
-With Blender on the machine the renderings come from Blender (Cycles on the CPU with half the
-cores, about 35 seconds for the four views of the canary on a 16-core machine); without it from a plain-Python renderer in ``FreeCADCmd``
-(:need:`XD-ADR-0147`). ``cam.json`` says which (``renderings.method``: ``blender`` or ``zbuffer``).
-Blender is optional and not pinnable, so these images are local only; CI never has Blender
-(:need:`XD-ADR-0148`). Run Blender only through curatrix (``curatrix run -- blender``,
-``curatrix launch blender``) or the ``.venv/bin/blender`` shim: they add ``--factory-startup`` and
-keep its user files in ``.xdmod/blender/``. ``curatrix doctor`` shows the Blender version.
+``curatrix cam robarm-me <name>`` writes STEP, the printed parts, the drawing, the exploded view, the
+BOM, the mass and four renderings per variant; the renderings come from Blender when it is
+installed, else from the plain-Python fallback. See :ref:`howto-design-output`.
 
 Pitfalls
 --------
@@ -160,3 +230,6 @@ Pitfalls
 - ``.FCStd`` files can't be merged. On a conflict, take one side and redo the other change.
 - An unchanged save still changes the file. The pre-commit hook warns when a ``.FCStd`` changed
   but its semantic JSON didn't.
+- Open an assembly's skeleton before its top document; opened through the top document it loads
+  only partly. ``gen freecad-params`` does this for you.
+- Never run FreeCAD or Blender outside curatrix or its ``.venv/bin`` shims (:need:`XD-ADR-0145`).

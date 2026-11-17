@@ -15,9 +15,11 @@ workspace root.
    add-a-view
    add-a-pcba
    add-a-part
+   design-output
    add-a-configuration
    add-a-test
    cross-repo-change
    co-design-change
+   review-a-domain-pr
    work-as-an-agent
    make-a-baseline
