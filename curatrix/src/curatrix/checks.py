@@ -106,7 +106,7 @@ BUILTIN = [
     ("CK-F8", "ERC and DRC severities equal the new-pcba template",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects", False, "c_severities"),
     ("CK-F9", "accepted.yaml well formed; entries and KiCad exclusions accepted by a human (Accepted-by)",
-     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects", False, "c_acceptance"),
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.acceptance", False, "c_acceptance"),
     ("CK-F10", "jobset rules: no Execute Command, outputs under ${XD_CAM_OUT}, variant jobs = template jobs",
      _lv({"local": "warning", "pr": "warning"}), "cad.projects", False, "c_jobset"),
     ("CK-F11", "XD_VERSION in a title-block comment of every sheet and board and in a silkscreen text",
@@ -123,6 +123,14 @@ BUILTIN = [
      _lv({"local": "warning", "baseline": "warning"}), "cad.projects", True, "c_bom_kicad"),
     ("CK-D10", "the local curatrix cam output of the current commit exists for every board",
      _lv({"local": "warning", "baseline": "warning"}), "cad.projects", True, "c_cam_output"),
+    ("CK-F4c", "FreeCAD documents recompute without errors (FreeCADCmd); errors accepted (Accepted-by)",
+     _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_recompute"),
+    ("CK-F16", "every part shape (ME-PART) is valid solids (FreeCADCmd)",
+     _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_solids"),
+    ("CK-F17", "no overlap between direct children of an assembly, per variant; joined may touch; fasteners left out",
+     _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_collisions"),
+    ("CK-F18", "board models inside their space budget (skip without a board model)",
+     _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_space_budget"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
     ("CK-H2", "no build output inside the repo", _lv({"local": "error", "pr": "error"}), None, False, "c_hygiene_build"),
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
@@ -140,7 +148,8 @@ NEED_TEXT = {"model.variants": "model.variants: true", "model.upstream": "model.
              "cad.projects": "cad.projects", "cad.projects+model": "cad.projects and a model section",
              "cad.connectors": "cad.projects and cad.connectors",
              "cad.connectors+model": "cad.projects, cad.connectors and a model section",
-             "cad.freecad+model": "cad.freecad and a model section"}
+             "cad.freecad+model": "cad.freecad and a model section", "cad.freecad": "cad.freecad",
+             "cad.acceptance": "cad.projects or cad.freecad"}
 
 
 def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
@@ -164,6 +173,11 @@ def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
     if need in ("cad.connectors", "cad.connectors+model"):
         c = cfg.section("cad") or {}
         return bool(c.get("projects") and c.get("connectors")) and (need == "cad.connectors" or cfg.section("model") is not None)
+    if need == "cad.freecad":
+        return bool((cfg.section("cad") or {}).get("freecad"))
+    if need == "cad.acceptance":
+        c = cfg.section("cad") or {}
+        return bool(c.get("projects") or c.get("freecad"))
     if need == "cad.freecad+model":
         return bool((cfg.section("cad") or {}).get("freecad")) and cfg.section("model") is not None
     if need == "cad.projects+model":
@@ -532,6 +546,55 @@ def c_acceptance(ctx: Ctx, r: Result):
             if not ok:
                 r.findings.append(f"{rel_pro}: {kind.upper()} exclusion {key.split('|', 1)[0]} ({comment or 'no comment'}): "
                                   f"proposal, not accepted ({why})")
+    if (ctx.cfg.section("cad") or {}).get("freecad"):          # ME: assemblies/<name>/accepted.yaml (task 5.25)
+        from curatrix import mechecks
+        per, errs = mechecks.folder_entries(ctx.cfg, acc)
+        r.findings += errs
+        for folder, entries in sorted(per.items()):
+            r.findings += [f"{folder}/{ercdrc.ACCEPTED} {e.label()}: proposal, not accepted ({e.why})"
+                           for e in entries if e.status != "accepted"]
+
+
+def _me(ctx: Ctx, r: Result, check: str):
+    """CK-F4c, CK-F16, CK-F17, CK-F18 (task 5.25, XD-ADR-0126): one FreeCADCmd run for all four
+    (mechecks), findings against assemblies/<name>/accepted.yaml; a report per check."""
+    from curatrix import ercdrc, mechecks
+    out = ctx.out / "me-checks"
+    out.mkdir(parents=True, exist_ok=True)
+    try:
+        res = mechecks.run(ctx.ws, ctx.cfg, out)
+    except mechecks.MeCheckError as e:
+        r.level = "error"
+        r.findings = [str(e)]
+        return
+    if check == "CK-F18" and not mechecks.boards(res):
+        r.status = "skip"
+        r.findings = ["no board model in any assembly (a link to an object with an EE-PCBA TraceID): nothing to check"]
+        return
+    entries, _ = mechecks.folder_entries(ctx.cfg, ercdrc.Acceptors(ctx.repo.path))   # format: CK-F9
+    o = mechecks.evaluate(ctx.cfg, check, mechecks.findings(ctx.cfg, res, check), entries)
+    r.findings = o.problems
+    rep = out / f"{check}.txt"
+    rep.write_text("".join(f"{x}\n" for x in o.problems + o.listed) or "no findings\n")
+    r.log = ctx.ws.rel(rep)
+
+
+def c_recompute(ctx: Ctx, r: Result):
+    _me(ctx, r, "CK-F4c")
+
+
+def c_solids(ctx: Ctx, r: Result):
+    _me(ctx, r, "CK-F16")
+
+
+def c_collisions(ctx: Ctx, r: Result):
+    _me(ctx, r, "CK-F17")
+
+
+def c_space_budget(ctx: Ctx, r: Result):
+    _me(ctx, r, "CK-F18")
+
+
 def c_jobset(ctx: Ctx, r: Result):
     """CK-F10 (XD-ADR-0142): the jobset of every pcba/ project against the CAM rules and the shared
     template (plain Python)."""

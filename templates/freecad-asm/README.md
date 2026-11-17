@@ -9,6 +9,7 @@ code (FreeCADCmd exits 0 when a script raises).
 | File | What |
 |---|---|
 | `new-asm.py` | makes `<name>-skeleton.FCStd` (App::Part `Skeleton` with the master sketch `MasterSketch`, spreadsheet `Params`) and the top document `<name>.FCStd` (`Assembly::AssemblyObject` `Assembly` with `TraceID` = the def's `ME-ASM`, a `Joints` group, an `App::Link` to the skeleton) |
+| `check-asm.py` | not a template: the `FreeCADCmd` script of the ME checks CK-F4c, CK-F16, CK-F17, CK-F18 (task 5.25, `mechecks.py`); opens every document, recomputes, never saves, writes a result file |
 | `doc/` | the `asm-<name>` document skeleton (`__NAME__`, `__TITLE__`, `__ID__`, `__TITLE_RST__`); `new asm` also adds its entry to `docs/documents.yaml` |
 
 The skeleton's file name carries the assembly name because FreeCAD names a document after its

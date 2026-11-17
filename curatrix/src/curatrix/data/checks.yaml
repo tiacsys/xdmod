@@ -154,7 +154,23 @@ checks:
   CK-F9:
     need: XD-CHECK-0043
     enforces: [XD-RULE-0051]
-    description: "accepted.yaml entries are well formed (check, rule, items as designators or all, reason); each entry and each KiCad exclusion is accepted (newest commit with Accepted-by, no agent mark, nothing else changed) or reported as a proposal."
+    description: "accepted.yaml entries (pcba/<name>/ and proto/<name>/, and assemblies/<name>/ in an ME repo) are well formed (check, rule, items as designators, part names or all, reason); each entry and each KiCad exclusion is accepted (newest commit with Accepted-by, no agent mark, nothing else changed) or reported as a proposal."
+  CK-F4c:
+    need: XD-CHECK-0052
+    enforces: [XD-RULE-0061]
+    description: "Every FreeCAD document of cad.freecad recomputes in FreeCADCmd (each assembly's skeleton, then its top document, then the others; nothing saved) without an invalid object; the exploded-view objects of the Assembly workbench, whose proxy cannot load in FreeCADCmd, are left out. An error passes only when accepted in assemblies/<name>/accepted.yaml (rule recompute, items <document stem>#<object>) by a human commit with Accepted-by (local, needs FreeCAD)."
+  CK-F16:
+    need: XD-CHECK-0053
+    enforces: [XD-RULE-0061]
+    description: "Every object with an ME-PART TraceID has a valid shape of solids: Part check valid, at least one solid, every solid valid with a volume, no face or shell outside the solids; else a finding unless accepted (rule solid) (local, needs FreeCAD)."
+  CK-F17:
+    need: XD-CHECK-0054
+    enforces: [XD-RULE-0062]
+    description: "The direct children (links in the group) of each object with an ME-ASM TraceID overlap by at most 0.001 mm3 (boolean common), per variant (Configs on the links); parts joined by an assembly joint may touch (0.1 mm3 for numerical noise); the skeleton link and library fasteners (lib/ objects with a Standard property) are left out; other overlaps need an accepted entry (rule overlap, items the two link names) (local, needs FreeCAD)."
+  CK-F18:
+    need: XD-CHECK-0055
+    enforces: [XD-RULE-0062]
+    description: "Each board model in an assembly (a link to an object with an EE-PCBA TraceID) stays inside its SYS-IF space budget; the budget's form comes from the co-design task 5.28, so a board model is reported as not checked yet, and without a board model the check is skipped with its reason (local, needs FreeCAD)."
   CK-F10:
     need: XD-CHECK-0044
     enforces: [XD-RULE-0053]
