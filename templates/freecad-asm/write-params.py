@@ -47,6 +47,10 @@ try:
     # the skeleton partially (without Params); it depends on no other document
     sk = App.openDocument(os.path.realpath(os.environ["XD_SKELETON"]))
     top = App.openDocument(os.environ["XD_TOP"])
+    # a part opened only through the top's link loads partially (only the linked object and what it
+    # needs): load it fully, as the checks do, so its recompute and save see every object
+    for d in [d for d in App.listDocuments().values() if getattr(d, "Partial", False)]:
+        d.restore()
     partial = [d.Name for d in App.listDocuments().values() if getattr(d, "Partial", False)]
     if partial:
         raise RuntimeError(f"partially loaded documents: {partial}")
