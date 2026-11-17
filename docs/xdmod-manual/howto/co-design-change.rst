@@ -59,19 +59,17 @@ Steps
       curatrix gen freecad-params robarm-me      # Params, the sketch BoardOutline follows
       curatrix gen all robarm-me                 # semantic JSON of the skeleton
 
-4. **Push** (into robarm-ee), always on a copy under ``build/``. Get StepUp once, at its pin
-   (easyw/kicadStepUpMod, commit ``3db98be23aae40413eab041f19de5ab2e168157e``), next to FreeCAD,
-   not into FreeCAD's ``Mod/``, until ``tools.yaml`` holds the pin and ``curatrix update`` clones it:
-
-   .. code-block:: sh
-
-      git clone https://github.com/easyw/kicadStepUpMod .xdmod/stepup/kicadStepUpMod
-      git -C .xdmod/stepup/kicadStepUpMod checkout 3db98be23aae40413eab041f19de5ab2e168157e
-      mkdir -p .xdmod/stepup/home
+4. **Push** (into robarm-ee), always on a copy under ``build/``. StepUp (easyw/kicadStepUpMod) is
+   a curated tool in ``xdmod/tools.yaml``, pinned by commit
+   (``3db98be23aae40413eab041f19de5ab2e168157e``): ``curatrix update`` installs it into
+   ``.xdmod/stepup/kicadStepUpMod`` (next to FreeCAD, not into FreeCAD's ``Mod/``) and creates the
+   sandbox ``HOME`` ``.xdmod/stepup/home``; ``curatrix env`` exports both as ``XD_STEPUP`` and
+   ``XD_STEPUP_HOME``; ``curatrix doctor`` fails when StepUp is missing or not at its pin. A clone
+   made by hand at the pin (the way before) is adopted, not downloaded again.
 
    **Licence gap:** the repo has no ``LICENSE`` file; AGPL-3.0 is only claimed in its README and
-   ``package.xml``. Record it in the StepUp licence record (task 5.29) before StepUp becomes a
-   pinned tool.
+   ``package.xml``. ``tools.yaml`` records the gap. We call StepUp in its own FreeCAD process and
+   never import it into curatrix or copy its code into a repo.
 
    Copy the skeleton and the ``.kicad_pcb`` (with its ``.kicad_pro`` and library tables) to
    ``build/<area>/co-design/`` and run the StepUp push (``HOME`` only for this process under
@@ -80,8 +78,8 @@ Steps
    .. code-block:: sh
 
       eval "$(.venv/bin/curatrix env)"
-      curatrix run --use freecad -- env HOME=$PWD/.xdmod/stepup/home QT_QPA_PLATFORM=offscreen \
-        XD_STEPUP=$PWD/.xdmod/stepup/kicadStepUpMod XD_BOARD=$PWD/build/<area>/co-design/<board>.kicad_pcb \
+      curatrix run --use freecad -- env HOME="$XD_STEPUP_HOME" QT_QPA_PLATFORM=offscreen \
+        XD_BOARD=$PWD/build/<area>/co-design/<board>.kicad_pcb \
         XD_SKELETON=$PWD/build/<area>/co-design/<asm>-skeleton.FCStd XD_RESULT=$PWD/build/<area>/co-design/push.json \
         FreeCAD xdmod/templates/codesign/stepup-push.py
 

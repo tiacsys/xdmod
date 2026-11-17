@@ -3,7 +3,8 @@
 # COPY of a .kicad_pcb. FreeCAD GUI binary offscreen (StepUp imports FreeCADGui), HOME sandboxed for
 # this process only (StepUp writes ~/ksu-config.ini). Steps and run line:
 # docs/xdmod-manual/howto/co-design-change.rst. Inputs by environment variables:
-#   XD_STEPUP   the StepUp clone, pinned by commit (.xdmod/stepup/kicadStepUpMod)
+#   XD_STEPUP   StepUp at its pin (tools.yaml tool `stepup`, installed by `curatrix update` into
+#               .xdmod/stepup/kicadStepUpMod; exported by `curatrix env`)
 #   XD_BOARD    the .kicad_pcb COPY to push into (never a repo file)
 #   XD_SKELETON the skeleton .FCStd (a copy is fine); XD_SKETCH the sketch (default BoardOutline)
 #   XD_RESULT   JSON result file; success only by this file (the script never raises)
@@ -62,7 +63,10 @@ def anchor(text):
 
 
 try:
-    sys.path.insert(0, os.environ["XD_STEPUP"])
+    stepup = os.environ.get("XD_STEPUP")
+    if not stepup or not os.path.isfile(os.path.join(stepup, "kicadStepUptools.py")):
+        raise RuntimeError(f"no StepUp in XD_STEPUP={stepup!r}: run `curatrix update` and `eval \"$(curatrix env)\"`")
+    sys.path.insert(0, stepup)
     say("GuiUp", App.GuiUp, "HOME", os.environ.get("HOME"), "UserConfig", App.getUserConfigDir())
     import kicadStepUptools as ksu
     out["stepup_version"] = getattr(ksu, "___ver___", "?")

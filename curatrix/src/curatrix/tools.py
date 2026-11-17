@@ -7,12 +7,14 @@ all active repos; one tool name with two different versions is an error. Format 
     tools:                      # installed into <ws>/.venv/<location> with sha256 checks
       - name: jdk
         version: "21.0.13+9"
-        kind: tarball           # tarball | zip | conda | file | npm
+        kind: tarball           # tarball | zip | conda | file | npm | git
         url: https://...
-        sha256: d7f5...         # required for every kind except npm
-        location: opt/jdk       # relative to <ws>/.venv
+        sha256: d7f5...         # required for every kind except npm and git
+        commit: 3db9...         # git only, instead of sha256: the full commit hash (40 hex digits)
+        location: opt/jdk       # relative to <ws>/.venv; `.xdmod/...` = relative to the workspace root
         strip: 1                # tarball: leading path components to drop (default 1)
-        subdir: share/...       # conda / zip: copy only this folder of the package
+        subdir: share/...       # tarball / zip / conda / git: copy only this folder
+        licence: MIT            # optional: the licence, and any gap in it (shown by `doctor`)
         links: {jshell: bin/jshell}   # symlinks <ws>/.venv/bin/<name> -> <location>/<path>
         env: {JAVA_HOME: "{location}"}  # exported by `curatrix env`
         roles: [sw]             # optional: install only for these roles
@@ -25,7 +27,13 @@ all active repos; one tool name with two different versions is an error. Format 
         roles: [ee]
 
 An installed tool leaves a stamp ``<ws>/.venv/opt/.xd-stamps/<name>.json`` with name, version,
-sha256. `doctor` compares the stamps with tools.yaml.
+sha256 (or commit). `doctor` compares the stamps with tools.yaml.
+
+``kind: git`` pins by commit, which is content-addressed: curatrix fetches exactly that commit into
+a bare cache repo (``<ws>/.xdmod/cache/git/<name>.git``), checks that the fetched object is that
+commit, and extracts its tree (``git archive``) into the location. No checkout, no remote in the
+location. A location that is already a git checkout at the pinned commit (made by hand before the
+tool was curated) is adopted and stamped, not replaced.
 """
 from __future__ import annotations
 
@@ -43,7 +51,8 @@ import yaml
 from curatrix import limits
 from curatrix.ws import Workspace
 
-KINDS = ("tarball", "zip", "conda", "file", "npm")
+KINDS = ("tarball", "zip", "conda", "file", "npm", "git")
+STATE_PREFIX = ".xdmod/"       # a location under the workspace state instead of .venv
 _VERSION = re.compile(r"(\d+\.\d+(?:\.\d+)?)")
 
 
@@ -62,6 +71,8 @@ class Tool:
     strip: int = 1
     subdir: str = ""
     package: str = ""
+    commit: str = ""          # kind git: the pinned commit (instead of sha256)
+    licence: str = ""         # the licence and any gap in it (doctor shows it)
     links: dict = field(default_factory=dict)
     env: dict = field(default_factory=dict)
     roles: list = field(default_factory=list)
@@ -70,10 +81,36 @@ class Tool:
     def __post_init__(self):
         if self.kind not in KINDS:
             raise ToolsError(f"{self.source}: tool {self.name}: kind must be one of {KINDS}")
-        if self.kind != "npm" and not re.fullmatch(r"[0-9a-f]{64}", self.sha256 or ""):
+        if self.kind == "git":
+            if not re.fullmatch(r"[0-9a-f]{40}", self.commit or ""):
+                raise ToolsError(f"{self.source}: tool {self.name}: kind git needs commit (the full hash, 40 hex digits)")
+            if self.sha256:
+                raise ToolsError(f"{self.source}: tool {self.name}: kind git is pinned by commit, not sha256")
+        elif self.commit:
+            raise ToolsError(f"{self.source}: tool {self.name}: commit is only for kind git")
+        elif self.kind != "npm" and not re.fullmatch(r"[0-9a-f]{64}", self.sha256 or ""):
             raise ToolsError(f"{self.source}: tool {self.name}: sha256 (64 hex digits) is required")
         if self.kind != "npm" and not self.url:
             raise ToolsError(f"{self.source}: tool {self.name}: url is required")
+        if self.subdir and self.kind not in ("tarball", "zip", "conda", "git"):
+            raise ToolsError(f"{self.source}: tool {self.name}: subdir is not supported for kind {self.kind}")
+        loc = Path(self.location)
+        if loc.is_absolute() or ".." in loc.parts or self.location.rstrip("/") == STATE_PREFIX.rstrip("/"):
+            raise ToolsError(f"{self.source}: tool {self.name}: location must be a folder below .venv or .xdmod/")
+
+    def path(self, ws: Workspace) -> Path:
+        """Where the tool is installed: <ws>/.venv/<location>, or <ws>/.xdmod/... for a state location."""
+        if self.location.startswith(STATE_PREFIX):
+            return ws.state / self.location[len(STATE_PREFIX):]
+        return ws.venv / self.location
+
+    def shown(self) -> str:
+        """The location as the workspace-relative path people see."""
+        return self.location if self.location.startswith(STATE_PREFIX) else f".venv/{self.location}"
+
+    @property
+    def pin(self) -> str:
+        return self.commit[:12] if self.kind == "git" else self.version
 
 
 @dataclass
@@ -205,10 +242,23 @@ def stamp_of(ws: Workspace, name: str) -> dict | None:
     return json.loads(p.read_text()) if p.is_file() else None
 
 
+def git_head(path: Path, ws: Workspace | None = None) -> str | None:
+    """The commit of a git checkout whose top folder is `path`, else None."""
+    if not (path / ".git").exists():
+        return None
+    r = limits.run(["git", "-C", str(path), "rev-parse", "HEAD"], "git", ws, capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
 def installed_ok(ws: Workspace, t: Tool) -> bool:
     s = stamp_of(ws, t.name)
-    return bool(s) and s.get("version") == t.version and s.get("sha256", "") == t.sha256 \
-        and (ws.venv / t.location).exists()
+    if not (s and s.get("version") == t.version and s.get("sha256", "") == t.sha256
+            and s.get("commit", "") == t.commit and t.path(ws).exists()):
+        return False
+    if t.kind == "git":                      # an adopted checkout must still be at the pin
+        head = git_head(t.path(ws), ws)
+        return head is None or head == t.commit
+    return True
 
 
 # ------------------------------------------------------------------ installer
@@ -245,8 +295,40 @@ def fetch(ws: Workspace, t: Tool) -> Path:
 def write_stamp(ws: Workspace, t: Tool) -> None:
     sp = stamp_path(ws, t.name)
     sp.parent.mkdir(parents=True, exist_ok=True)
-    sp.write_text(json.dumps({"name": t.name, "version": t.version, "sha256": t.sha256, "source": t.source},
-                             indent=2) + "\n")
+    data = {"name": t.name, "version": t.version, "sha256": t.sha256, "source": t.source}
+    if t.commit:
+        data["commit"] = t.commit
+    sp.write_text(json.dumps(data, indent=2) + "\n")
+
+
+def fetch_git(ws: Workspace, t: Tool, into: Path) -> None:
+    """Exactly the pinned commit into a bare cache repo; its tree (or subdir) extracted into `into`."""
+    cache = ws.state / "cache" / "git" / f"{t.name}.git"
+    run = lambda *a: limits.run(["git", *a], "install", ws, capture_output=True, text=True)  # noqa: E731
+    if not (cache / "HEAD").exists():
+        cache.mkdir(parents=True, exist_ok=True)
+        if run("init", "--bare", "-q", str(cache)).returncode:
+            raise ToolsError(f"{t.name}: git init of the cache failed")
+    have = run("-C", str(cache), "rev-parse", "--verify", "--quiet", f"{t.commit}^{{commit}}")
+    if have.returncode or have.stdout.strip() != t.commit:
+        r = run("-C", str(cache), "fetch", "--quiet", "--depth", "1", t.url, t.commit)
+        if r.returncode:
+            raise ToolsError(f"{t.name}: git fetch of {t.commit} from {t.url} failed: {r.stderr.strip()}")
+        have = run("-C", str(cache), "rev-parse", "--verify", "--quiet", f"{t.commit}^{{commit}}")
+        if have.returncode or have.stdout.strip() != t.commit:
+            raise ToolsError(f"{t.name}: {t.url} did not give commit {t.commit}")
+    tar = into.parent / f"{t.name}.tar"
+    args = ["-C", str(cache), "archive", "--format=tar", "-o", str(tar), t.commit]
+    if t.subdir:
+        args.append(t.subdir.strip("/"))
+    r = run(*args)
+    if r.returncode:
+        raise ToolsError(f"{t.name}: git archive failed: {r.stderr.strip()}")
+    into.mkdir(parents=True, exist_ok=True)
+    strip = len(Path(t.subdir.strip("/")).parts) if t.subdir else 0
+    if limits.run(["tar", "-xf", str(tar), "-C", str(into), f"--strip-components={strip}"], "install", ws).returncode:
+        raise ToolsError(f"{t.name}: unpacking failed")
+    tar.unlink()
 
 
 def install(ws: Workspace, t: Tool, log=print, adopt: bool = False) -> None:
@@ -255,12 +337,16 @@ def install(ws: Workspace, t: Tool, log=print, adopt: bool = False) -> None:
     if installed_ok(ws, t):
         log(f"  ok       {t.name} {t.version}")
         return
-    loc = ws.venv / t.location
-    if adopt and loc.exists() and stamp_of(ws, t.name) is None:
-        log(f"  adopt    {t.name} {t.version} (already in .venv/{t.location}; stamped, not re-installed)")
+    loc = t.path(ws)
+    if adopt and loc.exists() and stamp_of(ws, t.name) is None and t.kind != "git":
+        log(f"  adopt    {t.name} {t.version} (already in {t.shown()}; stamped, not re-installed)")
         write_stamp(ws, t)
         return
-    log(f"  install  {t.name} {t.version} -> .venv/{t.location}")
+    if t.kind == "git" and not t.subdir and git_head(loc, ws) == t.commit:
+        log(f"  adopt    {t.name} {t.version} (a git checkout at {t.commit[:12]} in {t.shown()}; stamped)")
+        write_stamp(ws, t)
+        return
+    log(f"  install  {t.name} {t.version} -> {t.shown()}")
     if t.kind == "npm":
         prefix = loc
         prefix.mkdir(parents=True, exist_ok=True)
@@ -268,6 +354,14 @@ def install(ws: Workspace, t: Tool, log=print, adopt: bool = False) -> None:
                         f"{t.package or t.name}@{t.version}"], "install", ws, capture_output=True, text=True)
         if r.returncode:
             raise ToolsError(f"{t.name}: npm install failed:\n{r.stdout}{r.stderr}")
+    elif t.kind == "git":
+        with tempfile.TemporaryDirectory(dir=_cache(ws).parent) as td:
+            content = Path(td) / "tree"
+            fetch_git(ws, t, content)
+            if loc.exists():
+                shutil.rmtree(loc)
+            loc.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(content, loc, symlinks=True)
     else:
         src = fetch(ws, t)
         if t.kind == "file":
@@ -280,7 +374,7 @@ def install(ws: Workspace, t: Tool, log=print, adopt: bool = False) -> None:
                     r = limits.run(["tar", "-xf", str(src), "-C", str(td), f"--strip-components={t.strip}"], "install", ws)
                     if r.returncode:
                         raise ToolsError(f"{t.name}: unpacking failed")
-                    content = td
+                    content = td / t.subdir if t.subdir else td
                 elif t.kind == "zip":
                     with zipfile.ZipFile(src) as z:
                         z.extractall(td)

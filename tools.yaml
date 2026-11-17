@@ -1,6 +1,7 @@
 # Non-pip tools that xdmod's own tooling needs (D19). pip packages: requirements.txt.
 # Format: xdmod/curatrix/README.md ("tools.yaml"). Installed by `curatrix bootstrap` /
-# `curatrix update` into <ws>/.venv/<location>, every download checked against its sha256.
+# `curatrix update` into <ws>/.venv/<location> (or .xdmod/<...>), every download checked against its
+# sha256, a git tool against its commit.
 # `curatrix doctor` fails when an installed tool or a system tool has another version.
 tools:
   - name: jdk
@@ -47,6 +48,22 @@ tools:
     sha256: 4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d
     location: opt/gh
     links: {gh: bin/gh}
+
+  - name: stepup
+    # KiCad StepUp (easyw/kicadStepUpMod), the co-design push FreeCAD -> KiCad (XD-ADR-0134). Pinned
+    # by commit (no release tags); version = ___ver___ of kicadStepUptools.py at that commit. Not a
+    # FreeCAD addon here: not in FreeCAD's Mod/, put on sys.path by our scripts. Licence gap (owner
+    # decision Q4, xdmod#69): AGPL-3.0 is only claimed (README, package.xml names a LICENSE file
+    # that the repo does not have). We call it in its own FreeCAD process and never import it into
+    # curatrix or copy its code into our repos.
+    version: "13.1.7"
+    kind: git
+    url: https://github.com/easyw/kicadStepUpMod
+    commit: 3db98be23aae40413eab041f19de5ab2e168157e
+    location: .xdmod/stepup/kicadStepUpMod
+    licence: "AGPL-3.0 claimed, no LICENSE file (gap); called, never imported"
+    env: {XD_STEPUP: "{location}", XD_STEPUP_HOME: "{state}/stepup/home"}
+    roles: [ee, ee3d, me, integration, full]
 
 # Tools used from the machine (D19). Exact pins only for tools that shape committed output
 # (views: firefox; the tools above); minimum versions for the rest, so that a rolling distro's

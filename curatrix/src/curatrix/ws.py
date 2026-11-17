@@ -223,7 +223,8 @@ class Workspace:
         try:
             for t in tools.load_all(self).tools.values():
                 for k, v in (t.env or {}).items():
-                    e[k] = v.replace("{location}", str(self.venv / t.location)).replace("{venv}", str(self.venv))
+                    e[k] = (v.replace("{location}", str(t.path(self))).replace("{venv}", str(self.venv))
+                            .replace("{state}", str(self.state)))
         except Exception:  # noqa: BLE001 - env must work even with a broken tools.yaml
             pass
         path_parts = [str(self.venv / "bin")]
