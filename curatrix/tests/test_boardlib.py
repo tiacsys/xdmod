@@ -2,13 +2,15 @@
 guard of `curatrix cam --library`, the checks.yaml keys. Plain Python; the FreeCAD files are minimal
 zips like those of `curatrix cam --board-model`."""
 import json
+import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
 from curatrix import boardlib, checkcfg, checks
 from curatrix.ws import Repo, Workspace
-from helpers import git_init
+from helpers import FIXTURES, git_init
 from test_meassemblies import _prop, fcstd
 
 TID = "EE-PCBA-0001"
@@ -336,3 +338,90 @@ def test_f20_accepts_the_coloured_layout(tmp_path):
     # CK-F20 does not ask for colours: an old single-compound file stays valid
     board_file(ctx.repo.path / "boards/canary/canary-v0.1.0-alt.FCStd", "canary/v0.1.0", "alt", commit=sha)
     assert _run(ctx, checks.c_board_library) == []
+
+
+def test_board_colours_refuses_unknown_material_versions(tmp_path):
+    import zipfile
+    fc = coloured_board_file(tmp_path / "canary-v0.1.0.FCStd", "canary/v0.1.0")
+    with zipfile.ZipFile(fc) as z:
+        entries = {n: z.read(n) for n in z.namelist()}
+    entries["GuiDocument.xml"] = entries["GuiDocument.xml"].replace(b'file="ShapeAppearance1" version="3"',
+                                                                    b'file="ShapeAppearance1" version="4"')
+    with zipfile.ZipFile(fc, "w", zipfile.ZIP_STORED) as z:
+        for n, data in entries.items():
+            z.writestr(n, data)
+    with pytest.raises(ValueError, match="material list version '4'"):
+        boardlib.board_colours(fc)
+
+
+def _stub_export(tmp_path, monkeypatch, write, result):
+    """export() with kicad-cli and FreeCAD stubbed: `write(path)` makes the board file the import would."""
+    from curatrix import limits, newasm
+    root = tmp_path / "ws"
+    ee, _ = ee_repo(root)
+    (ee / "pcba" / "canary" / "canary.kicad_pcb").write_text("(kicad_pcb)")
+    ws = Workspace(root)
+
+    def kicad(argv, use, ws_, **kw):
+        out = argv[argv.index("-o") + 1]
+        open(out, "w").write("ISO-10303-21;")
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    def freecad(ws_, script, env, res, use="freecad", exe="FreeCADCmd"):
+        assert exe == "FreeCAD" and script.name == "import-step.py"
+        write(Path(env["XD_OUT"]))
+        return result
+    monkeypatch.setattr(limits, "run", kicad)
+    monkeypatch.setattr(newasm, "run_script", freecad)
+    return boardlib.export(ws, Repo("ee", ee, "ee"), type("C", (), {"area": "ee"})(), _Pr(ee / "pcba" / "canary"),
+                           log=lambda *_: None)
+
+
+RESULT = {"ok": True, "solids": 2, "bbox_mm": [30.0, 20.0, 2.0], "models": 2, "links": 2, "copies": 0,
+          "components": [{"name": "R1", "label": "R1", "model": "R_0603", "colours": [[0.824, 0.82, 0.78]],
+                          "face_colours": True},
+                         {"name": "PCB", "label": "PCB", "model": "canary_PCB", "colours": [[0.314, 0.486, 0.412]],
+                          "face_colours": True}]}
+
+
+def test_export_records_components_and_colours(tmp_path, monkeypatch):
+    rec = _stub_export(tmp_path, monkeypatch, lambda p: coloured_board_file(p, "canary/v0.1.0"), RESULT)
+    assert rec["findings"] == []
+    f = rec["files"][0]
+    assert f["models"] == 2 and [c["label"] for c in f["components"]] == ["R1", "PCB"]
+    assert f["components"][1] == {"label": "PCB", "model": "canary_PCB", "colours": [[0.314, 0.486, 0.412]]}
+    saved = json.loads((tmp_path / "ws" / rec["folder"] / "board-model.json").read_text())
+    assert saved["files"][0]["components"] == f["components"]
+
+
+def test_export_reports_missing_colours(tmp_path, monkeypatch):
+    # planted: a file as FreeCADCmd saves it (no GuiDocument.xml), and a component whose colours did not fit
+    res = dict(RESULT, uncoloured_faces=["R1"])
+    rec = _stub_export(tmp_path, monkeypatch, lambda p: board_file(p, "canary/v0.1.0"), res)
+    f = "\n".join(rec["findings"])
+    assert "no colours (no ShapeAppearance in GuiDocument.xml)" in f
+    assert "one colour only for R1" in f
+
+
+@pytest.mark.tools
+def test_import_step_pins_the_import_settings(tmp_path):
+    """The real import (FreeCAD GUI binary, offscreen) in a FreeCAD config with hostile import
+    preferences (ImportMode 2 stalled it until the time limit; review of #75): it still gives one
+    link per component, named by the instance name, and the models with colours."""
+    from curatrix import newasm
+    if shutil.which("FreeCAD") is None or shutil.which("FreeCADCmd") is None:
+        pytest.skip("FreeCAD not installed")
+    ws = Workspace(tmp_path / "ws")
+    step, out = tmp_path / "board.step", tmp_path / "board.FCStd"
+    pre = newasm.run_script(ws, FIXTURES / "freecad" / "hostile_import_prefs.py", {"XD_STEP": str(step)},
+                            tmp_path / "pre.result.json")
+    assert pre["import_mode"] == 2
+    res = newasm.run_script(ws, Path(boardlib.__file__).resolve().parents[3] / "templates" / "freecad-pcba" /
+                            "import-step.py",
+                            {"XD_STEP": str(step), "XD_OUT": str(out), "XD_TRACE_ID": TID, "XD_VERSION": "canary/v0.1.0",
+                             "XD_VARIANT": "", "XD_BOARD": "canary", "XD_COMMIT": ""},
+                            tmp_path / "import.result.json", exe="FreeCAD")
+    assert sorted(c["label"] for c in res["components"]) == ["PCB", "R1", "R2"], res
+    assert res["links"] == 3 and res["models"] == 3 and res["solids"] == 3
+    assert boardlib.board_props(out)["Version"] == "canary/v0.1.0"
+    assert len(boardlib.board_colours(out)) == 3
