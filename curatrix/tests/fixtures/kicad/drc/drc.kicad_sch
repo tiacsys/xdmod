@@ -5,8 +5,10 @@
 	(uuid "490883a3-078f-4b69-84bb-9c1ca1a27820")
 	(paper "A4")
 	(title_block
-		(title "DRC fixture")
+		(title "${XD_BOARD}")
+		(rev "${XD_VERSION}")
 		(comment 1 "Canary trace chain, plan task 5.3; configuration SYS-CFG-0001")
+		(comment 2 "DRC fixture")
 	)
 	(lib_symbols
 		(symbol "Connector_Generic:Conn_01x02"

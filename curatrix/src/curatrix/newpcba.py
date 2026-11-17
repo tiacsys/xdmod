@@ -4,8 +4,10 @@
 Creates, from ``xdmod/templates/kicad-pcba/``:
 
 * ``pcba/<name>/<name>.kicad_pro`` with the text variables ``TraceID`` (the def's ``EE-PCBA``)
-  and ``XD_VERSION = "unversioned"``, the ERC and DRC severities of the template, no variants;
-* ``<name>.kicad_sch`` and ``<name>.kicad_pcb``, then saved by KiCad itself (``kicad-cli sch|pcb
+  ``XD_BOARD = <name>`` and ``XD_VERSION = "unversioned"``, the ERC and DRC severities of the
+  template, no variants;
+* ``<name>.kicad_sch`` and ``<name>.kicad_pcb`` (title block: title ``${XD_BOARD}``, rev
+  ``${XD_VERSION}``; two silkscreen lines with both, CK-F11), then saved by KiCad itself (``kicad-cli sch|pcb
   upgrade --force`` under the ``kicad-cli`` limits and the workspace-local KiCad config);
 * ``sym-lib-table`` and ``fp-lib-table`` with workspace libraries only;
 * ``<name>.kicad_jobset`` (the shared jobset template);
@@ -120,7 +122,8 @@ def new_pcba(ws, repo, cfg, element: str, kicad: bool = True, log=print) -> Path
     tmpl = ws.xdmod / "templates" / "kicad-pcba"
     title = title_of(name_el)
     values = {"__NAME__": name, "__TITLE__": title, "__ID__": bid, "__ROOT_UUID__": str(uuid.uuid4()),
-              "__TEXT_UUID__": str(uuid.uuid4()), "__OUTLINE_UUID__": str(uuid.uuid4())}
+              "__TEXT_UUID__": str(uuid.uuid4()), "__TEXT2_UUID__": str(uuid.uuid4()),
+              "__OUTLINE_UUID__": str(uuid.uuid4())}
     try:
         _make_project(ws, folder, tmpl, values, name, kicad, log)
     except BaseException:

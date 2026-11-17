@@ -111,7 +111,7 @@ BUILTIN = [
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.acceptance", False, "c_acceptance"),
     ("CK-F10", "jobset rules: no Execute Command, outputs under ${XD_CAM_OUT}, variant jobs = template jobs",
      _lv({"local": "warning", "pr": "warning"}), "cad.projects", False, "c_jobset"),
-    ("CK-F11", "XD_VERSION in a title-block comment of every sheet and board and in a silkscreen text",
+    ("CK-F11", "title ${XD_BOARD} and Rev ${XD_VERSION} in every title block; both on two silkscreen lines that fit",
      _lv({"local": "warning", "pr": "warning"}), "cad.projects", False, "c_version_variable"),
     ("CK-F14", "FreeCAD assemblies 1:1 with the assembly defs of the ME model; skeleton; no reference to a top document",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.freecad+model", False, "c_me_one_to_one"),

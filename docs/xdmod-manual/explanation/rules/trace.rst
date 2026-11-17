@@ -240,7 +240,7 @@ The principles of the trace model and the rules on the trace graph.
    :status: valid
    :decided_by: XD-ADR-0142, XD-ADR-0140
 
-   Every sheet and the board have a title-block comment line with ``${XD_VERSION}``, and the board has a silkscreen text with it. The ``Rev`` field stays empty, because KiCad cuts long values off there. The committed value of ``XD_VERSION`` is ``unversioned``; ``curatrix cam`` writes the version into its copy.
+   Every sheet and the board have a title block with the title ``${XD_BOARD}`` and the Rev ``${XD_VERSION}``, and the board has two silkscreen lines, ``${XD_BOARD}`` and ``${XD_VERSION}``, placed and sized so that a long preview version stays inside the outline and off holes. The committed values are ``XD_VERSION = unversioned`` and ``XD_BOARD`` = the project name; ``curatrix cam`` writes the version without the ``<board>/`` tag prefix (``v0.1.0``) and the board name into its copy (owner decision Q13 of tiacsys/xdmod#69; before, the full ``git describe`` result went into a comment line and the Rev field stayed empty).
 
 .. xd-rule:: Every BOM part names its manufacturer part
    :id: XD-RULE-0058

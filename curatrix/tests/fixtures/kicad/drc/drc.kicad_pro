@@ -562,6 +562,7 @@
   ],
   "text_variables": {
     "TraceID": "EE-PCBA-0001",
+    "XD_BOARD": "drc",
     "XD_VERSION": "unversioned"
   },
   "tuning_profiles": {

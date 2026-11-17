@@ -45,7 +45,7 @@ Steps
 
    It writes ``pcba/<name>/`` (``<name>`` = the board def's name in kebab case, ``MyBoard`` ->
    ``my-board``): the ``.kicad_pro`` with
-   ``TraceID`` = the def's ``EE-PCBA`` ID and ``XD_VERSION = unversioned``, the ERC/DRC severities
+   ``TraceID`` = the def's ``EE-PCBA`` ID, ``XD_BOARD = <name>`` and ``XD_VERSION = unversioned``, the ERC/DRC severities
    of the template, library tables with workspace variables only, the CAM jobset, and a schematic
    and board saved by KiCad. It also writes the board document ``docs/pcba-<name>/`` and its entry
    in ``docs/documents.yaml``. The ``TraceID`` is a reference; the need comes from the model.
@@ -59,8 +59,11 @@ Steps
 
       curatrix launch kicad robarm-ee/pcba/<name>/<name>.kicad_pro
 
-   - Keep ``${XD_VERSION}`` in a title-block comment line of every sheet and of the board, and in a
-     silkscreen text; leave the ``Rev`` field empty (CK-F11).
+   - Keep the title-block title ``${XD_BOARD}`` and Rev ``${XD_VERSION}`` on every sheet and on the
+     board, and the two silkscreen lines ``${XD_BOARD}`` and ``${XD_VERSION}``. Place and size them
+     so that a long preview version (``v0.1.0-12-gabc1234-dirty-preview``) stays inside the outline
+     and off holes; CK-F11 estimates it (KiCad's text width is about 0.87 x the character width
+     per character).
    - Iteration 1 stops before routing: placement, outline and silkscreen; the unrouted-net DRC
      errors are accepted in one entry (:need:`XD-ADR-0144`, step 6).
    - The outline and holes come from the board's space budget through the co-design push, not by

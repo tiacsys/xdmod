@@ -37,8 +37,10 @@ Boards (EE)
 -----------
 
 ``curatrix cam robarm-ee <board>`` copies the ``pcba/<board>/`` project into the version folder,
-writes the version into the copy's ``XD_VERSION`` and runs the board's KiCad jobset there (the shared
-template, CK-F10). Per variant (``default``, ``alt``, ...) it writes:
+writes the version without the ``<board>/`` tag prefix into the copy's ``XD_VERSION`` (``v0.1.0``,
+``v0.1.0-3-gabc1234-preview``) and the board name into ``XD_BOARD``, and runs the board's KiCad
+jobset there (the shared template, CK-F10). Title blocks show ``${XD_BOARD}`` as title and
+``${XD_VERSION}`` as revision, the silkscreen both on two lines (CK-F11). Per variant (``default``, ``alt``, ...) it writes:
 
 .. list-table::
    :header-rows: 1

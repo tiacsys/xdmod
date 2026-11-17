@@ -8,9 +8,10 @@
 	)
 	(paper "A4")
 	(title_block
-		(title "DRC fixture")
+		(title "${XD_BOARD}")
+		(rev "${XD_VERSION}")
 		(comment 1 "Canary trace chain, plan task 5.3; configuration SYS-CFG-0001")
-		(comment 2 "Version ${XD_VERSION}")
+		(comment 2 "DRC fixture")
 	)
 	(layers
 		(0 "F.Cu" signal)
@@ -579,14 +580,27 @@
 		(uuid "378e642c-5403-42a5-b190-85fc89562364")
 	)
 	(gr_text "${XD_VERSION}"
-		(at 103 109 0)
+		(at 95.5 108.4 0)
 		(layer "F.SilkS")
 		(uuid "d9ba46f3-193b-4765-b18d-f106bc5daafe")
+		(effects
+			(font
+				(size 0.8 0.65)
+				(thickness 0.15)
+			)
+			(justify left)
+		)
+	)
+	(gr_text "${XD_BOARD}"
+		(at 95.5 106.2 0)
+		(layer "F.SilkS")
+		(uuid "3d5274bf-450c-49a7-9290-337405c29c6a")
 		(effects
 			(font
 				(size 1 1)
 				(thickness 0.15)
 			)
+			(justify left)
 		)
 	)
 	(embedded_fonts no)

@@ -5,9 +5,10 @@
 	(uuid "__ROOT_UUID__")
 	(paper "A4")
 	(title_block
-		(title "__TITLE__")
-		(comment 1 "__ID__")
-		(comment 2 "Version ${XD_VERSION}")
+		(title "${XD_BOARD}")
+		(rev "${XD_VERSION}")
+		(comment 1 "__TITLE__")
+		(comment 2 "__ID__")
 	)
 	(lib_symbols)
 	(sheet_instances
