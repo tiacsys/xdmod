@@ -74,6 +74,15 @@ The FreeCAD model of a board for the ME side comes from the same command:
 so only for a tagged release and copies it into a board-library checkout for its PR
 (:need:`XD-ADR-0139`).
 
+The model is made by the FreeCAD GUI binary on Qt's offscreen platform (no window opens): the
+``App::Part`` ``Board`` carries the trace properties (``TraceID``, ``Version``, ``Variant``,
+``Board``, ``Commit``, ``Source``) and holds one object per component, named by its reference
+designator (``R1``, ``J1``, ``PCB`` for the board body), in the colours of the STEP. Each object is
+a link to the component's 3D model, kept once per model in the hidden group ``Models``.
+``board-model.json`` lists the components with their colours per file; ``board-model/<board>/<version>/``
+also keeps the STEP and the import result (``*.result.json``). A file without colours is reported as
+a finding.
+
 Assemblies (ME)
 ---------------
 

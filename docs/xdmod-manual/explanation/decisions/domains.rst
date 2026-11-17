@@ -315,3 +315,21 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    (an error) reports a changed or deleted board file against the PR base. The repo is top level
    (not under ``libs/``), because it is a design repo with its own checks: worktree sets and the CI
    sibling resolution handle only top-level repos. Checks: :need:`XD-RULE-0064` (CK-F20) and :need:`XD-RULE-0065` (CK-F21).
+
+   Note (2026-11-18, finding 17 of xdmod#69): ``Part.Shape.read`` gave one single-coloured compound.
+   The board model now keeps one object per component and the STEP colours, still without a window.
+   ``FreeCADCmd`` cannot do it: ``Import.insert`` there keeps the structure (one ``App::Part`` per
+   STEP product), but the colours belong to the view providers (``ShapeAppearance`` in
+   ``GuiDocument.xml``, not in ``Document.xml``), which ``FreeCADCmd`` does not have; the reader
+   options (``merge``, ``useLinkGroup``, ``mode``, the ``UseBaseName`` and ``ReduceObjects``
+   parameters) and ``FreeCADGui.setupWithoutGUI()`` change nothing, and FreeCAD 1.1.4 offers no
+   legacy-importer switch from Python. The FreeCAD GUI binary on Qt's offscreen platform runs
+   ``ImportGui.insert`` with the colours per face. With ``UseBaseName`` off and link groups the
+   objects carry the reference designators (``R1``, ``J1``). The import script flattens that tree:
+   ``Board`` holds one ``App::Link`` per component, named by its designator (``PCB`` for the board
+   body), to its 3D model, which is stored once per model in the hidden group ``Models``. So a file
+   holds one BREP per model, not per part (KiCad demo board with 68 parts: 2.5 MB, one feature per
+   part 7.1 MB, the old compound 1.8 MB). The geometry is the same as before (same volume and
+   bounding box on the canary board and the demo). The trace properties on ``Board``, CK-F20 and
+   CK-F21 are unchanged. StepUp's board load in a GUI session over an MCP server (finding 18)
+   stays an option; it is not needed for the colours.
