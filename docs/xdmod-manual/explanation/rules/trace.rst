@@ -170,3 +170,19 @@ The principles of the trace model and the rules on the trace graph.
    :decided_by: XD-ADR-0126
 
    A project's ERC and DRC rule severities and the ERC pin conflict matrix (``.kicad_pro``) equal those of the ``curatrix new pcba`` template; a missing ``erc`` section counts as the template, which holds KiCad 10.0.8's defaults. A custom rule in ``.kicad_dru`` with a severity other than ``error`` is a difference too. A difference needs an accepted ``accepted.yaml`` entry with ``check: CK-F8`` and the rule key (``dru:<name>`` for a custom rule).
+.. xd-rule:: The CAM jobset is the shared template, run on a copy
+   :id: XD-RULE-0053
+   :tags: checks, cad
+   :status: valid
+   :decided_by: XD-ADR-0142
+
+   A board's jobset is the shared template of ``curatrix new pcba``: no "Execute Command" job, no "Copy Files" job and no output outside ``${XD_CAM_OUT}``, no statistics job, no ERC or DRC job, BOM delimiters set. In a project with variants, each variant-dependent template job is replaced by one job per variant (``<template id>-<variant>``) that equals the template job except for the variant and the file name; the variant names in the jobs equal the project's variants, and the jobs without a variant come first, because KiCad keeps the variant of the last job for the following ones. ``curatrix cam`` runs it only on a copy under ``build/``.
+
+.. xd-rule:: The version is shown in the frames and on the silkscreen
+   :id: XD-RULE-0054
+   :tags: checks, cad
+   :status: valid
+   :decided_by: XD-ADR-0142, XD-ADR-0140
+
+   Every sheet and the board have a title-block comment line with ``${XD_VERSION}``, and the board has a silkscreen text with it. The ``Rev`` field stays empty, because KiCad cuts long values off there. The committed value of ``XD_VERSION`` is ``unversioned``; ``curatrix cam`` writes the version into its copy.
+

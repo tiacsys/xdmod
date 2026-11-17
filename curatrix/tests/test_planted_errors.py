@@ -50,6 +50,8 @@ PLANTED = {
     "CK-F4b": "curatrix/tests/test_ercdrc.py::test_f4b_unrouted_board",
     "CK-F8": "curatrix/tests/test_ercdrc.py::test_f8_severities",
     "CK-F9": "curatrix/tests/test_ercdrc.py::test_f9_acceptance",
+    "CK-F10": "curatrix/tests/test_cam.py::test_f10_jobset",
+    "CK-F11": "curatrix/tests/test_cam.py::test_f11_version_variable",
     "CK-E2": f"{HERE}::test_e2_value_not_in_sentence",
     "CK-E3": f"{HERE}::test_e3_wrong_ears_pattern",
     "CK-G1": f"{HERE}::test_g1_g2_changed_need_makes_links_suspect",

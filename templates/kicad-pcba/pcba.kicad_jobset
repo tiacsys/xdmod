@@ -4,9 +4,59 @@
   },
   "jobs": [
     {
+      "id": "sch-svg",
+      "type": "sch_export_plot_svg",
+      "description": "schematic SVG, one file per sheet",
+      "settings": {
+        "output_filename": "schematic-svg",
+        "format": "svg",
+        "plot_all": true,
+        "plot_drawing_sheet": true
+      }
+    },
+    {
+      "id": "netlist",
+      "type": "sch_export_netlist",
+      "description": "XML netlist (holds every variant)",
+      "settings": {
+        "output_filename": "netlist.xml",
+        "format": "xml"
+      }
+    },
+    {
+      "id": "gerbers",
+      "type": "pcb_export_gerbers",
+      "description": "Gerber files and job file",
+      "settings": {
+        "output_filename": "gerbers/",
+        "layers": [
+          "F.Cu",
+          "B.Cu",
+          "F.Paste",
+          "B.Paste",
+          "F.SilkS",
+          "B.SilkS",
+          "F.Mask",
+          "B.Mask",
+          "Edge.Cuts"
+        ],
+        "create_gerber_job_file": true
+      }
+    },
+    {
+      "id": "drill",
+      "type": "pcb_export_drill",
+      "description": "Excellon drill files",
+      "settings": {
+        "output_dir": "gerbers/",
+        "format": "excellon",
+        "generate_map": false
+      }
+    },
+    {
       "id": "sch-pdf",
       "type": "sch_export_plot_pdf",
-      "description": "",
+      "description": "schematic PDF",
       "settings": {
         "output_filename": "__NAME__-schematic.pdf",
         "format": "pdf",
@@ -17,7 +67,7 @@
     {
       "id": "bom",
       "type": "sch_export_bom",
-      "description": "",
+      "description": "BOM CSV",
       "settings": {
         "output_filename": "bom.csv",
         "fields_ordered": [
@@ -49,12 +99,72 @@
       }
     },
     {
-      "id": "netlist",
-      "type": "sch_export_netlist",
-      "description": "",
+      "id": "pos",
+      "type": "pcb_export_pos",
+      "description": "pick-and-place CSV",
       "settings": {
-        "output_filename": "netlist.xml",
-        "format": "xml"
+        "output_filename": "pos.csv",
+        "format": "csv",
+        "units": "mm",
+        "side": "both",
+        "single_file": true,
+        "exclude_dnp": true
+      }
+    },
+    {
+      "id": "step",
+      "type": "pcb_export_3d",
+      "description": "STEP model",
+      "settings": {
+        "output_filename": "__NAME__.step",
+        "format": "step",
+        "include_dnp": false,
+        "export_silkscreen": true,
+        "overwrite": true
+      }
+    },
+    {
+      "id": "render-top",
+      "type": "pcb_render",
+      "description": "top view, orthographic",
+      "settings": {
+        "output_filename": "render-top.png",
+        "format": "png",
+        "side": "top",
+        "perspective": false,
+        "quality": "basic",
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "id": "render-bottom",
+      "type": "pcb_render",
+      "description": "bottom view, orthographic",
+      "settings": {
+        "output_filename": "render-bottom.png",
+        "format": "png",
+        "side": "bottom",
+        "perspective": false,
+        "quality": "basic",
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
+      "id": "render-3d",
+      "type": "pcb_render",
+      "description": "3D view",
+      "settings": {
+        "output_filename": "render-3d.png",
+        "format": "png",
+        "side": "top",
+        "perspective": true,
+        "rotation_x": -45,
+        "rotation_z": 30,
+        "quality": "high",
+        "width": 1600,
+        "height": 1000
       }
     }
   ],
