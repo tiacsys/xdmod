@@ -65,7 +65,25 @@ def env(ws) -> dict[str, str]:
 
 
 def is_blender(cmd: list[str] | None) -> bool:
-    return bool(cmd) and Path(cmd[0]).name.lower().startswith(NAME)
+    return bool(cmd) and Path(cmd[0]).name == NAME
+
+
+def ensure_bin(ws) -> str:
+    """<ws>/.xdmod/blender/bin with a copy of the Blender shim (isolation arguments, env, no venv):
+    put first on PATH for Blender calls, so a `blender` that a child process (`sh -c`) starts is
+    isolated too, while .venv/bin stays off PATH. "" when there is no Blender."""
+    from curatrix import setup
+    real = find(ws)
+    if real is None:
+        return ""
+    d = ws.state / "blender" / "bin"
+    d.mkdir(parents=True, exist_ok=True)
+    p = d / NAME
+    text = setup.shim_text(ws, NAME, real)
+    if not p.is_file() or p.read_text() != text:
+        p.write_text(text)
+    p.chmod(0o755)
+    return str(d)
 
 
 def with_args(cmd: list[str]) -> list[str]:
@@ -78,6 +96,13 @@ def find(ws) -> Path | None:
     """The real Blender binary (not a shim), or None."""
     from curatrix import setup
     return setup.real_tool(ws, NAME)
+
+
+def threads() -> int:
+    """Cycles threads: half the cores (at least 1), so a render leaves room for other work. The
+    output does not depend on it (fixed samples and seed)."""
+    import os
+    return max(1, (os.cpu_count() or 2) // 2)
 
 
 def version(ws) -> str | None:

@@ -184,7 +184,8 @@ What is in iteration 1 and what moved to iteration 2.
    ``cam.json``; colour by BOM kind, as before) and Blender render the same four views
    (``renderings/front|top|right|iso.png``, same size, names and marking) with Cycles on the CPU:
    orthographic cameras, three sun lights and a dim sky, no shadows (overlapping or touching parts
-   would shade each other black), Freestyle edges, fixed samples and seed, no denoiser. Without
+   would shade each other black), Freestyle edges, fixed samples and seed, no denoiser, half the
+   cores as threads (the output does not depend on the thread count). Without
    Blender, or with ``--no-blender``, the z-buffer renderer of :need:`XD-ADR-0147` runs, so CI and
    machines without Blender get renderings too. ``cam.json`` says which: ``renderings.method`` is
    ``blender`` or ``zbuffer``; for Blender also its version, engine, samples and seed.
@@ -200,8 +201,9 @@ What is in iteration 1 and what moved to iteration 2.
    --disable-autoexec`` and the user paths under ``.xdmod/blender/`` (``BLENDER_USER_RESOURCES``,
    ``_CONFIG``, ``_SCRIPTS``, ``_DATAFILES``, ``_EXTENSIONS``, the XDG dirs for the caches,
    ``TMPDIR``), as :need:`XD-ADR-0145` does for KiCad and FreeCAD; Blender's Python runs without the
-   workspace venv. Never call Blender bare. The ``blender`` limits (4 GB, 10 minutes per variant)
-   apply.
+   workspace venv, and ``.xdmod/blender/bin`` (a copy of the shim) comes first on ``PATH``, so a
+   ``blender`` started by a child process is isolated too. Never call Blender bare. The ``blender`` limits (4 GB, 10 minutes per variant)
+   apply, also to ``curatrix run -- blender`` without ``--use``.
 
 .. xd-adr:: A PCB layout in iteration 1, without routing
    :id: XD-ADR-0144

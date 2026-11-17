@@ -146,8 +146,8 @@ drawing, the exploded view, the BOM and four renderings per variant
    curatrix cam robarm-me canary-assembly                # Blender if installed, else the fallback
    curatrix cam robarm-me canary-assembly --no-blender   # always the renderer without Blender
 
-With Blender on the machine the renderings come from Blender (Cycles on the CPU, about 10 to 20
-seconds per view); without it from a plain-Python renderer in ``FreeCADCmd``
+With Blender on the machine the renderings come from Blender (Cycles on the CPU with half the
+cores, about 35 seconds for the four views of the canary on a 16-core machine); without it from a plain-Python renderer in ``FreeCADCmd``
 (:need:`XD-ADR-0147`). ``cam.json`` says which (``renderings.method``: ``blender`` or ``zbuffer``).
 Blender is optional and not pinnable, so these images are local only; CI never has Blender
 (:need:`XD-ADR-0148`). Run Blender only through curatrix (``curatrix run -- blender``,

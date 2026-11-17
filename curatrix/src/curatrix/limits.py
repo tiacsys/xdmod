@@ -173,7 +173,11 @@ def tool_env(ws: Workspace, use: str, env: dict | None, cmd: list[str] | None = 
         out.update(blender.env(ws))         # BLENDER_USER_*, XDG_*, TMPDIR under .xdmod/blender
         for k in blender.UNSET:
             out.pop(k, None)
-        out["PATH"] = blender.path_without_venv(ws, out.get("PATH", ""))
+        if "PATH" in out:                   # not for the shim text (shim_env): it filters PATH itself
+            # the Blender shim first (a child `blender` of `sh -c` keeps the isolation arguments),
+            # then PATH without any venv
+            out["PATH"] = os.pathsep.join(p for p in (blender.ensure_bin(ws), blender.path_without_venv(
+                ws, out["PATH"])) if p)
     return out
 
 

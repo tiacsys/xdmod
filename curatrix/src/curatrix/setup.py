@@ -319,8 +319,8 @@ def launch_env(ws: Workspace, tool: str) -> dict[str, str]:
     elif tool == "freecad":
         ensure_freecad_config(ws)
         env.update({k: str(v) for k, v in freecad_dirs(ws).items()})
-    elif tool == "blender":
-        env.update(blender.env(ws))
+    elif tool == "blender":                 # the same as `curatrix run -- blender`: env, no venv
+        env = limits.tool_env(ws, "blender", env, [blender.NAME])
     return env
 
 
@@ -431,6 +431,7 @@ def shim_env(ws: Workspace, name: str) -> dict[str, str]:
     """The variables `curatrix run -- <name>` adds for this tool (KICAD*, XDG_*), and LC_ALL only
     for the batch tool kicad-cli: the GUI programs keep the user's locale."""
     env = limits.tool_env(ws, "script", {}, [name])
+    env.pop("PATH", None)                   # the shim keeps the caller's PATH (Blender: filters it)
     if name != "kicad-cli":
         env.pop("LC_ALL", None)
     return dict(sorted(env.items()))
@@ -510,7 +511,7 @@ def shim_rows(ws: Workspace, path: str | None = None) -> list[tuple[str, str, st
         rows.append(("warn", f"{name} on PATH is {found}, not the workspace shim",
                      f"a bare call writes ~/.config; {fix}"))
     if seen and not rows:
-        rows.append(("ok", "KiCad/FreeCAD shims first on PATH", ".venv/bin"))
+        rows.append(("ok", "KiCad/FreeCAD/Blender shims first on PATH", ".venv/bin"))
     return rows
 
 

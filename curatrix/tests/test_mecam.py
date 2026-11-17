@@ -222,7 +222,7 @@ def test_cam_renders_with_blender_when_there(tmp_path, monkeypatch):
 
     def run_blender(ws_, script, env, result, exe=None):
         calls.append((script.name, env))
-        return {"ok": True, "painted": {v: 10 for v in mecam.VIEWS}, "seconds": {v: 1.0 for v in mecam.VIEWS},
+        return {"ok": True, "pixels": {v: 10 for v in mecam.VIEWS}, "seconds": {v: 1.0 for v in mecam.VIEWS}, "threads": 3,
                 "blender": "5.2.3 LTS", "engine": "CYCLES", "device": "CPU", "samples": 32, "seed": 0}
     monkeypatch.setattr(newasm, "run_script", run_script)
     monkeypatch.setattr(blender, "available", lambda ws_: True)
@@ -235,7 +235,8 @@ def test_cam_renders_with_blender_when_there(tmp_path, monkeypatch):
     assert env["XD_RELEASE"] == "" and env["XD_FONT"].endswith(".ttf")
     r = rec["renderings"]
     assert r["method"] == "blender" and r["pinned"] is False and r["samples"] == 32 and r["marking"] == "PREVIEW"
-    assert rec["per_variant"]["all"]["painted"]["iso"] == 10
+    assert rec["per_variant"]["all"]["pixels"]["iso"] == 10 and rec["per_variant"]["all"]["painted"] == {}
+    assert rec["renderings"]["threads"] == 3 and int(env["XD_THREADS"]) >= 1
     # --no-blender: the z-buffer renderer, no glTF
     monkeypatch.setattr(newasm, "run_script", _fake_script())
     rec = mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None, use_blender=False)[0]
@@ -340,7 +341,8 @@ def test_me_cam_run_blender(tmp_path, monkeypatch):
     top = ws.build("r") / "cam" / "fx" / rec["version"].split("/", 1)[1]
     for v in rec["variants"]:
         assert (top / f"{v}.scene.glb").read_bytes()[:4] == b"glTF"
-        assert all(n > 1000 for n in rec["per_variant"][v]["painted"].values()), rec["per_variant"][v]
+        assert all(n > 1000 for n in rec["per_variant"][v]["pixels"].values()), rec["per_variant"][v]
+        assert rec["per_variant"][v]["facets"] > 0
         for view in mecam.VIEWS:
             png = (top / "fx" / v / "renderings" / f"{view}.png").read_bytes()
             assert png[:8] == b"\x89PNG\r\n\x1a\n" and int.from_bytes(png[16:20], "big") == 1600
