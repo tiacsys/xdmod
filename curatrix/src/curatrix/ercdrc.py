@@ -253,13 +253,13 @@ class Acceptors:
         if not shas or UNCOMMITTED in shas:
             e.status, e.why = "proposed", "not committed"
             return
-        newest = _git(self.repo, "rev-list", "--topo-order", "-n", "1", *sorted(shas)).stdout.strip()
-        ok, e.why = self.verdict(newest)
-        side = [s for s in shas if s != newest and
-                _git(self.repo, "merge-base", "--is-ancestor", s, newest).returncode != 0]
-        if ok and side:
-            ok, e.why = False, (f"commit {side[0][:10]} changed the entry on a parallel branch, not before the "
-                                f"acceptance {newest[:10]}")
+        anc = lambda a, b: _git(self.repo, "merge-base", "--is-ancestor", a, b).returncode == 0  # noqa: E731
+        tips = sorted(t for t in shas if not any(o != t and anc(t, o) for o in shas))
+        if len(tips) > 1:              # changes on parallel branches: no single commit has the last word
+            e.status, e.why = "proposed", (f"commits {', '.join(t[:10] for t in tips)} changed the entry on "
+                                           f"parallel branches")
+            return
+        ok, e.why = self.verdict(tips[0])
         e.status = "accepted" if ok else "proposed"
 
     def exclusion(self, rel_pro: str, key: str) -> tuple[bool, str]:
