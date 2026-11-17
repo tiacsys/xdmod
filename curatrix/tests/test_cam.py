@@ -88,6 +88,9 @@ def test_f10_jobset(tmp_path):
     by["bom-alt"]["settings"]["fields_ordered"] = ["Reference", "Value"]
     del by["bom-default"]["settings"]["field_delimiter"]
     by["pos-alt"]["settings"]["variant"] = "gone"
+    by["bom-default"]["settings"]["output_filename"] = "/tmp/abs-bom.csv"
+    by["drill"]["settings"]["output_dir"] = "../../gerbers/"
+    by["gerbers"]["settings"]["layers"] = ["F.Cu"]
     js["jobs"] = [j for j in js["jobs"] if j["id"] != "render-3d-default"]
     js["jobs"] += [{"id": "x", "type": "special_execute", "settings": {"command": "rm -rf /"}},
                    {"id": "c", "type": "special_copyfiles", "settings": {"source": "*.kicad_pcb", "dest": "../../.."}},
@@ -101,12 +104,22 @@ def test_f10_jobset(tmp_path):
                  "job 'bom-alt' differs from the template job 'bom'", "job 'pos-alt' names variant 'gone'",
                  "job 'late' has no variant but comes after the variant job",
                  "output 'out': '../out' is not under ${XD_CAM_OUT}",
-                 "job 'render-3d-default' of the shared template is missing (variant default)"):
+                 "job 'render-3d-default' of the shared template is missing (variant default)",
+                 "job 'bom-default': output_filename '/tmp/abs-bom.csv' leaves the output folder",
+                 "job 'drill': output_dir '../../gerbers/' leaves the output folder",
+                 "job 'gerbers' differs from the template job 'gerbers'"):
         assert want in f, (want, f)
     kinds = {k for k, _ in cam.jobset_findings(Workspace(root), _project(repo), ["default", "alt"])}
-    assert {"special_execute", "special_copyfiles", "output"} <= kinds      # these stop `curatrix cam`
+    assert {"special_execute", "special_copyfiles", "output", "jobfile", "order", "variant"} <= kinds  # stop `cam`
     p.write_text(json.dumps(good))
     assert _run(root, repo, "CK-F10", "c_jobset") == []
+    bad = copy.deepcopy(good)
+    next(j for j in bad["jobs"] if j["id"] == "bom-alt")["settings"]["output_filename"] = str(tmp_path / "abs-bom.csv")
+    p.write_text(json.dumps(bad))
+    with pytest.raises(cam.CamError, match="leaves the output folder"):     # refused before KiCad runs
+        cam.run(Workspace(root), Repo("r", repo, "r"), checkcfg.load(repo / "checks.yaml", root))
+    assert not (tmp_path / "abs-bom.csv").exists()
+    p.write_text(json.dumps(good))
     p.write_text('{"jobs": 3}')
     assert any("not a KiCad jobset" in x for x in _run(root, repo, "CK-F10", "c_jobset"))
 
@@ -164,7 +177,8 @@ def test_stackup_and_design_rules(tmp_path):
     rows, source = cam.stackup(DRC / "drc.kicad_pcb")
     assert source.startswith("KiCad default (2 copper layers, board thickness 1.6 mm")
     assert [r["layer"] for r in rows if r.get("type") == "copper"] == ["F.Cu", "B.Cu"]
-    assert next(r for r in rows if r["layer"] == "dielectric 1")["thickness_mm"] == "1.53"
+    assert next(r for r in rows if r["layer"] == "dielectric 1")["thickness_mm"] == "1.51"   # = KiCad's .gbrjob
+    assert round(sum(float(r.get("thickness_mm") or 0) for r in rows), 4) == 1.6
     pcb = tmp_path / "s.kicad_pcb"
     pcb.write_text('(kicad_pcb (setup (stackup (layer "F.Cu" (type "copper") (thickness 0.035))\n'
                    '(layer "dielectric 1" (type "core") (thickness 1.51) (material "FR4") (epsilon_r 4.5))\n'
@@ -177,10 +191,10 @@ def test_stackup_and_design_rules(tmp_path):
     pro.with_suffix(".kicad_dru").write_text('(version 1)\n(rule "hv"\n\t(constraint clearance (min 1.5mm))\n'
                                              '\t(condition "A.NetClass == \'HV\'"))\n')
     dr = cam.design_rules(pro)
-    assert {"scope": "board", "rule": "min_clearance", "value": 0.0} in dr
+    assert {"scope": "board", "rule": "min_clearance", "value": 0.0, "unit": "mm"} in dr
     assert any(r["scope"] == "net class Default" and r["rule"] == "clearance" for r in dr)
     assert {"scope": "custom rule", "rule": "hv",
-            "value": "(constraint clearance (min 1.5mm)) (condition \"A.NetClass == 'HV'\")"} in dr
+            "value": "(constraint clearance (min 1.5mm)) (condition \"A.NetClass == 'HV'\")", "unit": ""} in dr
 
 
 # ------------------------------------------------------------------ with KiCad
