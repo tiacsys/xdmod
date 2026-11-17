@@ -265,46 +265,85 @@ EARS_START = {"ubiquitous": r"^(the|a|an|each|every)\b", "event": r"^when\b", "s
 
 
 # CK-E2: numbers in a sentence. Thousands separators (1,000 / 1 000 / 1'000), decimals, a sign,
-# and "a ± b". Compared as numbers, so 2000000 matches "2,000,000 Hz" and 2e+06.
-_NUM = r"[-+−]?(?:\d{1,3}(?:[,' \u202f]\d{3})+(?![\d])|\d+)(?:\.\d+)?"
-NUMBER = re.compile(r"(?<![\w.])" + _NUM + r"(?![\d])")
-PLUSMINUS = re.compile(r"(?<![\w.])(" + _NUM + r")\s*(?:°|[A-Za-zµ%]+)?\s*(?:±|\+/-)\s*(" + _NUM + r")")
-# unit symbol -> names that may stand in the sentence instead (singular stems; plurals match too)
-UNIT_NAMES = {"ms": ["millisecond"], "s": ["second"], "us": ["microsecond"], "µs": ["microsecond"],
+# ranges and "a ± b". Compared as numbers, so 2000000 matches "2,000,000 Hz". Digits inside IDs
+# (SYS-REQ-0012) are not numbers. The unit must stand right after the value, or after the next
+# number of a range ("between 0.5 and 2.5 ms", "10–20 Hz").
+_NUM = r"[-+−]?(?:\d{1,3}(?:[,'  ]\d{3})+(?![\d])|\d+)(?:\.\d+)?"
+NUMBER = re.compile(r"(?<![\w.])(?<![A-Za-z]-)" + _NUM + r"(?![\d])")
+PLUSMINUS = re.compile(r"(?:(?<![\w.])(" + _NUM + r")\s*(?:°[A-Z]?|[A-Za-zµ%]+)?\s*)?(?:±|\+/-)\s*(" + _NUM + r")")
+RANGE_TO_NEXT = re.compile(r"\s*(?:°[A-Z]?|[A-Za-zµ%]+)?\s*(?:and|to|or|–|—|-|\.\.\.?)\s*")
+# unit symbol -> names that may stand in the sentence instead (a name may be plural)
+UNIT_NAMES = {"ms": ["millisecond"], "s": ["second"], "us": ["µs", "microsecond"], "µs": ["microsecond"],
               "min": ["minute"], "h": ["hour"], "Hz": ["hertz"], "kHz": ["kilohertz"], "MHz": ["megahertz"],
               "g": ["gram"], "kg": ["kilogram"], "mm": ["millimetre", "millimeter"], "cm": ["centimetre", "centimeter"],
-              "m": ["metre", "meter"], "°": ["degree", "deg"], "deg": ["degree", "°"], "V": ["volt"], "mV": ["millivolt"],
-              "A": ["ampere", "amp"], "mA": ["milliampere", "milliamp"], "W": ["watt"], "N": ["newton"],
-              "Nm": ["newton metre", "newton meter", "N·m", "N m"], "N·m": ["newton metre", "newton meter", "Nm"],
-              "%": ["percent", "per cent"], "rpm": ["revolutions per minute"], "bit": ["bit"], "B": ["byte"]}
+              "m": ["metre", "meter"], "°": ["degree"], "deg": ["degree", "°"], "°C": ["degrees Celsius", "degree Celsius"],
+              "K": ["kelvin"], "V": ["volt"], "mV": ["millivolt"], "A": ["ampere", "amp"], "mA": ["milliampere", "milliamp"],
+              "W": ["watt"], "N": ["newton"], "Nm": ["newton metre", "newton meter", "N·m", "N m"],
+              "N·m": ["newton metre", "newton meter", "Nm"], "%": ["percent", "per cent"],
+              "rpm": ["revolutions per minute"], "bit": ["bit"], "B": ["byte"]}
+
+
+def _norm(text: str) -> str:
+    return text.replace("μ", "µ")                 # Greek mu -> micro sign
+
+
+def _num(s: str) -> float:
+    return float(re.sub(r"[,'  ]", "", s).replace("−", "-"))
 
 
 def numbers_in(text: str) -> list[float]:
-    """Every number in a sentence, plus a+b and a-b for each "a ± b"."""
-    out = [float(m.group(0).replace("−", "-").replace(",", "").replace("'", "").replace(" ", "").replace("\u202f", ""))
-           for m in NUMBER.finditer(text)]
+    """Every number in a sentence, plus a+b and a-b for each "a ± b" (and +b, -b for a bare "± b")."""
+    text = _norm(text)
+    out = [_num(m.group(0)) for m in NUMBER.finditer(text)]
     for m in PLUSMINUS.finditer(text):
-        a, b = (float(re.sub(r"[,' \u202f]", "", x).replace("−", "-")) for x in (m.group(1), m.group(2)))
-        out += [a + b, a - b]
+        b = _num(m.group(2))
+        if m.group(1):
+            a = _num(m.group(1))
+            out += [a + b, a - b]
+        else:
+            out += [b, -b]
     return out
 
 
-def unit_in(unit: str, text: str) -> bool:
-    for u in [unit, *UNIT_NAMES.get(unit, [])]:
-        if u in ("°", "%"):
-            if u in text:
+def unit_at(unit: str, text: str, pos: int) -> bool:
+    """The unit (symbol, or a name, plural allowed for names) stands at text[pos:] after spaces."""
+    rest = _norm(text[pos:]).lstrip()
+    for i, u in enumerate([unit, *UNIT_NAMES.get(unit, [])]):
+        u = _norm(u)
+        name = i > 0 and u.replace(" ", "").isalpha() and len(u) > 2
+        tail = r"(?:e?s)?" if name else ""
+        if re.match(re.escape(u) + tail + r"(?![A-Za-z])", rest, re.I if name else 0):
+            return True
+    return False
+
+
+def _value_with_unit(x: float, unit: str | None, text: str) -> bool:
+    text = _norm(text)
+    same = lambda y: abs(x - y) <= 1e-9 * max(1.0, abs(x))  # noqa: E731
+    for m in NUMBER.finditer(text):
+        if not same(_num(m.group(0))):
+            continue
+        if not unit or unit_at(unit, text, m.end()):
+            return True
+        r = RANGE_TO_NEXT.match(text, m.end())          # unit after the next number of a range
+        if r:
+            n2 = NUMBER.match(text, r.end())
+            if n2 and unit_at(unit, text, n2.end()):
                 return True
-        elif re.search(r"(?<![A-Za-z])" + re.escape(u) + r"(?:e?s)?(?![A-Za-z])", text, re.I if len(u) > 3 else 0):
+    for m in PLUSMINUS.finditer(text):                  # a ± b: the unit after a or after b
+        b = _num(m.group(2))
+        vals = [_num(m.group(1)) + b, _num(m.group(1)) - b] if m.group(1) else [b, -b]
+        if any(same(v) for v in vals) and (not unit or unit_at(unit, text, m.end())
+                                           or (m.group(1) and unit_at(unit, text, m.start(1) + len(m.group(1))))):
             return True
     return False
 
 
 def ears_value_findings(nid: str, n: dict, text: str) -> list[str]:
     """CK-E2 for one requirement: each of min/max/nominal occurs as a number in the sentence (any
-    order, any format), and the unit occurs once, as symbol or name."""
+    order, any format), with its unit (symbol or name) right after it or after the end of its range."""
     out = []
-    nums = numbers_in(text)
-    unit = n.get("unit")
+    unit = n.get("unit") or None
     for f in ("min", "max", "nominal"):
         v = n.get(f)
         if v in (None, ""):
@@ -314,10 +353,12 @@ def ears_value_findings(nid: str, n: dict, text: str) -> list[str]:
         except (TypeError, ValueError):
             out.append(f"{nid}: {f} = {v!r} is not a number")
             continue
-        if not any(abs(x - y) <= 1e-9 * max(1.0, abs(x)) for y in nums):
+        if _value_with_unit(x, unit, text):
+            continue
+        if any(abs(x - y) <= 1e-9 * max(1.0, abs(x)) for y in numbers_in(text)):
+            out.append(f"{nid}: {f} = {x:g} is in the sentence, but not followed by its unit {unit!r}")
+        else:
             out.append(f"{nid}: {f} = {x:g} does not appear as a number in the sentence")
-    if unit and any(n.get(f) not in (None, "") for f in ("min", "max", "nominal")) and not unit_in(unit, text):
-        out.append(f"{nid}: unit {unit!r} does not appear in the sentence (as symbol or name)")
     return out
 
 

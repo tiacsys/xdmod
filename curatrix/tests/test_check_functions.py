@@ -1,5 +1,5 @@
 """Table-driven tests for check functions that had none (task 5.4, P4-8): c_ears (CK-E2, CK-E3),
-c_diff (CK-G1/G2), c_trailers (CK-H4), c_pins (CK-H3), c_hygiene_build (CK-H2)."""
+c_diff (CK-G1; CK-G2 is the same function), c_trailers (CK-H4), c_pins (CK-H3), c_hygiene_build (CK-H2)."""
 import json
 import subprocess
 
@@ -29,6 +29,25 @@ from helpers import git_init
     ("The arm shall answer within 50 ms.", {"max": "fast"}, False),
     ("The arm shall answer within 150 ms.", {"max": "50", "unit": "ms"}, False),
     ("The arm shall answer within 1.5 ms.", {"max": "5", "unit": "ms"}, False),
+    # forms an engineer writes (review of xdmod#31)
+    ("The bus shall run at 10–20 Hz.", {"min": "10", "max": "20", "unit": "Hz"}, True),
+    ("The bus shall run at 10 to 20 kHz.", {"min": "10", "max": "20", "unit": "kHz"}, True),
+    ("The arm shall answer in ≤ 5 ms.", {"max": "5", "unit": "ms"}, True),
+    ("The arm shall answer in 5 ms or less.", {"max": "5", "unit": "ms"}, True),
+    ("The arm shall answer within 50ms.", {"max": "50", "unit": "ms"}, True),
+    ("The board shall run from 12V.", {"nominal": "12", "unit": "V"}, True),
+    ("The part shall be flat to ±0.5 mm.", {"min": "-0.5", "max": "0.5", "unit": "mm"}, True),
+    ("The arm shall work at 20 °C ± 2 °C.", {"nominal": "20", "min": "18", "max": "22", "unit": "°C"}, True),
+    ("The timer shall tick every 10 µs.", {"max": "10", "unit": "us"}, True),
+    ("The timer shall tick every 10 \u03bcs.", {"max": "10", "unit": "µs"}, True),
+    ("The arm shall answer within 5 milliseconds.", {"max": "5", "unit": "ms"}, True),
+    # false passes the review found
+    ("The arm shall stop in 5 ms, the tool in 3 s.", {"max": "3", "unit": "ms"}, False),
+    ("A gripper shall close within 5 s.", {"max": "5", "unit": "A"}, False),
+    ("The arm shall lift 5 kg in 2 m.", {"max": "5", "unit": "m"}, False),
+    ("The arm shall weigh 5 ms.", {"max": "5", "unit": "m"}, False),
+    ("Per SYS-REQ-0012 the arm shall answer in 3 ms.", {"max": "12", "unit": "ms"}, False),
+    ("The arm shall answer in 15 ms or 5.5 ms.", {"max": "5", "unit": "ms"}, False),
 ])
 def test_ck_e2(sentence, fields, ok):
     findings = checks.ears_value_findings("SYS-REQ-0001", fields, sentence)
@@ -78,7 +97,7 @@ def test_c_ears_skips_external_retired_and_non_requirements(tmp_path):
         {"id": "SW-REQ-0001", "type": "sw-req", "status": "valid", **bad}])
     r = checks.Result("CK-E2", "values", level="warning")
     checks.c_ears(ctx, r)
-    assert [f.split(":")[0] for f in r.findings] == ["SW-REQ-0001", "SW-REQ-0001"]
+    assert [f.split(":")[0] for f in r.findings] == ["SW-REQ-0001"]
 
 
 # ------------------------------------------------------------------ CK-G1 / CK-G2
