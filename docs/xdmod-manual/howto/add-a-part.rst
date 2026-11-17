@@ -15,6 +15,10 @@ Work on a branch in a worktree set (:ref:`howto-cross-repo-change`):
    .venv/bin/curatrix work start feat/my-assembly robarm-me
    cd .worktrees/feat/my-assembly
 
+In the set, call curatrix as ``.venv/bin/curatrix`` (it runs the set's xdmod), or run
+``eval "$(.venv/bin/curatrix env)"`` once, which puts ``.venv/bin`` first on ``PATH``; the commands
+below are written as ``curatrix ...``.
+
 New assembly
 ------------
 
