@@ -9,7 +9,7 @@ conformance check. Two curatrix pitfalls must be fixed first (nested packages, f
 ## Setup
 
 All scratch files are in `build/spike-model/` (not committed; IDs `*-0901..0906` exist only
-there, never in a ledger). xdmod at `ea1a975` (origin/main), worktree set `spike/model`, Pilot 0.63.1.
+there, never in a ledger). xdmod at `2844966` (origin/main), worktree set `spike/model`, Pilot 0.63.1.
 
 - `sys/interfaces.sysml`, `sys/product.sysml` (stands for robarm-syseng): `port def <'SYS-IF-0901'>
   ServoIf` with signal ports `out pwm`, `out vcc`, `inout gnd` (typed `ElSignal`, SYS-IF-0902),
@@ -27,7 +27,11 @@ there, never in a ledger). xdmod at `ea1a975` (origin/main), worktree set `spike
     is redefined);
   - nested package `SpikeEePorts::SpikeEeDetail` with `TinyBoard` (EE-PCBA-0905).
 - `ee2/`: the two EE files concatenated into one, plus `combo2.sysml` (`ComboBoard2` that redefines
-  both `servoOut` in one port, and the `unit` name test with a stub-like `requirement`).
+  both `servoOut` in one port, and the `unit` name test with a stub-like `requirement`), and
+  package `SpikeEeVariants`: `JointControllerBoardB :> JointControllerBoard` (a variant, no own
+  redefinitions), `JointControllerBoardC` (variant that redefines `servoOut` with `CanHeader`),
+  `OddBoard` (an `EE-PORT` ID on a def that specializes a `SYS-EL`).
+- `ee_dir/b_ports.sysml`: `b_ports.sysml` without the directions on the redefined signal ports.
 - `run.py`: calls `curatrix.pilot.run(ws, files, export, out, libraries=[XdTrace, system files])`,
   then `model.compact(data, model.top_packages(libs))`. `derive.py`: the link derivation and check.
 
@@ -41,6 +45,11 @@ PYTHONPATH=xdmod/curatrix/src ../../../.venv/bin/curatrix run -m 4G -t 10m -- \
   build/spike-model/out/ee.compact.json build/spike-model/out/sysonly.compact.json   # from the ws root
 ```
 
+Evidence: every run below has its log in `build/spike-model/out/` (all Pilot runs under
+`curatrix run -m 4G -t 10m`): `sysonly.log`, `sys-toppackages.log` (+ `sys-toppackages-json-tail.log`),
+`ee-nameorder.log`, `ee-direction.log`, `ee.log`, `ee2.log`, `eefull.log`, `derive-ee.log`,
+`derive-ee2.log`. The JSON exports (`*.json`, `*.compact.json`) are next to them.
+
 ## 1. Pilot with the system model as library set — works
 
 ```
@@ -48,12 +57,14 @@ FILE LIBRARY-SET [XdTrace.sysml, interfaces.sysml, product.sysml]: ok
 FILE .../ee/b_ports.sysml: ok
 FILE .../ee/a_boards.sysml: ok
 WARNING:Duplicate of inherited member name 'servoOut' from PowerBoard (3.sysml line : 27 column : 9)
-SYSML-RESULT errors=0      ok=True errors=0 seconds=15.0
+SYSML-RESULT errors=0      ok=True errors=0 seconds=12.8
 ```
+
+(`out/ee.log`)
 
 - **Missing redefinition** (`SensorBoardPcba`): the Pilot says nothing. Confirmed (P5-2).
 - **Wrong port def** (`WrongBoard`, `servoOut : CanHeader` redefining a `ServoIf` port): the Pilot
-  says nothing either. It does not check that a redefining feature's type specializes the
+  says nothing either (`out/ee.log`). It does not check that a redefining feature's type specializes the
   redefined one. So curatrix must check names **and** types.
 - **Double specialization** (`ComboBoard`): parses; only a WARNING "Duplicate of inherited member
   name 'servoOut' from PowerBoard". `pilot.run` keeps `ok=True`, so the warning is easy to miss.
@@ -62,7 +73,7 @@ SYSML-RESULT errors=0      ok=True errors=0 seconds=15.0
   clashing ports.
 - What the Pilot does check: names of redefined features, port typed by a port def, and
   **direction**: `port :>> pwm` inside `ServoHeader` fails with "Redefining feature must have a
-  compatible direction" until it is written `out port :>> pwm`. Good for signal-level conformance,
+  compatible direction" (`out/ee-direction.log`, 5 errors) until it is written `out port :>> pwm`. Good for signal-level conformance,
   but authors must repeat the direction.
 
 ## 2. Export, IDs after `compact`, derived links — works with this fallback
@@ -82,7 +93,7 @@ SYSML-RESULT errors=0      ok=True errors=0 seconds=15.0
   compact JSON (what syseng commits as `generated/model.json`) and join by qualified name
   (`lib:X` -> `X`). This runs without Java, so CI can run the check.
 
-`derive.py` output on the export (all planted errors found, no false findings):
+`derive.py` output on the export (`out/derive-ee.log`; all planted errors found, no false findings):
 
 ```
 EE-PCBA-0903 realizes SYS-EL-0901    (SpikeEeBoards::ComboBoard :> SpikeSystem::JointController)
@@ -98,11 +109,21 @@ conformance findings:
   ComboBoard: port servoOut (from SpikeSystem::PowerBoard) is not redefined
   ComboBoard: inherits port name 'servoOut' more than once (JointController::servoOut, PowerBoard::servoOut)
   SensorBoardPcba: port bus (from ...::SensorBoard) is not redefined
-  WrongBoard: port servoOut (from SpikeSystem::JointController) is redefined with
-              SpikeEePorts::CanHeader, which does not specialize SpikeInterfaces::ServoIf
+  WrongBoard: port servoOut (from SpikeSystem::JointController) is redefined by
+              WrongBoard::servoOut with SpikeEePorts::CanHeader, which does not specialize
+              SpikeInterfaces::ServoIf
   SpikeEePorts::PinSignal: specializes SYS-IF-0902 but has no ID of its own
 9 links, 5 findings
 ```
+
+After the review the check follows the whole chain (`out/derive-ee2.log`, 11 links, 7 findings):
+`JointControllerBoardB` (variant without own redefinitions) gets no finding, because
+`JointControllerBoard` redefines the ports; `JointControllerBoardC` gets "port servoOut ... is
+redefined by ...JointControllerBoardC::servoOut with SpikeEePorts::CanHeader, which does not
+specialize SpikeInterfaces::ServoIf"; `OddBoard` gets "EE-PORT-0907 specializes SYS-EL-0901, but
+there is no trace link from EE-PORT to SYS-EL". The link table is keyed by (domain kind, system
+kind), the kind is the ID up to the last `-` (so `SYS-FEAT`, `SYS-CFG` work), and a pair without a
+link is a finding, never skipped.
 
 The same rule applied to port defs gives the signal-level check: `ServoHeader` must redefine
 `pwm`, `vcc`, `gnd` with defs that specialize `ElSignal` (no finding, it does). `ComboBoard2`
@@ -110,23 +131,24 @@ The same rule applied to port defs gives the signal-level check: `ServoHeader` m
 no needs and one finding per element: "kind EE-PCBA cannot be generated from the model (only
 SYS-EL, ...)".
 
-Open: `derive.py` takes direct supers only; a board variant `B2 :> JointControllerBoard` would need
-the ports of the whole chain (`all_supers`) and its link to the nearest def with an ID.
-Elements with a system super but no ID (`PinSignal`) are reported; decide warning or allowed.
+Links are derived from direct system supers only; a variant without an ID (`JointControllerBoardB`)
+has no link of its own (its parent board holds it). Elements with a system super but no ID
+(`PinSignal`) are reported; decide warning or allowed.
 
 ## 3. Known pitfalls
 
 - **File order** — confirmed. The Pilot reads the files one by one in the given order (gen
   sorts by name); `a_boards.sysml` importing `SpikeEePorts` from `b_ports.sysml` fails:
   `ERROR:Couldn't resolve reference to Namespace 'SpikeEePorts'. (2.sysml line : 6 ...)` and 12
-  follow-up errors. Passing the files in dependency order, or concatenating them into one input
+  follow-up errors (`out/ee-nameorder.log`). Passing the files in dependency order, or concatenating them into one input
   (`ee2/concat.sysml`), works. Fallback: process the repo's own files as one set too, like the
   libraries (the line remapping of `remap_libset` already exists).
 - **`top_packages` and nested packages** — confirmed, and worse than a wrong name: the regex
   `^\s*package` also matches the indented `package SpikeSystemDetail`. `gen.model` passes it to
   `si.export`, which returns the string `ERROR:Couldn't resolve reference to Element
   'SpikeSystemDetail'`; that string is spliced into the JSON array, `pilot.run` still says
-  `ok=True`, and `json.loads` fails (`Expecting value: line 1 column 2105839`). Nested packages are
+  `ok=True`, and `json.loads` fails (`Expecting value: line 1 column 2105839`; `out/sys-toppackages.log`, the
+spliced text in `out/sys-toppackages-json-tail.log`). Nested packages are
   exported with their top package anyway. For `compact` (library side) the extra names do no harm
   (it compares only the first segment of the qualified name).
 - **`unit` name resolution** — refuted as a Pilot bug; it is SysML scoping. With a package-level
@@ -142,11 +164,12 @@ Elements with a system super but no ID (`PinSignal`) are reported; decide warnin
 
 | Run | Pilot time |
 |---|---|
-| system model alone (2 files) | 12.7 s |
-| domain model, system as library set | 15.0 s |
-| domain model, library set = SYSMOD, SYSMOD15288, PLEML, NeedStubs, all of robarm-syseng/model, spike system | 15.9 s |
+| system model alone (2 files), `sysonly.log` | 12.7 s, rerun 14.2 s |
+| domain model, system as library set, `ee.log` | 15.0 s, rerun 12.8 s |
+| domain model + combo/variant tests (3 exports), `ee2.log` | 21.4 s (first run 15.1 s) |
+| domain model, library set = SYSMOD, SYSMOD15288, PLEML, NeedStubs, all of robarm-syseng/model, spike system, `eefull.log` | 15.9 s |
 
-JVM start and the standard library dominate; the system model as a library set adds about
+Times vary by a few seconds between runs (machine load). JVM start and the standard library dominate; the system model as a library set adds about
 1 s. A domain model of real size will cost what syseng costs today (P4-11: about 45 s).
 
 ## Verdicts
@@ -154,7 +177,7 @@ JVM start and the standard library dominate; the system model as a library set a
 | Point | Verdict |
 |---|---|
 | Domain model refines the system model by specialization, Pilot with system as library set | works |
-| Pilot finds missing or wrong redefinitions | cut: curatrix checks both (names and types) |
+| Pilot finds missing or wrong redefinitions | works with this fallback: curatrix checks names and types (the Pilot does neither) |
 | Double specialization (ME-1) | works with this fallback: clash = warning only; curatrix makes it a finding unless one port redefines all clashing ports |
 | System IDs after `compact` | works (stubs keep `declaredShortName`) |
 | `realizes` / `conforms` from the export | works with this fallback: ports and types of system elements come from syseng's committed `generated/model.json`, joined by qualified name |
@@ -163,13 +186,14 @@ JVM start and the standard library dominate; the system model as a library set a
 
 ## Input for 5.14 (decisions)
 
-- Conformance is a curatrix check, not a Pilot result: "every port of every superclassifier is
-  redefined by an own port whose def specializes the inherited port's def"; the same rule for
-  port defs at signal level. Redefined ports repeat the direction (`out port :>> pwm`).
+- Conformance is a curatrix check, not a Pilot result: "every inherited system port has a
+  redefinition somewhere in the chain between the domain def and the system def, and the most
+  specific redefinition's def specializes the inherited port's def"; the same rule for port defs
+  at signal level. A variant of a board does not repeat the redefinitions of its parent board. Redefined ports repeat the direction (`out port :>> pwm`).
 - ME-1 multiple specialization is allowed; inherited name clashes must be resolved by one port
   that redefines all (`port :>> A::p, B::p : X;`), else error.
-- Link holder: the domain def with an ID; `PartDefinition :> SYS-EL` -> `realizes`,
-  `PortDefinition :> SYS-IF` -> `conforms`. Decide what a domain def that specializes a system
+- Link holder: the domain def with an ID; by (domain kind, system kind): `EE-PCBA`/`ME-ASM` ->
+  `SYS-EL` = `realizes`, `EE-PORT`/`ME-PORT` -> `SYS-IF` = `conforms`; any other pair is a finding. Decide what a domain def that specializes a system
   element without an ID of its own means (here `PinSignal :> ElSignal`): allowed for helper defs
   below the port level, or a warning.
 - The domain repo reads the upstream model twice: as `.sysml` library set (Pilot) and as the
@@ -190,12 +214,15 @@ JVM start and the standard library dominate; the system model as a library set a
   their `import`s. One set is simpler.
 - `model.py`: `MODEL_KINDS` per repo (from `needs_config.toml`: `EE-PCBA`, `EE-PORT`, `ME-ASM`,
   `ME-PORT`), and a new step in `to_needs` that follows `Subclassification.superclassifier` to
-  stubs with IDs and adds `realizes` / `conforms` by (SysML type, target kind). `LINK_BY_KINDS`
+  stubs with IDs and adds `realizes` / `conforms` by (source kind, target kind); kind from the ID
+  split at the last `-`; an unmapped pair is a finding, not skipped. `LINK_BY_KINDS`
   gets `(EE-PCBA, SYS-EL): realizes`, `(EE-PORT, SYS-IF): conforms`, and the ME pairs.
 - New `model.py: conformance(domain: Model, upstream: Model) -> findings` (the logic of
-  `build/spike-model/derive.py`, extended to the whole super chain), called by `gen.model` /
+  `build/spike-model/derive.py`: whole super chain, most specific redefinition wins), with a test
+  for a variant def, called by `gen.model` /
   `gen.model_needs_from_json`, with a new check ID in `checks.yaml` (model section: `upstream:
-  "{ws}/robarm-syseng/generated/model.json"`).
+  "{ws}/robarm-syseng/generated/model.json"` in robarm-ee's `checks.yaml`; curatrix itself has no
+  default for it, no robarm names in xdmod, task 5.6).
 - `gen.py: model_files`: the domain repo's `checks.yaml` lists the syseng model files (and
   NeedStubs, SYSMOD, PLEML) as `libraries`; nothing else changes there.
 - Alternative to the join (decide in 5.15): keep `type` and the `Subclassification` of library
