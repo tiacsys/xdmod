@@ -297,7 +297,7 @@ def cmd_gen(a):
     cfg = _cfg(ws, repo)
     outs, msgs, rc = [], [], 0
     made: list[tuple[str, list[Path], list[Path]]] = []    # (provenance kind, files made, files no longer tool-made)
-    whats = ["stubs", "model", "cad-needs", "code-needs", "freecad-json"] if a.what == "all" else [a.what]
+    whats = ["stubs", "model", "cad-needs", "connectors", "code-needs", "freecad-json"] if a.what == "all" else [a.what]
     for what in whats:
         try:
             if what == "stubs":
@@ -315,6 +315,10 @@ def cmd_gen(a):
                 if cfg.section("cad") is None and a.what == "all":
                     continue
                 outs.append(gen.cad_needs(ws, cfg))
+            elif what == "connectors":
+                if not (cfg.section("cad") or {}).get("connectors") and a.what == "all":
+                    continue
+                outs += gen.connectors(ws, cfg)
             elif what == "code-needs":
                 if cfg.section("code") is None and a.what == "all":
                     continue
@@ -559,7 +563,7 @@ def parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("gen", help="generated files: stubs, model, cad-needs, code-needs, freecad-json, tombstones, all; "
                                    "cad-exports (build/<area>/cad, not committed)")
-    s.add_argument("what", choices=["stubs", "model", "cad-needs", "code-needs", "freecad-json", "tombstones", "cad-exports", "all"])
+    s.add_argument("what", choices=["stubs", "model", "cad-needs", "connectors", "code-needs", "freecad-json", "tombstones", "cad-exports", "all"])
     s.add_argument("repo", nargs="?")
     s.add_argument("--check", action="store_true", help="only compare with the committed files")
     s.add_argument("--needs", nargs="+", help="stubs: needs.json files instead of the last docs build")

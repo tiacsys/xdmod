@@ -31,6 +31,7 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 | `curatrix docs <repo\|full> [--open]` | zdocs build of `<repo>/docs` into `build/<area>/docs/` (strict, D64c) |
 | `curatrix check [<repo>] [--stage local\|pr\|full\|baseline] [--no-cad] [--only IDs] [--base DIR] [--json]` | the repo's checks ([catalogue](#check-catalogue)); logs + `build/<area>/checks/summary.json`; prints a reproduce command per failure. `--only CK-D,CK-C1` runs those even outside the stage. `--json` puts the summary on stdout, the log on stderr |
 | `curatrix gen stubs\|model\|cad-needs\|freecad-json\|tombstones\|all [<repo>] [--check]` | regenerate committed generated files ([Generated files](#generated-files)); `--check` only compares |
+| `curatrix gen connectors [<repo>]` | `generated/<project>.connectors.json` per KiCad project (plain Python; `cad.connectors`) |
 | `curatrix gen cad-exports [<repo>]` | kicad-cli sheet SVGs + BOM CSV into `build/<area>/cad/` (local, not committed) for the CAD directives |
 | `curatrix gen freecad-json --textconv FILE` | semantic JSON of one `.FCStd` on stdout (git textconv driver, installed by bootstrap) |
 | `curatrix new pcba <BoardDef> [--repo R] [--no-kicad]` | a KiCad project for a board def of the repo's EE model (task 5.17): `pcba/<board-def>/` from `xdmod/templates/kicad-pcba/` (`.kicad_pro` with `TraceID` = the def's `EE-PCBA` and `XD_VERSION = unversioned`, ERC/DRC severities, library tables with workspace variables only, the jobset), schematic and board saved by KiCad (`kicad-cli sch\|pcb upgrade --force`, `kicad-cli` limits), the document `docs/pcba-<board-def>/` and its registry entry. External parts get no project |
@@ -107,6 +108,7 @@ views:                              # CK-D3 (needs `model` too)
 
 cad:                                # CK-D4 (plain Python: runs without CAD tools), CK-H1
   projects: ["pcba/*/*.kicad_pro", "proto/*/*.kicad_pro"]   # CK-F6, CK-F7 (with `model`); root sheet = <name>.kicad_sch
+  connectors: generated             # CK-D7, CK-D8, CK-F1 (with `model`): <dir>/<project>.connectors.json per project
   kicad: ["pcba/*/*.kicad_sch"]     # extra ROOT schematics (the projects' root sheets are read anyway); sheets are followed
   freecad: ["parts/*.FCStd", "assemblies/**/*.FCStd"]
   needs: generated/cad-needs.json   # default
@@ -181,6 +183,9 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-D4 | `cad-needs.json` matches KiCad/FreeCAD files (plain Python, so also in PR CI) | `cad` | local, pr, baseline | yes |
 | CK-F6 | KiCad projects by `.kicad_pro`: one per folder, named like the folder, root sheet of the same name; no KiCad project file outside the project folders (plain Python) | `cad.projects` | local, pr, baseline (warning) | yes |
 | CK-F7 | board defs of the EE model (`XdDomain::Pcba`) 1:1 with `pcba/` projects by `TraceID` = `EE-PCBA`, folder named after the def; external parts have none (plain Python, committed `model.json`) | `cad.projects` + `model` | local, pr, baseline (warning) | yes (`proto/` projects: not yet) |
+| CK-D7 | `generated/<project>.connectors.json` equals the connector tables read from the schematic (plain Python, so also in PR CI); no file of a removed project | `cad.projects` + `cad.connectors` | local, pr (warning) | yes |
+| CK-D8 | the plain-Python connector extraction equals `kicad-cli sch export netlist --format kicadxml` (P5-15); netlists in `build/<area>/checks/netlists/` | `cad.projects` + `cad.connectors` | local, baseline (warning), needs KiCad | yes |
+| CK-F1 | connectors vs. the EE model: `Port` on every connector (`-` = none), each port of the board def named by one connector, pin numbers and net names = the pin map (`PinSignal` `pin`/`net`; root-sheet `/X` = `X`) | `cad.projects` + `cad.connectors` + `model` | local, pr, baseline (warning) | yes (boards; harness ends: 5.22) |
 | CK-D6 | `code-needs.json` matches the code: `@xdid` blocks, comments above `ZTEST` (plain Python) | `code` | local, pr, baseline | yes |
 | CK-D5 | generated files record the pinned tool versions (`generated/provenance.json`, 4.4b) | `model` or `cad.freecad_json` | local/pr/full warning, baseline error | yes |
 | CK-E2 | value fields appear in the sentence as numbers (any format, `a ± b`), the unit once as symbol or name | `requirements` | local, pr, baseline (warning until it ran on real requirements) | yes |
@@ -194,7 +199,7 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-H5 | `scripts/bootstrap.sh` drifted from `xdmod/templates/bootstrap.sh` (D118) | `bootstrap_template` | all (warning) | yes |
 | CK-H6 | `expect:` differs from the checks the repo runs (a lost section, a new one not listed) | — | all | yes |
 | CK-H7 | PR changes more hand-written lines / files than `pr_size` against its base (`GITHUB_BASE_REF`, `XD_BASE_REF` or `main`); generated files excluded | — | local, pr (warning) | yes |
-| CK-F* | domain checks (pin maps, devicetree, firmware, ERC, …) | `commands` | per command | via `commands` only |
+| CK-F* | other domain checks (devicetree, firmware, ERC, …) | `commands` | per command | via `commands` only |
 
 ## limits.yaml
 
@@ -296,6 +301,7 @@ sorted and stable:
 | `generated/model.json` | `gen model` | the Pilot export, **compacted**: non-library elements with the payload keys curatrix reads, referenced library elements as stubs, stable IDs (qualified name or `<owner>/<index>`), sorted. Same shape as the Pilot JSON (`[{"identity": {"@id"}, "payload": {…}}]`) | CK-D2; input of views, variants, model-needs (so no Java downstream) |
 | `generated/model-needs.json` | `gen model` | model.json | CK-D2 |
 | `generated/cad-needs.json` | `gen cad-needs` | KiCad `.kicad_sch`/`.kicad_pro`, FreeCAD `Document.xml` (plain Python) | CK-D4 |
+| `generated/<project>.connectors.json` | `gen connectors` | the KiCad schematic of each project (plain Python): per connector `ref`, `port`, `value`, `footprint`, `lib_id`, `sheet`, `pins` (`number`, `name`, `net`, net names as in KiCad's XML netlist), and `inputs` (sha256 of the schematic files) | CK-D7; CK-F1, the board document's pin tables |
 | `generated/code-needs.json` | `gen code-needs` | C sources: a Doxygen block with `@xdid{SW-IMPL-nnnn}` (title: the declared name; `Implements X.`, `Satisfies X.`, `Configs: SYS-CFG-nnnn.`, `Status: draft.`), and the comment above each `ZTEST` with `Test case: SW-TC-nnnn. Verifies X.` (title: `@brief`; the Twister identifiers from the nearest `testcase.yaml` go into the content). One ID per `@xdid` and per `Test case:`; anything the reader is unsure of is a finding. String literals and `//` comments are skipped, `#if 0` code is still read; tests behind wrapper macros are not seen. `ZTEST`, `ZTEST_F`, `ZTEST_USER`, `ZTEST_USER_F`, `ZTEST_P` | CK-D6 |
 | `generated/retired-needs.json` | `gen model` / `gen cad-needs` / `gen code-needs` / `gen tombstones` | tombstones (D130): a generated need that vanished without `status: retired` keeps `{id, type, title, status: retired, retired_on, source_file}` until the next `baseline/*` tag of the manifest | CK-B7 |
 | `generated/freecad/<path>.FCStd.json` | `gen freecad-json [--shape]` | trace part (plain Python: objects, `trace` fields, placements, plain values, spreadsheets) + optional `shapes` (FreeCAD: volume, bbox, solids) | textconv / review |

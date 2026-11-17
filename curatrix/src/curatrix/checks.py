@@ -93,6 +93,12 @@ BUILTIN = [
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects", False, "c_ee_projects"),
     ("CK-F7", "KiCad projects 1:1 with the board defs of the EE model",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects+model", False, "c_ee_one_to_one"),
+    ("CK-D7", "connectors.json files match the KiCad schematics", _lv({"local": "warning", "pr": "warning"}),
+     "cad.connectors", False, "c_connectors_fresh"),
+    ("CK-D8", "connector extraction equals KiCad's XML netlist", _lv({"local": "warning", "baseline": "warning"}),
+     "cad.connectors", True, "c_connectors_netlist"),
+    ("CK-F1", "connectors match the pin maps of the EE model (Port, pin numbers, net names)",
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.connectors+model", False, "c_connectors_model"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
     ("CK-H2", "no build output inside the repo", _lv({"local": "error", "pr": "error"}), None, False, "c_hygiene_build"),
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
@@ -107,7 +113,9 @@ NEED_TEXT = {"model.variants": "model.variants: true", "model.upstream": "model.
              "requirements": "requirements: true and a docs section", "provenance": "a model section or cad.freecad_json",
              "views": "views and model sections",
              "variants": "a variants section (domain repos, with model.upstream)",
-             "cad.projects": "cad.projects", "cad.projects+model": "cad.projects and a model section"}
+             "cad.projects": "cad.projects", "cad.projects+model": "cad.projects and a model section",
+             "cad.connectors": "cad.projects and cad.connectors",
+             "cad.connectors+model": "cad.projects, cad.connectors and a model section"}
 
 
 def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
@@ -128,6 +136,9 @@ def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
         return cfg.section("views") is not None and cfg.section("model") is not None
     if need == "cad.projects":
         return bool((cfg.section("cad") or {}).get("projects"))
+    if need in ("cad.connectors", "cad.connectors+model"):
+        c = cfg.section("cad") or {}
+        return bool(c.get("projects") and c.get("connectors")) and (need == "cad.connectors" or cfg.section("model") is not None)
     if need == "cad.projects+model":
         return bool((cfg.section("cad") or {}).get("projects")) and cfg.section("model") is not None
     return cfg.section(need) is not None
@@ -334,6 +345,56 @@ def c_ee_one_to_one(ctx: Ctx, r: Result):
         r.findings = [f"{ctx.ws.rel(mj)} missing; run `curatrix gen model {ctx.repo.name}`"]
         return
     r.findings = eeprojects.one_to_one(ctx.cfg, modelmod.Model.load(mj))
+
+
+def c_connectors_fresh(ctx: Ctx, r: Result):
+    """CK-D7 (task 5.18): regenerate generated/<project>.connectors.json and compare (plain Python)."""
+    fix = f"curatrix gen connectors {ctx.repo.name}"
+    for o in gen.connectors(ctx.ws, ctx.cfg):
+        r.findings += o.findings + _compare(o, "the KiCad schematic", ctx.ws, fix)
+    r.findings += gen.stale_connectors(ctx.cfg)
+
+
+def c_connectors_netlist(ctx: Ctx, r: Result):
+    """CK-D8 (P5-15): the plain-Python extraction against `kicad-cli sch export netlist --format kicadxml`."""
+    from curatrix import connectors as conn, eeprojects
+    out = ctx.out / "netlists"
+    out.mkdir(parents=True, exist_ok=True)
+    for pr in eeprojects.discover(ctx.cfg):
+        if not pr.sch.is_file():
+            continue
+        xml = out / f"{pr.name}.net.xml"
+        argv = ["kicad-cli", "sch", "export", "netlist", "--format", "kicadxml", "-o", str(xml), str(pr.sch)]
+        p = limits.run(argv, "kicad-cli", ctx.ws, capture_output=True, text=True)
+        if p.returncode or not xml.is_file():
+            r.level = "error"
+            r.findings.append(f"{pr.name}: kicad-cli sch export netlist failed (exit {p.returncode} "
+                              f"{limits.explain_rc(p.returncode)}): {(p.stdout + p.stderr)[-300:]}")
+            continue
+        mine = conn.connectors(conn.netlist(pr.sch))
+        r.findings += conn.compare(mine, conn.from_xml(xml), ctx.ws.rel(pr.sch))
+    r.log = ctx.ws.rel(out)
+
+
+def c_connectors_model(ctx: Ctx, r: Result):
+    """CK-F1 (task 5.18): the committed connectors.json of every pcba/ project against the pin maps
+    of the committed model.json (plain Python)."""
+    from curatrix import connectors as conn, eeprojects
+    s = ctx.cfg.section("model") or {}
+    mj = ctx.cfg.resolve(s.get("json", "generated/model.json"))
+    if not mj.exists():
+        r.findings = [f"{ctx.ws.rel(mj)} missing; run `curatrix gen model {ctx.repo.name}`"]
+        return
+    m = modelmod.Model.load(mj)
+    for pr in eeprojects.discover(ctx.cfg):
+        if pr.kind != "pcba":
+            continue
+        f = gen.connectors_path(ctx.cfg, pr.name)
+        if not f.is_file():
+            r.findings.append(f"{ctx.ws.rel(f)} missing; run `curatrix gen connectors {ctx.repo.name}`")
+            continue
+        r.findings += conn.conformance(json.loads(f.read_text()), (pr.variables().get("TraceID") or "").strip(), m,
+                                       str(pr.sch.relative_to(ctx.repo.path)))
 
 
 def c_codeneeds(ctx: Ctx, r: Result):

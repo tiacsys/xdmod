@@ -115,6 +115,18 @@ checks:
     need: XD-CHECK-0036
     enforces: [XD-RULE-0049]
     description: "Each board def of the EE model has exactly one pcba/ project whose TraceID is its EE-PCBA ID, in the folder named after the def; every pcba/ project names one board def; external parts have no project; no link variables on projects."
+  CK-D7:
+    need: XD-CHECK-NEW-d7
+    enforces: [XD-RULE-NEW-conn]
+    description: "The committed generated/<project>.connectors.json equals the connector tables read from the KiCad schematic in plain Python (pins, pin names, nets, Port); no file of a removed project."
+  CK-D8:
+    need: XD-CHECK-NEW-d8
+    enforces: [XD-RULE-NEW-conn]
+    description: "The plain-Python connector extraction equals KiCad's XML netlist (kicad-cli sch export netlist --format kicadxml) on every project: Port, pin numbers, pin names (from libparts) and nets (local, needs KiCad)."
+  CK-F1:
+    need: XD-CHECK-NEW-f1
+    enforces: [XD-RULE-NEW-conn]
+    description: "Every connector of a pcba/ project has a Port field (- = none); each Port names a connector port def of the board def; each port of the board def is named by one connector; pin numbers and net names equal the pin map of the EE model."
   CK-G1:
     need: XD-CHECK-0023
     enforces: [XD-RULE-0038]
