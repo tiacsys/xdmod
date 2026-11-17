@@ -19,7 +19,7 @@ The tasks of Phase 5 in `claude/plan.md` are written from them.
   index pages, the manual tutorials and how-tos, `claude/framework/*.md`, `robarm-syseng/model/*.sysml`).
   One branch name in every touched repo (D52).
 - `xdmod/claude/decisions.md` is frozen (D120): its phase numbers stay as history.
-- `build/review-phase4/response.md` and D140 say "Phase 5.0".
+- `claude/notes/phase4-review-response.md` and D140 say "Phase 5.0".
 
 ## Open questions
 
