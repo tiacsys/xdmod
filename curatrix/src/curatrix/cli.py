@@ -580,6 +580,8 @@ def cmd_variants(a):
               "assembly variants)", file=sys.stderr)
         if len(args) > 1:
             raise SystemExit("curatrix: variants: at most one repo")
+        if a.json:
+            raise SystemExit("curatrix: variants: --json belongs to `curatrix variants list`")
         a.repo = args[0] if args else None
         return cmd_pleml(a)
     if a.model or a.verbose:
@@ -588,9 +590,10 @@ def cmd_variants(a):
         raise SystemExit("curatrix: variants list: at most one repo")
     from curatrix import checkcfg, variantlist
     ws = _ws()
-    if len(args) == 2:
-        repo = ws.repo(args[1])
-        out = [variantlist.for_repo(ws, repo, _cfg(ws, repo))]
+    # the same rule as `pleml check`: the named repo, else the repo of the current folder, else all
+    here = ws.repo(args[1]) if len(args) == 2 else ws.repo_of_cwd()
+    if here is not None:
+        out = [variantlist.for_repo(ws, here, _cfg(ws, here))]
     else:
         out = []
         for repo in ws.repos:
@@ -769,7 +772,7 @@ def parser() -> argparse.ArgumentParser:
     s = sub.add_parser("variants", help="`variants list [repo] [--json]`: every board and assembly variant across "
                                         "levels (model, KiCad/FreeCAD, differences, what it serves); "
                                         "`variants [repo]` is the deprecated name of `pleml check`")
-    s.add_argument("args", nargs="*", metavar="list [repo]", help="`list` and an optional repo (default: every repo with variants)")
+    s.add_argument("args", nargs="*", metavar="list [repo]", help="`list` and an optional repo (default: the repo of the current folder; from the workspace root every repo with variants)")
     s.add_argument("--json", action="store_true", help="list: JSON for tools")
     s.add_argument("--model", help="deprecated form only: see `pleml check`")
     s.add_argument("-v", "--verbose", action="store_true", help="deprecated form only: see `pleml check`")

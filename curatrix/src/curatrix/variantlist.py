@@ -11,11 +11,14 @@ A variant is listed when any level has it:
   documents of the assembly's folder.
 
 For each one: the differences (a board: the parts the variant fits differently from the base
-schematic, from the instances in the schematic, ``bom.differences``; an assembly: the parameters
+schematic, from the instances in the schematic, ``bom.differences``; where the ``.kicad_pcb``
+fits a part differently in that variant (its footprint's own ``(variant .. (dnp ..))`` or
+``(attr .. dnp)``), the difference says so: ``R1 DNP (board: fitted)``; an assembly: the parameters
 of its configuration-table row and, where links carry ``Configs``, the links it has or lacks) and
 the (configuration, usage) pairs it serves. The pairs come from the dependencies CK-B8 reads and
 the table ``domvariants.table`` computes against the upstream model; a variant that serves no pair
-is listed and marked. Pairs that no variant serves are listed too.
+is listed and marked. Pairs that no variant serves are listed too. Order per board or assembly:
+serving variants first, then by the first configuration served, then in CAD order.
 """
 from __future__ import annotations
 
@@ -99,6 +102,37 @@ def freecad_rows(fcstd: Path) -> dict[str, list[str]]:
     return out
 
 
+# ------------------------------------------------------------------ KiCad board
+def board_fitted(pcb: Path) -> dict[str, tuple[bool, dict[str, bool]]]:
+    """Reference -> (fitted in the base board, {variant: fitted}) from the footprints of a
+    ``.kicad_pcb``: ``(attr ... dnp)`` and the footprint's own ``(variant (name ..) (dnp ..))``."""
+    tree = cad.sexpr(pcb.read_text(encoding="utf-8"))
+    out = {}
+    for fp in cad._children(tree, "footprint"):
+        ref = cad._props(fp).get("Reference", "")
+        if not ref or ref.startswith("#"):
+            continue
+        attr = cad._children(fp, "attr")
+        base = not (attr and "dnp" in attr[0][1:])
+        per = {v: not o["dnp"] for v, o in bom._variant_overrides(fp).items() if "dnp" in o}
+        out[ref] = (base, per)
+    return out
+
+
+def board_mismatches(parts: list[bom.Part], board: dict, variant: str) -> dict[str, str]:
+    """Reference -> ``fitted`` / ``DNP`` on the board, where the board differs from the
+    schematic in ``variant`` (parts in the BOM that the board has)."""
+    out = {}
+    for p in bom.resolve(parts, variant):
+        if not p.in_bom or p.ref not in board:
+            continue
+        base, per = board[p.ref]
+        on_board = per.get(variant, base)
+        if on_board != (not p.dnp):
+            out[p.ref] = "fitted" if on_board else "DNP"
+    return out
+
+
 def _links_with_configs(docs: list[Path]) -> list[tuple[str, list[str]]]:
     """(link name, its own Configs) of every link in the documents that has ``Configs``."""
     from curatrix import meassemblies
@@ -134,7 +168,7 @@ def listing(repo: str, m: modelmod.Model | None, upstream: list[modelmod.Model] 
                     defs.setdefault(eid, m.qn(p))
     rows = []
     if upstream:
-        required, _ = domvariants._required(m, upstream) if m is not None else ({}, set())
+        required, _ = domvariants.required_pairs(m, upstream) if m is not None else ({}, set())
         rows = domvariants.table(vs, required)
     elif vs:
         out.notes.append("no upstream model (model.upstream): the pairs are listed as the dependencies "
@@ -144,6 +178,7 @@ def listing(repo: str, m: modelmod.Model | None, upstream: list[modelmod.Model] 
     fc_docs = {k: v for k, v in domvariants.freecad_documents(list(freecad_files)).items()
                if idmod.kind_of(k) == "ME-ASM"} if freecad_files else {}
 
+    cad_order: list[tuple[str, str]] = []
     owners = sorted({v.owner for v in vs} | {t for t in projects if idmod.kind_of(t) == "EE-PCBA"} | set(fc_docs))
     for owner in owners:
         kind = KINDS.get(idmod.kind_of(owner), "")
@@ -156,10 +191,21 @@ def listing(repo: str, m: modelmod.Model | None, upstream: list[modelmod.Model] 
             d = json.loads(pro.read_text(encoding="utf-8"))
             sch = pro.with_suffix(".kicad_sch")
             parts = bom.read(sch) if sch.is_file() else []
+            pcb = pro.with_suffix(".kicad_pcb")
+            board = board_fitted(pcb) if pcb.is_file() else {}
             for kv in ((d.get("schematic") or {}).get("variants") or []):
                 if kv.get("name"):
                     cad_names.setdefault(kv["name"], (rel(pro), kv.get("description") or ""))
-                    diffs[kv["name"]] = bom.differences(parts, kv["name"])
+                    ds = bom.differences(parts, kv["name"])
+                    for ref, state in board_mismatches(parts, board, kv["name"]).items():
+                        i = next((k for k, x in enumerate(ds) if x in (f"{ref} DNP", f"{ref} fitted")), None)
+                        sch_state = "DNP" if state == "fitted" else "fitted"
+                        note = f"{ref} {sch_state} (board: {state})"
+                        if i is None:
+                            ds.append(note)
+                        else:
+                            ds[i] = note
+                    diffs[kv["name"]] = ds
         elif kind == "assembly" and fc_docs.get(owner):
             for doc in fc_docs[owner]:
                 for name, params in freecad_rows(doc).items():
@@ -170,9 +216,10 @@ def listing(repo: str, m: modelmod.Model | None, upstream: list[modelmod.Model] 
             if kind == "assembly":
                 what = (f"links with Configs: {', '.join(f'{n} ({chr(44).join(cs)})' for n, cs in links)}"
                         if links else "no link with Configs")
-                out.notes.append(f"{owner} {_short(defs.get(owner, ''))}: no variant (no DomainVariant def, "
+                out.notes.append(f"{(owner + ' ' + _short(defs.get(owner, ''))).strip()}: no variant (no DomainVariant def, "
                                  f"no configuration table; {what})")
             continue
+        cad_order += [(owner, n) for n in cad_names]
         for name in list(mine) + [n for n in cad_names if n not in mine]:
             v = mine.get(name)
             f, desc = cad_names.get(name, ("", ""))
@@ -191,7 +238,12 @@ def listing(repo: str, m: modelmod.Model | None, upstream: list[modelmod.Model] 
             if not f and name in mine:
                 e.differences.insert(0, "not in CAD")
             out.variants.append(e)
-    out.variants.sort(key=lambda e: (e.owner, e.serves_none, e.name))
+    # serving variants first, then by the first configuration they serve, then in CAD order
+    # (.kicad_pro / configuration table); model.json is sorted by name, so it has no order of its own
+    pos = {(e.owner, e.name): i for i, e in enumerate(out.variants)}
+    cad_pos = {k: i for i, k in enumerate(cad_order)}
+    out.variants.sort(key=lambda e: (e.owner, e.serves_none, min((c for c, _ in e.serves), default="~"),
+                                     cad_pos.get((e.owner, e.name), len(cad_pos)), pos[(e.owner, e.name)]))
     out.unserved = [[r.config, r.usage, r.owner] for r in rows if not r.variants]
     return out
 
