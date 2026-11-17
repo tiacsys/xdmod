@@ -3,7 +3,9 @@
 The parameters of a top-level assembly come from its def in the ME model: every attribute with a
 value of a part or port usage the def owns, or of the usage's def (``attribute holeSpacing = 12
 [mm];``), is one parameter with the alias ``<usage>_<attribute>`` (``mount_holeSpacing``). At most
-ten per assembly (iteration 1). Ports (``XdDomain::MechanicalPort``) give their placement in the
+ten per assembly (iteration 1); the values a port takes over from a ``SYS-IF`` space budget its def
+specializes (co-design, XD-ADR-0134) are copied from the system model, not chosen in ME, and do not
+count (its placement does). Ports (``XdDomain::MechanicalPort``) give their placement in the
 assembly by the attributes ``x``, ``y``, ``z`` (lengths) and ``yaw``, ``pitch``, ``roll`` (angles,
 FreeCAD's order: about z, then y, then x).
 
@@ -112,14 +114,18 @@ def _attributes(m, el, seen=None) -> list[dict]:
 def model_params(m, asm) -> tuple[list[Param], list[str]]:
     """The parameters of an assembly def (see the module doc) and findings."""
     params, findings, aliases = [], [], set()
+    budget = 0                                          # values copied from a SYS-IF budget
     for _, u in m.owned(asm):
         if u.get("@type") not in ("PartUsage", "PortUsage") or not u.get("name"):
             continue
-        port = None
+        port, conforms = None, False
         if u["@type"] == "PortUsage":
             t = next(iter(m.declared_types(u)), None)
-            pid = modelmod.element_id(m, m.port_def(t)[0]) if t else None
+            pdef = m.port_def(t)[0] if t else None
+            pid = modelmod.element_id(m, pdef) if pdef else None
             port = pid if pid and idmod.kind_of(pid) == "ME-PORT" else None
+            conforms = bool(pdef) and any(s.get("isLibraryElement") and idmod.kind_of(modelmod.element_id(m, s) or "") == "SYS-IF"
+                                          for s in m.supers(pdef))
         for a in _attributes(m, u):
             alias = f"{u['name']}_{a['name']}"
             if alias in aliases:
@@ -133,9 +139,10 @@ def model_params(m, asm) -> tuple[list[Param], list[str]]:
                 findings.append(f"model {m.qn(a)}: {a['name']} needs a {'angle' if a['name'] in PLACEMENT[3:] else 'length'} "
                                 f"with a unit")
             params.append(Param(alias, u["name"], a["name"], value, kind, _tolerance(m, a, kind, factor), port))
-    if len(params) > MAX_PARAMS:
-        findings.append(f"model {m.qn(asm)}: {len(params)} parameters; at most {MAX_PARAMS} per assembly in iteration 1 "
-                        f"(XD-ADR-0137)")
+            budget += conforms and a["name"] not in PLACEMENT
+    if len(params) - budget > MAX_PARAMS:
+        findings.append(f"model {m.qn(asm)}: {len(params) - budget} parameters (without {budget} values of SYS-IF budgets); "
+                        f"at most {MAX_PARAMS} per assembly in iteration 1 (XD-ADR-0137)")
     return sorted(params, key=lambda p: p.alias), findings
 
 
