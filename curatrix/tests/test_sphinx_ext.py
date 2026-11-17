@@ -33,6 +33,27 @@ def test_build(tmp_path):
     assert "built locally" in html                         # CAD directive without the export: notice, no warning
     assert "link_length" in html and "80 mm" in html       # freecad-params, plain Python
     assert "1 chain(s)" in html or "chain(s)" in html
+    # the SVG viewer (xdmod#69 Q16): the view is a zoom figure, the vendored files are in _static, no CDN
+    assert '<figure class="sysml-view xd-zoom">' in html
+    for f in ("svg-pan-zoom/svg-pan-zoom.min.js", "svg-pan-zoom/LICENSE", "xd-svgview.js", "xd-svgview.css"):
+        assert (out / "_static" / f).is_file(), f
+    assert re.search(r'<script src="_static/svg-pan-zoom/svg-pan-zoom.min.js', html)
+    assert re.search(r'<script src="_static/xd-svgview.js', html)
+    assert not re.search(r'<script src="https?:', html)
+
+
+def test_vendored_files_match_the_record():
+    """Each vendored file is the one vendor.yaml records (version, sha256), with its licence file."""
+    import hashlib
+    import yaml
+    ext = FIXTURES.parents[2] / "sphinx" / "xdmod_sphinx"
+    rec = yaml.safe_load((ext / "vendor.yaml").read_text())
+    spz = rec["svg-pan-zoom"]
+    assert spz["license"] == "BSD-2-Clause" and "svg-pan-zoom/LICENSE" in spz["files"]
+    for path, f in spz["files"].items():
+        assert hashlib.sha256((ext / "static" / path).read_bytes()).hexdigest() == f["sha256"], path
+    head = (ext / "static" / "svg-pan-zoom" / "svg-pan-zoom.min.js").read_text().splitlines()[0]
+    assert head == f"// svg-pan-zoom v{spz['version']}"
 
 
 def test_unknown_need_in_view_fails_strict(tmp_path):
@@ -61,6 +82,7 @@ def test_cad_export_is_shown_when_present(tmp_path):
     assert rc == 0, log
     html = (out / "index.html").read_text()
     assert 'id="kicad-board"' in html and "built locally" not in html
+    assert '<figure class="xd-cad xd-zoom">' in html
 
 
 def test_needimport_missing_prints_the_sentence(tmp_path):

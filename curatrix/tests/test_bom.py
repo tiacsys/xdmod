@@ -212,12 +212,29 @@ def test_board_document(tmp_path):
          "description": "Missing connection", "note": "routing (accepted.yaml entry 1; not committed)"}]}))
     html = build(tmp_path / "o2")
     assert local not in html
-    assert "data:image" not in html and html.count("<img") == 1          # six equal PNGs: one image file
-    for text in ("bom/v0.0.0-1-gabc-preview", "_images/render-top-a.png", "bottom: same as variant a top",
+    assert "data:image" not in html and html.count("<img") == 6          # every variant its full set (#69 f. 11)
+    assert "same as" not in html
+    for text in ("bom/v0.0.0-1-gabc-preview", "_images/render-top-a.png", "_images/render-3d-b.png",
+                 "Variant b, bom/v0.0.0-1-gabc-preview: top, bottom, 3D.", 'class="xd-cad xd-zoom"',
                  'id="root-sheet"', "proposed, not accepted", "0 open, 1 proposed, 0 accepted"):
         assert text in html, text
     _cam(root, repo, "v0.0.0-1-gabc-preview", commit="1" * 40)       # the output of another commit: never shown
     assert build(tmp_path / "o3").count(local) == 4
+
+
+def test_board_variants_default_first_then_model_order(tmp_path):
+    """The board document orders the variants as the model does, ``default`` first (xdmod#69 finding 11);
+    without model variants KiCad's order, still ``default`` first."""
+    sys.path.insert(0, str(FIXTURES.parents[2] / "sphinx"))
+    from xdmod_sphinx import pcba
+    pro = tmp_path / "b.kicad_pro"
+    pro.write_text(json.dumps({"schematic": {"variants": [{"name": n} for n in ("alt", "x", "default", "y")]}}))
+    b = pcba._Board.__new__(pcba._Board)
+    b.pr = type("Pr", (), {"pro": pro})()
+    b.model_variants = lambda: []
+    assert [v["name"] for v in b.variants()] == ["default", "alt", "x", "y"]
+    b.model_variants = lambda: ["default", "y", "alt"]
+    assert [v["name"] for v in b.variants()] == ["default", "y", "alt", "x"]
 
 
 def test_harness_links_use_the_zdocs_intersphinx_name(tmp_path):

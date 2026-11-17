@@ -123,7 +123,7 @@ class HarnessDiagram(Directive):
     required_arguments = 1
 
     def run(self):
-        from xdmod_sphinx import inline_svg, notice
+        from xdmod_sphinx import inline_svg, notice, svg_figure
         env = self.state.document.settings.env
         name = self.arguments[0]
         # the cam output lives outside the source tree and appears or changes between builds:
@@ -148,8 +148,7 @@ class HarnessDiagram(Directive):
         rec = best[1]
         cap = f"{rec.get('version', '')}" + ("" if rec.get("release") else " (preview)") + \
               f", local output of {rec.get('date', '')}"
-        html = f'<figure class="xd-cad">{inline_svg(svg.read_text(encoding="utf-8"))}<figcaption>{cap}</figcaption></figure>'
-        return [nodes.raw("", html, format="html")]
+        return [nodes.raw("", svg_figure(inline_svg(svg.read_text(encoding="utf-8")), cap), format="html")]
 
 
 class HarnessWires(Directive):

@@ -1,0 +1,76 @@
+/* xdmod SVG viewer (xd-svgview.js). SPDX-License-Identifier: Apache-2.0 */
+figure.xd-zoom {
+  position: relative;
+  margin: 1em 0;
+}
+figure.xd-zoom > svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: #fff;              /* the SVGs come without a page colour; lines stay readable in dark themes */
+  border: 1px solid #c8c8c8;
+  cursor: grab;
+}
+figure.xd-zoom > svg:active { cursor: grabbing; }
+.xd-svgview-enlarge {
+  position: absolute;
+  top: 0.4em;
+  right: 0.4em;
+  z-index: 2;
+  padding: 0.2em 0.6em;
+  font: inherit;
+  font-size: 0.85em;
+  color: #222;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #888;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.xd-svgview-enlarge:hover, .xd-svgview-enlarge:focus { background: #fff; border-color: #222; }
+.xd-svgview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+}
+.xd-svgview-overlay[hidden] { display: none; }
+.xd-svgview-box {
+  display: flex;
+  flex-direction: column;
+  width: 96vw;
+  height: 94vh;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.xd-svgview-bar {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 0.3em 0.6em;
+  color: #222;
+  background: #eee;
+  border-bottom: 1px solid #ccc;
+  font-size: 0.9em;
+}
+.xd-svgview-title { font-weight: bold; }
+.xd-svgview-hint { flex: 1; color: #666; }
+.xd-svgview-close {
+  font-size: 1.5em;
+  line-height: 1;
+  padding: 0 0.3em;
+  color: #222;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.xd-svgview-stage { flex: 1; min-height: 0; background: #fff; }
+.xd-svgview-stage > svg { display: block; cursor: grab; }
+html.xd-svgview-open, html.xd-svgview-open body { overflow: hidden; }
+@media print {
+  .xd-svgview-enlarge, .svg-pan-zoom-control { display: none; }
+}

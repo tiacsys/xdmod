@@ -11,7 +11,8 @@
         "output_filename": "schematic-svg",
         "format": "svg",
         "plot_all": true,
-        "plot_drawing_sheet": true
+        "plot_drawing_sheet": true,
+        "use_background_color": false
       }
     },
     {
