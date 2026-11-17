@@ -47,12 +47,12 @@ description = "XD-ADR / PRJ-DEC: the day the decision was made (YYYY-MM-DD)."
 schema = { type = "string", pattern = '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' }
 
 [needs.fields.decision_status]
-description = "XD-ADR / PRJ-DEC: accepted | revised (a newer decision changed part of it) | superseded (a newer decision replaced it). The newer decision holds the link."
-schema = { type = "string", enum = ["accepted", "revised", "superseded"] }
+description = "XD-ADR / PRJ-DEC: proposed (written, waiting for a spike or the owner) | accepted | revised (a newer decision changed part of it) | superseded (a newer decision replaced it). The newer decision holds the link."
+schema = { type = "string", enum = ["proposed", "accepted", "revised", "superseded"] }
 
 [needs.fields.check_id]
 description = "XD-CHECK: the check's ID in curatrix (CK-...), as used by `curatrix check --only`."
-schema = { type = "string", pattern = '^CK-[A-Z][0-9]+$' }
+schema = { type = "string", pattern = '^CK-[A-Z][0-9]+[a-z]?$' }
 
 [needs.fields.instances]
 description = "Usages of a definition need (D128), e.g. leader.joint1."
@@ -279,8 +279,8 @@ target_types = ["sys-el"]
 [needs.types.links.satisfies]
 target_types = ["sw-req"]
 [needs.types.links.conforms]
-description = "The element meets a peer interface (pin map, connector, mounting)."
-target_types = ["sys-if"]
+description = "The element meets a peer interface (pin map, connector, mounting). SW may also conform to the board model of EE (EE-PCBA pin map, EE-PORT): the one exception to the peer rule in that direction (5.14)."
+target_types = ["sys-if", "ee-pcba", "ee-port"]
 outgoing = "conforms to"
 incoming = "conformed by"
 
@@ -297,7 +297,7 @@ schema = { minItems = 1 }
 [needs.types.links.satisfies]
 target_types = ["sw-req"]
 [needs.types.links.conforms]
-target_types = ["sys-if"]
+target_types = ["sys-if", "ee-pcba", "ee-port"]
 
 [[needs.types]]
 directive = "sw-impl"
@@ -343,6 +343,44 @@ prefix = "EE-PCBA-"
 id_regex = '^EE-PCBA-[0-9]{4,}$'
 color = "#F8CBAD"
 style = "component"
+[needs.types.links.realizes]
+target_types = ["sys-el"]
+[needs.types.links.satisfies]
+target_types = ["ee-req"]
+[needs.types.links.conforms]
+target_types = ["sys-if"]
+
+# EE-PORT and EE-HAR are emitted by the EE domain model (robarm-ee/model/), like EE-PCBA (5.14):
+# KiCad and WireViz files carry these IDs only as references (`Port` field, harness ends).
+[[needs.types]]
+directive = "ee-port"
+title = "EE Port (connector)"
+prefix = "EE-PORT-"
+id_regex = '^EE-PORT-[0-9]{4,}$'
+color = "#F8CBAD"
+style = "interface"
+[needs.types.links.conforms]
+description = "The connector port meets the system interface it specializes (derived from SysML :>)."
+target_types = ["sys-if"]
+[needs.types.links.part_of]
+description = "The board that has this port. Ports of external parts (bought modules) have none."
+target_types = ["ee-pcba"]
+outgoing = "part of"
+incoming = "contains"
+
+[[needs.types]]
+directive = "ee-har"
+title = "Wiring Harness"
+prefix = "EE-HAR-"
+id_regex = '^EE-HAR-[0-9]{4,}$'
+color = "#F8CBAD"
+style = "component"
+[needs.types.links.connects]
+description = "The ports the harness ends mate with (both ends, also ports of external parts). The harness is built to fit them, so it holds the link."
+target_types = ["ee-port"]
+schema = { minItems = 2 }
+outgoing = "connects"
+incoming = "connected by"
 [needs.types.links.realizes]
 target_types = ["sys-el"]
 [needs.types.links.satisfies]
@@ -404,6 +442,22 @@ target_types = ["sys-el"]
 target_types = ["me-req"]
 [needs.types.links.conforms]
 target_types = ["sys-if"]
+
+# ME-PORT is emitted by the ME domain model (robarm-me/model/), like ME-ASM (5.14): the FreeCAD LCS
+# of an interface carries the ID only as a reference (`Port` property).
+[[needs.types]]
+directive = "me-port"
+title = "ME Port (mechanical interface)"
+prefix = "ME-PORT-"
+id_regex = '^ME-PORT-[0-9]{4,}$'
+color = "#C6E0B4"
+style = "interface"
+[needs.types.links.conforms]
+description = "The mechanical port meets the system interface it specializes (derived from SysML :>)."
+target_types = ["sys-if"]
+[needs.types.links.part_of]
+description = "The assembly that has this port."
+target_types = ["me-asm"]
 
 [[needs.types]]
 directive = "me-part"

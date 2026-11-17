@@ -46,11 +46,14 @@ TR-<TESTCASE-ID>-<RUN>   e.g.  TR-SW-TC-0103-3f9a1c2e   (test results only)
 | `SW-IMPL` | Code unit | robarm-sw | ledger; written by a tool into a Doxygen tag, like safety's `@testid` |
 | `SW-TC` | SW test case | robarm-sw | ledger; written by a tool into the ZTEST comment, like safety's `@testid` (D80) |
 | `EE-REQ` | EE requirement | robarm-ee | ledger (author) |
-| `EE-PCBA` | PCBA | robarm-ee | ledger; KiCad project field |
+| `EE-PCBA` | PCBA | robarm-ee | ledger; SysML short name in the EE model; the KiCad project refers to it (XD-ADR-0128) |
+| `EE-PORT` | Connector port, port of an external part | robarm-ee | ledger; SysML short name in the EE model; KiCad field `Port` refers to it |
+| `EE-HAR` | Wiring harness | robarm-ee | ledger; SysML short name in the EE model; the WireViz YAML refers to it |
 | `EE-CMP` | Circuit block / component | robarm-ee | ledger; KiCad hidden field `TraceID` |
 | `EE-TC` | EE test case | robarm-ee | ledger (author) |
 | `ME-REQ` | ME requirement | robarm-me | ledger (author) |
-| `ME-ASM` | Assembly | robarm-me | ledger; FreeCAD property `TraceID` |
+| `ME-ASM` | Assembly | robarm-me | ledger; SysML short name in the ME model; FreeCAD property `TraceID` refers to it (XD-ADR-0128) |
+| `ME-PORT` | Mechanical interface | robarm-me | ledger; SysML short name in the ME model; FreeCAD LCS property `Port` refers to it |
 | `ME-PART` | Part | robarm-me | ledger; FreeCAD property `TraceID` |
 | `ME-TC` | ME test case | robarm-me | ledger (author) |
 | `XD-ADR` | Framework decision (D120) | xdmod | ledger (author) |

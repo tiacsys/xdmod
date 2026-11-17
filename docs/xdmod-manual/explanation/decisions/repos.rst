@@ -182,3 +182,37 @@ Repos, the west workspace, names, tags and paths.
    :status: valid
 
    **``bootstrap.sh`` is a copy in robarm-manifest** (``scripts/``), made from ``xdmod/templates/bootstrap.sh``. A check warns when the copy drifts from the template.
+
+.. xd-adr:: Tags per board, assembly and harness, made by the owner
+   :id: XD-ADR-0140
+   :date: 2026-11-17
+   :decision_status: accepted
+   :status: valid
+   :refines: XD-ADR-0047
+
+   **Boards, assemblies and harnesses have their own tags** ``<name>/vX.Y.Z`` (for example
+   ``joint-controller/v1.2.0``) in their domain repo, next to the repo tags (:need:`XD-ADR-0047`). The
+   design output takes its version from ``git describe --match '<name>/*'``. ME tags only assemblies;
+   an exported part carries the version of the assembly. **Only the owner creates these tags**, like
+   baselines; an agent proposes a tag in its PR. Unfinished designs use ``v0.x`` tags.
+
+.. xd-adr:: Roles: EE gets FreeCAD, ME gets the KiCad files, SW gets the EE model
+   :id: XD-ADR-0141
+   :date: 2026-11-17
+   :decision_status: accepted
+   :status: valid
+   :refines: XD-ADR-0079
+
+   **The roles change with the cross-domain work of Phase 5.**
+
+   - **ee** also needs FreeCAD (``FreeCADCmd``): it imports the board's STEP export into the board
+     library (:need:`XD-ADR-0139`).
+   - **me** also needs the EE repo with the KiCad libraries (west group ``ee``, without the 3D models)
+     and ``kicad-cli``: StepUp pushes into the ``.kicad_pcb``, and the pushed file is re-saved by KiCad
+     10 (:need:`XD-ADR-0134`).
+   - **sw** also gets the EE repo (west group ``ee``): SW reads the board pin maps from the EE model
+     (:need:`XD-ADR-0131`).
+   - Both ee and me get the board library repo once it exists (:need:`XD-ADR-0139`).
+
+   ``tools.yaml`` and the roles of ``curatrix bootstrap`` follow; ``curatrix doctor`` warns when a role
+   with ``kicad-cli`` has no KiCad 3D models (STEP and renderings then show bare boards).

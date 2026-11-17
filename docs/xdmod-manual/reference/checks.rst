@@ -75,6 +75,12 @@ interfaces in the systems engineering repo: a KiCad netlist against the pin maps
 devicetree against the model, FreeCAD parameters against model attributes, KiCad ERC and FreeCAD
 recompute, the firmware build and unit tests.
 
+Phase 5 plans more checks for the EE and ME domains (projects, 1:1 with the domain model,
+connectors, ERC and DRC, accepted findings, jobsets, BOM fields, variants, assemblies, collisions)
+and the domain-model conformance check (:need:`XD-ADR-0132`). Their IDs, stages and levels are
+fixed in ``xdmod/claude/framework/checks.md`` before their code; each starts as a warning and
+appears in the catalogue above once it is built.
+
 Output
 ------
 

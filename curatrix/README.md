@@ -48,7 +48,7 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 | `curatrix hook pre-commit` | what the installed git hook runs (CK-C1 warning, CK-H1, `.drawio.svg` freshness, FCStd-without-JSON warning) |
 
 Roles (`--role`, repo-topology.md §4): `syseng` (manifest default, D93), `ee` (`+ee`), `ee3d`
-(`+ee,+kicad-3d`), `me` (`+me,+freecad-parts`), `sw` (`+sw`), `integration` (`+ee,+me,+sw,+integration`),
+(`+ee,+kicad-3d`), `me` (`+me,+freecad-parts,+ee`), `sw` (`+sw,+ee`), `integration` (`+ee,+me,+sw,+integration`),
 `full` (all, incl. big libraries), `ci-full` (= integration).
 
 ### Launchers

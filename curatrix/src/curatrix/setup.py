@@ -16,12 +16,14 @@ from curatrix import limits, tools
 from curatrix.ws import Workspace
 
 # repo-topology.md §4: group filter added to the manifest default (which is minimal, D93).
+# me and sw also get the ee group (task 5.14): ME pushes board geometry into the KiCad files,
+# SW reads the board pin maps from the EE model.
 ROLES = {
     "syseng": [],
     "ee": ["+ee"],
     "ee3d": ["+ee", "+kicad-3d"],
-    "me": ["+me", "+freecad-parts"],
-    "sw": ["+sw"],
+    "me": ["+me", "+freecad-parts", "+ee"],
+    "sw": ["+sw", "+ee"],
     "integration": ["+ee", "+me", "+sw", "+integration"],
     "full": ["+ee", "+me", "+sw", "+integration", "+kicad-3d", "+freecad-parts"],
     "ci-full": ["+ee", "+me", "+sw", "+integration"],
@@ -368,6 +370,9 @@ def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
                 "runner image (--ci)" if ci else st.source)
         else:
             add("ok", f"{st.name} {have}")
+    if "kicad-cli" in ts.system and not (ws.root / "libs" / "kicad" / "packages3D").is_dir():
+        add("warn", "KiCad 3D models (libs/kicad/packages3D) missing",
+            "STEP and renderings show bare boards; role ee3d or full")
     lim_backend = limits.backend()
     add("ok" if lim_backend == "systemd" else "warn", f"limits backend: {lim_backend}",
         "" if lim_backend == "systemd" else "no systemd user session: timeout + ulimit -v fallback")

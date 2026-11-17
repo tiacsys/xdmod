@@ -55,11 +55,12 @@ A role decides which repos a workspace checks out, through west's group filter
      - ``+ee,+kicad-3d``
      - like ``ee``, plus the KiCad 3D models
    * - ``me``
-     - ``+me,+freecad-parts``
-     - plus the ME repo and the FreeCAD parts library
+     - ``+me,+freecad-parts,+ee``
+     - plus the ME repo, the FreeCAD parts library, and the EE repo with the KiCad libraries
+       (:need:`XD-ADR-0141`)
    * - ``sw``
-     - ``+sw``
-     - plus the SW repo
+     - ``+sw,+ee``
+     - plus the SW repo and the EE repo, for the board pin maps (:need:`XD-ADR-0131`)
    * - ``integration``
      - ``+ee,+me,+sw,+integration``
      - everything except the big libraries (:need:`XD-ADR-0082`)

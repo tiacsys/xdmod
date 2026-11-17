@@ -11,6 +11,7 @@ def test_roles_match_repo_topology():
     assert setup.ROLES["syseng"] == []
     assert setup.ROLES["integration"] == ["+ee", "+me", "+sw", "+integration"]
     assert "+kicad-3d" in setup.ROLES["full"] and "+freecad-parts" in setup.ROLES["me"]
+    assert "+ee" in setup.ROLES["me"] and "+ee" in setup.ROLES["sw"]   # task 5.14: KiCad files, pin maps
 
 
 def test_claude_links(tmp_path, monkeypatch):

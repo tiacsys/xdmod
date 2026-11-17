@@ -54,34 +54,47 @@ EE repo
 
 .. code-block:: text
 
-   pcba/<name>/            one KiCad project per PCBA, with project-local library tables
-   proto/<config>/         prototype wiring per prototype configuration (KiCad or WireViz)
+   model/                  EE domain model: board defs, connector port defs with pin maps,
+                           cable defs, external parts, board variants
+   pcba/<name>/            one KiCad project per board def: <name>.kicad_pro, schematic, board,
+                           library tables, <name>.kicad_jobset, accepted.yaml
+   proto/<name>/           one KiCad project per block of the prototype configuration
+   harness/<name>/         one WireViz harness per cable def: <name>.yml
    lib/                    project-local symbols, footprints, 3D models
-   tests/                  scripted EE checks (netlist vs. pin map, ERC), JUnit output
-   generated/              cad-needs.json
-   docs/                   EE requirements and design; one document per PCBA and per
-                           prototype configuration
+   tests/                  scripted EE checks, JUnit output
+   generated/              cad-needs.json, model.json, <project>.connectors.json
+   docs/                   ee-design; one document per board (pcba-<name>), prototype
+                           project (proto-<name>) and harness (harness-<name>)
 
 KiCad library tables refer to the shared libraries only through variables (``${XD_KICAD_SYMBOLS}``
 and so on) and to ``lib/`` through ``${KIPRJMOD}``. ``curatrix launch kicad`` sets the variables
-(:need:`XD-ADR-0080`). There is one document per PCBA and one per prototype configuration (:need:`XD-ADR-0102`).
+(:need:`XD-ADR-0080`). The domain model owns the board, port and harness IDs; KiCad and WireViz
+files refer to them (:need:`XD-ADR-0128`). The jobset is a copy of the xdmod template
+(:need:`XD-ADR-0142`); ``accepted.yaml`` holds the accepted ERC and DRC findings (:need:`XD-ADR-0126`).
+There is one document per board, prototype project and harness (:need:`XD-ADR-0129`,
+:need:`XD-ADR-0127`).
 
 ME repo
 -------
 
 .. code-block:: text
 
-   parts/<part>.FCStd      single parts, stored uncompressed
-   assemblies/<asm>/       <asm>.FCStd and assembly-specific parts
+   model/                  ME domain model: assembly defs, mechanical port defs, variants
+   parts/<part>.FCStd      shared parts, stored uncompressed
+   assemblies/<name>/      <name>.FCStd (top document), skeleton.FCStd (parameters, variant
+                           table, master sketch), parts/, accepted.yaml
    lib/                    project-local parts
    templates/              TechDraw templates
    print/                  print-settings profiles
    tests/                  scripted ME checks, JUnit output
-   generated/              cad-needs.json, semantic JSON of each .FCStd
-   docs/
+   generated/              cad-needs.json, model.json, semantic JSON of each .FCStd
+   docs/                   me-design; one document per top-level assembly (asm-<name>)
 
 FreeCAD files are stored uncompressed, with a git textconv for readable diffs (:need:`XD-ADR-0056`,
-:need:`XD-RULE-0039`).
+:need:`XD-RULE-0039`). Parts refer only to the skeleton, never to the top document
+(:need:`XD-ADR-0137`, proposed). Board models come at fixed versions from a board library repo
+(:need:`XD-ADR-0139`, proposed). Boards, harnesses and assemblies have their own tags
+``<name>/vX.Y.Z``, made by the owner only (:need:`XD-ADR-0140`).
 
 SW repo
 -------

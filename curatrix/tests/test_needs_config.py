@@ -36,6 +36,11 @@ def test_sample_builds_strict(tmp_path):
     assert needs["SW-REQ-0002"]["derived"] is True
     # R4 grace (D75): SYS-EL-0003 satisfies the retired SYS-REQ-0002 and the build passes.
     assert "SYS-REQ-0002" in needs["SYS-EL-0003"]["satisfies"]
+    # Phase 5 kinds (5.14): ports, harness, SW conforms to the EE board model.
+    assert needs["EE-HAR-0001"]["connects"] == ["EE-PORT-0001", "EE-PORT-0002"]
+    assert needs["ME-PORT-0001"]["part_of"] == ["ME-ASM-0001"]
+    assert needs["SW-DD-0002"]["conforms"] == ["EE-PCBA-0001", "EE-PORT-0001"]
+    assert needs["XD-ADR-0002"]["decision_status"] == "proposed"
 
 
 BAD = {
@@ -114,6 +119,57 @@ BAD = {
    :result_of: INT-STC-0001
    :method: hil
    :firmware_sha256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+""",
+    "ee-port-conforms-to-element": """
+.. ee-port:: Bad
+   :id: EE-PORT-0090
+   :status: valid
+   :conforms: SYS-EL-0003
+""",
+    "ee-port-part-of-assembly": """
+.. ee-port:: Bad
+   :id: EE-PORT-0091
+   :status: valid
+   :part_of: ME-ASM-0001
+""",
+    "harness-with-one-end": """
+.. ee-har:: Bad
+   :id: EE-HAR-0090
+   :status: valid
+   :connects: EE-PORT-0001
+""",
+    "harness-to-a-board": """
+.. ee-har:: Bad
+   :id: EE-HAR-0091
+   :status: valid
+   :connects: EE-PCBA-0001, EE-PORT-0001
+""",
+    "me-port-part-of-board": """
+.. me-port:: Bad
+   :id: ME-PORT-0090
+   :status: valid
+   :part_of: EE-PCBA-0001
+""",
+    "ee-links-to-sw": """
+.. ee-pcba:: Bad
+   :id: EE-PCBA-0090
+   :status: valid
+   :realizes: SYS-EL-0003
+   :conforms: SW-ARCH-0001
+""",
+    "me-conforms-to-ee-port": """
+.. me-part:: Bad
+   :id: ME-PART-0090
+   :status: valid
+   :part_of: ME-ASM-0001
+   :satisfies: ME-REQ-0001
+   :conforms: EE-PORT-0001
+""",
+    "bad-decision-status": """
+.. xd-adr:: Bad
+   :id: XD-ADR-0090
+   :status: valid
+   :decision_status: maybe
 """,
     "hil-without-sha": """
 .. tr:: Bad

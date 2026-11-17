@@ -18,7 +18,12 @@ pypdf==6.15.0
 Pygments==2.20.0
 docutils==0.22.4
 pytest==9.2.0
+wireviz==0.4.1                    # harness diagrams and BOMs (XD-ADR-0127); here, not in the EE repo, because
+                                  # curatrix cam, the harness directive and every full-set docs build use it
 # indirect
+click==8.5.1                      # wireviz
+graphviz==0.21                    # wireviz (Python binding; the dot binary is a system tool)
+pillow==13.0.0                    # wireviz
 alabaster==1.0.0
 attrs==26.1.0
 babel==2.18.0
