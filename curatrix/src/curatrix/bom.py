@@ -112,7 +112,8 @@ def read(root_sch: Path) -> list[Part]:
             if part is None:                       # the first unit of a multi-unit symbol
                 parts[ref] = Part(ref, props.get("Value", ""), props.get("Footprint", ""), props,
                                   _flag(s, "in_bom", True), _flag(s, "dnp", False), sheet, over)
-            else:                                  # further units: their variant overrides count too
+            else:                                  # further units: DNP on any unit marks the part (as KiCad)
+                part.dnp = part.dnp or _flag(s, "dnp", False)
                 for v, o in over.items():
                     mine = part.overrides.setdefault(v, {"fields": {}})
                     mine["fields"].update(o.get("fields") or {})
@@ -190,11 +191,19 @@ def table(parts: list[Part], variants: list[str]) -> tuple[list[str], list[list[
         for v in variants or [None]:
             ps = [views[v][r] for r in refs]
             fitted = [p for p in ps if p.in_bom and not p.dnp]
-            cell = str(len(fitted)) if fitted else "DNP"
+            out_ = [p for p in ps if not p.in_bom]
+            cell = str(len(fitted)) if fitted else ("not in BOM" if len(out_) == len(ps) else "DNP")
             if fitted and len(fitted) < len(ps):
-                cell += ", " + collapse([p.ref for p in ps if p not in fitted]) + " DNP"
-            if v and views[v][refs[0]].value != base.value:
-                cell += f", value {views[v][refs[0]].value}"
+                dnp = [p.ref for p in ps if p.in_bom and p.dnp]
+                cell += (", " + collapse(dnp) + " DNP" if dnp else "") + \
+                    (", " + collapse([p.ref for p in out_]) + " not in BOM" if out_ else "")
+            if v:                                  # the variant's own part, where it is not the base's
+                mine = views[v][refs[0]]
+                for label, a_, b_ in (("value", mine.value, base.value), ("footprint", mine.footprint, base.footprint),
+                                      (MANUFACTURER, mine.get(MANUFACTURER), base.get(MANUFACTURER)),
+                                      (MPN, mine.get(MPN), base.get(MPN))):
+                    if a_ != b_:
+                        cell += f", {label} {a_ or '(none)'}"
             settings = sorted({p.get(SETTING) for p in ps if p.get(SETTING)})
             if settings:
                 cell += ", " + "/".join(settings)
@@ -241,16 +250,30 @@ def variants_table(parts: list[Part], variants: list[dict], zephyr: dict[str, li
 
 
 def field_findings(parts: list[Part], variants: list[str], where: str) -> list[str]:
-    """CK-F12: Manufacturer and MPN on every BOM part, or a Standard designation instead."""
+    """CK-F12: Manufacturer and MPN on every BOM part, or a Standard designation instead, as the
+    base schematic and every variant see it; a variant that changes the value or footprint of a
+    part keeps no MPN of the base (it must name its own)."""
     out = []
-    for p in bom_parts(parts, variants):
-        if p.get(STANDARD):
-            continue
-        miss = [f for f in (MANUFACTURER, MPN) if not p.get(f)]
-        if miss:
-            out.append(f"{where}: {p.ref} ({p.value}) has no {' and no '.join(miss)}; add the field(s), or a "
-                       f"field {STANDARD} with the part's standard designation")
-    return out
+    base = {p.ref: p for p in parts}
+    seen: dict[str, list[str]] = {}                # ref -> fields already reported missing
+    for v in [None, *variants]:
+        tag = f" (variant {v})" if v else ""
+        for p in resolve(parts, v):
+            if not p.in_bom or p.get(STANDARD):
+                continue
+            miss = [f for f in (MANUFACTURER, MPN) if not p.get(f)]
+            if miss and seen.get(p.ref) != miss:
+                seen[p.ref] = miss
+                out.append(f"{where}: {p.ref} ({p.value}){tag} has no {' and no '.join(miss)}; add the field(s), "
+                           f"or a field {STANDARD} with the part's standard designation")
+                continue
+            if miss:
+                continue
+            b = base[p.ref]
+            if v and (p.value, p.footprint) != (b.value, b.footprint) and p.get(MPN) == b.get(MPN):
+                out.append(f"{where}: {p.ref}{tag} is {p.value} ({p.footprint}) but keeps the MPN {b.get(MPN)} of the "
+                           f"base ({b.value}); override MPN in the variant too")
+    return list(dict.fromkeys(out))
 
 
 # ------------------------------------------------------------------ CK-D9: against KiCad's BOM export

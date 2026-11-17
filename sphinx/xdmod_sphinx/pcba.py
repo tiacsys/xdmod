@@ -23,9 +23,10 @@ when the output is missing or stale, so the strict docs build never depends on i
 """
 from __future__ import annotations
 
-import base64
 import hashlib
 import json
+import os
+import re
 from pathlib import Path
 
 from docutils import nodes
@@ -54,7 +55,8 @@ class _Board:
         if pr is None:
             raise directive.error(f"{directive.name}: no pcba/{self.name}/ project (checks.yaml cad.projects)")
         self.pr = pr
-        env.note_dependency(str(pr.pro))
+        for f in sorted(pr.folder.glob("*.kicad_*")):    # re-read the page when a KiCad file changes
+            env.note_dependency(str(f))
 
     def variants(self) -> list[dict]:
         d = json.loads(self.pr.pro.read_text(encoding="utf-8"))
@@ -73,8 +75,9 @@ class _Board:
 
 
 def _cell(s) -> str:
+    """Free text in a table cell, with rST markup escaped (KiCad messages, descriptions, pin names)."""
     s = str(s) if s not in (None, "") else "—"
-    return s.replace("|", "\\|").replace("\n", " ")
+    return re.sub(r"([\\*_`|:<>\[\]])", r"\\\1", s.replace("\n", " "))
 
 
 def _rst(directive, lines: list[str]) -> list[nodes.Node]:
@@ -110,14 +113,14 @@ class Overview(Directive):
         lines = [f"* Board: :need:`{tid}`" if tid else "* Board: no ``TraceID`` in the project",
                  f"* KiCad project: ``{b.pr.pro.relative_to(b.repo)}``",
                  f"* Version: ``{_version(rec)}``, local output of {rec.get('date', '')}" if rec else
-                 "* Version: the local ``curatrix cam`` output of this commit is not part of this build",
+                 f"* Version, ERC/DRC: {LOCAL}",
                  f"* Variants: {', '.join(_lit(v['name']) for v in vs)}" if vs else "* Variants: none"]
         f = out / "findings.json" if out else None
         if f and f.is_file():
             rows = [r for k in ("erc", "drc") for r in json.loads(f.read_text()).get(k, [])]
-            n = {s: sum(r["state"] == s for r in rows) for s in ("open", "proposal", "accepted", "warning")}
+            n = {s: sum(r["state"] == s for r in rows) for s in ("open", "proposal", "accepted", "warning", "stale")}
             lines.append(f"* ERC/DRC: {n['open']} open, {n['proposal']} proposed, {n['accepted']} accepted, "
-                         f"{n['warning']} warnings")
+                         f"{n['warning']} warnings, {n['stale']} stale exclusions")
         return _rst(self, lines)
 
 
@@ -197,37 +200,41 @@ class Bom(Directive):
         return _rst(self, _table(head, [[_cell(c) for c in r] for r in rows]))
 
 
-def _img(path: Path, alt: str) -> str:
-    data = base64.b64encode(path.read_bytes()).decode()
-    return f'<img src="data:image/png;base64,{data}" alt="{alt}" style="max-width:32%">'
-
-
 class Renderings(Directive):
+    """Top, bottom and 3D per variant, each distinct image once: Sphinx image nodes, so the PNGs are
+    copied to ``_images/`` and not embedded in the page; an image equal to one shown before is
+    named instead."""
     required_arguments = 1
     VIEWS = (("render-top", "top"), ("render-bottom", "bottom"), ("render-3d", "3D"))
 
     def run(self):
+        env = self.state.document.settings.env
         b = _Board(self)
         rec, out = b.cam()
         if rec is None:
             return [nodes.paragraph(text=LOCAL)]
-        html, seen = [], {}
+        docdir = Path(env.doc2path(env.docname)).parent
+        result, seen = [], {}
         for v in [x["name"] for x in b.variants()] or [None]:
-            files = [(out / f"{stem}{'-' + v if v else ''}.png", what) for stem, what in self.VIEWS]
-            files = [(f, w) for f, w in files if f.is_file()]
-            if not files:
-                continue
-            key = hashlib.sha256(b"".join(f.read_bytes() for f, _ in files)).hexdigest()
             cap = f"Variant {v}" if v else "Board"
-            if key in seen:
-                html.append(f"<p>{cap}: the same renderings as variant {seen[key]}.</p>")
+            imgs, same = [], []
+            for stem, what in self.VIEWS:
+                f = out / f"{stem}{'-' + v if v else ''}.png"
+                if not f.is_file():
+                    continue
+                key = hashlib.sha256(f.read_bytes()).hexdigest()
+                if key in seen:
+                    same.append(f"{what}: same as {seen[key]}")
+                    continue
+                seen[key] = f"{cap.lower()} {what}"
+                imgs.append(nodes.image(uri=os.path.relpath(f, docdir), alt=f"{cap}, {what}", width="32%"))
+            if not imgs and not same:
                 continue
-            seen[key] = v
-            html.append(f'<figure class="xd-cad">{"".join(_img(f, w) for f, w in files)}'
-                        f"<figcaption>{cap}: top, bottom, 3D; {_version(rec)}</figcaption></figure>")
-        if not html:
-            return [nodes.paragraph(text=NO_DATA)]
-        return [nodes.raw("", "\n".join(html), format="html")]
+            shown = [i["alt"].split(", ")[-1] for i in imgs]
+            para = nodes.paragraph(text=f"{cap}, {_version(rec)}: " + "; ".join(
+                ([", ".join(shown)] if shown else []) + same) + ".")
+            result += [para, *imgs]
+        return result or [nodes.paragraph(text=NO_DATA)]
 
 
 class Schematic(Directive):

@@ -156,7 +156,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "b0b90de3-bd34-4b02-82dd-81f5e90d1ba4")
+		(uuid "b8eb856f-01c1-4847-b41f-8d6fbae1bb88")
 		(property "Reference" "R2"
 			(at 63.5 97 0)
 			(show_name no)
@@ -231,10 +231,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "e8565664-307e-4fa7-a81b-2281b153fc16")
+			(uuid "2db5ea7a-81d5-4b5d-96c4-9ba1bab92d3b")
 		)
 		(pin "1"
-			(uuid "118a8e59-6916-46f0-985a-c9df369b9ee3")
+			(uuid "b77f6ca0-0b62-4a05-831e-aad3a879ae10")
 		)
 		(instances
 			(project "bom"
