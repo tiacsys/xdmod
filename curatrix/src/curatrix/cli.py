@@ -63,7 +63,8 @@ def cmd_run(a):
     lim = limits.resolve(a.use, ws, a.memory, a.timeout)
     if a.verbose:
         print(f"curatrix run: {limits.describe(lim)} [{limits.backend()}]", file=sys.stderr)
-    rc = limits.norm_rc(subprocess.run(limits.wrap(cmd, lim), env=ws.run_env(), cwd=os.getcwd()).returncode)
+    env = limits.tool_env(ws, a.use, ws.run_env())        # KiCad/FreeCAD: the workspace-local config
+    rc = limits.norm_rc(subprocess.run(limits.wrap(cmd, lim), env=env, cwd=os.getcwd()).returncode)
     if rc in (124, 137):
         print(f"curatrix run: {limits.explain_rc(rc)}", file=sys.stderr)
     return rc
