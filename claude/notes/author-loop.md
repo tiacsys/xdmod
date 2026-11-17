@@ -1,18 +1,20 @@
 # Author loop on the canary (task 5.31)
 
-Agent measurement, 2026-11-17, about 1.5 hours (19:11 to 20:10, 126 measured commands). It answers the plan's "Pilot time" limit (P4-11, Phase 4
-review: "about 45 s per Pilot run") and exit criterion 5 of Phase 5. Raw data, scripts and logs are
-under `build/author-loop/` (not committed): `bin/measure.py` (the sampler), `bin/round.sh` and
-`bin/edit-round.sh` (the loops), `bin/table.py` (the tables below), `raw/<command>-<state><n>.{json,log}`
-and, for every check run, `raw/*.summary.json` (curatrix's own per-check seconds).
+Agent measurement, 2026-11-17, about 1.5 hours (19:11 to 20:10, 126 measured commands). It answers the
+plan's "Pilot time" limit (P4-11, Phase 4 review: "about 45 s per Pilot run") and exit criterion 5 of
+Phase 5. Raw data, scripts and logs are under `build/author-loop/` (not committed): `bin/measure.py`
+(the sampler), `bin/round.sh` and `bin/edit-round.sh` (the loops), `bin/table.py` (the tables below),
+`raw/<command>-<state><n>.{json,log}` and, for every check run, `raw/*.summary.json` (curatrix's own
+per-check seconds).
 
 ## Verdict
 
 **No caching now.** The plan's rule makes caching mandatory if one local check of robarm-ee takes more
-than five minutes. It takes **28 s** (median, with CAD), about a tenth of the limit. No other command
-of the author loop takes more than 80 s, and a whole role loop takes 0.5 to 1.5 minutes. The numbers do
-not ask for caching. Two cheap wins are on record below for when the canary grows (Pilot result
-reuse, parallel Sphinx in zdocs); neither is needed for Phase 5.
+than five minutes. It takes **28 s** (median, with CAD), about a tenth of the limit. No other command of
+the author loop takes more than 80 s, and a whole role loop takes 0.5 to 1.5 minutes. The numbers do not
+ask for caching. Four options are on record below for when the canary grows (Pilot result reuse, a
+smaller syseng export, parallel Sphinx in zdocs, skipping a repeated docs build); none is needed for
+Phase 5.
 
 ## Numbers
 
@@ -78,9 +80,9 @@ process tree of the command and records:
 - **wall time**;
 - **peak tree RSS**: the largest sum of the resident memory of all processes of the tree at one sample
   (the memory the command needs at once), and the largest single process;
-- **tool busy time**: per tool (Pilot/Java, kicad-cli, FreeCADCmd, Blender, Sphinx, CMake/Ninja/compiler,
-  Twister), the wall time during which at least one of its processes was alive, and how many distinct
-  processes it started. Processes shorter than 0.2 s can be missed in the count;
+- **tool busy time**: per tool (Pilot/Java, kicad-cli, FreeCADCmd, Blender, Sphinx,
+  CMake/Ninja/compiler, Twister), the wall time during which at least one of its processes was alive,
+  and how many distinct processes it started. Processes shorter than 0.2 s can be missed in the count;
 - for `curatrix check ... --json`: the per-check seconds that curatrix already writes into
   `build/<area>/checks/summary.json` (and prints after each check). No new timing option was needed.
 
@@ -97,19 +99,22 @@ States:
   - syseng: `heightAbove default 10 [mm]` in `model/product.sysml` to 11, 12, 13 mm -> `gen model`,
     `check`, `docs`;
   - EE: one line of the header comment of `model/canary.sysml` -> `check`, `cam canary-board`, `docs`
-    (KiCad files are saved through KiCad, not edited by hand, so the model stands in; the KiCad
-    steps run in full anyway, see below);
+    (KiCad files are saved through KiCad, not edited by hand, so the model stands in; the KiCad steps
+    run in full anyway, see below);
   - ME: the same in `robarm-me/model/canary.sysml` -> `check`, `cam canary-assembly` with and without
     Blender, `docs`;
   - SW: one comment line in `app/src/canary.c` -> `check` (it builds the firmware and runs Twister).
 
-All values are medians of three runs (cold: one run). Wall times varied by less than 3 % between the
-runs of one state, except the first fresh SW check (44 s against 36 s: the first build of the Zephyr
-app into an empty folder).
+All values are medians of three runs (cold: one run). Within this session, wall times varied by less
+than 3 % between the runs of one state, except the first fresh SW check (44 s against 36 s: the first
+build of the Zephyr app into an empty folder). Between sessions the spread is larger: the agent review
+of this note measured the syseng check at 46.9 s against 40.0 s here (17 % slower). Read the numbers as
+a session's level, give or take about 20 %.
 
 ## Where the time goes
 
-Medians over the warm and edit runs. Tool busy time = wall time with at least one process of the tool alive (processes started); the slowest checks from curatrix's per-check seconds.
+Medians over the warm and edit runs. Tool busy time = wall time with at least one process of the tool
+alive (processes started); the slowest checks from curatrix's per-check seconds.
 
 | Command | tool busy time (s) | slowest checks (s) |
 |---|---|---|
@@ -129,32 +134,35 @@ Medians over the warm and edit runs. Tool busy time = wall time with at least on
 
 What the tables show:
 
-1. **Nothing is cached, and nothing needs to be.** Cold, fresh, warm and edit cost the same within a
-   few percent for every command except the SW firmware build: CK-F5a takes 10.5 s from an empty build
-   folder (16 s the first time), 8 s on the first run after `curatrix update` (`--pristine auto` reconfigures), 0.4 s warm or
-   after a one-line edit (Ninja). Every other check, CAM and docs run does its full work every time; an
-   empty build area adds nothing measurable (CMake configure of a docs build is under a second).
+1. **Nothing is cached, and nothing needs to be.** Cold, fresh, warm and edit cost the same within a few
+   percent for every command except the SW firmware build: CK-F5a takes 10.5 s from an empty build
+   folder (16 s the first time), 8 s on the first run after `curatrix update` (`--pristine auto`
+   reconfigures), 0.4 s warm or after a one-line edit (Ninja). Every other check, CAM and docs run does
+   its full work every time; an empty build area adds nothing measurable (CMake configure of a docs
+   build is under a second).
 2. **The Pilot is the largest single item of the model checks**: 33 s in robarm-syseng, 14 to 15 s in
    robarm-ee and robarm-me. P4-11 expected about 45 s per Pilot run; the largest run today is 33 s. The
    syseng run is more than twice the domain runs although the domain runs load the whole system model as
-   a library set; the difference is most likely the **export**: syseng exports 59 packages into a 57 MB JSON
-   (`build/robarm-syseng/model/pilot-export.json`), EE and ME 5 packages into 4 MB (not timed apart: the Pilot runs as one jshell script).
+   a library set; the difference is most likely the **export**: syseng exports 59 packages into a 57 MB
+   JSON (`build/robarm-syseng/model/pilot-export.json`), EE and ME 5 packages into 4 MB (not timed
+   apart: the Pilot runs as one jshell script).
 3. **The syseng loop runs the Pilot twice**: `gen model` and CK-E1 (`check` calls the same `gen.model`
    and compares). That is 33 s of the 80 s loop spent on a result that was just computed.
-4. **Docs builds are serial Sphinx starts.** zdocs runs a stage-1 xref index and a stage-2 HTML build per
-   document; its custom targets are `USES_TERMINAL`, which puts them in Ninja's console pool (one job at
-   a time). A document costs about 2 x 1 s on this machine whatever its size. `docs full` and the
-   manifest check are 28 Sphinx runs plus Doxygen one after another (70 s); Sphinx uses one core, so
-   15 of 16 hardware threads stay idle.
-   CK-A6 in every repo check is the same docs build again (the repo check and `curatrix docs` each build).
-   Twister (CK-F5b) also rebuilds its test image each time: 10.6 s.
+4. **Docs builds are serial Sphinx starts.** zdocs runs a stage-1 xref index and a stage-2 HTML build
+   per document; its custom targets are `USES_TERMINAL`, which puts them in Ninja's console pool (one
+   job at a time). A document costs about 2 x 1 s on this machine whatever its size. `docs full` and the
+   manifest check are 28 Sphinx runs plus Doxygen one after another (70 s), each with about 1 s of
+   start-up. zdocs passes `-j auto` to each Sphinx run (`sphinx.cmake`), so one run may use several
+   cores, but the console pool lets only one run at a time; on the canary's small documents the start-up
+   dominates. CK-A6 in every repo check is the same docs build again (the repo check and `curatrix docs`
+   each build). Twister (CK-F5b) also rebuilds its test image each time: 10.6 s.
 5. **CAD tools are cheap on the canary**: KiCad's jobset (18 jobs, both variants) 11 s, the FreeCAD
    checks one FreeCADCmd run under 0.5 s, the ME CAM without Blender 6 s. **Blender is the largest CAD
    item**: 33 s of Cycles CPU rendering (8 threads, fixed samples) for the canary assembly, 30 s more
    than the z-buffer fallback (`--no-blender`).
 6. **Memory is not a constraint**: the peak is the Pilot's JVM (1.4 to 1.8 GB process, 2.1 GB tree in
-   syseng); everything else stays under 1 GB per process. All limits in `limits.yaml` have room (Pilot
-   4 G, docs 4 G, kicad-cli 2 G, freecad 4 G, blender 4 G).
+   syseng); everything else stays under 1 GB per process. All limits in `limits.yaml` have room
+   (Pilot 4G, docs 4G, kicad-cli 2G, freecad 4G, blender 4G).
 
 ## Caching options, if the numbers grow (not done)
 
@@ -162,14 +170,15 @@ What the tables show:
 |---|---|---|---|
 | Reuse the Pilot result inside a loop: key = Pilot version + content hash of library and model files + export list; `check` reuses `gen model`'s export under `build/<area>/model/` | 33 s of the 80 s syseng loop; 14 s per domain check when the model did not change | small (one file, `gen.model`), but a cache key that misses an input gives a stale pass of CK-E1/CK-D2; the key must include xdmod's own `sysml/*.sysml` | when a model check passes about 2 minutes |
 | Export only what curatrix reads (syseng exports 59 packages, 57 MB) | an estimated 15-20 s per syseng Pilot run | needs a look at what the readers use; no cache-key risk | first, before any cache |
-| Parallel Sphinx in zdocs (job pool instead of the console pool, stage 1 and stage 2 each in parallel where the DAG allows) | `docs full` from 70 s towards 15-20 s | upstream change in zdocs (a draft for the owner, D124) | when the full set has more documents |
+| Parallel Sphinx in zdocs (job pool instead of the console pool, stage 1 and stage 2 each in parallel where the DAG allows) | estimate: `docs full` from 70 s towards 15-20 s (not measured) | upstream change in zdocs (a draft for the owner, D124) | when the full set has more documents |
 | Skip CK-A6 in `check` when `curatrix docs` just built the same tree | 5-75 s per repo | a staleness key over the whole docs input set (registry, upstream needs) | not worth it now |
 
 ## User configuration
 
-`~/.config/{kicad,FreeCAD,blender}`, `~/.cache/{kicad,FreeCAD,blender}` and `~/.local/share/{kicad,FreeCAD}`
-were listed (path, size, modification time) before the first and after the last run
-(`build/author-loop/userconfig-{before,after}.txt`). **The two listings are identical**: 126 measured
-commands (with their Pilot, kicad-cli, FreeCADCmd and Blender runs) through curatrix wrote nothing into the user's
-configuration. The newest entries are from before the measurement (`kicad_common.json` 06:29,
-FreeCAD `user.cfg` 00:23 of the same day).
+`~/.config/{kicad,FreeCAD,blender}`, `~/.cache/{kicad,FreeCAD,blender}` and
+`~/.local/share/{kicad,FreeCAD}` were listed (path, size, modification time) before the first and after
+the last run (`build/author-loop/userconfig-{before,after}.txt`). **The two listings are identical**:
+126 measured commands (with their Pilot, kicad-cli, FreeCADCmd and Blender runs) through curatrix wrote
+nothing into the user's configuration. The newest entries are from before the measurement
+(`kicad_common.json` 06:29, FreeCAD `user.cfg` 00:23 of the same day).
+
