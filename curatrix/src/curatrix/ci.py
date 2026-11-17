@@ -1,7 +1,8 @@
 """CI helpers for the reusable workflow (`.github/workflows/curatrix-check.yml`).
 
 ``curatrix ci siblings``: PR CI sibling resolution (repo-topology.md §7, D52, D127). For every
-active ``xdmod`` / ``robarm-*`` project of the west workspace, check out, in this order:
+active framework project of the west workspace (xdmod and every project with a ``checks.yaml``),
+check out, in this order:
 
 1. the branch with the PR's head branch name, if the project's remote has one;
 2. the project's ``main``, if the manifest pin is an ancestor of it (so changes merged upstream
@@ -25,9 +26,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from curatrix import limits
-from curatrix.ws import Workspace
-
-PREFIXES = ("xdmod", "robarm-")
+from curatrix.ws import Workspace, is_framework_path
 
 
 @dataclass
@@ -109,13 +108,14 @@ def resolve_one(p: Project, branch: str, under_check: str, head_sha: str, ws=Non
 
 
 def projects(ws: Workspace) -> list[Project]:
-    """Active xdmod/robarm-* projects from `west list` (the manifest repo excluded)."""
+    """Active framework projects from `west list` (xdmod and every project with a checks.yaml;
+    the manifest repo excluded)."""
     out = subprocess.run([*ws.west(), "list", "-f", "{name}|{path}|{url}|{sha}"], cwd=ws.root,
                          capture_output=True, text=True, check=True, timeout=120).stdout
     res = []
     for line in out.splitlines():
         name, path, url, sha = (line.split("|") + ["", "", "", ""])[:4]
-        if name == "manifest" or not name.startswith(PREFIXES):
+        if name == "manifest" or not is_framework_path(ws.root / path, name):
             continue
         res.append(Project(name, ws.root / path, url, sha))
     return res

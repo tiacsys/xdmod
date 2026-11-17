@@ -5,12 +5,12 @@
 #   jobs:
 #     check:
 #       uses: tiacsys/xdmod/.github/workflows/curatrix-check.yml@main
-#       with: {repo: robarm-ee, role: ee}
+#       with: {repo: myproj-ee, role: ee, manifest: myorg/myproj-manifest}
 # The status check is then called "check / check" (caller job / this job); the repo rulesets
 # require that name (D133, D141).
 #
 # What it does:
-#   1. system packages (graphviz, ninja; gcc-multilib for robarm-sw's native_sim tests, D101) and
+#   1. system packages (graphviz, ninja; gcc-multilib for the sw role's native_sim tests, D101) and
 #      Doxygen at the pinned version (every zdocs build needs it; Ubuntu's 1.9.8 is too old for
 #      zdocs' HTML header), from the release tarball, sha256-checked and cached;
 #   2. a west workspace from the manifest (default: its main) with the role's group filter
@@ -29,7 +29,7 @@
 #      `timeout` + `ulimit -v` fallback (command-layer.md §6) is still proven by a smoke step.
 #      timeout-minutes caps the whole job.
 #
-# Clone depth (D64 g): xdmod, the manifest and every robarm repo get their full history
+# Clone depth (D64 g): xdmod, the manifest and every design repo get their full history
 # (blobless) and tags, as D64 g asks; Zephyr, its modules, tools/ and libs/ stay --depth=1
 # (third-party, pinned by tag/SHA; nothing in PR CI reads their history, and the KiCad
 # GIT_REV export, the reason for D64 g, runs only locally with CAD content, D56).
@@ -44,16 +44,16 @@ on:
         type: string
         required: true
       role:
-        description: curatrix role (group filter); xdmod, robarm-syseng, robarm-integration and robarm-manifest use integration
+        description: curatrix role (group filter); xdmod and the syseng, integration and manifest repos use integration
         type: string
         default: integration
       stage:
         type: string
         default: pr
       manifest:
-        description: manifest repo (owner/name)
+        description: manifest repo (owner/name); its folder in the workspace is its name
         type: string
-        default: tiacsys/robarm-manifest
+        required: true
       manifest-ref:
         type: string
         default: main
@@ -65,7 +65,7 @@ on:
         type: string
         default: ""
       doxygen-version:
-        description: Doxygen release (system tool pinned in robarm-sw/tools.yaml)
+        description: Doxygen release (system tool pinned in the sw repo's tools.yaml)
         type: string
         default: "1.18.0"
       doxygen-sha256:
@@ -99,7 +99,7 @@ jobs:
         id: plan
         run: |
           pkgs="graphviz ninja-build"
-          if [ "$REPO" = robarm-sw ]; then pkgs="$pkgs gcc-multilib g++-multilib"; fi   # native_sim (D101)
+          case "$ROLE" in sw|full) pkgs="$pkgs gcc-multilib g++-multilib" ;; esac   # native_sim (D101)
           echo "apt=$pkgs $EXTRA_APT" >> "$GITHUB_OUTPUT"
 
       - name: System packages
@@ -137,12 +137,18 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
 
+      - name: Manifest folder
+        id: mf
+        env:
+          MANIFEST: ${{ inputs.manifest }}
+        run: echo "dir=${MANIFEST##*/}" >> "$GITHUB_OUTPUT"
+
       - name: Manifest
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.manifest }}
           ref: ${{ inputs.manifest-ref }}
-          path: ws/robarm-manifest   # west init -l needs the manifest at this path
+          path: ws/${{ steps.mf.outputs.dir }}   # west init -l needs the manifest at this path
           fetch-depth: 0
 
       - name: Zephyr tree cache
@@ -152,21 +158,23 @@ jobs:
           path: |
             ws/zephyr
             ws/modules
-          key: xd-zephyr-${{ hashFiles('ws/robarm-manifest/submanifests/10-zephyr.yml') }}
+          key: xd-zephyr-${{ hashFiles(format('ws/{0}/submanifests/10-zephyr.yml', steps.mf.outputs.dir)) }}
 
       - name: Library cache (libs - KiCad, SYSMOD, PLEML)
         uses: actions/cache@v4
         with:
           path: ws/libs
-          key: xd-libs-${{ inputs.role }}-${{ hashFiles('ws/robarm-manifest/submanifests/*.yml') }}
+          key: xd-libs-${{ inputs.role }}-${{ hashFiles(format('ws/{0}/submanifests/*.yml', steps.mf.outputs.dir)) }}
           restore-keys: |
             xd-libs-${{ inputs.role }}-
 
       - name: West workspace (role ${{ inputs.role }})
         working-directory: ws
+        env:
+          MANIFEST_DIR: ${{ steps.mf.outputs.dir }}
         run: |
           python -m pip install -q west==1.4.0 PyYAML==6.0.3
-          west init -l robarm-manifest
+          west init -l "$MANIFEST_DIR"
           case "$ROLE" in
             syseng) ;;
             ee) west config manifest.group-filter -- +ee ;;

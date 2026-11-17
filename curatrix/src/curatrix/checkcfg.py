@@ -5,7 +5,7 @@ Every key is optional; a section that is absent switches its checks off. Full re
 with ``{ws}/`` (the workspace root).
 
     version: 1
-    area: robarm-syseng              # build/<area>/ (default: the repo name)
+    area: myproj-syseng              # build/<area>/ (default: the repo name)
     docs:                            # CK-A6 strict zdocs build; its needs.json feed the graph checks
       registry: docs/documents.yaml
     ids:                             # CK-C1, CK-C2
@@ -30,7 +30,7 @@ with ``{ws}/`` (the workspace root).
       needs: generated/cad-needs.json
       freecad_json: generated/freecad
     requirements: true               # CK-E2, CK-E3 on the repo's own requirements
-    bootstrap_template: scripts/bootstrap.sh   # CK-H5 (robarm-manifest)
+    bootstrap_template: scripts/bootstrap.sh   # CK-H5 (the manifest repo)
     pr_size: {lines: 600, files: 15}  # CK-H7 PR size warning (these are the defaults)
     expect: [CK-A6, CK-A1, CK-C1]    # CK-H6: exactly the checks this repo runs (built-in + commands)
     commands:                        # repo-specific checks
