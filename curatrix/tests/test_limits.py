@@ -71,8 +71,14 @@ def test_kicad_and_freecad_runs_get_the_workspace_config(tmp_path, monkeypatch):
     from curatrix.ws import Workspace
     from helpers import make_ws
     ws = Workspace(make_ws(tmp_path, monkeypatch))
-    k = limits.tool_env(ws, "kicad-cli", {"HOME": "/home/x"})
+    k = limits.tool_env(ws, "script", {"HOME": "/home/x"}, ["python", "board.py"])   # imports pcbnew
     assert k["KICAD_CONFIG_HOME"].startswith(str(ws.root)) and k["HOME"] == "/home/x"
-    f = limits.tool_env(ws, "freecad", {})
+    assert "XDG_CONFIG_HOME" not in k                       # not for non-FreeCAD runs (git, gh)
+    f = limits.tool_env(ws, "script", {}, ["/usr/bin/FreeCADCmd", "-c", "x"])
     assert f["XDG_CONFIG_HOME"].startswith(str(ws.root))
-    assert limits.tool_env(ws, "script", {"A": "1"}) == {"A": "1"}
+    assert limits.tool_env(ws, "freecad", {}, ["python"])["XDG_CONFIG_HOME"].startswith(str(ws.root))
+    seen = {}
+    monkeypatch.setattr(limits.subprocess, "run", lambda argv, env=None, **kw: seen.update(env=env) or
+                        subprocess.CompletedProcess(argv, 0))
+    limits.run(["kicad-cli", "version"], "kicad-cli", ws, env={"KEEP": "1"})
+    assert seen["env"]["KEEP"] == "1" and seen["env"]["KICAD_CONFIG_HOME"].startswith(str(ws.root))
