@@ -224,7 +224,7 @@ are at the end of the same notes file.
 
 **H. End of the phase**
 - [ ] 5.30 ME renderings (front, top, side, one 3D view) at the end of the phase (P5-5): Blender (pinned, headless on the STEP export) as an optional local renderer; without it the z-buffer renderer of XD-ADR-0147 (the Render workbench and Coin3D snapshots do not work headless, `claude/notes/me-renderings-spike.md`)
-- [ ] 5.31 Measure the author loop on the canary (P4-11); caching only if the numbers ask for it (mandatory if one local check of robarm-ee takes more than five minutes)
+- [ ] 5.31 Measure the author loop on the canary (P4-11); caching only if the numbers ask for it (mandatory if one local check of robarm-ee takes more than five minutes). Result in *`claude/notes/author-loop.md`* (robarm-ee local check 28 s; no caching)
 - [ ] 5.32 Manual: how-to pages for the EE and ME roles (new board, new assembly, design output, a co-design change; the owner reviews EE and ME PRs from a local docs build); the recorded local fixture run; the list of what moved to iteration 2, agreed by the owner; then a review of Phase 5 by another agent, like the Phase 4 review
 
 ## Phase 6 — Iteration 1 content (T-shape)
