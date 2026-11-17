@@ -2,10 +2,15 @@
 docs build (``build/<area>/docs/deploy/html/*/needs.json``).
 
 Columns: refined by, satisfied by, verified by (test cases, also those that verify a requirement
-refining it), latest result (``TR`` needs), gaps. Needs of the system configuration ``canary``
-(P5-16) get their own section and stay out of the coverage numbers: a need belongs to it when its
-``configs`` holds a canary ``SYS-CFG``, or when such a ``SYS-CFG`` ``configures`` it. The canary
-``SYS-CFG`` is the one titled ``canary`` (or given with ``--canary``).
+refining it), latest result (``TR`` needs; one per test case, the newest by ``run_id``, not per
+platform), gaps. Only evidence counts (D60, R5a, D131): a result tagged ``preview`` is shown as
+"preview, not evidence" and a ``stale`` one is a gap; neither counts as passed.
+
+Requirements of the system configuration ``canary`` (P5-16) get their own section and stay out of
+the coverage numbers: a requirement belongs to it when all of its ``configs`` are canary
+``SYS-CFG`` (a requirement of the canary and another configuration stays in), or when a canary
+``SYS-CFG`` ``configures`` it. A canary ``SYS-CFG`` is one with the tag ``canary`` or with
+"canary" in its title, or the ones given with ``--canary``.
 
 Output: ``build/<area>/trace/trace.md`` and ``trace.html``.
 """
@@ -18,31 +23,42 @@ from pathlib import Path
 from curatrix import graph as graphmod, tracemodel
 
 TC_TYPES = tuple(t["directive"] for t in tracemodel.types() if t["directive"].endswith(("-tc", "-itc", "-stc")))
-RUN_RE = re.compile(r"Run ``(\d{8}T\d{6}Z)")
 
 
 def canary_configs(needs: dict[str, dict], given: list[str] | None = None) -> set[str]:
     if given:
         return set(given)
-    return {nid for nid, n in needs.items() if n.get("type") == "sys-cfg" and (n.get("title") or "").lower() == "canary"}
+    return {nid for nid, n in needs.items() if n.get("type") == "sys-cfg"
+            and ("canary" in (n.get("tags") or []) or "canary" in (n.get("title") or "").lower())}
 
 
 def canary_needs(needs: dict[str, dict], cfgs: set[str]) -> set[str]:
-    out = {nid for nid, n in needs.items() if set(n.get("configs") or []) & cfgs}
+    out = {nid for nid, n in needs.items() if cfgs and n.get("configs") and set(n["configs"]) <= cfgs}
     for c in cfgs:
         out |= set((needs.get(c) or {}).get("configures") or [])
     return out
 
 
-def _latest(trs: list[dict]) -> dict | None:
-    """The newest result: evidence (by run id in the content) before local previews."""
-    if not trs:
-        return None
+def _latest(trs: list[dict]) -> tuple[dict | None, dict | None]:
+    """(newest evidence result, newest preview result), by run_id."""
+    ev = [t for t in trs if "preview" not in (t.get("tags") or [])]
+    pv = [t for t in trs if "preview" in (t.get("tags") or [])]
 
     def key(t):
-        m = RUN_RE.search(t.get("content") or "")
-        return ("preview" not in (t.get("tags") or []), m.group(1) if m else "", t["id"])
-    return max(trs, key=key)
+        return (t.get("run_id") or "", t["id"])
+    return (max(ev, key=key) if ev else None), (max(pv, key=key) if pv else None)
+
+
+def _brief(t: dict | None) -> dict | None:
+    if t is None:
+        return None
+    tags = t.get("tags") or []
+    return {"id": t["id"], "verdict": t.get("verdict"), "preview": "preview" in tags, "stale": "stale" in tags}
+
+
+def counts_passed(r: dict | None) -> bool:
+    """A result that counts as passed: evidence, not stale, verdict passed."""
+    return bool(r) and not r["preview"] and not r["stale"] and r["verdict"] == "passed"
 
 
 def rows(g: graphmod.Graph) -> list[dict]:
@@ -63,32 +79,36 @@ def rows(g: graphmod.Graph) -> list[dict]:
                     reqs.add(c)
                     todo.append(c)
         tcs = live({t for r in reqs for t in back[r].get("verifies", []) if needs.get(t, {}).get("type") in TC_TYPES})
-        results = {}
+        results, previews = {}, {}
         for tc in tcs:
-            latest = _latest([needs[t] for t in back[tc].get("result_of", []) if t in needs])
-            results[tc] = latest
+            ev, pv = _latest([needs[t] for t in back[tc].get("result_of", []) if t in needs])
+            results[tc], previews[tc] = _brief(ev), _brief(pv)
         gaps = []
         if not refined and not satisfied:
             gaps.append("not refined or satisfied")
         if not tcs:
             gaps.append("no test case")
-        gaps += [f"{tc}: no result" for tc, r in results.items() if r is None]
-        gaps += [f"{tc}: {r.get('verdict')}" for tc, r in results.items() if r and r.get("verdict") != "passed"]
+        for tc, r in results.items():
+            if r is None:
+                gaps.append(f"{tc}: only a preview result (not evidence)" if previews[tc] else f"{tc}: no result")
+            elif r["stale"]:
+                gaps.append(f"{tc}: stale result")
+            elif r["verdict"] != "passed":
+                gaps.append(f"{tc}: {r['verdict']}")
         out.append({"id": rid, "title": needs[rid].get("title", ""), "status": needs[rid].get("status", "valid"),
                     "refined_by": refined, "satisfied_by": satisfied, "verified_by": tcs,
-                    "results": {tc: (None if r is None else {"id": r["id"], "verdict": r.get("verdict"),
-                                                             "preview": "preview" in (r.get("tags") or []),
-                                                             "stale": "stale" in (r.get("tags") or [])})
-                                for tc, r in results.items()},
+                    "results": results, "previews": previews,
                     "gaps": gaps})
     return out
 
 
-def _result_text(r: dict | None) -> str:
-    if r is None:
-        return "-"
-    extra = [x for x in ("preview", "stale") if r[x]]
-    return f"{r['verdict']}" + (f" ({', '.join(extra)})" if extra else "")
+def _result_text(r: dict | None, p: dict | None) -> str:
+    out = []
+    if r is not None:
+        out.append(r["verdict"] + (" (stale)" if r["stale"] else ""))
+    if p is not None:
+        out.append(f"{p['verdict']} (preview, not evidence)")
+    return ", ".join(out) or "-"
 
 
 def coverage(rs: list[dict]) -> dict:
@@ -96,8 +116,7 @@ def coverage(rs: list[dict]) -> dict:
     return {"requirements": len(valid),
             "refined_or_satisfied": sum(1 for r in valid if r["refined_by"] or r["satisfied_by"]),
             "with_test_case": sum(1 for r in valid if r["verified_by"]),
-            "passed": sum(1 for r in valid if r["verified_by"] and all(
-                (x or {}).get("verdict") == "passed" for x in r["results"].values()))}
+            "passed": sum(1 for r in valid if r["verified_by"] and all(counts_passed(x) for x in r["results"].values()))}
 
 
 def report(g: graphmod.Graph, title: str, canary: list[str] | None = None) -> tuple[str, str, dict]:
@@ -111,7 +130,7 @@ def report(g: graphmod.Graph, title: str, canary: list[str] | None = None) -> tu
     head = ["Requirement", "Refined by", "Satisfied by", "Verified by", "Latest result", "Gaps"]
 
     def cells(r):
-        res = "; ".join(f"{tc}: {_result_text(x)}" for tc, x in r["results"].items()) or "-"
+        res = "; ".join(f"{tc}: {_result_text(x, r['previews'][tc])}" for tc, x in r["results"].items()) or "-"
         return [f"{r['id']} {r['title']}" + (f" ({r['status']})" if r["status"] != "valid" else ""),
                 ", ".join(r["refined_by"]) or "-", ", ".join(r["satisfied_by"]) or "-",
                 ", ".join(r["verified_by"]) or "-", res, "; ".join(r["gaps"]) or "none"]
@@ -133,7 +152,7 @@ def report(g: graphmod.Graph, title: str, canary: list[str] | None = None) -> tu
 
     cov_text = (f"{cov['requirements']} valid system requirements (without the canary): "
                 f"{cov['refined_or_satisfied']} refined or satisfied, {cov['with_test_case']} with a test case, "
-                f"{cov['passed']} with all latest results passed.")
+                f"{cov['passed']} with all latest results passed (evidence only: previews and stale results do not count).")
     can_text = (f"Configuration canary ({', '.join(sorted(cfgs)) or 'no canary SYS-CFG found'}): "
                 f"{len(can)} requirement(s), not counted above (P5-16).")
     md = [f"# Trace report: {title}", "", "Results tagged *preview* come from a local test run; they are not evidence.",

@@ -249,6 +249,9 @@ def cmd_trace(a):
         return 1
     out = Path(a.out) if a.out else ws.build(area) / "trace"
     s = trace.write(files, out, a.target, a.canary)
+    if not s["canary_configs"]:
+        print("  warning: no canary SYS-CFG found (tag `canary` or \"canary\" in the title; or --canary): "
+              "nothing is left out of the coverage", file=sys.stderr)
     c = s["coverage"]
     print(f"  {c['requirements']} SYS-REQ (canary excluded: {len(s['canary'])}): {c['refined_or_satisfied']} refined or "
           f"satisfied, {c['with_test_case']} with a test case, {c['passed']} passed")

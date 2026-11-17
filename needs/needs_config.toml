@@ -129,6 +129,9 @@ schema = { type = "array", items = { type = "string", pattern = '^[A-Za-z0-9_.-]
 schema = { type = "string" }
 [needs.fields.verdict]
 schema = { type = "string", enum = ["passed", "failed", "skipped", "error"] }
+[needs.fields.run_id]
+description = "The run record a test result comes from (<UTC time>-<8 hex>); orders results by time."
+schema = { type = "string" }
 
 # ================================================================== need types (§2) and links (§3)
 # ------------------------------------------------------------------ systems engineering

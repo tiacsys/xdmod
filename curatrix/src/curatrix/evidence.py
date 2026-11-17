@@ -361,7 +361,7 @@ def to_needs(records: list[dict], pins: dict[str, str] | None = None, project: s
                              + (f" **Stale** (D131): {'; '.join(stale)}." if stale else "")),
                  "status": "valid", "result_of": [tc], "method": "hil" if rec["kind"] == "hil" else "test",
                  "config": rec["config"], "firmware_sha256": rec["firmware"]["sha256"], "shas": shas_of(rec),
-                 "verdict": verdict, "tags": ["stale"] if stale else []}
+                 "verdict": verdict, "run_id": rec["run_id"], "tags": ["stale"] if stale else []}
             needs[nid] = n
     return {"created": "", "current_version": "", "project": project,
             "versions": {"": {"needs": {k: needs[k] for k in sorted(needs)}}}}

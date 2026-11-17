@@ -9,17 +9,26 @@ def N(nid, typ, **kw):
 
 
 NEEDS = [
-    N("SYS-CFG-0001", "sys-cfg", title="canary", configures=["SYS-EL-0001"]),
+    N("SYS-CFG-0001", "sys-cfg", title="Canary configuration ", configures=["SYS-EL-0001"]),
+    N("SYS-CFG-0002", "sys-cfg", title="product"),
     N("SYS-REQ-0001", "sys-req", configs=["SYS-CFG-0001"]),
     N("SW-REQ-0001", "sw-req", refines=["SYS-REQ-0001"]),
     N("SW-TC-0001", "sw-tc", verifies=["SW-REQ-0001"]),
-    N("TR-SW-TC-0001-0000aaaa", "tr", result_of=["SW-TC-0001"], verdict="failed", content="Run ``20261101T000000Z-1``", tags=[]),
-    N("TR-SW-TC-0001-0000bbbb", "tr", result_of=["SW-TC-0001"], verdict="passed", content="Run ``20261115T000000Z-2``", tags=[]),
+    N("TR-SW-TC-0001-0000aaaa", "tr", result_of=["SW-TC-0001"], verdict="failed", run_id="20261101T000000Z-1", tags=[]),
+    N("TR-SW-TC-0001-0000bbbb", "tr", result_of=["SW-TC-0001"], verdict="passed", run_id="20261115T000000Z-2", tags=[]),
     N("TR-SW-TC-0001-0000cccc", "tr", result_of=["SW-TC-0001"], verdict="failed", content="Local", tags=["preview"]),
     N("SYS-REQ-0002", "sys-req"),
     N("SYS-EL-0002", "sys-el", satisfies=["SYS-REQ-0002"]),
     N("SYS-REQ-0003", "sys-req"),
     N("SYS-REQ-0004", "sys-req", status="retired"),
+    # canary and another configuration: stays in the coverage
+    N("SYS-REQ-0005", "sys-req", configs=["SYS-CFG-0001", "SYS-CFG-0002"]),
+    N("SYS-EL-0005", "sys-el", satisfies=["SYS-REQ-0005", "SYS-REQ-0006"]),
+    N("SW-TC-0005", "sw-tc", verifies=["SYS-REQ-0005"]),
+    N("TR-SW-TC-0005-0000dddd", "tr", result_of=["SW-TC-0005"], verdict="passed", tags=["preview"]),
+    N("SYS-REQ-0006", "sys-req"),
+    N("SW-TC-0006", "sw-tc", verifies=["SYS-REQ-0006"]),
+    N("TR-SW-TC-0006-0000eeee", "tr", result_of=["SW-TC-0006"], verdict="passed", run_id="20261115T000000Z-3", tags=["stale"]),
 ]
 
 
@@ -36,14 +45,19 @@ def test_rows_and_gaps():
     assert r1["gaps"] == []
     assert rows["SYS-REQ-0002"]["satisfied_by"] == ["SYS-EL-0002"] and rows["SYS-REQ-0002"]["gaps"] == ["no test case"]
     assert rows["SYS-REQ-0003"]["gaps"] == ["not refined or satisfied", "no test case"]
+    assert rows["SYS-REQ-0005"]["gaps"] == ["SW-TC-0005: only a preview result (not evidence)"]
+    assert rows["SYS-REQ-0006"]["gaps"] == ["SW-TC-0006: stale result"]
+    assert r1["previews"]["SW-TC-0001"]["id"] == "TR-SW-TC-0001-0000cccc"
 
 
 def test_canary_has_its_own_section_and_is_not_counted():
     md, page, s = trace.report(_graph(), "t")
     assert s["canary_configs"] == ["SYS-CFG-0001"] and s["canary"] == ["SYS-REQ-0001"]
-    assert s["coverage"] == {"requirements": 2, "refined_or_satisfied": 1, "with_test_case": 0, "passed": 0}
+    # a preview-only (SYS-REQ-0005) or stale (SYS-REQ-0006) result never counts as passed (D60, D131)
+    assert s["coverage"] == {"requirements": 4, "refined_or_satisfied": 3, "with_test_case": 2, "passed": 0}
     main, canary = md.split("## Configuration canary")
     assert "SYS-REQ-0001" not in main and "SYS-REQ-0001" in canary and "SYS-REQ-0003" in main
+    assert "passed (preview, not evidence)" in main
     assert "<table>" in page
 
 
