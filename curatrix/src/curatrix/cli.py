@@ -247,7 +247,7 @@ def cmd_gen(a):
     cfg = _cfg(ws, repo)
     outs, msgs, rc = [], [], 0
     made: list[tuple[str, list[Path], list[Path]]] = []    # (provenance kind, files made, files no longer tool-made)
-    whats = ["stubs", "model", "cad-needs", "freecad-json"] if a.what == "all" else [a.what]
+    whats = ["stubs", "model", "cad-needs", "code-needs", "freecad-json"] if a.what == "all" else [a.what]
     for what in whats:
         try:
             if what == "stubs":
@@ -265,6 +265,10 @@ def cmd_gen(a):
                 if cfg.section("cad") is None and a.what == "all":
                     continue
                 outs.append(gen.cad_needs(ws, cfg))
+            elif what == "code-needs":
+                if cfg.section("code") is None and a.what == "all":
+                    continue
+                outs.append(gen.code_needs(ws, cfg))
             elif what == "freecad-json":
                 fj = gen.freecad_json(ws, cfg, shapes=a.shape)
                 outs += fj
@@ -280,7 +284,8 @@ def cmd_gen(a):
     gen_needs = [o for o in outs if o.path.name.endswith("needs.json") and o.path.name != "retired-needs.json"]
     if gen_needs or a.what == "tombstones":
         if a.what == "tombstones":
-            for sec, key, default in (("model", "needs", "generated/model-needs.json"), ("cad", "needs", "generated/cad-needs.json")):
+            for sec, key, default in (("model", "needs", "generated/model-needs.json"), ("cad", "needs", "generated/cad-needs.json"),
+                                      ("code", "needs", "generated/code-needs.json")):
                 s = cfg.section(sec)
                 if s is not None:
                     p = cfg.resolve(s.get(key, default))
@@ -489,9 +494,9 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--json", action="store_true", help="print the summary JSON on stdout (log on stderr)")
     s.set_defaults(func=cmd_check)
 
-    s = sub.add_parser("gen", help="generated files: stubs, model, cad-needs, freecad-json, tombstones, all; "
+    s = sub.add_parser("gen", help="generated files: stubs, model, cad-needs, code-needs, freecad-json, tombstones, all; "
                                    "cad-exports (build/<area>/cad, not committed)")
-    s.add_argument("what", choices=["stubs", "model", "cad-needs", "freecad-json", "tombstones", "cad-exports", "all"])
+    s.add_argument("what", choices=["stubs", "model", "cad-needs", "code-needs", "freecad-json", "tombstones", "cad-exports", "all"])
     s.add_argument("repo", nargs="?")
     s.add_argument("--check", action="store_true", help="only compare with the committed files")
     s.add_argument("--needs", nargs="+", help="stubs: needs.json files instead of the last docs build")

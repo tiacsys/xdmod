@@ -102,6 +102,11 @@ cad:                                # CK-D4 (plain Python: runs without CAD tool
   needs: generated/cad-needs.json   # default
   freecad_json: generated/freecad   # optional: semantic JSON per .FCStd (<path>.FCStd.json)
 
+code:                               # CK-D6 (plain Python): code units and test cases from the C sources
+  sources: ["app/src/**/*.[ch]"]    # @xdid{SW-IMPL-nnnn} Doxygen blocks
+  tests: ["tests/**/*.c"]           # "Test case: SW-TC-nnnn. Verifies ..." in the comment above ZTEST
+  needs: generated/code-needs.json  # default
+
 requirements: true                  # CK-E2 / CK-E3 on the repo's own requirement needs
 bootstrap_template: scripts/bootstrap.sh   # CK-H5 (robarm-manifest): copy must equal xdmod/templates/bootstrap.sh
 pr_size: {lines: 600, files: 15}    # CK-H7: PR size warning (the defaults)
@@ -149,7 +154,7 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-B4 | variant rules F1, F2, V1–V5 | `model.variants` | all | yes (V6, T1–T3: later, D135) |
 | CK-B5 | duplicate IDs across documents | `docs` | full, baseline | yes |
 | CK-B6 | R5a stale evidence: `TR.shas` vs. current pins (`west list`) | `docs` | full, baseline (report) | first version |
-| CK-B7 | tombstones in `generated/retired-needs.json` | `model` or `cad` | local, pr (warning) | yes |
+| CK-B7 | tombstones in `generated/retired-needs.json` | `model`, `cad` or `code` | local, pr (warning) | yes |
 | CK-C1 | placeholder IDs | `ids` | all (error) | yes |
 | CK-C2 | every ID of an owned kind in the sources is in the ledger | `ids` | local, pr, baseline | yes |
 | CK-D1 | SysML stubs match the needs | `stubs` | local, pr, baseline | yes |
@@ -157,6 +162,7 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-D2 | `model.json` + `model-needs.json` match the model | `model` | local, pr, baseline | yes |
 | CK-D3 | views: content, uncompressed, geometry sane, picture fresh | `views` | local, pr, baseline | yes (kinds `interconnection`, `decomposition`) |
 | CK-D4 | `cad-needs.json` matches KiCad/FreeCAD files (plain Python, so also in PR CI) | `cad` | local, pr, baseline | yes |
+| CK-D6 | `code-needs.json` matches the code: `@xdid` blocks, comments above `ZTEST` (plain Python) | `code` | local, pr, baseline | yes |
 | CK-D5 | generated files record the pinned tool versions (`generated/provenance.json`, 4.4b) | `model` or `cad.freecad_json` | local/pr/full warning, baseline error | yes |
 | CK-E2 | value fields appear in the sentence as numbers (any format, `a ± b`), the unit once as symbol or name | `requirements` | local, pr, baseline (warning until it ran on real requirements) | yes |
 | CK-E3 | EARS pattern vs. sentence start, "shall" | `requirements` | local, pr, baseline (warning) | first version |
@@ -271,7 +277,8 @@ sorted and stable:
 | `generated/model.json` | `gen model` | the Pilot export, **compacted**: non-library elements with the payload keys curatrix reads, referenced library elements as stubs, stable IDs (qualified name or `<owner>/<index>`), sorted. Same shape as the Pilot JSON (`[{"identity": {"@id"}, "payload": {…}}]`) | CK-D2; input of views, variants, model-needs (so no Java downstream) |
 | `generated/model-needs.json` | `gen model` | model.json | CK-D2 |
 | `generated/cad-needs.json` | `gen cad-needs` | KiCad `.kicad_sch`/`.kicad_pro`, FreeCAD `Document.xml` (plain Python) | CK-D4 |
-| `generated/retired-needs.json` | `gen model` / `gen cad-needs` / `gen tombstones` | tombstones (D130): a generated need that vanished without `status: retired` keeps `{id, type, title, status: retired, retired_on, source_file}` until the next `baseline/*` tag of the manifest | CK-B7 |
+| `generated/code-needs.json` | `gen code-needs` | C sources: a Doxygen block with `@xdid{SW-IMPL-nnnn}` (title: the declared name; `Implements X.`, `Satisfies X.`, `Configs: SYS-CFG-nnnn.`, `Status: draft.`), and the comment above each `ZTEST` with `Test case: SW-TC-nnnn. Verifies X.` (title: `@brief`; the Twister identifiers from the nearest `testcase.yaml` go into the content) | CK-D6 |
+| `generated/retired-needs.json` | `gen model` / `gen cad-needs` / `gen code-needs` / `gen tombstones` | tombstones (D130): a generated need that vanished without `status: retired` keeps `{id, type, title, status: retired, retired_on, source_file}` until the next `baseline/*` tag of the manifest | CK-B7 |
 | `generated/freecad/<path>.FCStd.json` | `gen freecad-json [--shape]` | trace part (plain Python: objects, `trace` fields, placements, plain values, spreadsheets) + optional `shapes` (FreeCAD: volume, bbox, solids) | textconv / review |
 | `views/<view>.drawio.svg` | `views build` | model.json | CK-D3 |
 | `generated/provenance.json` | `gen model`, `gen freecad-json --shape`, `views build` | the tool versions used (tools.yaml stamps, system `--version`) for each file they wrote | CK-D5 (record vs. tools.yaml pins; no tools needed, so it runs in CI) |

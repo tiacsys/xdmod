@@ -29,6 +29,10 @@ with ``{ws}/`` (the workspace root).
       freecad: ["parts/*.FCStd", "assemblies/**/*.FCStd"]
       needs: generated/cad-needs.json
       freecad_json: generated/freecad
+    code:                            # CK-D6 (plain Python): @xdid code units, test cases above ZTEST
+      sources: ["app/src/**/*.[ch]"]
+      tests: ["tests/**/*.c"]
+      needs: generated/code-needs.json
     requirements: true               # CK-E2, CK-E3 on the repo's own requirements
     bootstrap_template: scripts/bootstrap.sh   # CK-H5 (the manifest repo)
     pr_size: {lines: 600, files: 15}  # CK-H7 PR size warning (these are the defaults)
@@ -52,7 +56,7 @@ import yaml
 
 STAGES = ("local", "pr", "full", "baseline")
 LEVELS = ("error", "warning", "report")
-TOP_KEYS = {"version", "area", "docs", "ids", "model", "stubs", "views", "cad", "requirements",
+TOP_KEYS = {"version", "area", "docs", "ids", "model", "stubs", "views", "cad", "code", "requirements",
             "bootstrap_template", "commands", "expect", "pr_size"}
 SECTION_KEYS = {
     "docs": {"registry"},
@@ -61,6 +65,7 @@ SECTION_KEYS = {
     "stubs": {"out", "docs", "package"},
     "views": {"dir", "model"},
     "cad": {"kicad", "freecad", "needs", "freecad_json"},
+    "code": {"sources", "tests", "needs"},
 }
 COMMAND_KEYS = {"id", "name", "run", "use", "stages", "cad", "level", "cwd"}
 
@@ -177,7 +182,7 @@ def validate(raw: dict, path: Path) -> list[str]:
         for k in v:
             if k not in keys:
                 errs.append(f"{path}: {sec}: unknown key {k!r} (known: {', '.join(sorted(keys))})")
-        for k in ("files", "libraries", "export", "docs", "kicad", "freecad", "exclude"):
+        for k in ("files", "libraries", "export", "docs", "kicad", "freecad", "exclude", "sources", "tests"):
             if k in v and not (isinstance(v[k], list) and all(isinstance(x, str) for x in v[k])):
                 errs.append(f"{path}: {sec}.{k} must be a list of strings")
     for k in ("requirements",):

@@ -10,7 +10,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from curatrix import cad, model as modelmod, needs as needsmod, pilot, stubs as stubsmod
+from curatrix import cad, code as codemod, model as modelmod, needs as needsmod, pilot, stubs as stubsmod
 from curatrix.checkcfg import ChecksConfig
 
 
@@ -125,6 +125,29 @@ def cad_needs(ws, cfg: ChecksConfig) -> Output:
         add(*cad.freecad_needs(fc, str(fc.resolve().relative_to(cfg.repo.resolve()))))
     return Output(cfg.resolve(s.get("needs", "generated/cad-needs.json")),
                   needsmod.dumps(needsmod.doc(needs, f"{cfg.repo.name}-cad")), findings)
+
+
+# ------------------------------------------------------------------ code needs (CK-D6), plain Python
+def code_needs(ws, cfg: ChecksConfig) -> Output:
+    """SW-IMPL needs from @xdid Doxygen blocks, test case needs from the comments above ZTEST."""
+    s = cfg.section("code")
+    if s is None:
+        raise GenError("checks.yaml has no code section")
+    needs: dict[str, dict] = {}
+    findings: list[str] = []
+    for key, reader in (("sources", codemod.code_units), ("tests", codemod.test_cases)):
+        for f in cfg.globs(s.get(key) or []):
+            if not f.is_file():
+                continue
+            ns, fs = reader(f, str(f.resolve().relative_to(cfg.repo.resolve())))
+            findings += fs
+            for nid, n in ns.items():
+                if nid in needs:
+                    findings.append(f"{n['source_file']}: {nid} is also defined in {needs[nid]['source_file']}")
+                    continue
+                needs[nid] = n
+    return Output(cfg.resolve(s.get("needs", "generated/code-needs.json")),
+                  needsmod.dumps(needsmod.doc(needs, f"{cfg.repo.name}-code")), findings)
 
 
 def freecad_json(ws, cfg: ChecksConfig, shapes: bool = False) -> list[Output]:

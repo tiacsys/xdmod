@@ -77,6 +77,7 @@ BUILTIN = [
     ("CK-D2", "model.json and model-needs.json match the model", _lv({"local": "error", "pr": "error", "baseline": "error"}), "model", False, "c_model"),
     ("CK-D3", "views match the model (content), fresh, uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), "views", False, "c_views"),
     ("CK-D4", "cad-needs.json matches the CAD files", _lv({"local": "error", "pr": "error", "baseline": "error"}), "cad", False, "c_cadneeds"),
+    ("CK-D6", "code-needs.json matches the code (@xdid blocks, ZTEST comments)", _lv({"local": "error", "pr": "error", "baseline": "error"}), "code", False, "c_codeneeds"),
     ("CK-D5", "generated files record the pinned tool versions (provenance.json)",
      _lv({"local": "warning", "pr": "warning", "full": "warning", "baseline": "error"}), "provenance", False, "c_provenance"),
     ("CK-E2", "requirement values agree with the sentence", _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "requirements", False, "c_ears"),
@@ -93,7 +94,7 @@ BUILTIN = [
 ]
 
 # Why a built-in check is off for a repo: the checks.yaml key it needs.
-NEED_TEXT = {"model.variants": "model.variants: true", "generated": "a model or cad section",
+NEED_TEXT = {"model.variants": "model.variants: true", "generated": "a model, cad or code section",
              "requirements": "requirements: true and a docs section", "provenance": "a model section or cad.freecad_json",
              "views": "views and model sections"}
 
@@ -105,7 +106,7 @@ def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
         s = cfg.section("model")
         return bool(s and s.get("variants"))
     if need == "generated":
-        return any(cfg.section(x) for x in ("model", "cad"))
+        return any(cfg.section(x) for x in ("model", "cad", "code"))
     if need == "requirements":
         return bool(cfg.raw.get("requirements")) and cfg.section("docs") is not None
     if need == "provenance":
@@ -259,6 +260,11 @@ def c_provenance(ctx: Ctx, r: Result):
 def c_cadneeds(ctx: Ctx, r: Result):
     o = gen.cad_needs(ctx.ws, ctx.cfg)
     r.findings = o.findings + _compare(o, "the CAD files", ctx.ws, f"curatrix gen cad-needs {ctx.repo.name}")
+
+
+def c_codeneeds(ctx: Ctx, r: Result):
+    o = gen.code_needs(ctx.ws, ctx.cfg)
+    r.findings = o.findings + _compare(o, "the code", ctx.ws, f"curatrix gen code-needs {ctx.repo.name}")
 
 
 EARS_START = {"ubiquitous": r"^(the|a|an|each|every)\b", "event": r"^when\b", "state": r"^while\b",
