@@ -8,10 +8,19 @@ import zipfile
 
 import pytest
 
-from curatrix import cam, checkcfg, checks, mecam
+from curatrix import blender, cam, checkcfg, checks, mecam
 from curatrix.ws import Repo, Workspace
 from helpers import FIXTURES, git_init
 from test_meassemblies import _assembly, _prop, fcstd
+
+REAL_BLENDER_AVAILABLE = blender.available
+
+
+@pytest.fixture(autouse=True)
+def _no_blender(monkeypatch):
+    """Blender is optional and not pinnable: the tests see none unless they ask for it."""
+    monkeypatch.setattr(blender, "available", lambda ws: False)
+
 
 CFG = 'version: 1\ncad: {freecad: ["parts/*.FCStd", "assemblies/**/*.FCStd", "lib/**/*.FCStd"]}\n'
 
@@ -196,6 +205,51 @@ def test_cam_md5_guard_and_empty_view(tmp_path, monkeypatch):
     assert "fx/all/renderings/front.png" in rec["files"]
 
 
+def test_cam_renders_with_blender_when_there(tmp_path, monkeypatch):
+    """With Blender: cam-asm.py gets XD_SCENE (the glTF for Blender) and draws no renderings itself;
+    render-asm.py runs per variant; cam.json says blender, not pinned. --no-blender (use_blender=False)
+    and a missing Blender take the z-buffer renderer; a failing Blender stops the run with a hint."""
+    import curatrix.newasm as newasm
+    root, repo = _cam_repo(tmp_path)
+    ws, cfg = Workspace(root), checkcfg.load(repo / "checks.yaml", root)
+    seen = {}
+    fake = _fake_script()
+
+    def run_script(ws_, script, env, result):
+        seen["scene"] = env["XD_SCENE"]
+        return {**fake(ws_, script, env, result), "painted": {}}
+    calls = []
+
+    def run_blender(ws_, script, env, result, exe=None):
+        calls.append((script.name, env))
+        return {"ok": True, "painted": {v: 10 for v in mecam.VIEWS}, "seconds": {v: 1.0 for v in mecam.VIEWS},
+                "blender": "5.2.3 LTS", "engine": "CYCLES", "device": "CPU", "samples": 32, "seed": 0}
+    monkeypatch.setattr(newasm, "run_script", run_script)
+    monkeypatch.setattr(blender, "available", lambda ws_: True)
+    monkeypatch.setattr(blender, "run_script", run_blender)
+    rec = mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)[0]
+    assert seen["scene"].endswith("all.scene.glb")
+    assert [c[0] for c in calls] == ["render-asm.py"]
+    env = calls[0][1]
+    assert env["XD_OUT"].endswith("fx/all/renderings") and json.loads(env["XD_LABEL"])[0] == "fx  variant all"
+    assert env["XD_RELEASE"] == "" and env["XD_FONT"].endswith(".ttf")
+    r = rec["renderings"]
+    assert r["method"] == "blender" and r["pinned"] is False and r["samples"] == 32 and r["marking"] == "PREVIEW"
+    assert rec["per_variant"]["all"]["painted"]["iso"] == 10
+    # --no-blender: the z-buffer renderer, no glTF
+    monkeypatch.setattr(newasm, "run_script", _fake_script())
+    rec = mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None, use_blender=False)[0]
+    assert rec["renderings"]["method"] == "zbuffer" and len(calls) == 1
+    # Blender fails: the run stops and names the way out
+    monkeypatch.setattr(newasm, "run_script", run_script)
+
+    def broken(*a, **k):
+        raise blender.BlenderError("blender render-asm.py failed: boom")
+    monkeypatch.setattr(blender, "run_script", broken)
+    with pytest.raises(cam.CamError, match="boom.*--no-blender"):
+        mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)
+
+
 # ------------------------------------------------------------------ with FreeCAD
 def _fixture(tmp_path, repo, extra=None):
     from curatrix.newasm import run_script
@@ -224,6 +278,7 @@ def test_me_cam_run(tmp_path):
     ws = Workspace(root)
     cfg = checkcfg.load(repo / "checks.yaml", root)
     rec = mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)[0]
+    assert rec["renderings"]["method"] == "zbuffer"
     assert rec["kind"] == "assembly" and rec["version"].startswith("fx/v0.0.0-1-g") and rec["version"].endswith("-preview")
     assert rec["variants"] == ["SYS-CFG-0002", "base"] and rec["emboss"] == "v0.0.0P" and rec["sources_unchanged"]
     top = ws.build("r") / "cam" / "fx" / rec["version"].split("/", 1)[1]
@@ -261,3 +316,33 @@ def test_me_cam_run(tmp_path):
     _fixture(tmp_path, repo, {"XD_NO_MARK": "1"})
     with pytest.raises(cam.CamError, match="no version mark"):
         mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)
+
+
+@pytest.mark.tools
+def test_me_cam_run_blender(tmp_path, monkeypatch):
+    """`curatrix cam` on the FreeCAD fixture with Blender (local only: Blender is optional, not
+    pinnable, not in CI): FreeCADCmd writes the glTF, Blender renders the four views per variant,
+    1600 x 1200 px PNGs, painted, method blender. Blender's user paths stay in the workspace's
+    .xdmod/blender (here a temporary workspace)."""
+    if shutil.which("FreeCADCmd") is None or shutil.which("blender") is None:
+        pytest.skip("FreeCADCmd or blender not installed")
+    monkeypatch.setattr(blender, "available", REAL_BLENDER_AVAILABLE)
+    root = tmp_path / "ws"
+    repo = git_init(root / "r")
+    (repo / "checks.yaml").write_text(CFG)
+    _fixture(tmp_path, repo)
+    (repo / "print").mkdir()
+    (repo / "print" / "pla.ini").write_text("layer_height = 0.2\n")
+    _commit(repo, "fixture")
+    ws = Workspace(root)
+    rec = mecam.run(ws, Repo("r", repo, "r"), checkcfg.load(repo / "checks.yaml", root), "fx", log=lambda *_: None)[0]
+    assert rec["renderings"]["method"] == "blender" and rec["renderings"]["pinned"] is False
+    top = ws.build("r") / "cam" / "fx" / rec["version"].split("/", 1)[1]
+    for v in rec["variants"]:
+        assert (top / f"{v}.scene.glb").read_bytes()[:4] == b"glTF"
+        assert all(n > 1000 for n in rec["per_variant"][v]["painted"].values()), rec["per_variant"][v]
+        for view in mecam.VIEWS:
+            png = (top / "fx" / v / "renderings" / f"{view}.png").read_bytes()
+            assert png[:8] == b"\x89PNG\r\n\x1a\n" and int.from_bytes(png[16:20], "big") == 1600
+            assert int.from_bytes(png[20:24], "big") == 1200
+    assert (root / ".xdmod" / "blender" / "user").is_dir()

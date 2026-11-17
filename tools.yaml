@@ -69,3 +69,8 @@ system:
   # ME pushes board geometry into the KiCad files and re-saves them with KiCad.
   - {name: kicad-cli, version: "10.0.8", optional: true, roles: [ee, ee3d, me, integration, full]}
   - {name: FreeCADCmd, version: "1.1.4", optional: true, roles: [ee, ee3d, me, integration, full], regex: 'FreeCAD (\d+\.\d+\.\d+)'}
+  # Optional local renderer of `curatrix cam` for ME assemblies (owner decision 2026-11-17). Not
+  # pinnable (a distribution package, curatrix installs nothing): the version it was tried with;
+  # missing = a note, another version = a warning, never a FAIL. Called only through curatrix or
+  # the .venv/bin shim (--factory-startup, user paths under .xdmod/blender/).
+  - {name: blender, version: "5.2.3", optional: true, pinned: false, roles: [me, integration, full], regex: 'Blender (\d+\.\d+\.\d+)'}

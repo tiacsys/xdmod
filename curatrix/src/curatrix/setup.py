@@ -12,7 +12,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from curatrix import limits, tools
+from curatrix import blender, limits, tools
 from curatrix.ws import Workspace
 
 # repo-topology.md §4: group filter added to the manifest default (which is minimal, D93).
@@ -319,6 +319,8 @@ def launch_env(ws: Workspace, tool: str) -> dict[str, str]:
     elif tool == "freecad":
         ensure_freecad_config(ws)
         env.update({k: str(v) for k, v in freecad_dirs(ws).items()})
+    elif tool == "blender":
+        env.update(blender.env(ws))
     return env
 
 
@@ -329,6 +331,7 @@ def launch_env(ws: Workspace, tool: str) -> dict[str, str]:
 # `curatrix run` sets (limits.tool_env) and execs the real binary by its absolute path.
 KICAD_PROGRAMS = ("kicad-cli", "kicad", "eeschema", "pcbnew", "bitmap2component")
 FREECAD_PREFIX = "freecad"           # FreeCAD, FreeCADCmd, freecad, freecadcmd, freecad-thumbnailer, ...
+BLENDER = "blender"                  # also gets --factory-startup etc. (blender.ARGS)
 SHIM_MARK = "# curatrix tool shim"
 WORKTREE_MARKER = ".xdmod-worktree.json"     # work.MARKER (work imports setup)
 
@@ -419,6 +422,8 @@ def shim_names(ws: Workspace, path: str | None = None) -> list[str]:
         for f in sorted(files):
             if f.lower().startswith(FREECAD_PREFIX):
                 names[f] = None
+        if BLENDER in files:
+            names[BLENDER] = None
     return [n for n in names if real_tool(ws, n, path)]
 
 
@@ -440,8 +445,13 @@ def shim_text(ws: Workspace, name: str, real: Path) -> str:
              f"# Runs {real} with the workspace-local config, never ~/.config, ~/.cache or ~/.local.",
              "# It sets no limits: run tools through `curatrix run` (rule 2)."]
     lines += [f"export {k}={shlex.quote(v)}" for k, v in shim_env(ws, name).items()]
+    if name == BLENDER:
+        lines.append("unset " + " ".join(blender.UNSET))
+        # without any .venv/bin (also a worktree set's link to it): Blender's Python would take the venv
+        lines.append("PATH=$(printf %s \"$PATH\" | tr : '\\n' | grep -v '/\\.venv/bin/*$' | paste -sd: -); export PATH")
     lines.append(f"[ -x {q} ] || {{ echo {shlex.quote(f'{name}: {real} is gone; run curatrix update')} >&2; exit 127; }}")
-    lines.append(f'exec {q} "$@"')
+    extra = "".join(f" {a}" for a in blender.ARGS) if name == BLENDER else ""
+    lines.append(f'exec {q}{extra} "$@"')
     return "\n".join(lines) + "\n"
 
 
@@ -506,7 +516,7 @@ def shim_rows(ws: Workspace, path: str | None = None) -> list[tuple[str, str, st
 
 def launch(ws: Workspace, tool: str, args: list[str]) -> int:
     """GUI tools: memory limit only, no timeout (D117). Runs from the workspace root (D67)."""
-    exe = {"kicad": "kicad", "freecad": "FreeCAD", "drawio": "drawio", "claude": "claude"}[tool]
+    exe = {"kicad": "kicad", "freecad": "FreeCAD", "blender": "blender", "drawio": "drawio", "claude": "claude"}[tool]
     if tool == "kicad" and args and args[0].endswith(".kicad_sch"):
         exe = "eeschema"
     if tool == "drawio":
@@ -514,7 +524,9 @@ def launch(ws: Workspace, tool: str, args: list[str]) -> int:
         args = [f"--user-data-dir={ws.state / 'drawio'}", *args]
     if not shutil.which(exe):
         raise SetupError(f"{exe} not found on PATH")
-    if tool in ("kicad", "freecad"):
+    if tool == "blender":
+        args = [*blender.ARGS, *args]
+    if tool in ("kicad", "freecad", "blender"):
         # the real binary, not the shim: launch_env is already the workspace config, and the
         # shim's batch LC_ALL would switch the GUI's language
         exe = str(real_tool(ws, exe) or exe)
@@ -567,11 +579,13 @@ def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
             add("FAIL", f"{t.name} {t.version} not installed", "curatrix update (or `curatrix update --adopt`)")
     for st in ts.system.values():
         have = tools.system_version(st, ws)
-        if have is None:
+        if have is None and not st.pinned:
+            add("note", f"{st.name} missing", f"optional, not pinnable; tried with {st.version}")
+        elif have is None:
             add("warn" if st.optional or ci else "FAIL", f"{st.name} missing", f"system tool, wants {st.version}")
         elif not tools.version_ok(st.version, have):
-            add("warn" if ci else "FAIL", f"{st.name} {have}: tools.yaml wants {st.version}",
-                "runner image (--ci)" if ci else st.source)
+            add("warn" if ci or not st.pinned else "FAIL", f"{st.name} {have}: tools.yaml wants {st.version}",
+                "not pinnable: local output only" if not st.pinned else "runner image (--ci)" if ci else st.source)
         else:
             add("ok", f"{st.name} {have}")
     row = kicad_models_row(ws, role, ci)
@@ -624,8 +638,8 @@ def refresh(ws: Workspace, adopt: bool = False, force_pip: bool = False) -> None
     say(f"  installed in: {', '.join(install_hooks(ws)) or '(no repos)'}")
     say("== workspace state (.xdmod/)")
     create_state(ws)
-    say("== KiCad/FreeCAD shims in .venv/bin (workspace-local config)")
-    say(f"  shims: {', '.join(write_shims(ws)) or '(no KiCad or FreeCAD found)'}")
+    say("== KiCad/FreeCAD/Blender shims in .venv/bin (workspace-local config)")
+    say(f"  shims: {', '.join(write_shims(ws)) or '(no KiCad, FreeCAD or Blender found)'}")
 
 
 def bootstrap(ws: Workspace, role: str, adopt: bool = False, skip_west: bool = False, run_doctor: bool = True) -> int:

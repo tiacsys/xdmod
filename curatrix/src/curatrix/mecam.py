@@ -27,7 +27,13 @@ workspace-local config) once per variant into ``build/<area>/cam/<asm>/<version>
   draws it into a numpy z-buffer, with the visible edges on top; FreeCAD's Qt writes the text and
   the PNG. Front, top and right share one scale, iso has its own; the scale (px/mm) is on the
   image and in ``cam.json``. Assembly, variant, full version and view are written on each image,
-  and ``PREVIEW`` in red unless a release. A rendering without a drawn facet fails the run;
+  and ``PREVIEW`` in red unless a release. A rendering without a drawn facet fails the run. With Blender on the machine (and without ``--no-blender``) the renderings come from
+  Blender instead (method ``blender``, owner decision 2026-11-17): ``cam-asm.py`` writes the
+  tessellated parts as glTF (``<variant>.scene.glb`` next to ``cam.json``, colour by BOM kind) and
+  ``templates/blender/render-asm.py`` renders the same four views with Cycles on the CPU (fixed
+  samples and seed, Freestyle edges, same size, names, scales and marking), through the isolated
+  call of ``curatrix.blender``. Blender is not pinnable, so ``cam.json`` says which way was taken
+  (``renderings.method``: ``blender`` or ``zbuffer``);
 * ``bom.csv``: the flat BOM with totals, one row per part (sub-assemblies resolved);
 * ``mass.json``: mass and center of gravity (``asmdoc.mass``, task 5.27);
 * in the version folder, ``findings.json``: the findings of the ME checks CK-F4c, CK-F16, CK-F17
@@ -72,6 +78,8 @@ LCS_TYPES = ("Part::LocalCoordinateSystem", "PartDesign::CoordinateSystem")
 VIEWS = ("front", "top", "right", "iso")
 ALL, BASE = "all", "base"   # variants: no Configs anywhere; only the links without Configs
 RENDER_METHOD = "zbuffer"   # FreeCAD tessellation, flat shading, numpy z-buffer; text and PNG by Qt (no OpenGL)
+BLENDER_SCRIPT = Path("templates") / "blender" / "render-asm.py"
+BLENDER_METHOD = "blender"  # FreeCAD tessellation as glTF, rendered by Blender (Cycles CPU, Freestyle edges)
 BOM_COLS = ("item", "id", "name", "kind", "qty", "material", "print_profile", "standard", "manufacturer", "mpn", "file")
 
 
@@ -429,7 +437,13 @@ def wrap_svg(fragment: str) -> str:
 
 
 # ------------------------------------------------------------------ the run
-def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
+def render_method(ws, use_blender: bool = True) -> str:
+    """``blender`` when Blender is wanted and on the machine, else ``zbuffer`` (the fallback)."""
+    from curatrix import blender
+    return BLENDER_METHOD if use_blender and blender.available(ws) else RENDER_METHOD
+
+
+def run_assembly(ws, repo, cfg, folder: Path, log=print, use_blender: bool = True) -> dict:
     from curatrix.newasm import run_script
     from curatrix.newpcba import NewError
     name = folder.name
@@ -462,19 +476,26 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
     date = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     aid = next(iter(docs[top_rel].asm_ids), "") if top_rel in docs else ""
     per, profiles = {}, {}
+    method = render_method(ws, use_blender)
+    bl_info = {}
     for vname in vs:
         v = "" if vname == ALL else vname
         dest = out / vname
         dest.mkdir(parents=True)
         log(f"  {name} {ver} variant {vname}: FreeCADCmd cam-asm.py")
+        glb = top / f"{vname}.scene.glb"
         try:
             res = run_script(ws, ws.xdmod / SCRIPT, {
                 "XD_TOP": str(top_doc.resolve()), "XD_SKELETON": str(sk.resolve()), "XD_OUT": str(dest),
                 "XD_VARIANT": v, "XD_VERSION": ver, "XD_SHORT": short, "XD_FONT": str(ws.xdmod / FONT),
-                "XD_EXPLODE": json.dumps(moves),
+                "XD_EXPLODE": json.dumps(moves), "XD_SCENE": str(glb) if method == BLENDER_METHOD else "",
                 "XD_RELEASE": "1" if release else ""}, top / f"{vname}.result.json")
         except NewError as e:
             raise CamError(f"{name} (variant {vname}): {e}") from None
+        if method == BLENDER_METHOD:
+            res["painted"], bl_info = render_blender(ws, glb, dest / "renderings", top / f"{vname}.blender.json",
+                                                     [f"{name}  variant {v or 'all'}", ver], release, name, vname, log)
+            res["render_scale"] = bl_info.get("render_scale") or {}
         if empty_views(res):
             raise CamError(f"{name} (variant {vname}): no visible edge in the view(s) {', '.join(empty_views(res))} "
                            f"(TechDraw did not compute them in FreeCADCmd); an empty view is never written as output")
@@ -508,7 +529,8 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
                       "moves": res.get("moves") or {}, "bom_rows": len(rows),
                       "renderings": {v: f"{name}/{vname}/renderings/{v}.png" for v in VIEWS},
                       "painted": res.get("painted") or {}, "facets": res.get("facets", 0),
-                      "render_scale": res.get("render_scale") or {}}
+                      "render_scale": res.get("render_scale") or {},
+                      **({"render_seconds": bl_info.get("seconds") or {}} if method == BLENDER_METHOD else {})}
     (top / "findings.json").write_text(json.dumps(findings(ws, cfg, folder, top), indent=2) + "\n", encoding="utf-8")
     after = _md5(sources)
     changed = sorted(ws.rel(Path(p)) for p in before if after.get(p) != before[p])
@@ -518,7 +540,7 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
     rec = {"kind": "assembly", "project": name, "assembly": aid, "version": ver, "release": release,
            "emboss": short, "commit": head, "tree_state": state, "date": date, "variants": vs,
            "print_profiles": profiles, "sources_unchanged": True,
-           "renderings": {"views": list(VIEWS), "method": RENDER_METHOD, "marking": "release" if release else "PREVIEW"}, "per_variant": per, "warnings": warnings,
+           "renderings": renderings_rec(method, release, bl_info), "per_variant": per, "warnings": warnings,
            "files": files}
     (top / "cam.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
     log(f"  {name}: {len(files)} files in {ws.rel(out)} ({'release' if release else 'preview'}); sources unchanged")
@@ -546,12 +568,37 @@ def findings(ws, cfg, folder: Path, top: Path) -> dict:
                         if b else "no board model in the assembly"}}
 
 
-def run(ws, repo, cfg, name: str | None = None, log=print) -> list[dict]:
+def render_blender(ws, glb: Path, dest: Path, result: Path, label: list[str], release: bool, name: str,
+                   vname: str, log=print) -> tuple[dict, dict]:
+    """The four renderings of one variant by Blender: (painted pixels per view, the script's result)."""
+    from curatrix import blender
+    log(f"  {name} variant {vname}: blender render-asm.py (Cycles CPU)")
+    try:
+        r = blender.run_script(ws, ws.xdmod / BLENDER_SCRIPT, {
+            "XD_SCENE": str(glb), "XD_OUT": str(dest), "XD_LABEL": json.dumps(label),
+            "XD_RELEASE": "1" if release else "", "XD_FONT": str(ws.xdmod / FONT)}, result)
+    except blender.BlenderError as e:
+        raise CamError(f"{name} (variant {vname}): {e}; `curatrix cam --no-blender` uses the renderer "
+                       f"without Blender") from None
+    return r.get("painted") or {}, r
+
+
+def renderings_rec(method: str, release: bool, bl_info: dict) -> dict:
+    """The ``renderings`` entry of cam.json: which way they were made, and the marking."""
+    rec = {"views": list(VIEWS), "method": method,
+           "marking": "release" if release else "PREVIEW"}
+    if method == BLENDER_METHOD:
+        rec.update({k: bl_info.get(k) for k in ("blender", "engine", "device", "samples", "seed")})
+        rec["pinned"] = False            # a system package: local output only, never compared
+    return rec
+
+
+def run(ws, repo, cfg, name: str | None = None, log=print, use_blender: bool = True) -> list[dict]:
     folders = [d for d in meassemblies.top_folders(cfg) if name is None or d.name == name]
     if not folders:
         known = ", ".join(d.name for d in meassemblies.top_folders(cfg)) or "none"
         raise CamError(f"no assembly {name or ''} in {repo.name}/assemblies/ (assemblies: {known})".replace("  ", " "))
-    return [run_assembly(ws, repo, cfg, d, log) for d in folders]
+    return [run_assembly(ws, repo, cfg, d, log, use_blender) for d in folders]
 
 
 def shared_folders(repo: Path) -> list[Path]:

@@ -281,3 +281,54 @@ def test_launch_runs_the_real_binary_not_the_shim(tmp_path, monkeypatch):
     assert setup.launch(ws, "freecad", []) == 0
     assert [c[0][0] for c in seen] == [str(sysbin / "kicad"), str(sysbin / "FreeCAD")]
     assert seen[0][1]["KICAD_CONFIG_HOME"] == str(ws.state / "kicad")      # launch_env still applies
+
+
+def test_blender_is_isolated_in_every_call(tmp_path, monkeypatch):
+    """Owner decision 2026-11-17 (Blender for the ME renderings): every Blender call gets
+    --factory-startup and the user paths under .xdmod/blender, through curatrix and through the
+    shim; Blender's Python never sees the workspace .venv. No Blender runs here (fake binary)."""
+    from curatrix import blender, limits
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    sysbin = tmp_path / "usr" / "bin"
+    _fake_tool(sysbin, "blender", 'echo "$BLENDER_USER_CONFIG|$XDG_CACHE_HOME|$TMPDIR|${VIRTUAL_ENV-unset}|$PATH|$*"')
+    path = os.pathsep.join([str(ws.venv / "bin"), str(sysbin), "/usr/bin", "/bin"])
+    assert "blender" in setup.write_shims(ws, path)
+    text = (ws.venv / "bin" / "blender").read_text()
+    assert f"export BLENDER_USER_RESOURCES={ws.state / 'blender' / 'user'}\n" in text
+    assert text.rstrip().endswith(f'exec {sysbin / "blender"} --factory-startup --offline-mode --disable-autoexec "$@"')
+    home = tmp_path / "home"
+    home.mkdir()
+    env = {"PATH": path, "HOME": str(home), "VIRTUAL_ENV": str(ws.venv)}
+    r = subprocess.run(["blender", "--version"], env=env, capture_output=True, text=True, check=True, timeout=30)
+    cfg, cache, tmp, venv, p, args = r.stdout.strip().split("|")
+    assert cfg == str(ws.state / "blender" / "user" / "config") and cache.startswith(str(ws.state / "blender"))
+    assert tmp == str(ws.state / "blender" / "tmp") and venv == "unset" and str(ws.venv / "bin") not in p
+    assert args == "--factory-startup --offline-mode --disable-autoexec --version"
+    assert list(home.iterdir()) == []
+    # curatrix run / limits.run: the same variables, the real binary, the arguments once
+    monkeypatch.setenv("PATH", path)
+    e = limits.tool_env(ws, "script", {"PATH": path, "VIRTUAL_ENV": "x"}, ["blender", "--version"])
+    assert e["BLENDER_USER_SCRIPTS"] == str(ws.state / "blender" / "user" / "scripts") and "VIRTUAL_ENV" not in e
+    assert str(ws.venv / "bin") not in e["PATH"].split(os.pathsep)
+    assert limits.tool_cmd(ws, ["blender", "--factory-startup", "-b"]) == \
+        [str(sysbin / "blender"), "--factory-startup", "--offline-mode", "--disable-autoexec", "-b"]
+    assert limits.tool_cmd(ws, ["git", "status"]) == ["git", "status"]
+    assert "BLENDER_USER_CONFIG" not in limits.tool_env(ws, "script", {"PATH": path}, ["git"])
+    assert setup.launch_env(ws, "blender")["BLENDER_USER_CONFIG"] == str(ws.state / "blender" / "user" / "config")
+    assert blender.find(ws) == sysbin / "blender"
+
+
+def test_doctor_blender_not_pinnable(tmp_path, monkeypatch, capsys):
+    """A system tool with pinned: false (Blender): missing = a note, another version = a warning;
+    neither fails the doctor."""
+    from curatrix import tools
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    st = tools.SystemTool(name="blender", version="5.2.3", optional=True, pinned=False)
+    for have, status in ((None, "note"), ("5.3.0", "warn"), ("5.2.3", "ok")):
+        monkeypatch.setattr(tools, "for_role", lambda ts, role: tools.ToolSet(system={"blender": st}))
+        monkeypatch.setattr(tools, "system_version", lambda s, w=None: have)
+        setup.doctor(ws)
+        out = capsys.readouterr().out
+        line = next(ln for ln in out.splitlines() if "blender" in ln)
+        assert line.strip().startswith(status), line
+        assert "FAIL" not in line

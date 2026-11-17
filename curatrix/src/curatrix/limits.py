@@ -127,6 +127,7 @@ def run(cmd: list[str], use: str = "script", ws: Workspace | None = None, *, mem
         env = ws.run_env()
     if ws is not None:
         env = tool_env(ws, use, env, cmd)
+        cmd = tool_cmd(ws, cmd)
     if ws is not None and "cwd" not in kw:
         kw["cwd"] = ws.root
     r = subprocess.run(wrap(cmd, lim), env=env, **kw)
@@ -158,7 +159,7 @@ def tool_env(ws: Workspace, use: str, env: dict | None, cmd: list[str] | None = 
     LC_ALL=C.UTF-8; run pcbnew scripts with `--use kicad-cli` to get it. FreeCAD's config lives in the XDG
     dirs, which other tools (git, gh) read too, so they are set only for the `freecad` use or a
     FreeCAD command."""
-    from curatrix import setup                      # local import: setup imports limits
+    from curatrix import blender, setup             # local import: setup imports limits
     out = dict(env if env is not None else ws.run_env())
     kicad = setup.launch_env(ws, "kicad")
     out.update({k: v for k, v in kicad.items() if k.startswith("KICAD")})
@@ -168,4 +169,21 @@ def tool_env(ws: Workspace, use: str, env: dict | None, cmd: list[str] | None = 
     if use == "freecad" or exe.startswith(FREECAD_NAMES):
         fc = setup.launch_env(ws, "freecad")
         out.update({k: v for k, v in fc.items() if k.startswith("XDG_")})
+    if use == "blender" or blender.is_blender(cmd):
+        out.update(blender.env(ws))         # BLENDER_USER_*, XDG_*, TMPDIR under .xdmod/blender
+        for k in blender.UNSET:
+            out.pop(k, None)
+        out["PATH"] = blender.path_without_venv(ws, out.get("PATH", ""))
     return out
+
+
+def tool_cmd(ws: Workspace | None, cmd: list[str]) -> list[str]:
+    """Blender: the real binary (not the shim, so the arguments are not doubled) with the isolation
+    arguments (--factory-startup, ...) right after it. Other commands unchanged."""
+    from curatrix import blender
+    if ws is None or not blender.is_blender(cmd):
+        return cmd
+    if os.sep not in cmd[0]:
+        real = blender.find(ws)
+        cmd = [str(real) if real else cmd[0], *cmd[1:]]
+    return blender.with_args(cmd)

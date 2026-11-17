@@ -16,6 +16,7 @@ uses:
   kicad-cli: {memory: 2G, timeout: 5m}
   wireviz:   {memory: 1G, timeout: 2m}      # WireViz + Graphviz dot, one harness (separate process, XD-ADR-0127)
   freecad:   {memory: 4G, timeout: 10m}     # FreeCADCmd export / offscreen GUI
+  blender:   {memory: 4G, timeout: 10m}     # blender -b: the renderings of one variant (Cycles CPU)
   firefox:   {memory: 2G, timeout: 5m, vmem: none}   # headless SVG export (node + Firefox)
   elk:       {memory: 1G, timeout: 2m, vmem: none}   # elkjs layout (node)
   west:      {memory: 2G, timeout: 30m}     # west update (Zephyr is large)

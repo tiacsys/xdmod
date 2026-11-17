@@ -63,7 +63,8 @@ def cmd_run(a):
     lim = limits.resolve(a.use, ws, a.memory, a.timeout)
     if a.verbose:
         print(f"curatrix run: {limits.describe(lim)} [{limits.backend()}]", file=sys.stderr)
-    env = limits.tool_env(ws, a.use, ws.run_env(), cmd)   # KiCad/FreeCAD: the workspace-local config
+    env = limits.tool_env(ws, a.use, ws.run_env(), cmd)   # KiCad/FreeCAD/Blender: the workspace-local config
+    cmd = limits.tool_cmd(ws, cmd)                        # Blender: --factory-startup, ...
     rc = limits.norm_rc(subprocess.run(limits.wrap(cmd, lim), env=env, cwd=os.getcwd()).returncode)
     if rc in (124, 137):
         print(f"curatrix run: {limits.explain_rc(rc)}", file=sys.stderr)
@@ -414,7 +415,7 @@ def cmd_cam(a):
                 raise cam.CamError("--update-jobset applies to pcba/ projects only")
             if not meassemblies.top_folders(cfg):
                 raise cam.CamError(f"{repo.name} has no assembly (assemblies/<name>/)")
-            mecam.run(ws, repo, cfg, a.name)
+            mecam.run(ws, repo, cfg, a.name, use_blender=not a.no_blender)
         except cam.CamError as e:
             print(f"curatrix cam: {e}", file=sys.stderr)
             return 1
@@ -629,7 +630,7 @@ def parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_update)
 
     s = sub.add_parser("launch", help="start a GUI tool / Claude Code with workspace-local config")
-    s.add_argument("tool", choices=["kicad", "freecad", "drawio", "claude"])
+    s.add_argument("tool", choices=["kicad", "freecad", "blender", "drawio", "claude"])
     s.add_argument("args", nargs=argparse.REMAINDER)
     s.set_defaults(func=cmd_launch)
 
@@ -688,6 +689,9 @@ def parser() -> argparse.ArgumentParser:
                         "checkout (a branch in a worktree set) for its pull request; refuses without a tag")
     s.add_argument("--into", metavar="DIR", help="with --library: the board library checkout (default: the repo "
                                                  "with a board_library section in this workspace)")
+    s.add_argument("--no-blender", action="store_true",
+                   help="ME: the renderings without Blender (the z-buffer renderer in FreeCADCmd), also when "
+                        "Blender is installed; without Blender that is the default")
     s.set_defaults(func=cmd_cam)
 
     s = sub.add_parser("trace", help="trace report per SYS-REQ (refined, satisfied, verified, latest result, gaps) "

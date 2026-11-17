@@ -10,6 +10,8 @@
 #   XD_FONT              the pinned font file for the emboss
 #   XD_EXPLODE           JSON {link name: [dx, dy, dz]} of the exploded view, or {} (automatic)
 #   XD_RELEASE           "1" for a release, else the renderings carry the PREVIEW marking
+#   XD_SCENE             a .glb path: write the tessellated parts there (glTF 2.0 binary, colour by
+#                        BOM kind) for Blender instead of drawing the renderings here; "" = draw them
 #   QT_QPA_PLATFORM      offscreen (set by curatrix): Qt writes the text and the PNG, without OpenGL
 #   XD_RESULT            the result file
 # FreeCADCmd exits 0 when a script raises: the caller judges success by the result file. The script
@@ -22,7 +24,7 @@
 # exploded compound with explosion lines), renderings/<view>.png (front, top, right, iso; shaded
 # with visible edges, from FreeCAD's tessellation, without OpenGL, task 5.30). The result lists the BOM rows
 # (one per present leaf link, with the volume and center of mass of the placed shape, task 5.27) and
-# the files.
+# the files. With XD_SCENE: the glTF for Blender instead of the renderings.
 import json
 import os
 import traceback
@@ -218,6 +220,69 @@ def scene(asm, rows, kids):
             if len(pts) > 1:
                 es.append([tuple(p) for p in pts])
     return fs, es, diag
+
+
+def srgb_to_linear(c):
+    c = c / 255.0
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def export_glb(asm, rows, kids, path):
+    """The present leaf parts as a glTF 2.0 binary (.glb) for Blender: one indexed mesh per part
+    (FreeCAD's tessellation, same deflection as the z-buffer renderings), its material's base colour
+    the BOM-kind colour (linear), its name the link path and its extras the TraceID and kind. glTF is
+    y-up and in metres: written as (x, z, -y) / 1000, so Blender's importer gives FreeCAD's axes.
+    Written here, not by FreeCAD's exporter, which in FreeCADCmd knows no colours. Returns
+    {parts, triangles}."""
+    import struct
+    import MeshPart
+    import Part
+    import numpy as np
+    shapes = [(r, leaf_shape(asm, r, kids)) for r in rows]
+    shapes = [(r, s) for r, s in shapes if s is not None and not s.isNull()]
+    if not shapes:
+        raise RuntimeError("no part shape to export for the renderings")
+    diag = Part.makeCompound([s for _, s in shapes]).BoundBox.DiagonalLength
+    blob, views, accs, meshes, mats, nodes, tris = bytearray(), [], [], [], [], [], 0
+
+    def add(arr, target):
+        while len(blob) % 4:
+            blob.append(0)
+        views.append({"buffer": 0, "byteOffset": len(blob), "byteLength": arr.nbytes, "target": target})
+        blob.extend(arr.tobytes())
+        return len(views) - 1
+    for i, (r, s) in enumerate(shapes):
+        rgb = tuple(int(c * (1 - 0.12 * (i % 3))) for c in KIND_RGB[kind_of(r)])
+        mesh = MeshPart.meshFromShape(Shape=s, LinearDeflection=max(diag / 2000, 0.005), AngularDeflection=0.2,
+                                      Relative=False)
+        pts, fac = mesh.Topology
+        if not fac:
+            continue
+        p = np.array([(v.x, v.z, -v.y) for v in pts], np.float32) / 1000.0
+        idx = np.array(fac, np.uint32).reshape(-1)
+        accs.append({"bufferView": add(p, 34962), "componentType": 5126, "count": len(p), "type": "VEC3",
+                     "min": p.min(axis=0).tolist(), "max": p.max(axis=0).tolist()})
+        accs.append({"bufferView": add(idx, 34963), "componentType": 5125, "count": len(idx), "type": "SCALAR"})
+        mats.append({"name": f"{kind_of(r)}-{i}", "doubleSided": not s.Solids,
+                     "pbrMetallicRoughness": {"baseColorFactor": [*(srgb_to_linear(c) for c in rgb), 1.0],
+                                              "metallicFactor": 0.0, "roughnessFactor": 0.55}})
+        meshes.append({"name": r["path"], "primitives": [{"attributes": {"POSITION": len(accs) - 2},
+                                                         "indices": len(accs) - 1, "material": len(mats) - 1}]})
+        nodes.append({"name": r["path"], "mesh": len(meshes) - 1,
+                      "extras": {"TraceID": r.get("TraceID", ""), "kind": kind_of(r)}})
+        tris += len(fac)
+    while len(blob) % 4:
+        blob.append(0)
+    doc = {"asset": {"version": "2.0", "generator": "xdmod cam-asm.py"}, "scene": 0,
+           "scenes": [{"nodes": list(range(len(nodes)))}], "nodes": nodes, "meshes": meshes,
+           "materials": mats, "accessors": accs, "bufferViews": views, "buffers": [{"byteLength": len(blob)}]}
+    js = json.dumps(doc, separators=(",", ":")).encode()
+    js += b" " * (-len(js) % 4)
+    with open(path, "wb") as f:
+        f.write(struct.pack("<4sII", b"glTF", 2, 12 + 8 + len(js) + 8 + len(blob)))
+        f.write(struct.pack("<I4s", len(js), b"JSON") + js)
+        f.write(struct.pack("<I4s", len(blob), b"BIN\0") + bytes(blob))
+    return {"parts": len(nodes), "triangles": tris}
 
 
 def _axes(view):
@@ -469,20 +534,26 @@ try:
         f.write(svg)
     files.append(p)
     edges["exploded"] = n
-    # renderings: shaded, z-buffer (no OpenGL), with the version, the scale and the preview marking
-    _app, family = qt_font(os.environ["XD_FONT"])
-    os.makedirs(os.path.join(dest, "renderings"), exist_ok=True)
-    sc = scene(asm, rows, kids)
-    painted = {}
-    label = [f"{name}  variant {variant or 'all'}", os.environ.get("XD_VERSION", "")]
-    ortho = min(fit_scale(sc, VIEWS[v]) for v in ("front", "top", "right"))   # one scale for the three
-    scales = {v: ortho if v != "iso" else fit_scale(sc, VIEWS[v]) for v in VIEWS}
-    for v, view in VIEWS.items():
-        p = os.path.join(dest, "renderings", f"{v}.png")
-        painted[v] = render(sc, view, p, label + [v], os.environ.get("XD_RELEASE") != "1", family, scales[v])
-        files.append(p)
+    # renderings: for Blender, the tessellated parts as glTF (curatrix renders them); else shaded,
+    # z-buffer (no OpenGL), with the version, the scale and the preview marking
+    painted, glb, nfacets, scales = {}, None, 0, {}
+    if os.environ.get("XD_SCENE"):
+        glb = export_glb(asm, rows, kids, os.environ["XD_SCENE"])
+    else:
+        _app, family = qt_font(os.environ["XD_FONT"])
+        os.makedirs(os.path.join(dest, "renderings"), exist_ok=True)
+        sc = scene(asm, rows, kids)
+        nfacets = len(sc[0])
+        label = [f"{name}  variant {variant or 'all'}", os.environ.get("XD_VERSION", "")]
+        ortho = min(fit_scale(sc, VIEWS[v]) for v in ("front", "top", "right"))   # one scale for the three
+        scales = {v: ortho if v != "iso" else fit_scale(sc, VIEWS[v]) for v in VIEWS}
+        for v, view in VIEWS.items():
+            p = os.path.join(dest, "renderings", f"{v}.png")
+            painted[v] = render(sc, view, p, label + [v], os.environ.get("XD_RELEASE") != "1", family, scales[v])
+            files.append(p)
     out = {"ok": True, "files": [os.path.relpath(f, dest) for f in files], "edges": edges, "painted": painted,
-           "facets": len(sc[0]), "render_scale": {k: round(x, 4) for k, x in scales.items()}, "embossed": embossed,
+           "facets": nfacets, "render_scale": {k: round(x, 4) for k, x in scales.items()}, "scene": glb,
+           "embossed": embossed,
            "moves": used, "bbox": [round(x, 4) for x in (cb.XMin, cb.YMin, cb.ZMin, cb.XMax, cb.YMax, cb.ZMax)],
            "bom": [{k: v for k, v in r.items() if not k.startswith("_")} for r in rows], "warnings": warnings}
     for d in list(App.listDocuments().values()):

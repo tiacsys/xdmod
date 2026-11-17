@@ -168,6 +168,41 @@ What is in iteration 1 and what moved to iteration 2.
    for 272 000 facets (60 filleted tubes), about 1 s per view for a few boxes, on the owner's machine,
    well inside the ``freecad`` limit of 10 minutes for a few variants.
 
+.. xd-adr:: Blender as an optional local renderer of the ME renderings
+   :id: XD-ADR-NEW-blender
+   :date: 2026-11-17
+   :decision_status: proposed
+   :status: valid
+   :refines: XD-ADR-0147
+
+   Proposed by the agent of the Blender follow-up to task 5.30, for the owner to accept or change.
+   The owner reversed "no Blender" on 2026-11-17: the Blender package of the machine may render,
+   through its executable only (no ``bpy`` wheel, no new system package).
+
+   **Optional and local.** When ``blender`` is on the machine, ``curatrix cam <repo> <asm>`` lets
+   ``FreeCADCmd`` write the tessellated parts per variant as glTF (``<variant>.scene.glb`` beside
+   ``cam.json``; colour by BOM kind, as before) and Blender render the same four views
+   (``renderings/front|top|right|iso.png``, same size, names and marking) with Cycles on the CPU:
+   orthographic cameras, three sun lights and a dim sky, no shadows (overlapping or touching parts
+   would shade each other black), Freestyle edges, fixed samples and seed, no denoiser. Without
+   Blender, or with ``--no-blender``, the z-buffer renderer of :need:`XD-ADR-0147` runs, so CI and
+   machines without Blender get renderings too. ``cam.json`` says which: ``renderings.method`` is
+   ``blender`` or ``zbuffer``; for Blender also its version, engine, samples and seed.
+
+   **Not pinnable.** Blender comes from the distribution and curatrix installs nothing, so its
+   output is never committed or compared, and ``tools.yaml`` records the version it was tried
+   with (``pinned: false``): ``curatrix doctor`` notes a missing Blender and warns on another
+   version, it never fails on them. Tests that need Blender are marked ``tools`` and run locally
+   only.
+
+   **Isolated.** Every call, from curatrix, ``curatrix run -- blender``, ``curatrix launch
+   blender`` or the ``.venv/bin/blender`` shim, gets ``--factory-startup --offline-mode
+   --disable-autoexec`` and the user paths under ``.xdmod/blender/`` (``BLENDER_USER_RESOURCES``,
+   ``_CONFIG``, ``_SCRIPTS``, ``_DATAFILES``, ``_EXTENSIONS``, the XDG dirs for the caches,
+   ``TMPDIR``), as :need:`XD-ADR-0145` does for KiCad and FreeCAD; Blender's Python runs without the
+   workspace venv. Never call Blender bare. The ``blender`` limits (4 GB, 10 minutes per variant)
+   apply.
+
 .. xd-adr:: A PCB layout in iteration 1, without routing
    :id: XD-ADR-0144
    :date: 2026-11-17

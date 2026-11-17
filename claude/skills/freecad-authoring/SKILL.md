@@ -71,6 +71,10 @@ partially); save a document before a cross-document link or expression points fr
   Blender: XD-ADR-0147): shaded without OpenGL, colour by BOM kind (printed orange, board green, fastener grey, bought dark grey,
   other blue), not by the colours in the document. Do not try the 3D view's `saveImage` or the
   Render workbench headless: both give nothing here (`claude/notes/me-renderings-spike.md`).
+  With Blender installed, `cam` renders them with Blender instead (glTF from `FreeCADCmd`, Cycles
+  CPU; `--no-blender` for the fallback; `cam.json` `renderings.method`). Never call `blender` bare,
+  not even `--version`: only `curatrix run -- blender`, `curatrix launch blender` or the
+  `.venv/bin/blender` shim (`--factory-startup`, user paths in `.xdmod/blender/`).
 
 ## To be added
 
