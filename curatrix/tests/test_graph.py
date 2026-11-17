@@ -30,13 +30,14 @@ def test_r1_r2_and_draft_does_not_count():
     assert {f.level for f in fs if f.rule == "CK-B2"} == {"warning"}
 
 
-def test_r3_orphans_and_r4_grace():
+def test_r4_grace_and_no_orphan_rule():
+    """R3 (orphans) is a schema rule of needs_config.toml only (task 5.2): no CK-A4 here."""
     ns = [*BASE,
           {"id": "EE-CMP-0001", "type": "ee-cmp", "status": "valid"},
           {"id": "SYS-REQ-0002", "type": "sys-req", "status": "retired"},
           {"id": "SYS-EL-0002", "type": "sys-el", "status": "valid", "layer": "product", "satisfies": ["SYS-REQ-0002"]}]
     fs = graph.check(g(*ns), "pr")
-    assert rules(fs) == ["CK-A4", "CK-B3"]
+    assert rules(fs) == ["CK-B3"]
     assert [f.level for f in fs if f.rule == "CK-B3"] == ["warning"]
     assert [f.level for f in graph.check(g(*ns), "baseline") if f.rule == "CK-B3"] == ["error"]
 
@@ -46,7 +47,7 @@ def test_unknown_links_ids_and_hil():
           {"id": "SW-REQ-0001", "type": "sw-req", "status": "valid", "refines": ["SYS-REQ-0099"]},
           {"id": "SW-REQ-0002", "type": "ee-req", "status": "valid", "derived": True},
           {"id": "TR-INT-STC-0001-3f9a1c2e", "type": "tr", "status": "valid", "method": "hil", "result_of": ["INT-STC-0001"]}]
-    assert rules(graph.check(g(*ns), "local")) == ["CK-A1", "CK-A3", "CK-A5", "CK-B2"]
+    assert rules(graph.check(g(*ns), "local")) == ["CK-A1", "CK-A3", "CK-B2"]   # R5 is a schema rule
 
 
 def test_duplicates_and_stale_evidence():

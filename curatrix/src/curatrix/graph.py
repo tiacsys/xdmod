@@ -1,5 +1,6 @@
-"""Graph rules on the merged needs of a docs build (trace-model.md §4; checks CK-A4, CK-B1-B3,
-CK-B5, CK-B6, CK-G1/G2). sphinx-needs skips external needs in its own schema checks, so these
+"""Graph rules on the merged needs of a docs build (trace-model.md §4; checks CK-A1, CK-A3, CK-B1-B3,
+CK-B5, CK-B6, CK-G1/G2). Only rules that need the merged graph live here: rules the sphinx-needs
+schema already enforces per document (orphans R3, HIL fields R5) were dropped (task 5.2, P4-9). sphinx-needs skips external needs in its own schema checks, so these
 run here over every needs.json of a build (own and imported needs alike).
 
 Back links are computed here from the outgoing links (never trusted from the files).
@@ -15,11 +16,11 @@ from pathlib import Path
 
 from curatrix import ids as idmod
 from curatrix import needs as needsmod
+from curatrix import tracemodel
 
-LINK_TYPES = ("refines", "raised_by", "addresses", "realizes", "satisfies", "configures", "conforms",
-              "part_of", "implements", "verifies", "decided_by", "enforces", "follows", "result_of")
-REQ_TYPES = ("sys-req", "sw-req", "ee-req", "me-req")
-ORPHAN_TYPES = ("sw-arch", "ee-pcba", "ee-cmp", "me-asm", "me-part")
+# from needs/needs_config.toml (D64h, task 5.2): never a copy here
+LINK_TYPES = tracemodel.link_types()
+REQ_TYPES = tracemodel.req_types()
 VALUE_FIELDS = ("quantity", "unit", "min", "max", "nominal")
 # D132: hashed fields for suspect links
 HASHED = ("title", "content", "status", *VALUE_FIELDS)
@@ -78,17 +79,14 @@ def check(g: Graph, stage: str) -> list[Finding]:
             continue
         # R1 (CK-B1): every SYS-REQ is refined by a domain requirement or satisfied by a SYS-EL
         if t == "sys-req":
-            ok = any(counts(N.get(s)) and N[s].get("type") in ("sw-req", "ee-req", "me-req") for s in back[nid]["refines"]) \
+            ok = any(counts(N.get(s)) and N[s].get("type") in REQ_TYPES and N[s]["type"] != "sys-req"
+                     for s in back[nid]["refines"]) \
                 or any(counts(N.get(s)) and N[s].get("type") == "sys-el" for s in back[nid]["satisfies"])
             if not ok:
                 out.append(Finding("CK-B1", "error", nid, "not refined by a domain requirement and not satisfied by a SYS-EL (R1)"))
         # R2 (CK-B2): every requirement has a verifies link (warning in iteration 1, D99)
         if t in REQ_TYPES and not any(counts(N.get(s)) for s in back[nid]["verifies"]):
             out.append(Finding("CK-B2", "warning", nid, "no (valid) test case verifies it (R2)"))
-        # R3 (CK-A4): no orphans
-        if (t in ORPHAN_TYPES or (t == "sys-el" and n.get("layer") == "product")) \
-                and not (n.get("realizes") or n.get("satisfies")):
-            out.append(Finding("CK-A4", "error", nid, "orphan: neither realizes nor satisfies anything (R3)"))
         # R4 (CK-B3): links to retired needs; grace until the baseline (D75)
         for lt, targets in g.links(n).items():
             for tgt in targets:
@@ -98,9 +96,6 @@ def check(g: Graph, stage: str) -> list[Finding]:
                                        f"{lt} -> {tgt}, which is retired (R4; fails at the baseline)"))
                 elif tn is None:
                     out.append(Finding("CK-A1", "error", nid, f"{lt} -> {tgt}: unknown ID"))
-        # R5 (CK-A5): HIL results carry the firmware hash and the pinned SHAs
-        if t == "tr" and n.get("method") == "hil" and not (n.get("firmware_sha256") and n.get("shas")):
-            out.append(Finding("CK-A5", "error", nid, "HIL result without firmware_sha256 and shas (R5)"))
         # CK-A3: ID format and kind
         if t not in ("testfile", "testsuite", "testcase"):
             k = idmod.kind_of(nid)

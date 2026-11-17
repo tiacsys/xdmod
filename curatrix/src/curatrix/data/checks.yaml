@@ -3,6 +3,7 @@
 # Sphinx directive `xd-check-needs`), and it `enforces` one or more method rules (XD-RULE).
 # `need` is issued from xdmod's ledger (`curatrix ids fix xdmod`); never change or reuse it.
 # Name, config section and levels per stage stay in checks.BUILTIN; a test keeps both in step.
+# A check that is removed keeps its entry with `retired: <date and reason>` (its need is retired, D130).
 checks:
   CK-A6:
     need: XD-CHECK-0001
@@ -18,10 +19,12 @@ checks:
     description: "Every need ID matches the ID scheme, and its kind matches the need type."
   CK-A4:
     need: XD-CHECK-0004
+    retired: "2026-11-17: the sphinx-needs schema of needs_config.toml enforces R3 in the build of the repo that owns the need (task 5.2, P4-9)"
     enforces: [XD-RULE-0010]
     description: "Product-layer system elements and domain design elements have a realizes or satisfies link."
   CK-A5:
     need: XD-CHECK-0005
+    retired: "2026-11-17: the sphinx-needs schema of needs_config.toml enforces R5 in the build of the repo that owns the need (task 5.2, P4-9)"
     enforces: [XD-RULE-0012]
     description: "Test results of HIL runs carry firmware_sha256 and the SHAs of the pinned repos."
   CK-B1:

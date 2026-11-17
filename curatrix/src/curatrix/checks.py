@@ -62,8 +62,6 @@ BUILTIN = [
     ("CK-A6", "docs build strict (zdocs, sphinx-needs schema: CK-A1-A3)", _lv({s: "error" for s in ALL}), "docs", False, "c_docs"),
     ("CK-A1", "links: unknown IDs (own graph check)", _lv({s: "error" for s in ALL}), "docs", False, "c_graph"),
     ("CK-A3", "IDs match the scheme and their need type", _lv({s: "error" for s in ALL}), "docs", False, "c_graph"),
-    ("CK-A4", "no orphans (R3)", _lv({s: "error" for s in ALL}), "docs", False, "c_graph"),
-    ("CK-A5", "HIL results carry firmware hash and SHAs (R5)", _lv({s: "error" for s in ALL}), "docs", False, "c_graph"),
     ("CK-B1", "every SYS-REQ refined or satisfied (R1)", _lv({"full": "error", "baseline": "error"}), "docs", False, "c_graph"),
     ("CK-B2", "every requirement verified (R2)", _lv({"full": "warning", "baseline": "warning"}), "docs", False, "c_graph"),
     ("CK-B3", "no links to retired needs (R4, grace until baseline)",
