@@ -223,7 +223,7 @@ are at the end of the same notes file.
 - [ ] 5.29 Board library (EE-5, P5-7): skeleton of `robarm-freecad-pcba` (created after the owner approved it, D123; west project and group for ee and me, `checks.yaml` with `expect:`, CI, ruleset, `claude/CLAUDE.md`, licence, bump bot, full set); the scripted export (`kicad-cli pcb export step` with `--variant` and the version, a headless FreeCAD import that adds the board ID and version) of a tagged board, added by a PR of the EE agent; at most 5 MB per file to start; a check that every file names an existing board tag; a note or issue on robarm-me when a newer board version exists. Record the AGPL-3.0 licence check of StepUp
 
 **H. End of the phase**
-- [ ] 5.30 ME renderings (front, top, side, one 3D view) at the end of the phase (P5-5): compare FreeCAD's rendering (Render workbench) and Blender (pinned, headless on the STEP export); fallback TechDraw or Draft SVG projections
+- [ ] 5.30 ME renderings (front, top, side, one 3D view) at the end of the phase (P5-5): Blender (pinned, headless on the STEP export) as an optional local renderer; without it the z-buffer renderer of XD-ADR-0147 (the Render workbench and Coin3D snapshots do not work headless, `claude/notes/me-renderings-spike.md`)
 - [ ] 5.31 Measure the author loop on the canary (P4-11); caching only if the numbers ask for it (mandatory if one local check of robarm-ee takes more than five minutes)
 - [ ] 5.32 Manual: how-to pages for the EE and ME roles (new board, new assembly, design output, a co-design change; the owner reviews EE and ME PRs from a local docs build); the recorded local fixture run; the list of what moved to iteration 2, agreed by the owner; then a review of Phase 5 by another agent, like the Phase 4 review
 

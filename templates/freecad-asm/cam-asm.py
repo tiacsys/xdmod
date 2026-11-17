@@ -134,14 +134,16 @@ def emboss(part, text, font):
     return result, info
 
 
-# renderings (task 5.30): FreeCAD tessellates the parts; each facet is shaded flat (one light from
-# the viewer's upper left) and drawn into a z-buffer (numpy, a FreeCAD dependency) at twice the
-# size, the visible edges of the shapes on top, then averaged down; FreeCAD's Qt (QImage, QPainter,
-# offscreen platform) writes the text and the PNG. No OpenGL: Coin3D offscreen snapshots and the
-# Render workbench do not work headless here (claude/notes/me-renderings-spike.md).
+# renderings (task 5.30; the fallback when Blender is not there): FreeCAD tessellates the parts; each
+# facet is shaded flat (one light from the viewer's upper left) and drawn into a z-buffer (numpy, a
+# dependency of FreeCAD) at twice the size, as scanline spans, vectorised in chunks; the visible edges
+# (without seam edges) on top; then averaged down. FreeCAD's Qt (QImage, QPainter, offscreen
+# platform) writes the text and the PNG. No OpenGL: Coin3D offscreen snapshots and the Render
+# workbench do not work headless here (claude/notes/me-renderings-spike.md).
 KIND_RGB = {"printed": (232, 140, 40), "board": (40, 125, 70), "fastener": (165, 165, 175),
             "bought": (95, 95, 105), "part": (85, 130, 185)}
 RENDER_W, RENDER_H, RENDER_MARGIN, RENDER_TOP, SS = 1600, 1200, 90, 150, 2
+BATCH_SAMPLES = 2_000_000             # sample points per z-buffer batch (memory: ~100 bytes each)
 
 
 def kind_of(r):
@@ -163,8 +165,9 @@ def leaf_shape(asm, r, kids):
 
 
 def scene(asm, rows, kids):
-    """(facets, edges, diagonal) of the present leaf parts: facets as (rgb, closed, 3x3 points,
-    normal), edges as polylines (lists of points), both in assembly coordinates."""
+    """(facets, edges, diagonal) of the present leaf parts: facets as (rgb, 3x3 points, normal),
+    edges as polylines (lists of points), both in assembly coordinates. Seam edges (an edge that
+    bounds the same face twice, as on a cylinder) are left out."""
     import MeshPart
     import Part
     shapes = [(r, leaf_shape(asm, r, kids)) for r in rows]
@@ -175,12 +178,17 @@ def scene(asm, rows, kids):
     fs, es = [], []
     for i, (r, s) in enumerate(shapes):
         rgb = tuple(int(c * (1 - 0.12 * (i % 3))) for c in KIND_RGB[kind_of(r)])
-        closed = bool(s.Solids)
         mesh = MeshPart.meshFromShape(Shape=s, LinearDeflection=max(diag / 2000, 0.005), AngularDeflection=0.2,
                                       Relative=False)
         for f in mesh.Facets:
-            fs.append((rgb, closed, [tuple(p) for p in f.Points], tuple(f.Normal)))
+            fs.append((rgb, [tuple(p) for p in f.Points], tuple(f.Normal)))
+        seams = set()
+        for f in s.Faces:
+            hs = [e.hashCode() for e in f.Edges]
+            seams |= {h for h in hs if hs.count(h) > 1}
         for e in s.Edges:
+            if e.hashCode() in seams:
+                continue
             try:
                 pts = e.discretize(Deflection=max(diag / 4000, 0.002))
             except Exception:
@@ -190,80 +198,135 @@ def scene(asm, rows, kids):
     return fs, es, diag
 
 
-def render(sc, view, path, lines, preview, font):
-    """Render the scene in a view (VIEWS) into a PNG; returns the number of facets drawn."""
+def _axes(view):
     import numpy as np
-    from PySide import QtCore, QtGui
-    fs, es, diag = sc
     D = np.array(view[0], float)
     D /= np.linalg.norm(D)
     X = np.array(view[1], float)
     X /= np.linalg.norm(X)
-    U = np.cross(D, X)
+    return D, X, np.cross(D, X)
+
+
+def fit_scale(sc, view):
+    """Pixels per mm at which the scene fills the image in this view (below the text band)."""
+    import numpy as np
+    if not sc[0]:
+        return 1.0
+    D, X, U = _axes(view)
+    P = np.array([f[1] for f in sc[0]], float)
+    sx, sy = P @ X, P @ U
+    return min((RENDER_W - 2 * RENDER_MARGIN) / max(sx.max() - sx.min(), 1e-9),
+               (RENDER_H - 2 * RENDER_MARGIN - RENDER_TOP) / max(sy.max() - sy.min(), 1e-9))
+
+
+def render(sc, view, path, lines, preview, font, scale=None):
+    """Render the scene in a view (VIEWS) into a PNG at ``scale`` px/mm (None: fit); returns the
+    number of facets that won at least one pixel when they were drawn (0: an empty rendering).
+    No back-face culling: a solid with flipped normals (some STEP imports) still renders."""
+    import numpy as np
+    from PySide import QtCore, QtGui
+    fs, es, diag = sc
+    D, X, U = _axes(view)
     light = D + 0.6 * U - 0.4 * X
     light /= np.linalg.norm(light)
     W, H = RENDER_W * SS, RENDER_H * SS
-    zbuf = np.full((H, W), -np.inf)
-    cbuf = np.full((H, W, 3), 255, np.uint8)
+    zbuf = np.full(H * W, -np.inf)
+    cbuf = np.full((H * W, 3), 255, np.uint8)
     drawn = 0
-    keep = np.zeros(0, bool)
     if fs:
-        P = np.array([f[2] for f in fs], float)                       # (n, 3, 3)
-        N = np.array([f[3] for f in fs], float)
-        nd = N @ D
-        keep = np.array([not f[1] for f in fs]) | (nd > 1e-9)        # back faces of solids go
+        scale = fit_scale(sc, view) if scale is None else scale
+        P = np.array([f[1] for f in fs], float)                       # (n, 3, 3)
+        N = np.array([f[2] for f in fs], float)
+        rgb = np.array([f[0] for f in fs], float)
         sx, sy, sz = P @ X, P @ U, P @ D
-    if fs and keep.any():
-        x0, x1, y0, y1 = sx[keep].min(), sx[keep].max(), sy[keep].min(), sy[keep].max()
-        m, top = RENDER_MARGIN * SS, RENDER_TOP * SS
-        s = min((W - 2 * m) / max(x1 - x0, 1e-9), (H - 2 * m - top) / max(y1 - y0, 1e-9))
+        x0, x1, y0, y1 = sx.min(), sx.max(), sy.min(), sy.max()
+        s = scale * SS
         ox = (W - (x1 - x0) * s) / 2
-        oy = m + (H - 2 * m - top - (y1 - y0) * s) / 2
+        oy = RENDER_MARGIN * SS + (H - 2 * RENDER_MARGIN * SS - RENDER_TOP * SS - (y1 - y0) * s) / 2
 
         def to_px(x, y):
             return ox + (x - x0) * s, H - oy - (y - y0) * s
         px, py = to_px(sx, sy)
-        shade = 0.3 + 0.7 * np.abs(N @ light)
-        zeps = diag * 1e-6                           # coplanar faces: the first one drawn stays (no speckle)
-        for k in np.nonzero(keep)[0]:
-            xs, ys, zs = px[k], py[k], sz[k]
-            xa, xb = max(int(np.floor(xs.min())), 0), min(int(np.ceil(xs.max())), W - 1)
-            ya, yb = max(int(np.floor(ys.min())), 0), min(int(np.ceil(ys.max())), H - 1)
-            if xa > xb or ya > yb:
-                continue
-            area = (xs[1] - xs[0]) * (ys[2] - ys[0]) - (xs[2] - xs[0]) * (ys[1] - ys[0])
-            if abs(area) < 1e-12:
-                continue
-            gx, gy = np.meshgrid(np.arange(xa, xb + 1) + 0.5, np.arange(ya, yb + 1) + 0.5)
-            w0 = ((xs[1] - gx) * (ys[2] - gy) - (xs[2] - gx) * (ys[1] - gy)) / area
-            w1 = ((xs[2] - gx) * (ys[0] - gy) - (xs[0] - gx) * (ys[2] - gy)) / area
-            w2 = 1 - w0 - w1
-            z = w0 * zs[0] + w1 * zs[1] + w2 * zs[2]
-            zsub = zbuf[ya:yb + 1, xa:xb + 1]
-            inside = (w0 >= -1e-6) & (w1 >= -1e-6) & (w2 >= -1e-6) & (z > zsub + zeps)
-            if not inside.any():
-                continue
-            zsub[inside] = z[inside]
-            cbuf[ya:yb + 1, xa:xb + 1][inside] = [int(c * shade[k]) for c in fs[k][0]]
-            drawn += 1
+        col = np.clip(rgb * (0.3 + 0.7 * np.abs(N @ light))[:, None], 0, 255).astype(np.uint8)
+        zeps = diag * 1e-6                       # coplanar faces: the first facet drawn stays (no speckle)
+        zq = sz / zeps                           # depth in steps of zeps (rounded per pixel below)
+        area = (px[:, 1] - px[:, 0]) * (py[:, 2] - py[:, 0]) - (px[:, 2] - px[:, 0]) * (py[:, 1] - py[:, 0])
+        ok = np.abs(area) > 1e-12
+        # depth plane per facet: z = za * x + zb * y + zc (in pixel coordinates)
+        ar = np.where(ok, area, 1.0)
+        za = ((zq[:, 1] - zq[:, 0]) * (py[:, 2] - py[:, 0]) - (zq[:, 2] - zq[:, 0]) * (py[:, 1] - py[:, 0])) / ar
+        zb = ((px[:, 1] - px[:, 0]) * (zq[:, 2] - zq[:, 0]) - (px[:, 2] - px[:, 0]) * (zq[:, 1] - zq[:, 0])) / ar
+        zc = zq[:, 0] - za * px[:, 0] - zb * py[:, 0]
+        # scanline spans: the rows whose pixel centre lies in the facet
+        r0 = np.clip(np.ceil(py.min(1) - 0.5), 0, H).astype(int)
+        r1 = np.clip(np.floor(py.max(1) - 0.5), -1, H - 1).astype(int)
+        nrow = np.where(ok, np.maximum(r1 - r0 + 1, 0), 0)
+        hit = np.zeros(len(fs), bool)
+
+        def fill(idx):
+            """Rasterise the facets idx (scanline spans, vectorised) and z-test them into the buffers."""
+            n = nrow[idx]
+            fi = np.repeat(idx, n)
+            if not len(fi):
+                return
+            row = r0[fi] + (np.arange(len(fi)) - np.repeat(np.cumsum(n) - n, n))
+            yc = row + 0.5
+            xl = np.full(len(fi), np.inf)
+            xr = np.full(len(fi), -np.inf)
+            for i, j in ((0, 1), (1, 2), (2, 0)):      # where the row crosses each edge (half-open in y)
+                y0_, y1_, x0_, x1_ = py[fi, i], py[fi, j], px[fi, i], px[fi, j]
+                cross = ((y0_ <= yc) & (yc < y1_)) | ((y1_ <= yc) & (yc < y0_))
+                xc = x0_ + (yc - y0_) * (x1_ - x0_) / np.where(y1_ != y0_, y1_ - y0_, 1.0)
+                xl = np.where(cross, np.minimum(xl, xc), xl)
+                xr = np.where(cross, np.maximum(xr, xc), xr)
+            c0 = np.clip(np.ceil(xl - 0.5), 0, W).astype(int)
+            c1 = np.clip(np.floor(xr - 0.5), -1, W - 1).astype(int)
+            m = np.where(np.isfinite(xl) & np.isfinite(xr), np.maximum(c1 - c0 + 1, 0), 0)
+            pf = np.repeat(fi, m)
+            if not len(pf):
+                return
+            colx = np.repeat(c0, m) + (np.arange(len(pf)) - np.repeat(np.cumsum(m) - m, m))
+            rowx = np.repeat(row, m)
+            z = np.round(za[pf] * (colx + 0.5) + zb[pf] * (rowx + 0.5) + zc[pf])
+            pix = rowx * W + colx
+            front = z > zbuf[pix]                       # drop what is behind the buffer already
+            pix, z, pf = pix[front][::-1], z[front][::-1], pf[front][::-1]
+            np.maximum.at(zbuf, pix, z)
+            win = z == zbuf[pix]                        # reversed: on a tie the earlier facet is written last
+            cbuf[pix[win]] = col[pf[win]]
+            pf = pf[win]
+            hit[pf] = True
+        # chunks of about BATCH_SAMPLES pixels (estimated from the bounding boxes)
+        est = nrow * np.maximum(px.max(1) - px.min(1), 1)
+        cut = np.searchsorted(np.cumsum(est), np.arange(1, int(est.sum() // BATCH_SAMPLES) + 2) * BATCH_SAMPLES)
+        start = 0
+        for c in list(cut) + [len(fs)]:
+            c = max(int(c), start + 1)
+            if start >= len(fs):
+                break
+            fill(np.arange(start, min(c, len(fs))))
+            start = c
+        drawn = int(hit.sum())
         # visible edges: points of the shape edges not behind the z-buffer, 2 px wide
-        tol = diag * 2e-3
+        tol = diag * 2e-3 / zeps
+        zimg = zbuf.reshape(H, W)
+        cimg = cbuf.reshape(H, W, 3)
         for pl in es:
             q = np.array(pl, float)
             ex, ey = to_px(q @ X, q @ U)
-            ez = q @ D
-            nseg = np.maximum(np.ceil(np.hypot(np.diff(ex), np.diff(ey))), 1).astype(int)
-            for a in range(len(q) - 1):
-                t = np.linspace(0, 1, nseg[a] + 1)
-                xx = ex[a] + (ex[a + 1] - ex[a]) * t
-                yy = ey[a] + (ey[a + 1] - ey[a]) * t
-                zz = ez[a] + (ez[a + 1] - ez[a]) * t
-                ix, iy = xx.astype(int), yy.astype(int)
-                ok = (ix >= 0) & (ix < W - 1) & (iy >= 0) & (iy < H - 1)
-                ix, iy, zz = ix[ok], iy[ok], zz[ok]
-                vis = zz >= zbuf[iy, ix] - tol
-                for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
-                    cbuf[iy[vis] + dy, ix[vis] + dx] = (25, 25, 30)
+            ez = (q @ D) / zeps
+            n = np.maximum(np.ceil(np.hypot(np.diff(ex), np.diff(ey))), 1).astype(int)
+            t = np.concatenate([np.linspace(0, 1, m + 1) for m in n])
+            seg = np.repeat(np.arange(len(n)), n + 1)
+            xx = ex[seg] + (ex[seg + 1] - ex[seg]) * t
+            yy = ey[seg] + (ey[seg + 1] - ey[seg]) * t
+            zz = ez[seg] + (ez[seg + 1] - ez[seg]) * t
+            ix, iy = xx.astype(int), yy.astype(int)
+            inn = (ix >= 0) & (ix < W - 1) & (iy >= 0) & (iy < H - 1)
+            ix, iy, zz = ix[inn], iy[inn], zz[inn]
+            vis = zz >= zimg[iy, ix] - tol
+            for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+                cimg[iy[vis] + dy, ix[vis] + dx] = (25, 25, 30)
     img_arr = cbuf.reshape(RENDER_H, SS, RENDER_W, SS, 3).mean(axis=(1, 3)).round().astype(np.uint8)
     data = np.ascontiguousarray(img_arr).tobytes()
     img = QtGui.QImage(data, RENDER_W, RENDER_H, RENDER_W * 3, QtGui.QImage.Format_RGB888).copy()
@@ -273,7 +336,7 @@ def render(sc, view, path, lines, preview, font):
     f.setPixelSize(30)
     p.setFont(f)
     p.setPen(QtGui.QColor(60, 60, 60))
-    for i, t in enumerate(lines):
+    for i, t in enumerate(lines + ([f"{scale:.3g} px/mm"] if fs else [])):
         p.drawText(40, 60 + i * 40, t)
     if preview:
         f.setPixelSize(64)
@@ -289,7 +352,8 @@ def render(sc, view, path, lines, preview, font):
 
 
 def qt_font(path):
-    """A QGuiApplication (offscreen platform) and the family of the pinned font."""
+    """A QGuiApplication (offscreen platform) and the family of the pinned font; fails when the
+    font does not load (no silent fallback to a system font)."""
     from PySide import QtGui
     app = QtGui.QGuiApplication.instance()
     if app is None:
@@ -298,7 +362,9 @@ def qt_font(path):
         raise RuntimeError("a QCoreApplication runs already; the renderings need a QGuiApplication")
     fid = QtGui.QFontDatabase.addApplicationFont(path)
     fams = QtGui.QFontDatabase.applicationFontFamilies(fid) if fid >= 0 else []
-    return app, (fams[0] if fams else "monospace")
+    if not fams:
+        raise RuntimeError(f"the pinned font {path} does not load in Qt; the renderings need it")
+    return app, fams[0]
 
 
 try:
@@ -381,18 +447,20 @@ try:
         f.write(svg)
     files.append(p)
     edges["exploded"] = n
-    # renderings: shaded, painted with Qt (no OpenGL), with the version and the preview marking
+    # renderings: shaded, z-buffer (no OpenGL), with the version, the scale and the preview marking
     _app, family = qt_font(os.environ["XD_FONT"])
     os.makedirs(os.path.join(dest, "renderings"), exist_ok=True)
     sc = scene(asm, rows, kids)
     painted = {}
     label = [f"{name}  variant {variant or 'all'}", os.environ.get("XD_VERSION", "")]
+    ortho = min(fit_scale(sc, VIEWS[v]) for v in ("front", "top", "right"))   # one scale for the three
+    scales = {v: ortho if v != "iso" else fit_scale(sc, VIEWS[v]) for v in VIEWS}
     for v, view in VIEWS.items():
         p = os.path.join(dest, "renderings", f"{v}.png")
-        painted[v] = render(sc, view, p, label + [v], os.environ.get("XD_RELEASE") != "1", family)
+        painted[v] = render(sc, view, p, label + [v], os.environ.get("XD_RELEASE") != "1", family, scales[v])
         files.append(p)
     out = {"ok": True, "files": [os.path.relpath(f, dest) for f in files], "edges": edges, "painted": painted,
-           "facets": len(sc[0]), "embossed": embossed,
+           "facets": len(sc[0]), "render_scale": {k: round(x, 4) for k, x in scales.items()}, "embossed": embossed,
            "moves": used, "bbox": [round(x, 4) for x in (cb.XMin, cb.YMin, cb.ZMin, cb.XMax, cb.YMax, cb.ZMax)],
            "bom": [{k: v for k, v in r.items() if not k.startswith("_")} for r in rows], "warnings": warnings}
     for d in list(App.listDocuments().values()):

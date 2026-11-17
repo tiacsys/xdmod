@@ -20,13 +20,14 @@ workspace-local config) once per variant into ``build/<area>/cam/<asm>/<version>
 * ``exploded.svg``: a TechDraw view of the exploded compound with explosion lines (spike §5
   fallback); the moves come from ``assemblies/<asm>/explode.yaml`` (``{link name: [dx, dy, dz]}``
   in mm), or automatically away from the assembly's centre;
-* ``renderings/front|top|right|iso.png`` (task 5.30): shaded renderings, 1600 x 1200 px. FreeCAD
-  tessellates the present parts, ``cam-asm.py`` shades each facet flat (colour by BOM kind) and
-  paints them back to front with FreeCAD's own Qt (``QPainter`` on a ``QImage``, offscreen
-  platform), without OpenGL: Coin3D offscreen snapshots and the Render workbench do not work
-  headless (``claude/notes/me-renderings-spike.md``). Assembly, variant, full version and view are
-  written on each image, and ``PREVIEW`` in red unless a release. A rendering without a painted
-  facet fails the run;
+* ``renderings/front|top|right|iso.png`` (task 5.30; method ``zbuffer``, the fallback when Blender
+  is not there): shaded renderings, 1600 x 1200 px, without OpenGL (Coin3D offscreen snapshots and
+  the Render workbench do not work headless, ``claude/notes/me-renderings-spike.md``). FreeCAD
+  tessellates the present parts; ``cam-asm.py`` shades each facet flat (colour by BOM kind) and
+  draws it into a numpy z-buffer, with the visible edges on top; FreeCAD's Qt writes the text and
+  the PNG. Front, top and right share one scale, iso has its own; the scale (px/mm) is on the
+  image and in ``cam.json``. Assembly, variant, full version and view are written on each image,
+  and ``PREVIEW`` in red unless a release. A rendering without a drawn facet fails the run;
 * ``bom.csv``: the flat BOM with totals, one row per part (sub-assemblies resolved).
 
 Variants: the ``Configs`` of the links (presence, XD-ADR-0137; only a link's own property, as the ME
@@ -64,7 +65,7 @@ SHARED = ("parts", "lib", "print")
 LCS_TYPES = ("Part::LocalCoordinateSystem", "PartDesign::CoordinateSystem")
 VIEWS = ("front", "top", "right", "iso")
 ALL, BASE = "all", "base"   # variants: no Configs anywhere; only the links without Configs
-RENDER_METHOD = "FreeCAD tessellation, flat shading, painted with Qt (no OpenGL)"
+RENDER_METHOD = "zbuffer"   # FreeCAD tessellation, flat shading, numpy z-buffer; text and PNG by Qt (no OpenGL)
 BOM_COLS = ("item", "id", "name", "kind", "qty", "material", "print_profile", "standard", "manufacturer", "mpn", "file")
 
 
@@ -497,7 +498,8 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
         per[vname] = {"embossed": res.get("embossed") or {}, "edges": res.get("edges") or {},
                       "moves": res.get("moves") or {}, "bom_rows": len(rows),
                       "renderings": {v: f"{name}/{vname}/renderings/{v}.png" for v in VIEWS},
-                      "painted": res.get("painted") or {}}
+                      "painted": res.get("painted") or {}, "facets": res.get("facets", 0),
+                      "render_scale": res.get("render_scale") or {}}
     after = _md5(sources)
     changed = sorted(ws.rel(Path(p)) for p in before if after.get(p) != before[p])
     if changed:

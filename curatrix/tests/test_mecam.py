@@ -185,6 +185,7 @@ def test_cam_md5_guard_and_empty_view(tmp_path, monkeypatch):
     monkeypatch.setattr(newasm, "run_script", _fake_script())
     rec = mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)[0]
     assert rec["sources_unchanged"] and rec["renderings"]["marking"] == "PREVIEW"
+    assert rec["renderings"]["method"] == "zbuffer"
     assert rec["per_variant"]["all"]["renderings"]["iso"] == "fx/all/renderings/iso.png"
     assert "fx/all/renderings/front.png" in rec["files"]
 
@@ -234,6 +235,8 @@ def test_me_cam_run(tmp_path):
     assert png[:8] == b"\x89PNG\r\n\x1a\n" and int.from_bytes(png[16:20], "big") == 1600
     pv = {v: rec["per_variant"][v]["painted"] for v in rec["variants"]}
     assert all(n > 0 for p in pv.values() for n in p.values()) and pv["SYS-CFG-0002"]["iso"] > pv["base"]["iso"], pv
+    sc = rec["per_variant"]["base"]["render_scale"]                  # one scale for front, top and right
+    assert sc["front"] == sc["top"] == sc["right"] > 0 and sc["iso"] > 0, sc
     for v, n in (("SYS-CFG-0002", "3"), ("base", "2")):        # D (box-b) only in SYS-CFG-0002
         bom = list(csv.DictReader(open(top / "fx" / v / "bom.csv")))
         assert {(r["id"], r["qty"]) for r in bom if r["item"] != "total"} >= {("ME-PART-0001", "2"), ("ME-PART-0002", n)}
