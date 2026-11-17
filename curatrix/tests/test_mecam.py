@@ -4,13 +4,14 @@ import csv
 import json
 import shutil
 import subprocess
+import zipfile
 
 import pytest
 
 from curatrix import cam, checkcfg, checks, mecam
 from curatrix.ws import Repo, Workspace
 from helpers import FIXTURES, git_init
-from test_meassemblies import _prop, fcstd
+from test_meassemblies import _assembly, _prop, fcstd
 
 CFG = 'version: 1\ncad: {freecad: ["parts/*.FCStd", "assemblies/**/*.FCStd", "lib/**/*.FCStd"]}\n'
 
@@ -76,7 +77,29 @@ def test_sheet_svg_and_pdf():
     assert pdf.startswith(b"%PDF-1.4") and pdf.rstrip().endswith(b"%%EOF") and b"(PREVIEW) Tj" in pdf
     svg = mecam.sheet_svg(lines, texts)
     assert svg.count("<polyline") == len(lines) and "PREVIEW" in svg
+    assert any(t[3] == mecam.NOTE for t in texts) and any(t[3] == "Projection: first angle (ISO 128 method 1)"
+                                                         for t in texts)
     assert 'viewBox="-2.000 -7.000' in mecam.wrap_svg(view)
+
+
+def test_sheet_first_angle_aligned_standard_scale():
+    """The sheet: a standard scale; first angle (right view left of the front view, top view below
+    it); the front view aligned with the top view (same x) and with the right view (same y)."""
+    def rect(w, h):
+        return f'<path d="M 0 0 L {w} 0 L {w} {h} L 0 {h} Z"/>'
+    views = {"front": rect(20, 5), "top": rect(20, 10), "right": rect(10, 5), "iso": rect(25, 15)}
+    lines, texts = mecam.sheet(views, {}, False)
+    scale = next(t[3] for t in texts if t[3].startswith("Scale: "))
+    assert scale in {f"Scale: {mecam.scale_text(s)}" for s in mecam.STANDARD_SCALES} and scale == "Scale: 10:1", scale
+    boxes = {}
+    for k in ("right", "front", "top"):                   # the views are drawn in this order after the frame
+        pl = lines[1 + len(boxes)]
+        boxes[k] = (min(p[0] for p in pl), min(p[1] for p in pl), max(p[0] for p in pl), max(p[1] for p in pl))
+    r, f, t = boxes["right"], boxes["front"], boxes["top"]
+    assert r[2] < f[0] and t[1] > f[3]                   # first angle
+    assert (f[0], f[2]) == (t[0], t[2]) and (f[1], f[3]) == (r[1], r[3])   # aligned
+    assert (round(f[2] - f[0], 6), round(r[2] - r[0], 6)) == (200, 100)    # 10:1
+    assert mecam.standard_scale(8.24) == 5 and mecam.standard_scale(0.3) == 0.2 and mecam.scale_text(0.2) == "1:5"
 
 
 def test_short_version(tmp_path):
@@ -92,6 +115,67 @@ def test_short_version(tmp_path):
     (repo / "parts" / "p.txt").write_text("p")                     # a shared folder changes: a preview
     v, rel, short = mecam.version(repo, "fx", repo / "assemblies" / "fx")
     assert (v, rel, short) == ("fx/v1.2.0-dirty-preview", False, "v1.2.0P")
+
+
+def _cam_repo(tmp_path, configs=""):
+    """A repo with an assembly fx (one link to parts/p.FCStd, Configs on the link when given)."""
+    root = tmp_path / "ws"
+    repo = git_init(root / "r")
+    (repo / "checks.yaml").write_text(CFG)
+    fcstd(repo / "parts" / "p.FCStd", {"Box": ("Part::Box", [_prop("TraceID", "ME-PART-0001", group="Trace")])})
+    p = _assembly(repo, name="fx", links=(("../../parts/p.FCStd", "Box"),))
+    if configs:
+        with zipfile.ZipFile(p) as z:
+            xml = z.read("Document.xml").decode()
+        xml = xml.replace('<Object name="Link0"><Properties>',
+                          f'<Object name="Link0"><Properties>{_prop("Configs", configs, group="Trace")}')
+        with zipfile.ZipFile(p, "w") as z:
+            z.writestr("Document.xml", xml)
+    _commit(repo, "fx")
+    return root, repo
+
+
+def _fake_script(edges=1, touch=None):
+    """A stand-in for cam-asm.py: writes the views, reports the edges, optionally changes a file."""
+    def run_script(ws, script, env, result):
+        dest = __import__("pathlib").Path(env["XD_OUT"])
+        (dest / "views").mkdir(parents=True, exist_ok=True)
+        for v in mecam.VIEWS:
+            (dest / "views" / f"{v}.svg").write_text('<path d="M 0 0 L 10 0 L 10 5 Z"/>')
+        (dest / "exploded.svg").write_text('<path d="M 0 0 L 10 0"/>')
+        if touch is not None:
+            touch.write_bytes(touch.read_bytes() + b"\n")
+        return {"edges": {**{v: 4 for v in mecam.VIEWS}, "right": edges, "exploded": 4}, "bom": []}
+    return run_script
+
+
+def test_cam_variants_base(tmp_path, monkeypatch):
+    """Configs named on a link give their variant and `base` (only the links without Configs: every
+    configuration no link names); without Configs one variant `all`."""
+    import curatrix.newasm as newasm
+    monkeypatch.setattr(newasm, "run_script", _fake_script())
+    for configs, want in (("", ["all"]), ("SYS-CFG-0002", ["SYS-CFG-0002", "base"])):
+        root, repo = _cam_repo(tmp_path / (configs or "none"), configs)
+        rec = mecam.run(Workspace(root), Repo("r", repo, "r"), checkcfg.load(repo / "checks.yaml", root), "fx",
+                        log=lambda *_: None)[0]
+        assert rec["variants"] == want, rec["variants"]
+
+
+def test_cam_md5_guard_and_empty_view(tmp_path, monkeypatch):
+    """Planted: a run that changes a source document fails (md5 before and after); a view without a
+    visible edge fails the run."""
+    import curatrix.newasm as newasm
+    root, repo = _cam_repo(tmp_path)
+    ws, cfg = Workspace(root), checkcfg.load(repo / "checks.yaml", root)
+    monkeypatch.setattr(newasm, "run_script", _fake_script(touch=repo / "parts" / "p.FCStd"))
+    with pytest.raises(cam.CamError, match=r"changed the source documents .*parts/p.FCStd"):
+        mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)
+    subprocess.run(["git", "-C", str(repo), "checkout", "--", "."], check=True)
+    monkeypatch.setattr(newasm, "run_script", _fake_script(edges=0))
+    with pytest.raises(cam.CamError, match=r"no visible edge in the view\(s\) right"):
+        mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)
+    monkeypatch.setattr(newasm, "run_script", _fake_script())
+    assert mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)[0]["sources_unchanged"]
 
 
 # ------------------------------------------------------------------ with FreeCAD
@@ -123,7 +207,7 @@ def test_me_cam_run(tmp_path):
     cfg = checkcfg.load(repo / "checks.yaml", root)
     rec = mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)[0]
     assert rec["kind"] == "assembly" and rec["version"].startswith("fx/v0.0.0-1-g") and rec["version"].endswith("-preview")
-    assert rec["variants"] == ["SYS-CFG-0002"] and rec["emboss"] == "v0.0.0P" and rec["sources_unchanged"]
+    assert rec["variants"] == ["SYS-CFG-0002", "base"] and rec["emboss"] == "v0.0.0P" and rec["sources_unchanged"]
     top = ws.build("r") / "cam" / "fx" / rec["version"].split("/", 1)[1]
     files = set(rec["files"])
     for f in ("fx.step", "parts/box-a.stl", "parts/box-a.3mf", "print/pla.ini", "drawing.svg", "drawing.pdf",
@@ -133,8 +217,15 @@ def test_me_cam_run(tmp_path):
     assert e["solids"] == 1 and e["valid"] and e["volume_after"] > e["volume_before"]
     assert rec["per_variant"]["SYS-CFG-0002"]["moves"]["B"] == [0, 0, 20]
     assert "PREVIEW" in (top / "fx" / "SYS-CFG-0002" / "drawing.svg").read_text()
-    bom = list(csv.DictReader(open(top / "fx" / "SYS-CFG-0002" / "bom.csv")))
-    assert {(r["id"], r["qty"]) for r in bom if r["item"] != "total"} >= {("ME-PART-0001", "2"), ("ME-PART-0002", "2")}
+    for v, n in (("SYS-CFG-0002", "3"), ("base", "2")):        # D (box-b) only in SYS-CFG-0002
+        bom = list(csv.DictReader(open(top / "fx" / v / "bom.csv")))
+        assert {(r["id"], r["qty"]) for r in bom if r["item"] != "total"} >= {("ME-PART-0001", "2"), ("ME-PART-0002", n)}
+    # the views keep z up: front x by z, top x by y, right y by z (base: x 0..26 with the sheet, y 0..20, z -10..20)
+    size = {}
+    for v in ("front", "top", "right"):
+        b = mecam._bbox(mecam._paths((top / "fx" / "base" / "views" / f"{v}.svg").read_text()))
+        size[v] = (round(b[2] - b[0], 1), round(b[3] - b[1], 1))
+    assert size == {"front": (26.0, 30.0), "top": (26.0, 20.0), "right": (20.0, 30.0)}, size
     assert json.loads((top / "cam.json").read_text())["kind"] == "assembly"
     assert subprocess.run(["git", "-C", str(repo), "status", "--porcelain"], capture_output=True, text=True).stdout == ""
     rec2, _, why = mecam.current(ws.build("r") / "cam", "fx", repo, repo / "assemblies" / "fx")

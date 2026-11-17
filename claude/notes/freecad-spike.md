@@ -464,5 +464,6 @@ but the views had no edges (the hidden-line threads never delivered) and the exp
 no views. With `Gui.updateGui()` in the wait loop it hung until the timeout (2 of 2, exit 124), as in
 §5. So `curatrix cam` uses the fallback of XD-ADR-0137: the views come from `FreeCADCmd`
 (`TechDraw.viewPartAsSvg`, a page with the default template only to hold them), and curatrix
-composes the drawing sheet (frame, title block, views) as SVG and as a vector PDF in plain Python.
+composes the drawing sheet (frame, title block, views in first-angle projection, aligned, at a
+standard scale; no dimensions) as SVG and as a vector PDF in plain Python.
 Our own TechDraw template with editable fields is not used yet.
