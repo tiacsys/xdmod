@@ -143,6 +143,14 @@ checks:
     need: XD-CHECK-0043
     enforces: [XD-RULE-0051]
     description: "accepted.yaml entries are well formed (check, rule, items as designators or all, reason); each entry and each KiCad exclusion is accepted (newest commit with Accepted-by, no agent mark, nothing else changed) or reported as a proposal."
+  CK-F10:
+    need: XD-CHECK-0044
+    enforces: [XD-RULE-0053]
+    description: "The jobset of every pcba/ project: no Execute Command, Copy Files or output outside ${XD_CAM_OUT}, no statistics, ERC or DRC job, BOM delimiters set; every job of the shared template, per variant where the project has variants, equal to the template job except variant and file name; no job without a variant after a variant job."
+  CK-F11:
+    need: XD-CHECK-0045
+    enforces: [XD-RULE-0054]
+    description: "XD_VERSION in a title-block comment line of every sheet and of the board, in a silkscreen text, not in the Rev field; the committed value is unversioned."
   CK-G1:
     need: XD-CHECK-0023
     enforces: [XD-RULE-0038]

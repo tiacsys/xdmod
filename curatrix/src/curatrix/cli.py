@@ -383,6 +383,18 @@ def cmd_new(a):
     return 0
 
 
+def cmd_cam(a):
+    from curatrix import cam
+    ws = _ws()
+    repo = _repo(ws, a.repo)
+    try:
+        cam.run(ws, repo, _cfg(ws, repo), a.project, update=a.update_jobset)
+    except cam.CamError as e:
+        print(f"curatrix cam: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
 # ------------------------------------------------------------------ ids
 def _excl(ws, repo_path: Path) -> list[str]:
     from curatrix import checkcfg
@@ -578,6 +590,14 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--repo", help="the EE repo (name or path; default: the repo of the current folder)")
     s.add_argument("--no-kicad", action="store_true", help="do not let KiCad save the new files (tests)")
     s.set_defaults(func=cmd_new)
+
+    s = sub.add_parser("cam", help="EE design output: copy a pcba/ project into build/<area>/cam/<project>/<version>/, "
+                                   "write the version, run its jobset there (local, needs KiCad)")
+    s.add_argument("repo", help="the EE repo")
+    s.add_argument("project", nargs="?", help="one pcba/ project (default: all)")
+    s.add_argument("--update-jobset", action="store_true",
+                   help="write the project's jobset from the shared template and its variants, then stop")
+    s.set_defaults(func=cmd_cam)
 
     s = sub.add_parser("trace", help="trace report per SYS-REQ (refined, satisfied, verified, latest result, gaps) "
                                      "from the last docs build; the canary configuration in its own section")

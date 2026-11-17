@@ -107,6 +107,10 @@ BUILTIN = [
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects", False, "c_severities"),
     ("CK-F9", "accepted.yaml well formed; entries and KiCad exclusions accepted by a human (Accepted-by)",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects", False, "c_acceptance"),
+    ("CK-F10", "jobset rules: no Execute Command, outputs under ${XD_CAM_OUT}, variant jobs = template jobs",
+     _lv({"local": "warning", "pr": "warning"}), "cad.projects", False, "c_jobset"),
+    ("CK-F11", "XD_VERSION in a title-block comment of every sheet and board and in a silkscreen text",
+     _lv({"local": "warning", "pr": "warning"}), "cad.projects", False, "c_version_variable"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
     ("CK-H2", "no build output inside the repo", _lv({"local": "error", "pr": "error"}), None, False, "c_hygiene_build"),
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
@@ -471,6 +475,22 @@ def c_acceptance(ctx: Ctx, r: Result):
             if not ok:
                 r.findings.append(f"{rel_pro}: {kind.upper()} exclusion {key.split('|', 1)[0]} ({comment or 'no comment'}): "
                                   f"proposal, not accepted ({why})")
+def c_jobset(ctx: Ctx, r: Result):
+    """CK-F10 (XD-ADR-0142): the jobset of every pcba/ project against the CAM rules and the shared
+    template (plain Python)."""
+    from curatrix import cam, domvariants, eeprojects
+    for pr in eeprojects.discover(ctx.cfg):
+        if pr.kind == "pcba":
+            r.findings += [f"{pr.folder.relative_to(ctx.repo.path)}: {t}"
+                           for _, t in cam.jobset_findings(ctx.ws, pr, domvariants.kicad_variants(pr.pro))]
+
+
+def c_version_variable(ctx: Ctx, r: Result):
+    """CK-F11 (XD-ADR-0142): the version variable in the frames and on the silkscreen (plain Python)."""
+    from curatrix import cam, eeprojects
+    for pr in eeprojects.discover(ctx.cfg):
+        if pr.kind == "pcba":
+            r.findings += [f"{pr.folder.relative_to(ctx.repo.path)}/{t}" for t in cam.version_findings(pr)]
 
 
 def c_codeneeds(ctx: Ctx, r: Result):
