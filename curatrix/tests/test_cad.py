@@ -13,10 +13,14 @@ def test_sexpr():
 
 
 def test_kicad_schematic_needs_plain_python():
-    needs, findings = cad.kicad_needs(cad.kicad_items(KI / "board.kicad_sch", KI))
-    assert findings == []
-    # the project's TraceID EE-PCBA-0001 is a reference: the EE model owns the need (XD-ADR-0128)
+    refs = []
+    needs, findings = cad.kicad_needs(cad.kicad_items(KI / "board.kicad_sch", KI), refs)
+    # the project's TraceID EE-PCBA-0001 is a reference: the EE model owns the need (XD-ADR-0128);
+    # its Realizes and Satisfies are read by nobody, so they are findings
     assert sorted(needs) == ["EE-CMP-0001", "EE-CMP-0002", "EE-CMP-0003"]
+    assert refs == [("EE-PCBA-0001", "board.kicad_pro")]
+    assert findings == ["board.kicad_pro: EE-PCBA-0001 is owned by the domain model; Realizes, Satisfies next to it "
+                        "are not read (links come from the model): remove them"]
     c1 = needs["EE-CMP-0001"]
     assert c1["satisfies"] == ["EE-REQ-0001", "EE-REQ-0002"] and c1["part_of"] == ["EE-PCBA-0001"]
     sheet = needs["EE-CMP-0002"]                      # one sheet file, two usages (D128)

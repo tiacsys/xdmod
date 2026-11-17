@@ -26,6 +26,15 @@
      "@id": "Sys::Driver"
     },
     {
+     "@id": "Sys::Servo"
+    },
+    {
+     "@id": "Sys::Basic"
+    },
+    {
+     "@id": "Sys/8/0"
+    },
+    {
      "@id": "Sys::Detail"
     }
    ],
@@ -50,6 +59,15 @@
     },
     {
      "@id": "Sys/6"
+    },
+    {
+     "@id": "Sys/7"
+    },
+    {
+     "@id": "Sys/8"
+    },
+    {
+     "@id": "Sys/9"
     }
    ],
    "qualifiedName": "Sys"
@@ -295,6 +313,172 @@
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
+    "@id": "Sys::Servo"
+   },
+   "memberName": "Servo",
+   "membershipOwningNamespace": {
+    "@id": "Sys"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Servo"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys"
+    },
+    {
+     "@id": "Sys::Servo"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Servo"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys/7"
+  },
+  "payload": {
+   "@id": "Sys/7",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Basic"
+   },
+   "memberName": "Basic",
+   "membershipOwningNamespace": {
+    "@id": "Sys"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Basic"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys"
+    },
+    {
+     "@id": "Sys::Basic"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Basic"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys/8"
+  },
+  "payload": {
+   "@id": "Sys/8",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys/8/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Sys"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys/8/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys"
+    },
+    {
+     "@id": "Sys/8/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys/8/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys/8/0"
+  },
+  "payload": {
+   "@id": "Sys/8/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "Sys::Basic"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Sys"
+   },
+   "owningNamespace": {
+    "@id": "Sys"
+   },
+   "owningRelationship": {
+    "@id": "Sys/8"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Basic"
+    },
+    {
+     "@id": "Sys::Controller"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Basic"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "Sys::Controller"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Controller"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys/9"
+  },
+  "payload": {
+   "@id": "Sys/9",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
     "@id": "Sys::Detail"
    },
    "memberName": "Detail",
@@ -324,6 +508,33 @@
      "@id": "Sys::Detail"
     }
    ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Basic"
+  },
+  "payload": {
+   "@id": "Sys::Basic",
+   "@type": "PartDefinition",
+   "declaredName": "Basic",
+   "declaredShortName": "SYS-CFG-0001",
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "Basic",
+   "owner": {
+    "@id": "Sys"
+   },
+   "owningNamespace": {
+    "@id": "Sys"
+   },
+   "owningRelationship": {
+    "@id": "Sys/7"
+   },
+   "qualifiedName": "Sys::Basic",
+   "shortName": "SYS-CFG-0001"
   }
  },
  {
@@ -1197,7 +1408,7 @@
     "@id": "Sys"
    },
    "owningRelationship": {
-    "@id": "Sys/6"
+    "@id": "Sys/9"
    },
    "qualifiedName": "Sys::Detail"
   }
@@ -1900,6 +2111,258 @@
      "@id": "Sys::ElSignal"
     }
    ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Servo"
+  },
+  "payload": {
+   "@id": "Sys::Servo",
+   "@type": "PartDefinition",
+   "declaredName": "Servo",
+   "declaredShortName": "SYS-EL-0004",
+   "feature": [
+    {
+     "@id": "Sys::Servo::servoIn"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "Servo",
+   "ownedFeature": [
+    {
+     "@id": "Sys::Servo::servoIn"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Sys::Servo::servoIn"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Sys::Servo/0"
+    }
+   ],
+   "owner": {
+    "@id": "Sys"
+   },
+   "owningNamespace": {
+    "@id": "Sys"
+   },
+   "owningRelationship": {
+    "@id": "Sys/6"
+   },
+   "qualifiedName": "Sys::Servo",
+   "shortName": "SYS-EL-0004"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Servo/0"
+  },
+  "payload": {
+   "@id": "Sys::Servo/0",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Servo::servoIn"
+   },
+   "memberName": "servoIn",
+   "membershipOwningNamespace": {
+    "@id": "Sys::Servo"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Servo::servoIn"
+    }
+   ],
+   "owningType": {
+    "@id": "Sys::Servo"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Servo"
+    },
+    {
+     "@id": "Sys::Servo::servoIn"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Servo"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Servo::servoIn"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Servo::servoIn"
+  },
+  "payload": {
+   "@id": "Sys::Servo::servoIn",
+   "@type": "PortUsage",
+   "declaredName": "servoIn",
+   "definition": [
+    {
+     "@id": "Sys::ServoIf::'~ServoIf'"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "servoIn",
+   "ownedMember": [
+    {
+     "@id": "Sys::Servo::servoIn/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Sys::Servo::servoIn/0"
+    },
+    {
+     "@id": "Sys::Servo::servoIn/1"
+    }
+   ],
+   "owner": {
+    "@id": "Sys::Servo"
+   },
+   "owningNamespace": {
+    "@id": "Sys::Servo"
+   },
+   "owningRelationship": {
+    "@id": "Sys::Servo/0"
+   },
+   "owningType": {
+    "@id": "Sys::Servo"
+   },
+   "qualifiedName": "Sys::Servo::servoIn",
+   "type": [
+    {
+     "@id": "Sys::ServoIf::'~ServoIf'"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Servo::servoIn/0"
+  },
+  "payload": {
+   "@id": "Sys::Servo::servoIn/0",
+   "@type": "ConjugatedPortTyping",
+   "conjugatedPortDefinition": {
+    "@id": "Sys::ServoIf::'~ServoIf'"
+   },
+   "general": {
+    "@id": "Sys::ServoIf::'~ServoIf'"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Sys::Servo::servoIn"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Servo::servoIn"
+    },
+    {
+     "@id": "Sys::ServoIf::'~ServoIf'"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Servo::servoIn"
+    }
+   ],
+   "specific": {
+    "@id": "Sys::Servo::servoIn"
+   },
+   "target": [
+    {
+     "@id": "Sys::ServoIf::'~ServoIf'"
+    }
+   ],
+   "type": {
+    "@id": "Sys::ServoIf::'~ServoIf'"
+   },
+   "typedFeature": {
+    "@id": "Sys::Servo::servoIn"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Servo::servoIn/1"
+  },
+  "payload": {
+   "@id": "Sys::Servo::servoIn/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Servo::servoIn/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Sys::Servo::servoIn"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Servo::servoIn/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys::Servo::servoIn"
+    },
+    {
+     "@id": "Sys::Servo::servoIn/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Servo::servoIn"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Servo::servoIn/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Servo::servoIn/1/0"
+  },
+  "payload": {
+   "@id": "Sys::Servo::servoIn/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Sys::Servo::servoIn"
+   },
+   "owningNamespace": {
+    "@id": "Sys::Servo::servoIn"
+   },
+   "owningRelationship": {
+    "@id": "Sys::Servo::servoIn/1"
+   }
   }
  },
  {

@@ -70,7 +70,8 @@ def test_domain_needs_links_from_specialization():
     assert n["EE-PCBA-0002"]["realizes"] == ["SYS-EL-0003"]                      # super in a nested package
     assert n["EE-PCBA-0004"]["realizes"] == ["SYS-EL-0001", "SYS-EL-0002"]      # multiple specialization
     assert n["EE-PORT-0001"]["conforms"] == ["SYS-IF-0002"]
-    assert n["EE-PORT-0001"]["part_of"] == ["EE-PCBA-0001", "EE-PCBA-0004", "EE-PCBA-0005"]
+    # part_of also through a conjugated port (`~ServoHeader` on ServoBoard)
+    assert n["EE-PORT-0001"]["part_of"] == ["EE-PCBA-0001", "EE-PCBA-0004", "EE-PCBA-0005", "EE-PCBA-0006", "EE-PCBA-0007"]
     assert "realizes" not in n["EE-PORT-0009"]                                   # no link type: CK-E4 says so
 
 
@@ -80,6 +81,10 @@ def test_conformance_planted_errors():
     expect = [
         "EeBoards::ComboBoard: port servoOut (from Sys::Driver) is not redefined",
         "EeBoards::ComboBoard: inherits port name 'servoOut' more than once",
+        "EeBoards::ControllerBoardW: port servoOut (from EeBoards::ControllerBoard) is redefined by "
+        "EeBoards::ControllerBoardW::servoOut with Sys::ServoIf, which does not specialize EePorts::ServoHeader",
+        "EeBoards::FlatServoBoard: port servoIn (from Sys::Servo) is redefined by EeBoards::FlatServoBoard::servoIn "
+        "with EePorts::ServoHeader, which does not match the conjugation of ~Sys::ServoIf",
         "EeBoards::NoIdBoard: specializes SYS-EL-0002 (Sys::Driver) but has no ID of its own",
         "EeBoards::OddBoard: EE-PORT-0009 specializes SYS-EL-0002, but there is no trace link from EE-PORT to SYS-EL",
         "EeBoards::SensorBoard: port bus (from Sys::Detail::Sensor) is not redefined",
@@ -88,8 +93,18 @@ def test_conformance_planted_errors():
     ]
     assert len(f) == len(expect) and all(x.startswith(e) for x, e in zip(f, expect)), f
     # clean: the good board, its variant without own redefinitions, one port redefining both
-    # supers' `servoOut`, and the signal ports of the port defs (Pin :> ElSignal, no ID needed)
-    assert not [x for x in f if x.startswith(("EeBoards::ControllerBoard", "EeBoards::ComboBoard2", "EePorts::"))]
+    # supers' `servoOut`, `~ServoHeader` for `~ServoIf`, and the signal ports of the port defs
+    # (Pin :> ElSignal, no ID needed)
+    assert not [x for x in f if x.startswith(("EeBoards::ControllerBoard:", "EeBoards::ControllerBoardB",
+                                              "EeBoards::ComboBoard2", "EeBoards::ServoBoard", "EePorts::"))]
+
+
+def test_configs_from_the_upstream_configuration():
+    d, u = domain()
+    n = model.add_configs(model.to_needs(d, "ee")[0], [u])["versions"][""]["needs"]
+    assert n["EE-PCBA-0001"]["configs"] == ["SYS-CFG-0001"]      # Basic configures Controller
+    assert "configs" not in n["EE-PCBA-0004"]                   # also realizes Driver: in every configuration
+    assert "configs" not in n["EE-PORT-0001"]
 
 
 def test_conformance_without_upstream_finds_nothing():

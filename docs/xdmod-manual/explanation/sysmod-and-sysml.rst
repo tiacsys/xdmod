@@ -93,7 +93,13 @@ system repo's committed ``generated/model.json`` as ``model.upstream``. ``curatr
 emits the ``EE-PCBA``, ``EE-PORT``, ``EE-HAR``, ``ME-ASM`` and ``ME-PORT`` needs and derives their
 links from ``:>``: ``realizes`` to a ``SYS-EL``, ``conforms`` to a ``SYS-IF``, and ``part_of`` from a
 port def to the board or assembly that has a port of it (:need:`XD-ADR-0132`, :need:`XD-ADR-0133`).
-:need:`XD-CHECK-0033` checks conformance (:need:`XD-RULE-0047`).
+:need:`XD-CHECK-0033` checks conformance (:need:`XD-RULE-0047`). A conjugated port ``~X`` is
+redefined by a conjugated ``~Y`` with ``Y :> X``. A domain need gets the ``configs`` of the
+``SYS-CFG`` s that configure the system elements it realizes.
+
+A variant of a board or assembly (``part def BoardB :> Board``) has no ID of its own for now: a
+specialization between two domain defs makes no trace link, so a variant with an ID would realize
+nothing. Variants across levels come with task 5.16 (:need:`XD-ADR-0136`).
 
 Views of the model are SysML ``view`` definitions with an ``@XdView`` annotation (:need:`XD-ADR-0085`).
 curatrix renders them as editable ``.drawio.svg`` files (:need:`XD-ADR-0087`).
