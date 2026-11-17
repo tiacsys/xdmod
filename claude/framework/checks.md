@@ -92,6 +92,9 @@ Check IDs use the prefix `CK-` (e.g. `CK-D4`) so that they can't be confused wit
 | CK-H2 | No build output inside repos (D46: outputs go to `build/<area>/`) | PR | error |
 | CK-H3 | `requirements.txt` / `tools.yaml` pins exist for every tool a repo uses | PR | warning |
 | CK-H4 | Commit trailers on agent commits (D51) | PR | warning |
+| CK-H5 | A copy of an xdmod template (`scripts/bootstrap.sh`) equals the template (D118) | all | warning |
+| CK-H6 | `checks.yaml` lists in `expect:` exactly the checks the repo runs (task 5.1) | all | error |
+| CK-H7 | PR size: hand-written lines and files against the base (task 5.1) | local, PR | warning |
 
 ## 3. The check runner
 

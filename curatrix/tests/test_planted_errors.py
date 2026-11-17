@@ -33,7 +33,7 @@ PLANTED = {
     "CK-C1": f"{HERE}::test_c1_placeholder",
     "CK-C2": f"{HERE}::test_c2_id_not_in_ledger",
     "CK-D1": f"{HERE}::test_d1_stale_stubs",
-    "CK-E1": "curatrix/tests/test_tools_live.py::test_pilot_reports_errors",
+    "CK-E1": f"{HERE}::test_e1_pilot_error_through_the_check",
     "CK-D2": f"{HERE}::test_d2_stale_model_json",
     "CK-D3": "curatrix/tests/test_views.py::test_content_change_and_stale_picture",
     "CK-D4": "curatrix/tests/test_cli.py::test_gen_and_check_cad_needs",
@@ -50,6 +50,10 @@ PLANTED = {
     "CK-H6": "curatrix/tests/test_check_runner.py::test_expect_list",
     "CK-H7": "curatrix/tests/test_check_runner.py::test_pr_size_counts_hand_written_lines_only",
 }
+
+
+# control tests: the clean case must pass, or a check that fails on everything would look fine
+CONTROLS = ["curatrix/tests/test_needs_config.py::test_sample_builds_strict"]
 
 
 def test_every_check_has_a_planted_error():
@@ -86,12 +90,12 @@ REQ = {"id": "SYS-REQ-0001", "type": "sys-req", **V, "content": "The arm shall a
 SWR = {"id": "SW-REQ-0001", "type": "sw-req", **V, "refines": ["SYS-REQ-0001"]}
 
 
-def _commit(repo, rel, text):
+def _commit(repo, rel, text, msg=None):
     p = repo / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(text)
     subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
-    subprocess.run(["git", "-C", str(repo), "commit", "-qm", rel], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", msg or rel], check=True)
 
 
 # ------------------------------------------------------------------ graph rules
@@ -125,7 +129,8 @@ def test_b6_stale_evidence(tmp_path, monkeypatch):
           "shas": ["r=1111111111111111111111111111111111111111"]}
     ctx = _ctx(tmp_path, [tr], stage="full")
     monkeypatch.setattr(Workspace, "repos", property(lambda self: [Repo("r", self.root / "r", "r", "2" * 40)]))
-    assert _run(ctx, "CK-B6", checks.c_stale, "report")
+    f = _run(ctx, "CK-B6", checks.c_stale, "report")
+    assert f and "TR-INT-STC-0001-aaaaaaaa" in f[0] and "no pinned SHAs" not in f[0], f
 
 
 def test_b7_tombstone(tmp_path):
@@ -161,25 +166,44 @@ def test_d1_stale_stubs(tmp_path, monkeypatch):
     stale = ctx.repo.path / "model" / "generated" / "NeedStubs.sysml"
     stale.parent.mkdir(parents=True)
     stale.write_text("package NeedStubs {}\n")                       # the need is missing in it
-    assert _run(ctx, "CK-D1", checks.c_stubs)
+    f = _run(ctx, "CK-D1", checks.c_stubs)
+    assert f and "does not match the needs" in f[0], f
 
 
 @pytest.mark.tools
 def test_d2_stale_model_json(tmp_path):
     """Needs the Pilot (local only): a model.json that does not match the model fails CK-D2."""
+    from test_tools_live import need_pilot
+    need_pilot()
     from curatrix.ws import Workspace as W
     real = W()
-    if not real.opt.joinpath("sysml-pilot").exists() and not list(real.opt.glob("*pilot*")):
-        pytest.skip("Pilot not installed")
     ctx = _ctx(tmp_path, yaml_text="version: 1\nmodel: {files: [model/a.sysml]}\n")
     (ctx.repo.path / "model").mkdir()
     (ctx.repo.path / "model" / "a.sysml").write_text("package A { part def B; }\n")
-    (ctx.repo.path / "generated").mkdir()
-    (ctx.repo.path / "generated" / "model.json").write_text("{}\n")
     ctx.ws = real
     ctx.cfg = checkcfg.load(ctx.repo.path / "checks.yaml", real.root)
+    mjson, mneeds, _ = gen.model(real, ctx.cfg)                       # the true outputs ...
+    mneeds.write()
+    mjson.path.parent.mkdir(parents=True, exist_ok=True)
+    mjson.path.write_text("{}\n")                                     # ... and a stale model.json
     f = _run(ctx, "CK-D2", checks.c_model)
-    assert any("does not match the model" in x or "missing" in x for x in f), f
+    assert any("model.json does not match the model" in x for x in f), f
+
+
+@pytest.mark.tools
+def test_e1_pilot_error_through_the_check(tmp_path):
+    """CK-E1 through c_model: a model the Pilot rejects is a finding (not only pilot.run)."""
+    from test_tools_live import need_pilot
+    need_pilot()
+    from curatrix.ws import Workspace as W
+    real = W()
+    ctx = _ctx(tmp_path, yaml_text="version: 1\nmodel: {files: [model/a.sysml]}\n")
+    (ctx.repo.path / "model").mkdir()
+    (ctx.repo.path / "model" / "a.sysml").write_text("package A { part x : NoSuchType; }\n")
+    ctx.ws = real
+    ctx.cfg = checkcfg.load(ctx.repo.path / "checks.yaml", real.root)
+    f = _run(ctx, "CK-E1", checks.c_model)
+    assert f and any("error" in x.lower() for x in f), f
 
 
 # ------------------------------------------------------------------ requirements
@@ -204,7 +228,9 @@ def test_g1_g2_changed_need_makes_links_suspect(tmp_path, monkeypatch):
     new.write_text(json.dumps(needsmod.doc({"SYS-REQ-0001": {**REQ, "content": "40 ms"}, "SW-REQ-0001": SWR}, "x")))
     monkeypatch.setattr(gen, "docs_needs_json", lambda ws, cfg, ids=None: [new])
     ctx.base = base.parent
-    assert _run(ctx, "CK-G1", checks.c_diff, "report")
+    r = checks.Result("CK-G1", "diff", level="report")
+    checks.c_diff(ctx, r)
+    assert r.status != "skip" and r.findings and "suspect" in r.findings[0], r.findings
 
 
 # ------------------------------------------------------------------ hygiene
@@ -235,7 +261,7 @@ def test_h4_missing_trailer(tmp_path):
     ctx = _ctx(tmp_path)
     _commit(ctx.repo.path, "a.txt", "a")
     subprocess.run(["git", "-C", str(ctx.repo.path), "update-ref", "refs/remotes/origin/main", "HEAD"], check=True)
-    _commit(ctx.repo.path, "b.txt", "b")                              # no Co-Authored-By trailer
+    _commit(ctx.repo.path, "b.txt", "b", "made by Claude, trailer forgotten")   # an agent commit without trailer
     assert _run(ctx, "CK-H4", checks.c_trailers, "warning")
 
 
