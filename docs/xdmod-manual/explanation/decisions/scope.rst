@@ -138,6 +138,27 @@ What is in iteration 1 and what moved to iteration 2.
    GLB is deferred; renderings come at the end of Phase 5 (task 5.30). Output only under ``build/``,
    only locally. Based on the FreeCAD spike (§5, §6).
 
+.. xd-adr:: ME renderings without OpenGL and without Blender
+   :id: XD-ADR-NEW-a
+   :date: 2026-11-17
+   :decision_status: proposed
+   :status: valid
+   :refines: XD-ADR-0143
+
+   Proposed by the agent of task 5.30, for the owner to accept or change. The owner decided: **no
+   Blender**; renderings use FreeCAD's own means. The spike (``claude/notes/me-renderings-spike.md``)
+   found that neither the Render workbench (an addon that needs an external renderer, none of which
+   is installed or allowed as a system package) nor a Coin3D snapshot (``saveImage`` in the GUI
+   binary offscreen gives a blank image; ``SoOffscreenRenderer`` finds no GL context) works headless.
+
+   ``curatrix cam <repo> <asm>`` therefore writes ``renderings/front|top|right|iso.png`` per variant
+   from the same ``FreeCADCmd`` run: FreeCAD tessellates the present parts, the script draws the
+   facets flat-shaded into a z-buffer (numpy, a dependency of FreeCAD) with the visible edges on top,
+   and FreeCAD's Qt writes the text and the PNG. The views are the ones of the drawing (``right`` is
+   the side view). Colours come from the BOM kind, not from the document. Each image carries the
+   assembly, the variant, the full version and the view, and ``PREVIEW`` unless a release; a
+   rendering without a drawn facet fails the run. A photo-realistic rendering stays out of scope.
+
 .. xd-adr:: A PCB layout in iteration 1, without routing
    :id: XD-ADR-0144
    :date: 2026-11-17

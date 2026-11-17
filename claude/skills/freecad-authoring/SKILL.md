@@ -67,6 +67,10 @@ partially); save a document before a cross-document link or expression points fr
 - `curatrix cam robarm-me <asm>` writes the output under `build/robarm-me/cam/<asm>/<version>/`;
   the exploded view takes its moves from `assemblies/<asm>/explode.yaml` (`{link name: [dx, dy,
   dz]}`, mm) if it exists. Version tags `<asm>/vX.Y.Z` are the owner's; agents propose them.
+- The renderings (`renderings/front|top|right|iso.png`, task 5.30) come from the same run: shaded
+  without OpenGL, colour by BOM kind (printed orange, board green, fastener grey, bought dark grey,
+  other blue), not by the colours in the document. Do not try the 3D view's `saveImage` or the
+  Render workbench headless: both give nothing here (`claude/notes/me-renderings-spike.md`).
 
 ## To be added
 

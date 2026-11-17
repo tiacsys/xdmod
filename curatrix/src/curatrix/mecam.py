@@ -20,6 +20,13 @@ workspace-local config) once per variant into ``build/<area>/cam/<asm>/<version>
 * ``exploded.svg``: a TechDraw view of the exploded compound with explosion lines (spike §5
   fallback); the moves come from ``assemblies/<asm>/explode.yaml`` (``{link name: [dx, dy, dz]}``
   in mm), or automatically away from the assembly's centre;
+* ``renderings/front|top|right|iso.png`` (task 5.30): shaded renderings, 1600 x 1200 px. FreeCAD
+  tessellates the present parts, ``cam-asm.py`` shades each facet flat (colour by BOM kind) and
+  paints them back to front with FreeCAD's own Qt (``QPainter`` on a ``QImage``, offscreen
+  platform), without OpenGL: Coin3D offscreen snapshots and the Render workbench do not work
+  headless (``claude/notes/me-renderings-spike.md``). Assembly, variant, full version and view are
+  written on each image, and ``PREVIEW`` in red unless a release. A rendering without a painted
+  facet fails the run;
 * ``bom.csv``: the flat BOM with totals, one row per part (sub-assemblies resolved).
 
 Variants: the ``Configs`` of the links (presence, XD-ADR-0137; only a link's own property, as the ME
@@ -57,6 +64,7 @@ SHARED = ("parts", "lib", "print")
 LCS_TYPES = ("Part::LocalCoordinateSystem", "PartDesign::CoordinateSystem")
 VIEWS = ("front", "top", "right", "iso")
 ALL, BASE = "all", "base"   # variants: no Configs anywhere; only the links without Configs
+RENDER_METHOD = "FreeCAD tessellation, flat shading, painted with Qt (no OpenGL)"
 BOM_COLS = ("item", "id", "name", "kind", "qty", "material", "print_profile", "standard", "manufacturer", "mpn", "file")
 
 
@@ -116,6 +124,12 @@ def variants(doc: meassemblies.Doc) -> list[str]:
 def empty_views(res: dict) -> list[str]:
     """The views of a cam-asm.py result without a visible edge (TechDraw did not compute them)."""
     return sorted(k for k, n in (res.get("edges") or {}).items() if not n)
+
+
+def empty_renderings(res: dict) -> list[str]:
+    """The renderings of a cam-asm.py result without a painted facet (or not made at all)."""
+    painted = res.get("painted") or {}
+    return sorted(v for v in VIEWS if not painted.get(v))
 
 
 def bom_rows(rows: list[dict], repo: Path) -> list[dict]:
@@ -449,12 +463,16 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
             res = run_script(ws, ws.xdmod / SCRIPT, {
                 "XD_TOP": str(top_doc.resolve()), "XD_SKELETON": str(sk.resolve()), "XD_OUT": str(dest),
                 "XD_VARIANT": v, "XD_VERSION": ver, "XD_SHORT": short, "XD_FONT": str(ws.xdmod / FONT),
-                "XD_EXPLODE": json.dumps(moves)}, top / f"{vname}.result.json")
+                "XD_EXPLODE": json.dumps(moves),
+                "XD_RELEASE": "1" if release else ""}, top / f"{vname}.result.json")
         except NewError as e:
             raise CamError(f"{name} (variant {vname}): {e}") from None
         if empty_views(res):
             raise CamError(f"{name} (variant {vname}): no visible edge in the view(s) {', '.join(empty_views(res))} "
                            f"(TechDraw did not compute them in FreeCADCmd); an empty view is never written as output")
+        if empty_renderings(res):
+            raise CamError(f"{name} (variant {vname}): no painted facet in the rendering(s) "
+                           f"{', '.join(empty_renderings(res))}; an empty rendering is never written as output")
         for f in ("views/" + x + ".svg" for x in VIEWS):
             (dest / f).write_text(wrap_svg((dest / f).read_text(encoding="utf-8")), encoding="utf-8")
         (dest / "exploded.svg").write_text(wrap_svg((dest / "exploded.svg").read_text(encoding="utf-8")),
@@ -477,7 +495,9 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
             shutil.copy2(src, dest / "print" / src.name)
             profiles[p] = f"print/{src.name}"
         per[vname] = {"embossed": res.get("embossed") or {}, "edges": res.get("edges") or {},
-                      "moves": res.get("moves") or {}, "bom_rows": len(rows)}
+                      "moves": res.get("moves") or {}, "bom_rows": len(rows),
+                      "renderings": {v: f"{name}/{vname}/renderings/{v}.png" for v in VIEWS},
+                      "painted": res.get("painted") or {}}
     after = _md5(sources)
     changed = sorted(ws.rel(Path(p)) for p in before if after.get(p) != before[p])
     if changed:
@@ -485,7 +505,8 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
     files = sorted(str(f.relative_to(top)) for f in out.rglob("*") if f.is_file())
     rec = {"kind": "assembly", "project": name, "assembly": aid, "version": ver, "release": release,
            "emboss": short, "commit": head, "date": date, "variants": vs,
-           "print_profiles": profiles, "sources_unchanged": True, "per_variant": per, "warnings": warnings,
+           "print_profiles": profiles, "sources_unchanged": True,
+           "renderings": {"views": list(VIEWS), "method": RENDER_METHOD, "marking": "release" if release else "PREVIEW"}, "per_variant": per, "warnings": warnings,
            "files": files}
     (top / "cam.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
     log(f"  {name}: {len(files)} files in {ws.rel(out)} ({'release' if release else 'preview'}); sources unchanged")
