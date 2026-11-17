@@ -83,11 +83,12 @@ ids:                                # CK-C1 (placeholders), CK-C2 (ledger)
 
 model:                              # CK-E1, CK-D2 (needs the Pilot), CK-B4 (variants)
   libraries: ["{ws}/libs/pleml/PLEML.sysml"]   # loaded first; xdmod/sysml/*.sysml is always loaded first of all
-  files: [model/generated/NeedStubs.sysml, "model/*.sysml"]   # required; in order
-  export: [RobArm]                  # packages to export (default: every top-level package of `files`)
+  files: [model/generated/NeedStubs.sysml, "model/*.sysml"]   # required; read as ONE set, so order does not matter
+  export: [RobArm]                  # packages to export (default: every top-level package of `files`, nested ones excluded)
   json: generated/model.json        # compact model JSON (default)
   needs: generated/model-needs.json # model-derived needs (default)
   variants: true                    # run CK-B4 on the model JSON
+  upstream: ["{ws}/myproj-syseng/generated/model.json"]   # domain models: the upstream's committed model JSON (CK-E4)
 
 stubs:                              # CK-D1
   out: model/generated/NeedStubs.sysml   # default
@@ -167,6 +168,7 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-D1 | SysML stubs match the needs | `stubs` | local, pr, baseline | yes |
 | CK-E1 | the Pilot parses the model with 0 errors | `model` | local, pr, baseline | yes |
 | CK-D2 | `model.json` + `model-needs.json` match the model | `model` | local, pr, baseline | yes |
+| CK-E4 | conformance of a domain model to its upstream (inherited ports redefined, port defs specialize, name clashes solved, link type per kind pair) on the committed JSON, no Java | `model.upstream` | local, pr (warning) | yes |
 | CK-D3 | views: content, uncompressed, geometry sane, picture fresh | `views` | local, pr, baseline | yes (kinds `interconnection`, `decomposition`) |
 | CK-D4 | `cad-needs.json` matches KiCad/FreeCAD files (plain Python, so also in PR CI) | `cad` | local, pr, baseline | yes |
 | CK-D6 | `code-needs.json` matches the code: `@xdid` blocks, comments above `ZTEST` (plain Python) | `code` | local, pr, baseline | yes |

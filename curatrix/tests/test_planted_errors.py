@@ -39,6 +39,7 @@ PLANTED = {
     "CK-D4": "curatrix/tests/test_cli.py::test_gen_and_check_cad_needs",
     "CK-D6": f"{HERE}::test_d6_code_changed_after_gen",
     "CK-D5": "curatrix/tests/test_provenance.py::test_made_with_another_version_is_reported",
+    "CK-E4": f"{HERE}::test_e4_conformance",
     "CK-E2": f"{HERE}::test_e2_value_not_in_sentence",
     "CK-E3": f"{HERE}::test_e3_wrong_ears_pattern",
     "CK-G1": f"{HERE}::test_g1_g2_changed_need_makes_links_suspect",
@@ -218,6 +219,21 @@ def test_e1_pilot_error_through_the_check(tmp_path):
     ctx.cfg = checkcfg.load(ctx.repo.path / "checks.yaml", real.root)
     f = _run(ctx, "CK-E1", checks.c_model)
     assert f and any("error" in x.lower() for x in f), f
+
+
+def test_e4_conformance(tmp_path):
+    """CK-E4 through c_conformance (plain Python): a board def that does not redefine an inherited
+    system port, read against the upstream model.json named in checks.yaml."""
+    from helpers import FIXTURES
+    d = FIXTURES / "sysml" / "domain"
+    ctx = _ctx(tmp_path, yaml_text="version: 1\nmodel: {files: [model/a.sysml], upstream: up/model.json}\n")
+    for src, dst in (("ee-model.json", "generated/model.json"), ("sys-model.json", "up/model.json")):
+        (ctx.repo.path / dst).parent.mkdir(parents=True, exist_ok=True)
+        (ctx.repo.path / dst).write_text((d / src).read_text())
+    f = _run(ctx, "CK-E4", checks.c_conformance)
+    assert any("EeBoards::SensorBoard: port bus" in x and "is not redefined" in x for x in f), f
+    (ctx.repo.path / "up/model.json").unlink()
+    assert any("model.upstream up/model.json" in x for x in _run(ctx, "CK-E4", checks.c_conformance))
 
 
 # ------------------------------------------------------------------ requirements

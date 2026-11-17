@@ -99,6 +99,10 @@ checks:
     need: XD-CHECK-0022
     enforces: [XD-RULE-0037]
     description: "The sentence of a requirement matches its EARS pattern and uses \"shall\"."
+  CK-E4:
+    need: XD-CHECK-0033
+    enforces: [XD-RULE-0047]
+    description: "A domain model conforms to its upstream model: every port a domain def inherits from an upstream def is redefined in the chain by a port whose def specializes the inherited one (also at signal level), inherited name clashes are solved, and every specialization between two IDs has a link type."
   CK-G1:
     need: XD-CHECK-0023
     enforces: [XD-RULE-0038]

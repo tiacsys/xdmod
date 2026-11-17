@@ -40,6 +40,7 @@ def paths(ws: Workspace) -> tuple[Path, Path, Path]:
 
 
 LIBSET = "LIBRARY-SET"
+MODELSET = "MODEL-SET"
 
 
 def libset_map(libraries: list[Path]) -> list[tuple[int, int, Path]]:
@@ -52,8 +53,8 @@ def libset_map(libraries: list[Path]) -> list[tuple[int, int, Path]]:
     return out
 
 
-def remap_libset(log: str, libraries: list[Path]) -> str:
-    """Rewrite `(N.sysml line : L ...)` in the library set's issue block to `<file> line : l`."""
+def remap_libset(log: str, libraries: list[Path], label: str = LIBSET) -> str:
+    """Rewrite `(N.sysml line : L ...)` in the issue block of the set `label` to `<file> line : l`."""
     if not libraries:
         return log
     spans = libset_map(libraries)
@@ -67,17 +68,31 @@ def remap_libset(log: str, libraries: list[Path]) -> str:
     out, inside = [], False
     for ln in log.splitlines():
         if ln.startswith("FILE "):
-            inside = ln.startswith(f"FILE {LIBSET}")
+            inside = ln.startswith(f"FILE {label} ")
         elif inside:
             ln = re.sub(r"\(\d+\.sysml line : (\d+)", fix, ln)
         out.append(ln)
     return "\n".join(out)
 
 
+def _process_set(lines: list[str], var: str, files: list[Path], label: str):
+    parts = ' + "\\n" + '.join(f"Files.readString(Path.of({_jstr(Path(f).resolve())}))" for f in files)
+    names = ", ".join(Path(f).name for f in files)
+    lines += [
+        f"var {var} = si.process({parts});",
+        f'System.out.println("FILE {label} [{names}]: " + ({var}.hasErrors() ? "ERRORS" : "ok"));',
+        f"if (!{var}.formatIssues().isBlank()) System.out.println({var}.formatIssues());",
+        f"if ({var}.hasErrors()) errs++;",
+    ]
+
+
 def script(files: list[Path], library: Path, export: list[str], out: Path | None,
-           libraries: list[Path] | None = None) -> str:
+           libraries: list[Path] | None = None, one_set: bool = False) -> str:
     """jshell script: the standard library, then `libraries` as ONE input (so library files may
-    refer to each other, e.g. SYSMOD.sysml <-> SYSMOD15288.sysml), then each of `files` in order."""
+    refer to each other, e.g. SYSMOD.sysml <-> SYSMOD15288.sysml), then `files`: each in order,
+    or with `one_set` as one more input (so their order does not matter, XD-ADR-0130).
+    An export result that starts with ``ERROR:`` (a package the Pilot cannot resolve) counts as
+    an error and is printed, never written into the JSON."""
     lines = [
         "import org.omg.sysml.interactive.*;",
         "import java.nio.file.*;",
@@ -86,14 +101,10 @@ def script(files: list[Path], library: Path, export: list[str], out: Path | None
         "int errs = 0;",
     ]
     if libraries:
-        parts = ' + "\\n" + '.join(f"Files.readString(Path.of({_jstr(Path(f).resolve())}))" for f in libraries)
-        names = ", ".join(Path(f).name for f in libraries)
-        lines += [
-            f"var rl = si.process({parts});",
-            f'System.out.println("FILE {LIBSET} [{names}]: " + (rl.hasErrors() ? "ERRORS" : "ok"));',
-            "if (!rl.formatIssues().isBlank()) System.out.println(rl.formatIssues());",
-            "if (rl.hasErrors()) errs++;",
-        ]
+        _process_set(lines, "rl", libraries, LIBSET)
+    if one_set and files:
+        _process_set(lines, "rm", files, MODELSET)
+        files = []
     for i, f in enumerate(files):
         p = Path(f).resolve()
         lines += [
@@ -103,9 +114,12 @@ def script(files: list[Path], library: Path, export: list[str], out: Path | None
             f"if (r{i}.hasErrors()) errs++;",
         ]
     if out is not None and export:
-        parts = ' + "," + '.join(
-            f'String.valueOf(si.export({_jstr(pkg)}, java.util.List.of())).replaceAll("^\\\\[|\\\\]$", "")'
-            for pkg in export)
+        for i, pkg in enumerate(export):
+            lines += [
+                f"var ex{i} = errs == 0 ? String.valueOf(si.export({_jstr(pkg)}, java.util.List.of())) : \"[]\";",
+                f'if (ex{i}.startsWith("ERROR:")) {{ System.out.println("EXPORT {pkg}: " + ex{i}); errs++; }}',
+            ]
+        parts = ' + "," + '.join(f'ex{i}.replaceAll("^\\\\[|\\\\]$", "")' for i in range(len(export)))
         lines.append(f'if (errs == 0) Files.writeString(Path.of({_jstr(Path(out).resolve())}), "[" + {parts} + "]");')
     lines.append('System.out.println("SYSML-RESULT errors=" + errs);')
     lines.append("/exit")
@@ -113,9 +127,10 @@ def script(files: list[Path], library: Path, export: list[str], out: Path | None
 
 
 def run(ws: Workspace, files: list[Path], export: list[str] | None = None, out: Path | None = None,
-        tmpdir: Path | None = None, libraries: list[Path] | None = None) -> PilotResult:
-    """Parse and resolve `libraries` as one set, then `files` in order; optionally export packages
-    to JSON. Issues inside the library set are mapped back to file and line in the log."""
+        tmpdir: Path | None = None, libraries: list[Path] | None = None, one_set: bool = False) -> PilotResult:
+    """Parse and resolve `libraries` as one set, then `files` (in order, or as one set with
+    `one_set`); optionally export packages to JSON. Issues inside a set are mapped back to file
+    and line in the log."""
     jshell, pilot, jar = paths(ws)
     if not jshell.exists() or not jar.exists():
         raise FileNotFoundError(f"Pilot not installed ({jshell}, {jar}); run `curatrix update`")
@@ -128,7 +143,7 @@ def run(ws: Workspace, files: list[Path], export: list[str] | None = None, out: 
         if out.exists():
             out.unlink()
     with tempfile.NamedTemporaryFile("w", suffix=".jsh", dir=tmpdir, delete=False) as t:
-        t.write(script(files, pilot / "sysml.library", export or [], out, libraries))
+        t.write(script(files, pilot / "sysml.library", export or [], out, libraries, one_set))
     t0 = time.time()
     try:
         r = limits.run([str(jshell), "-J-Xmx1g", f"-R-Xmx{heap}", "-R-Xss4m", "--class-path", str(jar), t.name],
@@ -139,6 +154,8 @@ def run(ws: Workspace, files: list[Path], export: list[str] | None = None, out: 
     log = "\n".join(line for line in raw.splitlines()
                     if not line.startswith(("Reading ", "log4j", "SLF4J", "|  ", "jshell>")))
     log = remap_libset(log, libraries or [])
+    if one_set:
+        log = remap_libset(log, files, MODELSET)
     m = re.search(r"SYSML-RESULT errors=(\d+)", raw)
     errors = int(m.group(1)) if m else -1
     files_status = dict(re.findall(r"^FILE (.+?): (ok|ERRORS)$", raw, re.M))

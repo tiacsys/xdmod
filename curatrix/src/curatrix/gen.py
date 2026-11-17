@@ -80,7 +80,8 @@ def model(ws, cfg: ChecksConfig) -> tuple[Output, Output, pilot.PilotResult]:
     tmp = ws.build(cfg.area) / "model"
     tmp.mkdir(parents=True, exist_ok=True)
     raw = tmp / "pilot-export.json"
-    res = pilot.run(ws, files, export, raw, tmpdir=tmp, libraries=libs)   # libraries as one set
+    # the libraries as one set, then the repo's own files as one set (their order does not matter, XD-ADR-0130)
+    res = pilot.run(ws, files, export, raw, tmpdir=tmp, libraries=libs, one_set=True)
     (tmp / "pilot.log").write_text(res.log + "\n")
     if not res.ok:
         raise GenError(f"the Pilot reported {res.errors} error(s); see {ws.rel(tmp / 'pilot.log')}:\n{res.log[-3000:]}")
@@ -101,6 +102,21 @@ def model_needs_from_json(cfg: ChecksConfig) -> Output:
     files = cfg.globs(s.get("files") or [])
     doc, findings = modelmod.to_needs(m, f"{cfg.repo.name}-model", modelmod.source_map(files, cfg.repo))
     return Output(cfg.resolve(s.get("needs", "generated/model-needs.json")), needsmod.dumps(doc), findings)
+
+
+def upstream_models(cfg: ChecksConfig) -> tuple[list, list[str]]:
+    """The upstream models of a domain model (``model.upstream``: the upstream repos' committed
+    ``generated/model.json``, XD-ADR-0130), and findings for the missing ones."""
+    s = cfg.section("model") or {}
+    ups = s.get("upstream") or []
+    out, findings = [], []
+    for u in [ups] if isinstance(ups, str) else ups:
+        p = cfg.resolve(u)
+        if p.is_file():
+            out.append(modelmod.Model.load(p))
+        else:
+            findings.append(f"model.upstream {u}: {p} not found (west update, or `curatrix gen model` in the upstream repo)")
+    return out, findings
 
 
 # ------------------------------------------------------------------ CAD needs (CK-D4), plain Python
@@ -194,16 +210,25 @@ def retired_path(cfg: ChecksConfig) -> Path:
 
 
 def tombstones(cfg: ChecksConfig, generated: list[Output], baseline_date: str | None = None) -> tuple[Output, list[str]]:
-    """Compare old and new generated needs files; keep tombstones for deleted, unretired needs."""
+    """Compare old and new generated needs files; keep tombstones for deleted, unretired needs.
+    A need that moved to another generated file of the repo (EE-PCBA from cad-needs.json to
+    model-needs.json, XD-ADR-0128) is not deleted."""
     rp = retired_path(cfg)
     current = needsmod.load(rp) if rp.exists() else {}
     msgs: list[str] = []
     new_all: dict[str, dict] = {}
+    done = {o.path.resolve() for o in generated}
+    for sec, default in (("model", "generated/model-needs.json"), ("cad", "generated/cad-needs.json"),
+                         ("code", "generated/code-needs.json")):
+        if cfg.section(sec) is not None:
+            other = cfg.resolve((cfg.section(sec) or {}).get("needs", default))
+            if other.resolve() not in done and other.exists():
+                new_all.update(needsmod.load(other))
+    for o in generated:
+        new_all.update(needsmod.needs_of(json.loads(o.text)))
     for o in generated:
         old = needsmod.load(o.path) if o.path.exists() else {}
-        new = needsmod.needs_of(json.loads(o.text))
-        new_all.update(new)
-        current, m = needsmod.update_tombstones(old, new, current)
+        current, m = needsmod.update_tombstones(old, new_all, current)
         msgs += m
     current = {k: v for k, v in current.items() if k not in new_all}
     current, m = needsmod.prune_tombstones(current, baseline_date)

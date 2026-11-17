@@ -15,9 +15,8 @@ def test_sexpr():
 def test_kicad_schematic_needs_plain_python():
     needs, findings = cad.kicad_needs(cad.kicad_items(KI / "board.kicad_sch", KI))
     assert findings == []
-    assert sorted(needs) == ["EE-CMP-0001", "EE-CMP-0002", "EE-CMP-0003", "EE-PCBA-0001"]
-    pcba = needs["EE-PCBA-0001"]                      # from the project's text variables
-    assert pcba["type"] == "ee-pcba" and pcba["realizes"] == ["SYS-EL-0003"]
+    # the project's TraceID EE-PCBA-0001 is a reference: the EE model owns the need (XD-ADR-0128)
+    assert sorted(needs) == ["EE-CMP-0001", "EE-CMP-0002", "EE-CMP-0003"]
     c1 = needs["EE-CMP-0001"]
     assert c1["satisfies"] == ["EE-REQ-0001", "EE-REQ-0002"] and c1["part_of"] == ["EE-PCBA-0001"]
     sheet = needs["EE-CMP-0002"]                      # one sheet file, two usages (D128)

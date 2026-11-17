@@ -30,3 +30,14 @@ def test_remap_libset_lines(tmp_path):
     assert out[2] == f"ERROR:y ({a.resolve()} line : 2 column : 1)"
     assert out[4] == "ERROR:z (8.sysml line : 6 column : 3)"   # outside the set: unchanged
     assert pilot.remap_libset(log, []) == log
+
+
+def test_script_one_set_and_export_errors(tmp_path):
+    a, b = tmp_path / "a.sysml", tmp_path / "b.sysml"
+    for f in (a, b):
+        f.write_text("package X;\n")
+    s = pilot.script([a, b], tmp_path / "lib", ["X", "Y"], tmp_path / "o.json", one_set=True)
+    assert s.count("si.process(") == 1 and f"FILE {pilot.MODELSET} [a.sysml, b.sysml]" in s
+    assert 'if (ex1.startsWith("ERROR:")) { System.out.println("EXPORT Y: " + ex1); errs++; }' in s
+    log = f"FILE {pilot.MODELSET} [a.sysml, b.sysml]: ERRORS\nERROR:x (3.sysml line : 3 column : 1)"
+    assert pilot.remap_libset(log, [a, b], pilot.MODELSET).splitlines()[1] == f"ERROR:x ({b.resolve()} line : 1 column : 1)"
