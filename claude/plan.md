@@ -173,7 +173,7 @@ are at the end of the same notes file.
 
 **Exit criteria**
 1. The canary chain is green locally with CAD content and in CI without it.
-2. Every rule in *`checks.md`* has a planted error that fails: plain-Python rules in the CI fixture, tool-backed rules in a recorded local fixture run (`curatrix check fixtures --stage local`; rule, tool version, date) (P5-13).
+2. Every rule in *`checks.md`* has a planted error that fails: plain-Python rules in the CI fixture, tool-backed rules in a recorded local fixture run (`curatrix fixtures`, record in `build/fixtures/planted.json`: rule, test, result, tool versions, date; its summary goes into the Phase 5 review) (P5-13).
 3. `curatrix cam` ran for the canary board (both variants) and the canary assembly, from a tag and from a dirty tree, with the preview marking visible in both.
 4. One co-design change went through three repos on one branch name.
 5. The author loop is measured, and the numbers are in the Phase 5 review.

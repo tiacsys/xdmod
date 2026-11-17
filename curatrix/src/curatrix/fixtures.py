@@ -27,7 +27,7 @@ def planted_table(ws) -> dict[str, str]:
         spec.loader.exec_module(mod)
     finally:
         sys.path.remove(str(path.parent))
-    return dict(mod.PLANTED)
+    return dict(mod.PLANTED), list(getattr(mod, "CONTROLS", []))
 
 
 def _tool_versions(ws) -> dict[str, str]:
@@ -42,15 +42,17 @@ def _tool_versions(ws) -> dict[str, str]:
 
 
 def run(ws, log=print) -> tuple[bool, dict]:
-    table = planted_table(ws)
+    table, controls = planted_table(ws)
     out = ws.build("fixtures")
     out.mkdir(parents=True, exist_ok=True)
     junit = out / "planted-junit.xml"
-    nodes = sorted(set(table.values()))
+    junit.unlink(missing_ok=True)                           # never read an old run's results
+    nodes = sorted(set(table.values()) | set(controls))
     argv = [str(ws.venv / "bin" / "python"), "-m", "pytest", "-q", "-p", "no:cacheprovider", "-m", "tools or not tools",
             f"--junitxml={junit}", *nodes]
     with open(out / "pytest.log", "w") as fh:
-        limits.run(argv, "tests", ws, cwd=str(ws.xdmod), stdout=fh, stderr=fh)
+        p = limits.run(argv, "tests", ws, cwd=str(ws.xdmod), stdout=fh, stderr=fh)
+    killed = p.returncode in (124, 137) or not junit.exists()   # timeout, out of memory, no report
     results: dict[str, str] = {}                            # node id (no params) -> passed|failed|skipped
     if junit.exists():
         for tc in ET.parse(junit).getroot().iter("testcase"):
@@ -65,7 +67,14 @@ def run(ws, log=print) -> tuple[bool, dict]:
         state = results.get(mod.rsplit("/", 1)[-1].removesuffix(".py") + "::" + fn, "not run")
         rows.append({"check": cid, "test": node, "result": state})
         log(f"  {'ok  ' if state == 'passed' else 'FAIL'} {cid:6} {state:8} {node}")
-    ok = all(r["result"] == "passed" for r in rows)
+    for node in controls:                                   # clean cases that must pass
+        mod, _, fn = node.partition("::")
+        state = results.get(mod.rsplit("/", 1)[-1].removesuffix(".py") + "::" + fn, "not run")
+        rows.append({"check": "control", "test": node, "result": state})
+        log(f"  {'ok  ' if state == 'passed' else 'FAIL'} control {state:8} {node}")
+    ok = not killed and all(r["result"] == "passed" for r in rows)
+    if killed:
+        log(f"  pytest ended with exit {p.returncode} {limits.explain_rc(p.returncode)}: the run does not count")
     doc = {"date": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "ok": ok,
            "tools": _tool_versions(ws), "checks": rows}
     (out / "planted.json").write_text(json.dumps(doc, indent=2) + "\n")
