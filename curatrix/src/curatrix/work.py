@@ -95,7 +95,9 @@ def _start_point(repo: Path, branch: str, ws, base: str = "main") -> list[str]:
     if base != "main":
         if _git(["rev-parse", "-q", "--verify", f"refs/heads/{base}"], repo, ws, check=False).returncode == 0:
             return ["-b", branch, base]
-        raise WorkError(f"{repo.name}: no branch {base!r} to stack on (local or origin)")
+        # this repo is not part of the parent PR: start from main, as CI's sibling resolution does
+        print(f"curatrix work: {repo.name} has no branch {base!r}; starting {branch} from main")
+        return _start_point(repo, branch, ws)
     start = "main" if _git(["rev-parse", "-q", "--verify", "refs/heads/main"], repo, ws, check=False).returncode == 0 else "HEAD"
     return ["-b", branch, start]
 

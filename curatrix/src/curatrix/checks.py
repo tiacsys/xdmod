@@ -448,8 +448,9 @@ def c_pins(ctx: Ctx, r: Result):
             r.findings.append(f"tools.yaml: {e}")
 
 
-AGENT_TRAILER = re.compile(r"^Co-Authored-By: .+ <noreply@anthropic\.com>\s*$", re.M)
-AGENT_MARK = re.compile(r"\bClaude\b|anthropic\.com|Generated with \[Claude Code\]")
+AGENT_TRAILER = re.compile(r"^Co-Authored-By: .+ <noreply@anthropic\.com>\s*$", re.M | re.I)
+# an agent commit names Claude Code or anthropic.com (a human message that mentions "Claude" is not one)
+AGENT_MARK = re.compile(r"Claude Code|anthropic\.com|Co-Authored-By: Claude", re.I)
 
 
 def c_trailers(ctx: Ctx, r: Result):
@@ -477,6 +478,7 @@ def c_trailers(ctx: Ctx, r: Result):
         if AGENT_MARK.search(body) and not AGENT_TRAILER.search(body):
             r.findings.append(f"{sha[:10]}: an agent commit without the trailer "
                               f"`Co-Authored-By: <agent> <noreply@anthropic.com>` (D51)")
+
 
 def c_bootstrap(ctx: Ctx, r: Result):
     copy = ctx.cfg.bootstrap_copy
