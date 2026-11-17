@@ -5,7 +5,7 @@ Variant rules
 
 These rules check a variant model: the feature model, the product models of the configurations,
 and the trace links between variant elements (:need:`XD-ADR-0095`). All are errors. curatrix checks them
-with :need:`XD-CHECK-0009` (``curatrix variants`` runs them alone); the SysML Pilot checks none of them.
+with :need:`XD-CHECK-0009` (``curatrix pleml check`` runs them alone; ``curatrix variants`` without ``list`` is its old name, kept for one release); the SysML Pilot checks none of them.
 They run locally, in PR CI of the systems engineering repo, and in the full set. Background:
 :doc:`../explanation/variants`.
 

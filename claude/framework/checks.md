@@ -37,8 +37,8 @@ Check IDs use the prefix `CK-` (e.g. `CK-D4`) so that they can't be confused wit
 | CK-B1 | Every `SYS-REQ` is refined or satisfied (R1) | full, baseline | error |
 | CK-B2 | Every requirement has a `verifies` link (R2) | full, baseline | warning in iteration 1; error at the baseline gate from iteration 2 (D99) |
 | CK-B3 | Links to `retired` needs (R4, D75) | local, PR, full: **warning**; baseline: **error** | grace until baseline |
-| CK-B4 | Variant rules F1–F2, V1–V6, T1–T3 (`curatrix check variants`, D105) | local, PR, full | error |
-| CK-B8 | Variants across levels (§2a; task 5.16, implemented): one domain variant per configuration and usage, in the model and in KiCad / FreeCAD, Zephyr board variants by name | local, PR, full | warning until it ran on the canary |
+| CK-B4 | Variant rules F1–F2, V1–V6, T1–T3 (`curatrix pleml check`, D105) | local, PR, full | error |
+| CK-B8 | Variants across levels (§2a; task 5.16, implemented): one domain variant per configuration and usage, in the model and in KiCad / FreeCAD, Zephyr board variants by name; `curatrix variants list` lists every variant and what it serves | local, PR, full | warning until it ran on the canary |
 | CK-B5 | No duplicate IDs across all repos | full, baseline | error |
 | CK-B6 | Stale evidence: `TR` whose SHAs don't match the pins or the baseline (R5a, D131) | full: report; baseline: doesn't count | report |
 | CK-B7 | Tombstones: deleted generated needs without retiring first get a tombstone; tombstones older than the last baseline are removed (D130) | local, PR | warning |

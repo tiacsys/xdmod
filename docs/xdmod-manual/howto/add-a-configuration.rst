@@ -25,7 +25,7 @@ Steps
 
       curatrix ids fix robarm-syseng
       curatrix gen model robarm-syseng
-      curatrix variants robarm-syseng -v
+      curatrix pleml check robarm-syseng -v
 
 Checks
 ------
@@ -40,6 +40,6 @@ Checks
 Pitfalls
 --------
 
-- The Pilot accepts models that break every variant rule. Only ``curatrix variants`` finds them.
+- The Pilot accepts models that break every variant rule. Only ``curatrix pleml check`` finds them.
 - A ``realizes`` link from an element that exists in more configurations than its target breaks
   :need:`XD-RULE-0030` once that rule is checked.

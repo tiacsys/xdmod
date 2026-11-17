@@ -44,7 +44,8 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 | `curatrix views build [<repo>] [--view NAME]` | model JSON → view graph (`build/<area>/views/<view>.json`) → elkjs → drawio → headless Firefox → `views/<view>.drawio.svg` |
 | `curatrix views check [<repo>]` | CK-D3 (no browser) |
 | `curatrix views normalize [<repo> \| FILES…] [--check]` | rewrite editor-saved `.drawio.svg` into the normalized form (decompress, drop editor attributes, sort cells, re-render, hash) |
-| `curatrix variants [<repo>] [--model FILE] [-v]` | variant rules F1, F2, V1–V5 on a model JSON (Pilot export or compact) |
+| `curatrix variants list [<repo>] [--json]` | every board and assembly variant across levels (xdmod#69 Q14), plain Python: the model def (`DomainVariant`, `variantName`), the KiCad variant (`.kicad_pro` `schematic.variants`, description) or FreeCAD configuration-table row, the differences (parts fitted differently from the base schematic, e.g. `R1 DNP`; the row's parameters and links with `Configs`), and the (configuration, usage) pairs it serves (the dependencies CK-B8 reads, `domvariants.table`); a variant that serves no pair is listed and marked, a pair no variant serves is listed. Text table, `--json` for tools. Without a repo: every repo of the workspace that has variants |
+| `curatrix pleml check [<repo>] [--model FILE] [-v]` | PLEML feature-variation rules F1, F2, V1–V5 on a model JSON (Pilot export or compact), CK-B4 alone. `curatrix variants [<repo>]` (no `list`) is its old name: still works for one release, with a deprecation warning |
 | `curatrix needs-diff BEFORE AFTER [-o FILE]` | change impact between two sets of needs.json (files or folders): changed needs, SUSPECT (direct/transitive), DANGLING. Exit 1 if any |
 | `curatrix evidence record TWISTER_DIR --config SYS-CFG-n [--kind sim\|hil] [--setup S] [--branch B] [--create] [--dry-run]` | a run record from a Twister output dir + the workspace state, committed onto the orphan branch `evidence` of robarm-integration through a worktree in `build/evidence/` ([Evidence](#evidence-run-records)) |
 | `curatrix evidence preview TWISTER_DIR -o FILE [--tests DIR] [--config SYS-CFG-n]` | preview `TR` needs from a local Twister output dir, for the docs build of the same check run (no record, never evidence); no Twister output: removes FILE |
@@ -178,8 +179,8 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-B1 | R1 every SYS-REQ refined or satisfied (`draft` sources don't count) | `docs` | full, baseline | yes |
 | CK-B2 | R2 every requirement verified | `docs` | full, baseline (warning, D99) | yes, **not per configuration** yet |
 | CK-B3 | R4 links to retired needs | `docs` | local/pr/full warning, baseline error (D75) | yes |
-| CK-B4 | variant rules F1, F2, V1–V5 | `model.variants` | all | yes (V6, T1–T3: later, D135) |
-| CK-B8 | variants across levels: exactly one domain variant per configuration and usage, the variant in KiCad `schematic.variants` / a FreeCAD configuration table, Zephyr board variants by name, at most two per board; the computed table "configuration → variant per usage" is in the log `variants-across-levels.md` | `variants` | local, pr, full (warning) | yes (unused variants: iteration 2) |
+| CK-B4 | variant rules F1, F2, V1–V5 (alone: `curatrix pleml check`) | `model.variants` | all | yes (V6, T1–T3: later, D135) |
+| CK-B8 | variants across levels: exactly one domain variant per configuration and usage, the variant in KiCad `schematic.variants` / a FreeCAD configuration table, Zephyr board variants by name, at most two per board; the computed table "configuration → variant per usage" is in the log `variants-across-levels.md`; `curatrix variants list` shows every variant with what it serves | `variants` | local, pr, full (warning) | yes (unused variants: iteration 2) |
 | CK-B5 | duplicate IDs across documents | `docs` | full, baseline | yes |
 | CK-B6 | R5a stale evidence: `TR.shas` vs. current pins (`west list`) | `docs` | full, baseline (report) | first version |
 | CK-B7 | tombstones in `generated/retired-needs.json` | `model`, `cad` or `code` | local, pr (warning) | yes |
@@ -503,7 +504,7 @@ Rendering needs node + elkjs + Firefox + the pinned drawio viewer (local only).
 Working and tested: `env`, `run`, `limits`, `doctor`, `bootstrap`/`update` (their west and pip steps
 were not run against a real manifest yet), `launch` (env verified; GUIs not started in tests),
 `docs`, `check` with the catalogue above, `gen` (stubs, model, cad-needs, freecad-json incl.
-`--shape`, tombstones, cad-exports), `ids`, `views` (interconnection, decomposition), `variants`,
+`--shape`, tombstones, cad-exports), `ids`, `views` (interconnection, decomposition), `variants list`, `pleml check`,
 `needs-diff`, pre-commit hook, Sphinx extension, reusable CI workflow (first version, untested on GitHub).
 
 Stubbed / later: view kinds `context`, `usecases`, `allocation`, `variants`;

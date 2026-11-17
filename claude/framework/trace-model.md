@@ -163,7 +163,7 @@ The schema (per need type) checks the shape of each single need. These rules che
 | R4 A link to a need with `status: retired` is reported (D64e). | own check (non-failing on `main`); baseline gate | **Grace until the next baseline (D75):** on `main` and in PRs it is a reported warning that does not fail the build. The baseline build (manifest tag `baseline/vX.Y.Z`) fails while any such link remains. So the schema rule must not use a severity that `-W` turns into an error. |
 | R5 Every `TR` from a HIL run carries `firmware_sha256` and the SHAs of all pinned repos it depends on (run-record schema, task 4.5a; D57, D60). | schema rule | error |
 | R5a **Evidence validity (D131):** a `TR` counts only if its recorded SHAs (and firmware sha256) match the current manifest pins on `main`, or the baseline being built. Otherwise it is shown as `stale` and doesn't count for coverage. | own check | stale results: report; at baseline: they don't count |
-| R6 Variant rules F1–F2, V1–V6, T1–T3 (D105, `variants.md` §3) | `curatrix check variants` | error |
+| R6 Variant rules F1–F2, V1–V6, T1–T3 (D105, `variants.md` §3) | `curatrix pleml check` (CK-B4) | error |
 | R7 Suspect links: a link whose target changed after the link was last confirmed. Until affirmatrix is adapted (D59), "last confirmed" is the **`needs.json` of the last baseline** (for PRs: of `main`). A change means a change in the hashed fields: title, content, `status`, value fields and links (D132). At each baseline, all reviewed links count as confirmed. | `needs-diff` now; affirmatrix later | report in PRs; gate before a baseline |
 
 ## 5. Fields shared by all need types

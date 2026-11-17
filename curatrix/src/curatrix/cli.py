@@ -551,7 +551,8 @@ def cmd_views(a):
     return 1 if errs else 0
 
 
-def cmd_variants(a):
+def cmd_pleml(a):
+    """`pleml check`: the PLEML feature-variation rules F1, F2, V1-V5 on a model JSON (CK-B4)."""
     from curatrix import model as modelmod, variants
     ws = _ws()
     if a.model:
@@ -567,6 +568,46 @@ def cmd_variants(a):
         print(f"ERROR {e}")
     print(res.summary())
     return 0 if res.ok else 1
+
+
+def cmd_variants(a):
+    """`variants list [repo]`: every board and assembly variant across levels (xdmod#69 Q14).
+    `variants [repo]` without `list` is the old name of `pleml check` (kept one release)."""
+    args = list(a.args)
+    if not args or args[0] != "list":
+        print("curatrix: warning: `curatrix variants [<repo>]` is deprecated; it is now "
+              "`curatrix pleml check [<repo>]` (`curatrix variants list` lists the board and "
+              "assembly variants)", file=sys.stderr)
+        if len(args) > 1:
+            raise SystemExit("curatrix: variants: at most one repo")
+        a.repo = args[0] if args else None
+        return cmd_pleml(a)
+    if a.model or a.verbose:
+        raise SystemExit("curatrix: variants list: --model and -v belong to `curatrix pleml check`")
+    if len(args) > 2:
+        raise SystemExit("curatrix: variants list: at most one repo")
+    from curatrix import checkcfg, variantlist
+    ws = _ws()
+    if len(args) == 2:
+        repo = ws.repo(args[1])
+        out = [variantlist.for_repo(ws, repo, _cfg(ws, repo))]
+    else:
+        out = []
+        for repo in ws.repos:
+            if not (repo.path / "checks.yaml").is_file():
+                continue
+            try:
+                lst = variantlist.for_repo(ws, repo, _cfg(ws, repo))
+            except checkcfg.ConfigError as e:
+                print(f"curatrix: {repo.name}: {e}", file=sys.stderr)
+                continue
+            if lst.variants:
+                out.append(lst)
+    if a.json:
+        print(json.dumps({"repos": [x.to_json() for x in out]}, indent=2))
+    else:
+        print(variantlist.text(out), end="")
+    return 0
 
 
 def cmd_needs_diff(a):
@@ -725,11 +766,22 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--check", action="store_true", help="normalize: report only")
     s.set_defaults(func=cmd_views)
 
-    s = sub.add_parser("variants", help="variant rules F1, F2, V1-V5 on the model JSON")
-    s.add_argument("repo", nargs="?")
-    s.add_argument("--model", help="a model JSON (Pilot export or compact) instead of the repo's")
-    s.add_argument("-v", "--verbose", action="store_true")
+    s = sub.add_parser("variants", help="`variants list [repo] [--json]`: every board and assembly variant across "
+                                        "levels (model, KiCad/FreeCAD, differences, what it serves); "
+                                        "`variants [repo]` is the deprecated name of `pleml check`")
+    s.add_argument("args", nargs="*", metavar="list [repo]", help="`list` and an optional repo (default: every repo with variants)")
+    s.add_argument("--json", action="store_true", help="list: JSON for tools")
+    s.add_argument("--model", help="deprecated form only: see `pleml check`")
+    s.add_argument("-v", "--verbose", action="store_true", help="deprecated form only: see `pleml check`")
     s.set_defaults(func=cmd_variants)
+
+    s = sub.add_parser("pleml", help="PLEML feature-variation rules: `pleml check [repo]` (F1, F2, V1-V5 on the model JSON, CK-B4)")
+    ss = s.add_subparsers(dest="action", required=True)
+    x = ss.add_parser("check", help="variant rules F1, F2, V1-V5 on the model JSON (CK-B4)")
+    x.add_argument("repo", nargs="?")
+    x.add_argument("--model", help="a model JSON (Pilot export or compact) instead of the repo's")
+    x.add_argument("-v", "--verbose", action="store_true")
+    x.set_defaults(func=cmd_pleml)
 
     s = sub.add_parser("needs-diff", help="change impact between two sets of needs.json (R7)")
     s.add_argument("before")

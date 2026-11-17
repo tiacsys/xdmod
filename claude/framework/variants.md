@@ -30,7 +30,7 @@ The old `prototype.sysml` and the kind `SYS-PROTO` are dropped. A prototype setu
 
 These replace the `variant` field of D37. Prototype wiring in robarm-ee (D74) carries `configs: [SYS-CFG-0001]`.
 
-## 3. Rules (D105, all errors; checked by `curatrix check variants`)
+## 3. Rules (D105, all errors; checked by `curatrix pleml check`, CK-B4)
 
 They are rule R6 of `trace-model.md` §4. They run locally, in PR CI (robarm-syseng) and in the full set.
 
