@@ -23,24 +23,25 @@ from pathlib import Path
 
 import yaml
 
-DOMAINS = ("SYS", "SW", "EE", "ME", "INT", "XD", "PRJ")
-TR_DOMAINS = ("SYS", "SW", "EE", "ME", "INT")
+from curatrix import tracemodel
+
+# Domains and kinds come from needs/needs_config.toml (task 5.2, D64h); a test compares them with
+# the toml's id_regex, so the two ID patterns can't drift.
+DOMAINS = tracemodel.domains()
+TR_DOMAINS = ("SYS", "SW", "EE", "ME", "INT")   # domains whose test results get TR IDs (id-scheme.md §6)
+_D = "|".join(DOMAINS)
 # id-scheme.md §2 (exact), plus usage IDs <ID>.<n> (D128)
 ID_RE = re.compile(
-    r"^(?:(?:SYS|SW|EE|ME|INT|XD|PRJ)-[A-Z]{2,5}-[0-9]{4,}(?:\.[0-9]+)?"
-    r"|TR-(?:SYS|SW|EE|ME|INT)-[A-Z]{2,5}-[0-9]{4,}-[0-9a-f]{8})$")
+    rf"^(?:(?:{_D})-[A-Z]{{2,5}}-[0-9]{{4,}}(?:\.[0-9]+)?"
+    rf"|TR-(?:{'|'.join(TR_DOMAINS)})-[A-Z]{{2,5}}-[0-9]{{4,}}-[0-9a-f]{{8}})$")
 # an ID inside text (word boundaries; not inside a longer token)
-ID_IN_TEXT = re.compile(r"(?<![A-Za-z0-9_-])((?:SYS|SW|EE|ME|INT|XD|PRJ)-[A-Z]{2,5})-([0-9]{4,})(?![0-9])")
-PLACEHOLDER = re.compile(r"(?<![A-Za-z0-9_-])((?:SYS|SW|EE|ME|INT|XD|PRJ)-[A-Z]{2,5})-NEW-([A-Za-z0-9_]+)")
-KIND_RE = re.compile(r"^(?:SYS|SW|EE|ME|INT|XD|PRJ)-[A-Z]{2,5}$")
+ID_IN_TEXT = re.compile(rf"(?<![A-Za-z0-9_-])((?:{_D})-[A-Z]{{2,5}})-([0-9]{{4,}})(?![0-9])")
+PLACEHOLDER = re.compile(rf"(?<![A-Za-z0-9_-])((?:{_D})-[A-Z]{{2,5}})-NEW-([A-Za-z0-9_]+)")
+KIND_RE = re.compile(rf"^(?:{_D})-[A-Z]{{2,5}}$")
+_ID_KIND = re.compile(rf"^((?:{_D})-[A-Z]{{2,5}})-[0-9]{{4,}}(?:\.[0-9]+)?$")
 
-# id-scheme.md §3: the need-type kinds, and the reserved non-need kind
-NEED_KINDS = {
-    "SYS-STH", "SYS-NEED", "SYS-UC", "SYS-REQ", "SYS-IF", "SYS-EL", "SYS-CFG", "SYS-FEAT",
-    "INT-STC", "INT-ITC", "SW-REQ", "SW-ARCH", "SW-DD", "SW-IMPL", "SW-TC",
-    "EE-REQ", "EE-PCBA", "EE-CMP", "EE-TC", "ME-REQ", "ME-ASM", "ME-PART", "ME-TC",
-    "XD-ADR", "XD-RULE", "XD-CHECK", "PRJ-DEC",
-}
+# id-scheme.md §3: the need-type kinds (from needs_config.toml), and the reserved non-need kind
+NEED_KINDS = tracemodel.need_kinds()
 RESERVED_KINDS = {"SYS-VIEW"}
 ALL_KINDS = NEED_KINDS | RESERVED_KINDS
 
@@ -63,7 +64,7 @@ def kind_of(nid: str) -> str | None:
     """'SYS-REQ-0012' -> 'SYS-REQ'; 'SYS-EL-0012.1' -> 'SYS-EL'; TR IDs -> 'TR'."""
     if nid.startswith("TR-"):
         return "TR" if ID_RE.match(nid) else None
-    m = re.match(r"^((?:SYS|SW|EE|ME|INT|XD|PRJ)-[A-Z]{2,5})-[0-9]{4,}(?:\.[0-9]+)?$", nid)
+    m = _ID_KIND.match(nid)
     return m.group(1) if m else None
 
 

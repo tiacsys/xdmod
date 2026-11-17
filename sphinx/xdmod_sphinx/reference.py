@@ -65,7 +65,7 @@ def checks() -> list[dict]:
     out = []
     for cid, name, levels, section, cad, _fn in curatrix_module("checks").BUILTIN:
         c = cat.get(cid)
-        if c is None:
+        if c is None or c.get("retired"):
             raise ValueError(f"{cid} is in checks.BUILTIN but not in {CATALOGUE.name}")
         out.append({"id": cid, "name": name, "levels": levels, "section": section, "cad": cad, **c})
     return out
@@ -161,6 +161,11 @@ def check_need_lines() -> list[str]:
                 f"   Runs when the ``{c['section']}`` section of ``checks.yaml`` is set." if c["section"]
                 else "   Runs for every repo.",
                 f"   Levels: {levels}. Run it alone: ``curatrix check <repo> --only {c['id']}``.", ""]
+    for cid, c in catalogue().items():          # removed checks keep a retired need (D130)
+        if c.get("retired"):
+            out += [f".. xd-check:: {esc(cid)} (retired)", f"   :id: {c['need']}", f"   :check_id: {cid}",
+                    "   :status: retired", "   :enforces: " + ", ".join(c["enforces"]), "",
+                    f"   {esc(c['description'])}", "", f"   Retired: {esc(c['retired'])}.", ""]
     return out
 
 

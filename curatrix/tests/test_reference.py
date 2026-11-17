@@ -27,7 +27,7 @@ def catalogue():
 def test_catalogue_matches_builtin_checks():
     cat = catalogue()
     builtin = [b[0] for b in checks.BUILTIN]
-    assert sorted(cat) == sorted(builtin)
+    assert sorted(k for k, c in cat.items() if not c.get("retired")) == sorted(builtin)
     needs = [c["need"] for c in cat.values()]
     assert len(set(needs)) == len(needs)
     assert all(re.fullmatch(r"XD-CHECK-\d{4}", n) for n in needs)
@@ -65,7 +65,7 @@ def test_tables_from_needs_config():
 
 def test_check_lines_and_cli():
     lines = "\n".join(reference.check_need_lines())
-    assert lines.count(".. xd-check::") == len(checks.BUILTIN)
+    assert lines.count(".. xd-check::") == len(checks.BUILTIN) + lines.count(":status: retired")
     assert ":check_id: CK-A6" in lines
     cli = "\n".join(reference.cli_lines())
     assert "curatrix check" in cli and ".. _cli-ids:" in cli and "hook" not in re.findall(r"_cli-(\w+)", cli)
@@ -96,8 +96,10 @@ def test_directives_in_strict_build(tmp_path):
     import json
     d = json.loads((out / "needs.json").read_text())
     needs = d["versions"][d["current_version"]]["needs"]
-    xc = [n for n in needs.values() if n["type"] == "xd-check"]
+    xc = [n for n in needs.values() if n["type"] == "xd-check" and n["status"] == "valid"]
     assert len(xc) == len(checks.BUILTIN)
+    retired = {n["check_id"] for n in needs.values() if n["type"] == "xd-check" and n["status"] == "retired"}
+    assert retired == {k for k, c in catalogue().items() if c.get("retired")}
     a6 = next(n for n in xc if n["check_id"] == "CK-A6")
     assert a6["enforces"] and all(e in needs for e in a6["enforces"])
     html = (out / "index.html").read_text()

@@ -140,8 +140,8 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-A6 | docs build strict (zdocs); sphinx-needs schema covers CK-A1–A3 per document | `docs` | all (error) | yes |
 | CK-A1 | link to an unknown ID (own, over imported needs too) | `docs` | all | yes |
 | CK-A3 | ID matches the scheme and its kind matches the need type | `docs` | all | yes |
-| CK-A4 | R3 orphans (also a schema rule) | `docs` | all | yes |
-| CK-A5 | R5 HIL `TR` carries `firmware_sha256` and `shas` (also a schema rule) | `docs` | all | yes |
+| ~~CK-A4~~ | retired 2026-11-17: R3 orphans is a schema rule of `needs_config.toml` (CK-A6) | — | — | — |
+| ~~CK-A5~~ | retired 2026-11-17: R5 HIL fields is a schema rule of `needs_config.toml` (CK-A6) | — | — | — |
 | CK-B1 | R1 every SYS-REQ refined or satisfied (`draft` sources don't count) | `docs` | full, baseline | yes |
 | CK-B2 | R2 every requirement verified | `docs` | full, baseline (warning, D99) | yes, **not per configuration** yet |
 | CK-B3 | R4 links to retired needs | `docs` | local/pr/full warning, baseline error (D75) | yes |

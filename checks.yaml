@@ -50,6 +50,6 @@ commands:
 # CK-H6: exactly the checks this repo runs (built-in and commands). A section that goes
 # missing turns an expected check off, and CK-H6 fails.
 expect: [
-  CK-A1, CK-A3, CK-A4, CK-A5, CK-A6, CK-B1, CK-B2, CK-B3, CK-B5, CK-B6, CK-C1, CK-C2, CK-G1,
+  CK-A1, CK-A3, CK-A6, CK-B1, CK-B2, CK-B3, CK-B5, CK-B6, CK-C1, CK-C2, CK-G1,
   CK-G2, CK-H1, CK-H2, CK-H3, CK-H4, CK-H6, CK-H7, XD-T1, XD-T2
 ]
