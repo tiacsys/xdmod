@@ -137,7 +137,8 @@ def copy_launch_claude(ws: Workspace) -> None:
 
 def repo_prefix(name: str) -> str:
     """Short prefix of a repo's skills and commands in .claude/: `xd` for xdmod, else the part after
-    the project prefix (`<project>-ee` -> `ee`, `<project>-manifest` -> `manifest`)."""
+    the project prefix (`<project>-ee` -> `ee`, `<project>-manifest` -> `manifest`). Project names
+    have no dash of their own (repo-layouts.md: `<project>-<domain>`)."""
     return "xd" if name == "xdmod" else name.split("-", 1)[-1]
 
 
