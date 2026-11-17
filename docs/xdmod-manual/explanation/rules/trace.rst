@@ -264,7 +264,7 @@ The principles of the trace model and the rules on the trace graph.
    :status: valid
    :decided_by: XD-ADR-0139, XD-ADR-0140
 
-   Every file of the board library is the FreeCAD model of a board version that the owner tagged (``<board>/vX.Y.Z`` in the EE repo), written by ``curatrix cam <ee repo> <board> --library``: its name gives board, version and variant, its ``Board`` object carries the board's ``EE-PCBA`` ID, the version, the variant and the tag's commit, and it is at most 5 MB. A file is never replaced; a new version is a new file.
+   Every file of the board library is the FreeCAD model of a board version that the owner tagged (``<board>/vX.Y.Z`` in the EE repo), written by ``curatrix cam <ee repo> <board> --library``: its name gives board, version and variant, its ``Board`` object carries the board's ``EE-PCBA`` ID, the version, the variant and the tag's commit, and it is at most 5 MB. A file is never replaced or removed by a pull request; a new version is a new file. The tag must be on main of the EE repo and pushed (an agent never makes or pushes one).
 
 .. xd-rule:: An assembly that links an older board version gets a note
    :id: XD-RULE-0062

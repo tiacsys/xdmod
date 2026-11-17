@@ -14,8 +14,10 @@ from test_meassemblies import _prop, fcstd
 TID = "EE-PCBA-0001"
 
 
-def board_file(path, version, variant="", tid=TID, commit=""):
+def board_file(path, version, variant="", tid=TID, commit="", board=None):
+    board = path.parent.name if board is None else board
     props = [_prop("TraceID", tid, group="Trace"), _prop("Version", version, group="Board"),
+             _prop("Board", board, group="Board"),
              _prop("Variant", variant, group="Board"), _prop("Commit", commit, group="Board")]
     return fcstd(path, {"Board": ("App::Part", props), "Shape": ("Part::Feature", [])})
 
@@ -28,7 +30,8 @@ def ee_repo(root, tags=("canary/v0.1.0",), tid=TID):
     ee = git_init(root / "ee")
     pro = ee / "pcba" / "canary" / "canary.kicad_pro"
     pro.parent.mkdir(parents=True)
-    pro.write_text(json.dumps({"text_variables": {"TraceID": tid, "XD_VERSION": "unversioned"}}))
+    tv = {"TraceID": tid, "XD_VERSION": "unversioned"} if tid else {"XD_VERSION": "unversioned"}
+    pro.write_text(json.dumps({"text_variables": tv}))
     _git(ee, "add", "-A")
     _git(ee, "commit", "-qm", "board")
     _git(ee, "branch", "-M", "main")
@@ -67,6 +70,7 @@ def test_f20_board_library(tmp_path):
     board_file(lib / "boards/canary/board.FCStd", "canary/v0.1.0")
     board_file(lib / "boards/canary/canary-v0.1.0-alt.FCStd", "canary/v0.0.9", "alt")
     board_file(lib / "boards/canary/canary-v0.1.0-x.FCStd", "canary/v0.1.0", "x", tid="ME-PART-0001", commit="0" * 40)
+    board_file(lib / "boards/canary/canary-v0.1.0-y.FCStd", "canary/v0.1.0", "y", board="other")
     f = "\n".join(_run(ctx, checks.c_board_library))
     assert "canary-v0.2.0.FCStd: no tag canary/v0.2.0" in f
     assert "board.FCStd: not boards/<board>/<board>-vX.Y.Z" in f
@@ -74,6 +78,8 @@ def test_f20_board_library(tmp_path):
     assert "canary-v0.1.0-x.FCStd: TraceID ME-PART-0001 is not an EE-PCBA ID" in f
     assert "canary-v0.1.0-x.FCStd: Commit 000000000000 is not the commit of tag" in f
     assert "TraceID ME-PART-0001, but the project at canary/v0.1.0 is EE-PCBA-0001" in f
+    assert "canary-v0.1.0-y.FCStd: no Commit property" in f
+    assert "canary-v0.1.0-y.FCStd: Board 'other' is not the folder name 'canary'" in f
     assert "default" not in f
 
 
@@ -150,3 +156,116 @@ def test_library_refuses_untagged_versions(tmp_path, monkeypatch):
     (pr.folder / "canary.kicad_sch").write_text("dirty")       # a tag, but uncommitted changes
     with pytest.raises(boardlib.BoardLibError, match="-dirty-preview is not a tagged board version"):
         boardlib.add_to_library(ws, Repo("ee", ee, "ee"), cfg, pr, dest=tmp_path / "lib")
+
+
+def test_f20_tag_on_main_pushed_and_project_id(tmp_path):
+    root = tmp_path / "ws"
+    ee, sha = ee_repo(root, tags=(), tid="")
+    _git(ee, "tag", "canary/v0.1.0")                       # a project without TraceID at the tag
+    _git(ee, "checkout", "-qb", "side")
+    _commit = (ee / "side.txt")
+    _commit.write_text("x")
+    _git(ee, "add", "-A")
+    _git(ee, "commit", "-qm", "side")
+    _git(ee, "tag", "canary/v0.2.0")                       # a tag that is not on main
+    side = _git(ee, "rev-parse", "HEAD")
+    ctx = _ctx(root, "lib", LIB)
+    lib = ctx.repo.path / "boards/canary"
+    board_file(lib / "canary-v0.1.0.FCStd", "canary/v0.1.0", commit=sha)
+    board_file(lib / "canary-v0.2.0.FCStd", "canary/v0.2.0", commit=side)
+    f = "\n".join(_run(ctx, checks.c_board_library))
+    assert "canary-v0.1.0.FCStd: the project pcba/canary/canary.kicad_pro at canary/v0.1.0 has no TraceID" in f
+    assert "canary-v0.2.0.FCStd: tag canary/v0.2.0 is not on main" in f
+    assert "canary-v0.1.0.FCStd: tag canary/v0.1.0 is not on main" not in f
+    # an origin without the tag: a local, unpushed tag
+    bare = tmp_path / "remote.git"
+    subprocess.run(["git", "clone", "-q", "--bare", "--no-tags", str(ee), str(bare)], check=True)
+    _git(bare, "tag", "-d", "canary/v0.1.0") if "canary/v0.1.0" in _git(bare, "tag") else None
+    _git(ee, "remote", "add", "origin", str(bare))
+    f = "\n".join(_run(ctx, checks.c_board_library))
+    assert "canary-v0.1.0.FCStd: tag canary/v0.1.0 is not on the origin" in f
+    _git(ee, "push", "-q", "origin", "canary/v0.1.0")
+    assert "canary-v0.1.0.FCStd: tag canary/v0.1.0 is not on the origin" not in "\n".join(
+        _run(ctx, checks.c_board_library))
+
+
+def test_f20_board_files_are_only_added(tmp_path, monkeypatch):
+    root = tmp_path / "ws"
+    ee, sha = ee_repo(root)
+    ctx = _ctx(root, "lib", LIB)
+    lib = ctx.repo.path
+    fc = board_file(lib / "boards/canary/canary-v0.1.0.FCStd", "canary/v0.1.0", commit=sha)
+    _git(lib, "add", "-A")
+    _git(lib, "commit", "-qm", "v0.1.0")
+    _git(lib, "branch", "-M", "main")
+    _git(lib, "checkout", "-qb", "pr")
+    monkeypatch.setenv("XD_BASE_REF", "main")
+    assert _run(ctx, checks.c_board_library) == []
+    board_file(fc, "canary/v0.1.0", commit=sha, tid="EE-PCBA-0002")   # a re-export over the old file
+    f = "\n".join(_run(ctx, checks.c_board_library))
+    assert "boards/canary/canary-v0.1.0.FCStd: changed against main; a board version is never replaced" in f
+
+
+def _lib_checkout(root, branch="board/canary", section=True):
+    lib = git_init(root / "lib")
+    (lib / "checks.yaml").write_text(LIB if section else "version: 1\n")
+    _git(lib, "add", "-A")
+    _git(lib, "commit", "-qm", "skeleton")
+    _git(lib, "branch", "-M", "main")
+    if branch:
+        _git(lib, "checkout", "-qb", branch)
+    return lib
+
+
+def _fake_export(ws, files):
+    def export(ws_, repo, cfg, pr, release_only=False, log=print):
+        folder = ws.root / "build" / "bm"
+        folder.mkdir(parents=True, exist_ok=True)
+        for f in files:
+            (folder / f).write_text("model")
+        return {"files": [{"file": f, "mb": 0.0} for f in files], "findings": [], "folder": "build/bm",
+                "version": "canary/v0.1.0"}
+    return export
+
+
+def test_library_targets(tmp_path, monkeypatch):
+    """--library writes only into a board library on a branch, and never over an existing file."""
+    monkeypatch.delenv("XD_BASE_REF", raising=False)
+    root = tmp_path / "ws"
+    ee, _ = ee_repo(root)
+    ws = Workspace(root)
+    cfg = type("C", (), {"area": "ee"})()
+    pr, repo = _Pr(ee / "pcba" / "canary"), Repo("ee", ee, "ee")
+    monkeypatch.setattr(boardlib, "export", _fake_export(ws, ["canary-v0.1.0.FCStd"]))
+    lib = _lib_checkout(root)
+    on_main = _lib_checkout(tmp_path / "m", branch=None)
+    with pytest.raises(boardlib.BoardLibError, match="is on main"):
+        boardlib.add_to_library(ws, repo, cfg, pr, dest=on_main)
+    _git(on_main, "checkout", "-q", "--detach")
+    with pytest.raises(boardlib.BoardLibError, match="is detached"):
+        boardlib.add_to_library(ws, repo, cfg, pr, dest=on_main)
+    with pytest.raises(boardlib.BoardLibError, match="is not a board library"):
+        boardlib.add_to_library(ws, repo, cfg, pr, dest=_lib_checkout(tmp_path / "x", section=False))
+    out = boardlib.add_to_library(ws, repo, cfg, pr, dest=lib, log=lambda *_: None)
+    assert out == [lib.resolve() / "boards/canary/canary-v0.1.0.FCStd"]
+    with pytest.raises(boardlib.BoardLibError, match="exist; a board version is written once"):
+        boardlib.add_to_library(ws, repo, cfg, pr, dest=lib, log=lambda *_: None)
+
+
+def test_library_refuses_suffixed_tags(tmp_path, monkeypatch):
+    monkeypatch.delenv("XD_BASE_REF", raising=False)
+    root = tmp_path / "ws"
+    ee, _ = ee_repo(root, tags=("canary/v1.0.0-rc1",))
+    monkeypatch.setattr(boardlib.shutil, "copytree", lambda *a, **k: pytest.fail("exported a pre-release"))
+    with pytest.raises(boardlib.BoardLibError, match="canary/v1.0.0-rc1-preview is not a tagged board version"):
+        boardlib.add_to_library(Workspace(root), Repo("ee", ee, "ee"), type("C", (), {"area": "ee"})(),
+                                _Pr(ee / "pcba" / "canary"), dest=tmp_path / "lib")
+
+
+def test_release_version_takes_only_exact_release_tags(tmp_path):
+    root = tmp_path / "ws"
+    ee, _ = ee_repo(root, tags=("canary/v1.0.0-rc1",))
+    pr = _Pr(ee / "pcba" / "canary")
+    assert boardlib.release_version(ee, pr) == ("canary/v1.0.0-rc1-preview", False)
+    _git(ee, "tag", "canary/v1.0.0")                       # the release on the same commit wins
+    assert boardlib.release_version(ee, pr) == ("canary/v1.0.0", True)

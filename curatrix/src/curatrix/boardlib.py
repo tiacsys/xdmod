@@ -25,10 +25,17 @@ Checks (plain Python, also in CI):
   ``boards/<board>/<board>-vX.Y.Z[-<variant>].FCStd``; its ``Board`` object carries an ``EE-PCBA``
   TraceID, ``Version`` = ``<board>/vX.Y.Z`` and the variant of the name; the tag exists in the
   source repo, names the same ``EE-PCBA`` in the project's ``TraceID`` at the tag, and ``Commit`` is
-  the tag's commit; at most ``max_mb`` per file.
+  the tag's commit; ``Board`` = the folder name; at most ``max_mb`` per file. The tag must be a
+  release tag ``<board>/vX.Y.Z`` on the source repo's main (``origin/main``, in CI
+  ``xd-ci/main``), and on its ``origin`` remote when it has one (a local, unpushed tag is a
+  finding; an unreachable origin too, when the library has files; CI's west clones have no origin
+  and fetched the remote's tags). Against the PR base (``XD_BASE_REF``, CI: the PR base), files
+  under ``boards/`` may only be added: a changed or deleted board version is a finding.
 * CK-F21 (in an ME repo, ``cad.board_library``): an ME FreeCAD file that links a board model of the
   library gets a note when the library has a newer version of that board and variant, or when the
-  linked file is not in the library (XD-ADR-0139: moving to a new version is an ME change).
+  linked file is not in the library (XD-ADR-0139: moving to a new version is an ME change). Only
+  links to ``boards/<board>/<file>`` count; other links into the library are ignored, and the linked
+  object name (``Board``) is not checked yet.
 """
 from __future__ import annotations
 
@@ -87,14 +94,33 @@ def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
 
 
 # ------------------------------------------------------------------ export
+def release_version(repo: Path, pr) -> tuple[str, bool]:
+    """``cam.version``, but a release only with an exact release tag ``<board>/vX.Y.Z`` (TAG_RE): a
+    tag with a suffix (``-rc1``) is a preview; when HEAD has both, the release tag wins."""
+    from curatrix import cam
+    ver, release = cam.version(repo, pr.name, pr.folder)
+    if release and not _is_release_tag(ver, pr.name):
+        exact = [t for t in _git(repo, "tag", "--points-at", "HEAD", "--list", f"{pr.name}/v*").stdout.split()
+                 if _is_release_tag(t, pr.name)]
+        if exact:
+            return sorted(exact, key=lambda t: vkey(t.split("/", 1)[1]))[-1], True
+        return ver + "-preview", False
+    return ver, release
+
+
+def _is_release_tag(tag: str, board: str) -> bool:
+    m = TAG_RE.match(tag)
+    return bool(m) and m["board"] == board
+
+
 def export(ws, repo, cfg, pr, release_only: bool = False, log=print) -> dict:
     """Export one pcba/ project as FreeCAD board models into build/; returns the record."""
-    from curatrix import cam, domvariants, limits, newasm, newpcba
-    ver, release = cam.version(repo.path, pr.name, pr.folder)
+    from curatrix import domvariants, limits, newasm, newpcba
+    ver, release = release_version(repo.path, pr)
     if release_only and not release:
         raise BoardLibError(
-            f"{pr.name}: {ver} is not a tagged board version (an exact tag {pr.name}/vX.Y.Z on main and a clean "
-            f"project folder); the board library takes only tagged versions (XD-ADR-0139), and only the owner "
+            f"{pr.name}: {ver} is not a tagged board version (an exact release tag {pr.name}/vX.Y.Z, no suffix, "
+            f"on main and a clean project folder); the board library takes only tagged versions (XD-ADR-0139), and only the owner "
             f"makes the tags (XD-ADR-0140). Use --board-model for a local preview")
     tid = (pr.variables().get("TraceID") or "").strip()
     if not tid:
@@ -188,11 +214,14 @@ def find_library(ws) -> Path:
 
 def add_to_library(ws, repo, cfg, pr, dest: Path | None = None, log=print) -> list[Path]:
     """Export a tagged board version and copy its files into the library checkout ``dest``."""
-    from curatrix import cam
-    _, release = cam.version(repo.path, pr.name, pr.folder)
+    from curatrix import checkcfg
+    _, release = release_version(repo.path, pr)
     if not release:                                  # refuse before KiCad runs
         export(ws, repo, cfg, pr, release_only=True, log=log)
     lib = (dest or find_library(ws)).resolve()
+    cy = lib / "checks.yaml"
+    if not cy.is_file() or checkcfg.load(cy, ws.root).section("board_library") is None:
+        raise BoardLibError(f"{ws.rel(lib)} is not a board library (no board_library section in its checks.yaml)")
     branch = _git(lib, "symbolic-ref", "-q", "--short", "HEAD").stdout.strip()
     if not branch or branch == "main":
         raise BoardLibError(f"{ws.rel(lib)} is {'on main' if branch else 'detached'}; the library gets a board version "
@@ -218,7 +247,45 @@ def add_to_library(ws, repo, cfg, pr, dest: Path | None = None, log=print) -> li
 
 
 # ------------------------------------------------------------------ CK-F20
-def library_findings(ws, cfg) -> list[str]:
+def _tag_on_main(src: Path, tag: str) -> bool:
+    main = next((r for r in ("origin/main", "refs/remotes/xd-ci/main", "main")
+                 if _git(src, "rev-parse", "--verify", "-q", r).returncode == 0), None)
+    return bool(main) and _git(src, "merge-base", "--is-ancestor", tag, main).returncode == 0
+
+
+def _remote_tags(src: Path) -> dict[str, str] | None | bool:
+    """tag -> commit on the source repo's origin; False for a west clone in CI (no origin: its tags
+    were fetched from the remote, so every local tag is a remote one); None if origin cannot be reached."""
+    if "origin" not in _git(src, "remote").stdout.split():
+        return False
+    p = _git(src, "ls-remote", "--tags", "origin")
+    if p.returncode:
+        return None
+    out = {}
+    for ln in p.stdout.splitlines():
+        sha, _, ref = ln.partition("\t")
+        name = ref.removeprefix("refs/tags/")
+        if name.endswith("^{}"):
+            out[name[:-3]] = sha                     # the commit of an annotated tag
+        else:
+            out.setdefault(name, sha)
+    return out
+
+
+def changed_files(repo: Path, base: str | None) -> list[str]:
+    """board files changed or deleted against the merge base with ``base`` (committed or not)."""
+    if not base:
+        return []
+    mb = _git(repo, "merge-base", base, "HEAD").stdout.strip()
+    if not mb:
+        return []
+    p = _git(repo, "diff", "--name-status", "--no-renames", mb, "--", "boards")
+    return [f"{ln.split(chr(9))[1]}: {'changed' if ln[0] == 'M' else 'deleted'} against {base}; a board version is "
+            f"never replaced or removed by a PR (XD-ADR-0139); a new version is a new file"
+            for ln in p.stdout.splitlines() if ln[:1] in "MDT" and ln.endswith(".FCStd")]
+
+
+def library_findings(ws, cfg, base: str | None = None) -> list[str]:
     """CK-F20 on the library repo."""
     s = cfg.section("board_library") or {}
     max_mb = float(s.get("max_mb") or DEFAULT_MAX_MB)
@@ -230,10 +297,13 @@ def library_findings(ws, cfg) -> list[str]:
         src = None
     repo = cfg.repo
     tags = set(_git(src, "tag", "-l").stdout.split()) if src else set()
-    for fc in sorted(repo.rglob("*.FCStd")):
+    out += changed_files(repo, base)
+    files = [f for f in sorted(repo.rglob("*.FCStd")) if not f.relative_to(repo).as_posix().startswith(".git/")]
+    remote = _remote_tags(src) if src and files else False
+    if src is not None and remote is None:
+        out.append(f"{ws.rel(src)}: its origin cannot be reached, so the board tags cannot be checked as pushed tags")
+    for fc in files:
         rel = fc.relative_to(repo).as_posix()
-        if rel.startswith(".git/"):
-            continue
         parts = rel.split("/")
         parsed = parse_name(parts[1], parts[2]) if len(parts) == 3 and parts[0] == "boards" else None
         if parsed is None:
@@ -257,6 +327,8 @@ def library_findings(ws, cfg) -> list[str]:
             out.append(f"{rel}: TraceID {tid or '(none)'} is not an EE-PCBA ID")
         if p.get("Version") != tag:
             out.append(f"{rel}: Version {p.get('Version')!r} does not match the file name ({tag})")
+        if p.get("Board") != board:
+            out.append(f"{rel}: Board {p.get('Board')!r} is not the folder name {board!r}")
         if (p.get("Variant") or None) != variant:
             out.append(f"{rel}: Variant {p.get('Variant')!r} does not match the file name ({variant or 'none'})")
         if src is None:
@@ -266,8 +338,15 @@ def library_findings(ws, cfg) -> list[str]:
                        f"(XD-ADR-0139)")
             continue
         commit = _git(src, "rev-parse", f"{tag}^{{commit}}").stdout.strip()
-        if p.get("Commit") and p["Commit"] != commit:
+        if not p.get("Commit"):
+            out.append(f"{rel}: no Commit property (the commit of tag {tag})")
+        elif p["Commit"] != commit:
             out.append(f"{rel}: Commit {p['Commit'][:12]} is not the commit of tag {tag} ({commit[:12]})")
+        if not _tag_on_main(src, tag):
+            out.append(f"{rel}: tag {tag} is not on main of {ws.rel(src)}")
+        if isinstance(remote, dict) and remote.get(tag) != commit:
+            out.append(f"{rel}: tag {tag} is not on the origin of {ws.rel(src)} (a local tag; only the owner's pushed "
+                       f"tags count, XD-ADR-0140)")
         pro = next((f for f in _git(src, "ls-tree", "-r", "--name-only", tag).stdout.splitlines()
                     if f.endswith(f"/{board}/{board}.kicad_pro")), None)
         if pro is None:
@@ -277,7 +356,9 @@ def library_findings(ws, cfg) -> list[str]:
             tv = json.loads(_git(src, "show", f"{tag}:{pro}").stdout).get("text_variables") or {}
         except ValueError:
             tv = {}
-        if tv.get("TraceID") and tv["TraceID"] != tid:
+        if not tv.get("TraceID"):
+            out.append(f"{rel}: the project {pro} at {tag} has no TraceID text variable")
+        elif tv["TraceID"] != tid:
             out.append(f"{rel}: TraceID {tid}, but the project at {tag} is {tv['TraceID']}")
     return out
 
