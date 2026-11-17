@@ -57,8 +57,9 @@ def _toolset(ws):
 
 
 def used(ws, kind: str) -> dict[str, str]:
-    """Versions of the tools of `kind` as installed now (stamp / system --version)."""
-    ts = _toolset(ws)
+    """Versions of the tools of `kind` as installed now (stamp / system --version). The same tool
+    set as `pinned`: every role's pins."""
+    ts = toolsmod.load_all(ws)
     out = {}
     for name in KINDS[kind][1]:
         if name in ts.tools:
@@ -129,5 +130,5 @@ def check(ws, cfg: ChecksConfig, files: list[Path], kind: str) -> list[str]:
 
 def stale(cfg: ChecksConfig) -> list[str]:
     """CK-D5: records of files that no longer exist (a removed view, a deleted model file)."""
-    return [f"{rel}: recorded in {REL}, but the file is gone; run the generator again (it drops the entry) "
-            f"or remove the entry" for rel in sorted(load(cfg)["files"]) if not (cfg.repo / rel).exists()]
+    return [f"{rel}: recorded in {REL}, but the file is gone; remove the entry (a full "
+            f"`curatrix views build` drops the entries of views that are gone)" for rel in sorted(load(cfg)["files"]) if not (cfg.repo / rel).exists()]

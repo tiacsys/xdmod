@@ -106,6 +106,8 @@ def parse(path: Path) -> ToolSet:
     for s in data.get("system") or []:
         s = dict(s)
         s["version"] = str(s.get("version", "any"))
+        if s["version"].startswith(">=") and not re.fullmatch(r">=\d+(?:\.\d+)*", s["version"]):
+            raise ToolsError(f"{path}: {s['name']}: a minimum version is >= followed by numbers, not {s['version']!r}")
         ts.system[s["name"]] = SystemTool(source=str(path), **s)
     return ts
 
@@ -117,6 +119,10 @@ def merge(sets: list[ToolSet]) -> ToolSet:
             for name, t in getattr(ts, kind).items():
                 old = target.get(name)
                 if old and old.version != t.version and "any" not in (old.version, t.version):
+                    keep = _stricter(old.version, t.version)
+                    if keep is not None:              # a minimum and a pin that meets it: keep the stricter
+                        target[name] = t if keep == t.version else old
+                        continue
                     raise ToolsError(f"tool {name}: version {old.version} ({old.source}) "
                                      f"conflicts with {t.version} ({t.source})")
                 if not old or old.version == "any":
@@ -145,7 +151,21 @@ def for_role(ts: ToolSet, role: str | None) -> ToolSet:
 
 # ------------------------------------------------------------------ version checks
 def _vtuple(v: str) -> tuple[int, ...]:
-    return tuple(int(x) for x in re.findall(r"\d+", v)[:4])
+    """The leading version of a string: "v22.23.4" -> (22, 23, 4); "4.5.0-rc1" -> (4, 5, 0)."""
+    m = re.search(r"\d+(?:\.\d+)*", v or "")
+    return tuple(int(x) for x in m.group(0).split(".")[:4]) if m else ()
+
+
+def _stricter(a: str, b: str) -> str | None:
+    """Of two pins of the same tool where at least one is a minimum, the stricter one, if they agree;
+    None if they conflict (an exact pin below a minimum)."""
+    if a.startswith(">=") and b.startswith(">="):
+        return a if _vtuple(a[2:]) >= _vtuple(b[2:]) else b
+    lo, other = (a, b) if a.startswith(">=") else (b, a) if b.startswith(">=") else (None, None)
+    if lo is None:
+        return None
+    base = other[:-2] if other.endswith(".*") else other
+    return other if _vtuple(base) >= _vtuple(lo[2:]) else None
 
 
 def version_ok(want: str, have: str | None) -> bool:
