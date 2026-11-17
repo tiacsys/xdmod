@@ -127,6 +127,22 @@ checks:
     need: XD-CHECK-0039
     enforces: [XD-RULE-0050]
     description: "Every connector of a pcba/ project has a Port field (- = none); each Port names a connector port def of the board def; each port of the board def is named by one connector; pin numbers and net names equal the pin map of the EE model."
+  CK-F4a:
+    need: XD-CHECK-0040
+    enforces: [XD-RULE-0051]
+    description: "KiCad ERC (kicad-cli sch erc --format json --severity-all) of every project: each error is excluded in KiCad or matched by an accepted.yaml entry, accepted by a human commit with Accepted-by (local, needs KiCad); warnings only listed."
+  CK-F4b:
+    need: XD-CHECK-0041
+    enforces: [XD-RULE-0051]
+    description: "KiCad DRC with schematic parity (kicad-cli pcb drc) of every pcba/ board, same rule as CK-F4a; the unrouted nets accepted in one entry (local, needs KiCad)."
+  CK-F8:
+    need: XD-CHECK-0042
+    enforces: [XD-RULE-0052]
+    description: "The ERC and DRC severities of every project (.kicad_pro, custom rules in .kicad_dru) equal the curatrix new pcba template; a difference needs an accepted entry."
+  CK-F9:
+    need: XD-CHECK-0043
+    enforces: [XD-RULE-0051]
+    description: "accepted.yaml entries are well formed (check, rule, items as designators or all, reason); each entry and each KiCad exclusion is accepted (newest commit with Accepted-by, no agent mark, nothing else changed) or reported as a proposal."
   CK-G1:
     need: XD-CHECK-0023
     enforces: [XD-RULE-0038]

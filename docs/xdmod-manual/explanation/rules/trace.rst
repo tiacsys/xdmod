@@ -154,3 +154,19 @@ The principles of the trace model and the rules on the trace graph.
    :decided_by: XD-ADR-0128, XD-ADR-0129
 
    Every connector symbol of a board (reference ``J``, ``P`` or ``CN``, or any symbol with the field) has a ``Port`` field: the ``EE-PORT`` ID of the connector port def it implements, or ``-`` for a connector without a port of the board def. Each port of the board def is named by one connector, and the connector's pins carry the nets of the port def's pin map (pin number and net name; a root-sheet label ``/X`` is the net ``X``). A connector pin that is not in the pin map stays unconnected. The connector tables are committed as ``generated/<project>.connectors.json``, extracted in plain Python and equal to KiCad's XML netlist.
+
+.. xd-rule:: ERC and DRC errors are fixed or accepted by a human
+   :id: XD-RULE-0051
+   :tags: checks, cad
+   :status: valid
+   :decided_by: XD-ADR-0126, XD-ADR-0144
+
+   Every KiCad project passes ERC, and every board passes DRC (with the schematic parity test), apart from errors that are accepted: an entry of the project's ``accepted.yaml`` (check, KiCad rule, designators or ``all``, reason) or a KiCad exclusion, each counted only when the newest commit that wrote it carries an ``Accepted-by:`` trailer, has no agent mark and changes nothing but acceptance entries or exclusions. Anything else is a proposal. The unrouted nets of a board are accepted in one entry (``unconnected_items``, ``all``). Warnings are listed, never fail. A KiCad exclusion is lost when its items move; a stale ERC exclusion of a rule that is off is a finding.
+
+.. xd-rule:: ERC and DRC severities equal the template
+   :id: XD-RULE-0052
+   :tags: checks, cad
+   :status: valid
+   :decided_by: XD-ADR-0126
+
+   A project's ERC and DRC rule severities (``.kicad_pro``) equal those of the ``curatrix new pcba`` template; a missing ``erc`` section counts as the template, which holds KiCad 10.0.8's defaults. A custom rule in ``.kicad_dru`` with a severity other than ``error`` is a difference too. A difference needs an accepted ``accepted.yaml`` entry with ``check: CK-F8`` and the rule key (``dru:<name>`` for a custom rule).
