@@ -191,7 +191,7 @@ def test_doctor_warns_when_kicad_on_path_is_not_the_shim(tmp_path, monkeypatch, 
     rows = setup.shim_rows(ws, str(sysbin))                             # shim exists, PATH without .venv/bin
     assert rows[0][0] == "warn" and 'curatrix env' in rows[0][2]
     assert setup.shim_rows(ws, os.pathsep.join([str(ws.venv / "bin"), str(sysbin)])) == \
-        [("ok", "KiCad/FreeCAD shims first on PATH", ".venv/bin")]
+        [("ok", "KiCad/FreeCAD/Blender shims first on PATH", ".venv/bin")]
     assert setup.shim_rows(ws, str(tmp_path / "empty")) == []          # no KiCad, no FreeCAD: nothing
     monkeypatch.setenv("PATH", os.pathsep.join([str(sysbin), os.environ["PATH"]]))
     setup.doctor(ws)
@@ -290,31 +290,46 @@ def test_blender_is_isolated_in_every_call(tmp_path, monkeypatch):
     from curatrix import blender, limits
     ws = Workspace(make_ws(tmp_path, monkeypatch))
     sysbin = tmp_path / "usr" / "bin"
-    _fake_tool(sysbin, "blender", 'echo "$BLENDER_USER_CONFIG|$XDG_CACHE_HOME|$TMPDIR|${VIRTUAL_ENV-unset}|$PATH|$*"')
+    # external commands (env, basename): the fake needs a working PATH, as the real Blender does
+    _fake_tool(sysbin, "blender", 'env | grep -q "^HOME=" || exit 3; '
+               'echo "$BLENDER_USER_CONFIG|$XDG_CACHE_HOME|$TMPDIR|${VIRTUAL_ENV-unset}|$PATH|$(basename "$0") $*"')
     path = os.pathsep.join([str(ws.venv / "bin"), str(sysbin), "/usr/bin", "/bin"])
     assert "blender" in setup.write_shims(ws, path)
     text = (ws.venv / "bin" / "blender").read_text()
     assert f"export BLENDER_USER_RESOURCES={ws.state / 'blender' / 'user'}\n" in text
     assert text.rstrip().endswith(f'exec {sysbin / "blender"} --factory-startup --offline-mode --disable-autoexec "$@"')
+    assert "export PATH=" not in text.split("unset")[0]           # the caller's PATH, filtered below
     home = tmp_path / "home"
     home.mkdir()
     env = {"PATH": path, "HOME": str(home), "VIRTUAL_ENV": str(ws.venv)}
     r = subprocess.run(["blender", "--version"], env=env, capture_output=True, text=True, check=True, timeout=30)
+    assert r.stderr == "", r.stderr                                 # no "command not found"
     cfg, cache, tmp, venv, p, args = r.stdout.strip().split("|")
     assert cfg == str(ws.state / "blender" / "user" / "config") and cache.startswith(str(ws.state / "blender"))
     assert tmp == str(ws.state / "blender" / "tmp") and venv == "unset" and str(ws.venv / "bin") not in p
-    assert args == "--factory-startup --offline-mode --disable-autoexec --version"
+    assert args == "blender --factory-startup --offline-mode --disable-autoexec --version"
+    assert "/usr/bin" in p.split(os.pathsep) and str(sysbin) in p.split(os.pathsep)
     assert list(home.iterdir()) == []
     # curatrix run / limits.run: the same variables, the real binary, the arguments once
     monkeypatch.setenv("PATH", path)
     e = limits.tool_env(ws, "script", {"PATH": path, "VIRTUAL_ENV": "x"}, ["blender", "--version"])
     assert e["BLENDER_USER_SCRIPTS"] == str(ws.state / "blender" / "user" / "scripts") and "VIRTUAL_ENV" not in e
     assert str(ws.venv / "bin") not in e["PATH"].split(os.pathsep)
+    # first on PATH: .xdmod/blender/bin with the shim, so `sh -c 'blender ...'` stays isolated
+    bindir = e["PATH"].split(os.pathsep)[0]
+    assert bindir == str(ws.state / "blender" / "bin") and setup.is_shim(ws.state / "blender" / "bin" / "blender")
+    r = subprocess.run(["sh", "-c", "blender -b"], env={**e, "HOME": str(home)}, capture_output=True, text=True,
+                       check=True, timeout=30)
+    assert r.stdout.strip().endswith("blender --factory-startup --offline-mode --disable-autoexec -b"), r.stdout
+    assert r.stderr == "" and list(home.iterdir()) == []
     assert limits.tool_cmd(ws, ["blender", "--factory-startup", "-b"]) == \
         [str(sysbin / "blender"), "--factory-startup", "--offline-mode", "--disable-autoexec", "-b"]
     assert limits.tool_cmd(ws, ["git", "status"]) == ["git", "status"]
     assert "BLENDER_USER_CONFIG" not in limits.tool_env(ws, "script", {"PATH": path}, ["git"])
-    assert setup.launch_env(ws, "blender")["BLENDER_USER_CONFIG"] == str(ws.state / "blender" / "user" / "config")
+    monkeypatch.setenv("VIRTUAL_ENV", str(ws.venv))
+    le = setup.launch_env(ws, "blender")             # the GUI: the same env, no venv
+    assert le["BLENDER_USER_CONFIG"] == str(ws.state / "blender" / "user" / "config") and "VIRTUAL_ENV" not in le
+    assert str(ws.venv / "bin") not in le["PATH"].split(os.pathsep)
     assert blender.find(ws) == sysbin / "blender"
 
 
@@ -332,3 +347,21 @@ def test_doctor_blender_not_pinnable(tmp_path, monkeypatch, capsys):
         line = next(ln for ln in out.splitlines() if "blender" in ln)
         assert line.strip().startswith(status), line
         assert "FAIL" not in line
+
+
+def test_run_blender_takes_the_blender_limits(tmp_path, monkeypatch):
+    """`curatrix run -- blender ...` without --use runs under the blender limits (4G, 10m), not script."""
+    from curatrix import cli
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    seen = []
+
+    class R:
+        returncode = 0
+    monkeypatch.setattr(cli.subprocess, "run", lambda argv, **k: seen.append(argv) or R())
+    monkeypatch.setenv("XD_LIMIT_BACKEND", "none")
+    assert cli.main(["run", "--", "blender", "--version"]) == 0
+    assert cli.main(["run", "--", "git", "status"]) == 0
+    assert cli.main(["run", "--use", "script", "--", "blender", "-b"]) == 0
+    to = [a[a.index("--kill-after=10s") + 1] for a in seen]
+    assert to == ["10m", "5m", "5m"], seen
+    assert "--factory-startup" in seen[0]

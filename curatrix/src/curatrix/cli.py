@@ -60,6 +60,8 @@ def cmd_run(a):
     cmd = a.cmd[1:] if a.cmd and a.cmd[0] == "--" else a.cmd
     if not cmd:
         raise SystemExit("usage: curatrix run [--use USE] [-m MEM] [-t TIME] -- COMMAND ...")
+    from curatrix import blender
+    a.use = a.use or ("blender" if blender.is_blender(cmd) else "script")    # Blender: its own limits
     lim = limits.resolve(a.use, ws, a.memory, a.timeout)
     if a.verbose:
         print(f"curatrix run: {limits.describe(lim)} [{limits.backend()}]", file=sys.stderr)
@@ -600,7 +602,8 @@ def parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_env)
 
     s = sub.add_parser("run", help="run any command with the workspace env and limits (limits.yaml)")
-    s.add_argument("--use", default="script", help="limits.yaml use (default: script)")
+    s.add_argument("--use", default=None, help="limits.yaml use (default: blender for a blender command, "
+                                               "else script)")
     s.add_argument("-m", "--memory", help="memory limit, e.g. 2G (overrides the use)")
     s.add_argument("-t", "--timeout", help="timeout, e.g. 10m or none (overrides the use)")
     s.add_argument("-v", "--verbose", action="store_true")

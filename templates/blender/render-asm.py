@@ -9,7 +9,8 @@
 #   XD_RELEASE  "1" for a release, else PREVIEW in red
 #   XD_FONT     the pinned font file
 #   XD_SAMPLES  Cycles samples (default 32)
-#   XD_RESULT   the result file: {"ok", "painted": {view: pixels}, "seconds", "engine", ...}
+#   XD_THREADS  Cycles threads (curatrix: half the cores; the output does not depend on it)
+#   XD_RESULT   the result file: {"ok", "pixels": {view: pixels off the background}, "seconds", ...}
 # Deterministic: Cycles on the CPU, fixed samples and seed, no adaptive sampling, no denoiser, no
 # time-dependent input; the same input gives the same PNG on the same machine and Blender version.
 import json
@@ -36,8 +37,10 @@ def unit(v):
     return v
 
 
-def setup_scene(samples):
+def setup_scene(samples, threads):
     sc = bpy.context.scene
+    sc.render.threads_mode = "FIXED"
+    sc.render.threads = threads
     sc.render.engine = "CYCLES"
     sc.cycles.device = "CPU"
     sc.cycles.samples = samples
@@ -66,7 +69,7 @@ def setup_scene(samples):
     lp = nt.nodes.new("ShaderNodeLightPath")
     sky = nt.nodes.new("ShaderNodeBackground")
     sky.inputs["Color"].default_value = (0.8, 0.82, 0.85, 1)
-    sky.inputs["Strength"].default_value = 0.45
+    sky.inputs["Strength"].default_value = 0.3
     bg = nt.nodes.new("ShaderNodeBackground")
     bg.inputs["Color"].default_value = (*BACKGROUND, 1)
     bg.inputs["Strength"].default_value = 1.0
@@ -221,17 +224,18 @@ try:
     t0 = time.monotonic()
     bpy.ops.wm.read_factory_settings(use_empty=True)
     samples = int(os.environ.get("XD_SAMPLES") or 32)
-    sc = setup_scene(samples)
+    threads = int(os.environ.get("XD_THREADS") or 1)
+    sc = setup_scene(samples, threads)
     objs = import_parts(os.environ["XD_SCENE"])
     pts = points(objs)
     cam = bpy.data.objects.new("xd-camera", bpy.data.cameras.new("xd-camera"))
     sc.collection.objects.link(cam)
     sc.camera = cam
     lights = []
-    for name, energy in (("key", 3.2), ("fill", 1.2), ("rim", 1.5)):
+    # strengths: a face lit head-on stays at or below its kind colour (Standard view transform)
+    for name, energy in (("key", 2.2), ("fill", 0.7), ("rim", 0.8)):
         ld = bpy.data.lights.new(f"xd-{name}", "SUN")
         ld.energy = energy
-        ld.angle = 0.15                                # soft shadows
         lo = bpy.data.objects.new(f"xd-{name}", ld)
         sc.collection.objects.link(lo)
         lights.append(lo)
@@ -253,7 +257,7 @@ try:
         mark(p, label + [v, f"{scales[v] / 1000:.3g} px/mm"], os.environ.get("XD_RELEASE") != "1",
              os.environ["XD_FONT"])
         secs[v] = round(time.monotonic() - t, 2)
-    out = {"ok": True, "painted": pix, "seconds": secs,
+    out = {"ok": True, "pixels": pix, "threads": threads, "seconds": secs,
            "render_scale": {k: round(x / 1000, 4) for k, x in scales.items()}, "total_seconds": round(time.monotonic() - t0, 2),
            "engine": "CYCLES", "device": "CPU", "samples": samples, "seed": 0, "parts": len(objs),
            "blender": bpy.app.version_string}

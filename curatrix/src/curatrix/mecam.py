@@ -142,8 +142,9 @@ def empty_views(res: dict) -> list[str]:
 
 
 def empty_renderings(res: dict) -> list[str]:
-    """The renderings of a cam-asm.py result without a painted facet (or not made at all)."""
-    painted = res.get("painted") or {}
+    """The renderings without anything drawn (or not made at all): ``painted`` = facets that won a
+    pixel (z-buffer), ``pixels`` = pixels off the background (Blender)."""
+    painted = res.get("painted") or res.get("pixels") or {}
     return sorted(v for v in VIEWS if not painted.get(v))
 
 
@@ -493,9 +494,10 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print, use_blender: bool = Tru
         except NewError as e:
             raise CamError(f"{name} (variant {vname}): {e}") from None
         if method == BLENDER_METHOD:
-            res["painted"], bl_info = render_blender(ws, glb, dest / "renderings", top / f"{vname}.blender.json",
+            res["pixels"], bl_info = render_blender(ws, glb, dest / "renderings", top / f"{vname}.blender.json",
                                                      [f"{name}  variant {v or 'all'}", ver], release, name, vname, log)
             res["render_scale"] = bl_info.get("render_scale") or {}
+            res["facets"] = (res.get("scene") or {}).get("triangles", 0)    # of the glTF
         if empty_views(res):
             raise CamError(f"{name} (variant {vname}): no visible edge in the view(s) {', '.join(empty_views(res))} "
                            f"(TechDraw did not compute them in FreeCADCmd); an empty view is never written as output")
@@ -529,6 +531,7 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print, use_blender: bool = Tru
                       "moves": res.get("moves") or {}, "bom_rows": len(rows),
                       "renderings": {v: f"{name}/{vname}/renderings/{v}.png" for v in VIEWS},
                       "painted": res.get("painted") or {}, "facets": res.get("facets", 0),
+                      **({"pixels": res.get("pixels") or {}} if method == BLENDER_METHOD else {}),
                       "render_scale": res.get("render_scale") or {},
                       **({"render_seconds": bl_info.get("seconds") or {}} if method == BLENDER_METHOD else {})}
     (top / "findings.json").write_text(json.dumps(findings(ws, cfg, folder, top), indent=2) + "\n", encoding="utf-8")
@@ -576,11 +579,12 @@ def render_blender(ws, glb: Path, dest: Path, result: Path, label: list[str], re
     try:
         r = blender.run_script(ws, ws.xdmod / BLENDER_SCRIPT, {
             "XD_SCENE": str(glb), "XD_OUT": str(dest), "XD_LABEL": json.dumps(label),
-            "XD_RELEASE": "1" if release else "", "XD_FONT": str(ws.xdmod / FONT)}, result)
+            "XD_RELEASE": "1" if release else "", "XD_FONT": str(ws.xdmod / FONT),
+            "XD_THREADS": str(blender.threads())}, result)
     except blender.BlenderError as e:
         raise CamError(f"{name} (variant {vname}): {e}; `curatrix cam --no-blender` uses the renderer "
                        f"without Blender") from None
-    return r.get("painted") or {}, r
+    return r.get("pixels") or {}, r
 
 
 def renderings_rec(method: str, release: bool, bl_info: dict) -> dict:
@@ -588,7 +592,7 @@ def renderings_rec(method: str, release: bool, bl_info: dict) -> dict:
     rec = {"views": list(VIEWS), "method": method,
            "marking": "release" if release else "PREVIEW"}
     if method == BLENDER_METHOD:
-        rec.update({k: bl_info.get(k) for k in ("blender", "engine", "device", "samples", "seed")})
+        rec.update({k: bl_info.get(k) for k in ("blender", "engine", "device", "samples", "seed", "threads")})
         rec["pinned"] = False            # a system package: local output only, never compared
     return rec
 
