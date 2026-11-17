@@ -401,11 +401,24 @@ def cmd_new(a):
 
 
 def cmd_cam(a):
-    """Design output of a pcba/ project or a harness (`name`), or of all of them."""
-    from curatrix import cam, eeprojects, harness
+    """Design output of a pcba/ project or a harness (`name`), or of all of them; in an ME repo of a
+    top-level assembly (task 5.26)."""
+    from curatrix import cam, eeprojects, harness, meassemblies
     ws = _ws()
     repo = _repo(ws, a.repo)
     cfg = _cfg(ws, repo)
+    if (cfg.section("cad") or {}).get("freecad") and not (cfg.section("cad") or {}).get("projects"):
+        from curatrix import mecam
+        try:
+            if a.update_jobset:
+                raise cam.CamError("--update-jobset applies to pcba/ projects only")
+            if not meassemblies.top_folders(cfg):
+                raise cam.CamError(f"{repo.name} has no assembly (assemblies/<name>/)")
+            mecam.run(ws, repo, cfg, a.name)
+        except cam.CamError as e:
+            print(f"curatrix cam: {e}", file=sys.stderr)
+            return 1
+        return 0
     boards = {p.name for p in eeprojects.discover(cfg) if p.kind == "pcba"}
     harnesses = {h.name for h in harness.discover(cfg)} if harness.patterns(cfg) else set()
     try:
@@ -632,11 +645,13 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--no-freecad", action="store_true", help="asm: make only the folder and the document (tests)")
     s.set_defaults(func=cmd_new)
 
-    s = sub.add_parser("cam", help="EE design output into build/<area>/cam/<name>/<version>/: a pcba/ project (copy, "
+    s = sub.add_parser("cam", help="design output into build/<area>/cam/<name>/<version>/: EE a pcba/ project (copy, "
                                    "version, its jobset; local, needs KiCad) or a harness (WireViz diagram and BOM, "
-                                   "a separate process)")
-    s.add_argument("repo", help="the EE repo")
-    s.add_argument("name", nargs="?", help="one pcba/ project or harness (default: all)")
+                                   "a separate process); ME a top-level assembly (FreeCADCmd: STEP, 3MF/STL of the "
+                                   "printed parts with the version embossed, drawing SVG/PDF, exploded view, BOM; "
+                                   "per variant)")
+    s.add_argument("repo", help="the EE or ME repo")
+    s.add_argument("name", nargs="?", help="one pcba/ project, harness or assembly (default: all)")
     s.add_argument("--update-jobset", action="store_true",
                    help="write the project's jobset from the shared template and its variants, then stop")
     s.set_defaults(func=cmd_cam)

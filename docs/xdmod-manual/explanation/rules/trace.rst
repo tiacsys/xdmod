@@ -187,6 +187,14 @@ The principles of the trace model and the rules on the trace graph.
 
    The direct children of an assembly (the links in the group of the object with the ``ME-ASM`` ``TraceID``) do not overlap, per variant (a link with its own ``Configs`` is there only in the configurations it names): a common volume above 0.001 mm³ is an error, above 0.1 mm³ for parts joined by an assembly joint, which may touch. The skeleton link and library fasteners (an object in ``lib/`` with a ``Standard`` property) are left out. Other overlaps pass only when accepted in ``assemblies/<name>/accepted.yaml`` (rule ``overlap``, items the two link names). Each board model in an assembly stays inside its ``SYS-IF`` space budget, in the form the co-design task gives it; until then this part is not checked.
 
+.. xd-rule:: Printed parts carry the version
+   :id: XD-RULE-NEW-version
+   :tags: trace, cad
+   :status: valid
+   :decided_by: XD-ADR-0143, XD-ADR-0140
+
+   A printed part (an object with a ``PrintProfile`` naming a profile in ``print/``) has exactly one version mark in its document: an LCS with ``Role = version-emboss``, a ``TextSize`` and a ``MaxWidth``, on the face that carries the version. ``curatrix cam`` embosses the version of the assembly being exported there, at export only, in the font pinned in xdmod; the ``.FCStd`` stays unchanged, and the export fails unless the result is exactly one valid solid.
+
 .. xd-rule:: Connectors name their port and follow its pin map
    :id: XD-RULE-0050
    :tags: trace, cad

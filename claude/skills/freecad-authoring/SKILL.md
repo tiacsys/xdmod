@@ -58,6 +58,16 @@ success by a result file the script writes (FreeCADCmd exits 0 when a script rai
 raising script twice); open the skeleton before the top document (through the top it loads only
 partially); save a document before a cross-document link or expression points from it.
 
+## Printed parts and design output (task 5.26; XD-ADR-0143)
+
+- A printed part has the properties `PrintProfile` (the name of `print/<name>.ini` in the repo)
+  and `Material` (group `BOM`), and one version mark in its document: an LCS `VersionMark` with
+  `Role = version-emboss`, `TextSize`, `MaxWidth` (optional `EmbossDepth`, default 0.6 mm) on the
+  face for the version, its z axis out of the part (CK-F19). Never emboss in the `.FCStd`.
+- `curatrix cam robarm-me <asm>` writes the output under `build/robarm-me/cam/<asm>/<version>/`;
+  the exploded view takes its moves from `assemblies/<asm>/explode.yaml` (`{link name: [dx, dy,
+  dz]}`, mm) if it exists. Version tags `<asm>/vX.Y.Z` are the owner's; agents propose them.
+
 ## To be added
 
 Part presence by `Configs` and variant rows in `Params`; recompute, solid and collision checks

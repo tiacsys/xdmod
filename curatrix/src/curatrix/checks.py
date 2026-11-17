@@ -131,6 +131,8 @@ BUILTIN = [
      _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_collisions"),
     ("CK-F18", "board models inside their space budget (a skip with its reason until task 5.28)",
      _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_space_budget"),
+    ("CK-F19", "every printed part (PrintProfile) has a version mark (LCS with Role = version-emboss)",
+     _lv({"local": "warning", "pr": "warning"}), "cad.freecad", False, "c_version_face"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
     ("CK-H2", "no build output inside the repo", _lv({"local": "error", "pr": "error"}), None, False, "c_hygiene_build"),
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
@@ -596,6 +598,12 @@ def c_collisions(ctx: Ctx, r: Result):
 
 def c_space_budget(ctx: Ctx, r: Result):
     _me(ctx, r, "CK-F18")
+
+
+def c_version_face(ctx: Ctx, r: Result):
+    """CK-F19 (XD-ADR-0143): every printed part has its version mark (plain Python)."""
+    from curatrix import mecam
+    r.findings = mecam.version_faces(ctx.cfg)
 
 
 def c_jobset(ctx: Ctx, r: Result):

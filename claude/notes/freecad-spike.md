@@ -454,3 +454,15 @@ including `~/.config/FreeCAD/v1-1/user.cfg` at mtime `1794871415.85`, 20111 byte
 for the evidence rerun with curatrix alone setting the dirs: `out/isolation-before.txt` and
 `out/isolation-after.txt` are identical, md5 again `5e694d86...` (`out/isolation-diff.txt`). No
 `~/ksu-config.ini` exists. All FreeCAD state went to `.xdmod/freecad/`.
+
+## Follow-up in task 5.26: the TechDraw page in the GUI binary
+
+5.26 tried the full TechDraw page (template, three views of the canary assembly) in the GUI binary
+with `QT_QPA_PLATFORM=offscreen` (`curatrix run -m 4G -t 60s/90s -- FreeCAD page-gui.py`, copies of
+the canary documents under `build/me-proto/`). Without `Gui.updateGui()` the run ended (3 of 3),
+but the views had no edges (the hidden-line threads never delivered) and the exported PDF/SVG held
+no views. With `Gui.updateGui()` in the wait loop it hung until the timeout (2 of 2, exit 124), as in
+§5. So `curatrix cam` uses the fallback of XD-ADR-0137: the views come from `FreeCADCmd`
+(`TechDraw.viewPartAsSvg`, a page with the default template only to hold them), and curatrix
+composes the drawing sheet (frame, title block, views) as SVG and as a vector PDF in plain Python.
+Our own TechDraw template with editable fields is not used yet.
