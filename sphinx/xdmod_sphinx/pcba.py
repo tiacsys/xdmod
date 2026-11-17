@@ -58,10 +58,10 @@ class _Board:
             env.note_dependency(str(f))
 
     def variants(self) -> list[dict]:
-        """KiCad's variants (``.kicad_pro``) in the order of the model, not KiCad's: ``default``
-        first, then the variants that serve a configuration (by configuration), then the other
-        variants of the board def; a variant the model does not name keeps KiCad's order after them.
-        Without model variants for this board, KiCad's order with ``default`` first."""
+        """KiCad's variants (``.kicad_pro``) in the order of the model, not KiCad's (xdmod#69 finding 11):
+        ``default`` first, then the variant defs that serve a configuration by their lowest
+        ``SYS-CFG`` ID, then the other variant defs by qualified name, then the variants only KiCad
+        names, in KiCad's order. Without model variants for this board: KiCad's order, ``default`` first."""
         d = json.loads(self.pr.pro.read_text(encoding="utf-8"))
         vs = [v for v in ((d.get("schematic") or {}).get("variants") or []) if v.get("name")]
         rank = {n: i for i, n in enumerate(self.model_variants())}
@@ -76,7 +76,7 @@ class _Board:
             return []
         self.env.note_dependency(str(mj))
         vs = [v for v in _cur("domvariants").variants(_cur("model").Model.load(mj))[0] if v.owner == tid and v.name]
-        return [v.name for v in sorted(vs, key=lambda v: (not v.configs, sorted(v.configs), v.qn))]
+        return [v.name for v in sorted(vs, key=lambda v: (not v.configs, min(v.configs, default=""), v.qn))]
 
     def parts(self):
         return _cur("bom").read(self.pr.sch)

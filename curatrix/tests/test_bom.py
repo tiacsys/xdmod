@@ -237,6 +237,37 @@ def test_board_variants_default_first_then_model_order(tmp_path):
     assert [v["name"] for v in b.variants()] == ["default", "y", "alt", "x"]
 
 
+def _board_on_model(tmp_path, model_json: bytes, trace_id: str, kicad: list[str]):
+    sys.path.insert(0, str(FIXTURES.parents[2] / "sphinx"))
+    from xdmod_sphinx import pcba
+    mj = tmp_path / "model.json"
+    mj.write_bytes(model_json)
+    pro = tmp_path / "b.kicad_pro"
+    pro.write_text(json.dumps({"schematic": {"variants": [{"name": n} for n in kicad]}}))
+    b = pcba._Board.__new__(pcba._Board)
+    b.pr = type("Pr", (), {"pro": pro, "variables": lambda self: {"TraceID": trace_id}})()
+    b.cfg = type("Cfg", (), {"section": lambda self, n: {"json": "model.json"} if n == "model" else None,
+                             "resolve": lambda self, p: tmp_path / p})()
+    b.env = type("Env", (), {"note_dependency": lambda self, f: None})()
+    return b
+
+
+def test_board_variants_from_a_real_model(tmp_path):
+    """model_variants() on Pilot output: the canary (KiCad lists alt first; the model puts default
+    first) and the domain fixture (std serves SYS-CFG-0001, so it comes before fast, though
+    `fast` < `std`; a KiCad-only variant comes last)."""
+    import gzip
+    canary = gzip.decompress((FIXTURES / "variants" / "canary-ee.json.gz").read_bytes())
+    b = _board_on_model(tmp_path, canary, "EE-PCBA-0001", ["alt", "default"])
+    assert b.model_variants() == ["default", "alt"]
+    assert [v["name"] for v in b.variants()] == ["default", "alt"]
+    fx = (FIXTURES / "sysml" / "domain" / "ee-model.json").read_bytes()
+    b = _board_on_model(tmp_path, fx, "EE-PCBA-0001", ["kicadonly", "fast", "std"])
+    assert b.model_variants() == ["std", "fast"]
+    assert [v["name"] for v in b.variants()] == ["std", "fast", "kicadonly"]
+    assert _board_on_model(tmp_path, fx, "EE-PCBA-0099", ["b", "a"]).model_variants() == []
+
+
 def test_harness_links_use_the_zdocs_intersphinx_name(tmp_path):
     """zdocs names a peer's inventory by its registry prefix, else its ID with `_` (pcba_canary_board)."""
     sys.path.insert(0, str(FIXTURES.parents[2] / "sphinx"))

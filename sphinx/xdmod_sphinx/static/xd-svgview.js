@@ -31,8 +31,10 @@
     svg.style.height = Math.max(h, 120) + "px";
   }
 
+  var instances = 0;
+
   function panZoom(svg, inPopup) {
-    return window.svgPanZoom(svg, {
+    var pz = window.svgPanZoom(svg, {
       controlIconsEnabled: true,
       mouseWheelZoomEnabled: inPopup,
       dblClickZoomEnabled: inPopup,
@@ -40,6 +42,34 @@
       center: true,
       minZoom: 0.2,
       maxZoom: 40
+    });
+    // svg-pan-zoom gives its buttons fixed ids (svg-pan-zoom-zoom-in, ...) in every picture: number them
+    var n = ++instances;
+    Array.prototype.forEach.call(svg.querySelectorAll('[id^="svg-pan-zoom-"]'), function (el) {
+      el.id += "-" + n;
+    });
+    return pz;
+  }
+
+  // The pop-up holds a copy of a picture that is still in the page: its ids get a prefix, and the
+  // references to them inside the copy (url(#id), href="#id") follow, so every id stays unique.
+  function prefixIds(svg, prefix) {
+    var ids = {};
+    Array.prototype.forEach.call(svg.querySelectorAll("[id]"), function (el) {
+      ids[el.id] = true;
+      el.id = prefix + el.id;
+    });
+    var ref = /url\(\s*['"]?#([^'")\s]+)['"]?\s*\)|^#(.+)$/g;
+    Array.prototype.forEach.call(svg.querySelectorAll("*"), function (el) {
+      Array.prototype.forEach.call(el.attributes, function (a) {
+        if (a.value.indexOf("#") < 0) return;
+        var v = a.value.replace(ref, function (m, u, h) {
+          var id = u || h;
+          if (!ids[id]) return m;            // a link to an anchor of the page (a need) stays
+          return u ? "url(#" + prefix + id + ")" : "#" + prefix + id;
+        });
+        if (v !== a.value) el.setAttributeNS(a.namespaceURI, a.name, v);
+      });
     });
   }
 
@@ -81,7 +111,8 @@
     var stage = overlay.querySelector(".xd-svgview-stage");
     stage.innerHTML = fig.xdSvgSource;
     var svg = stage.querySelector("svg");
-    svg.removeAttribute("id");                 // the page's copy keeps its id
+    svg.removeAttribute("id");                 // the page's copy keeps its ids
+    prefixIds(svg, "xd-svgview-");
     svg.removeAttribute("width");
     svg.removeAttribute("height");
     svg.style.width = "100%";
@@ -113,9 +144,16 @@
     svg.removeAttribute("height");
     sizeInline(fig, svg, vb);
     var pz = panZoom(svg, false);
+    fig.classList.add("xd-zoom-on");
     window.addEventListener("resize", function () {
+      // keep the reader's zoom and the point in the middle of the picture
+      var z = pz.getZoom(), pan = pz.getPan(), s0 = pz.getSizes();
+      var cx = (s0.width / 2 - pan.x) / s0.realZoom, cy = (s0.height / 2 - pan.y) / s0.realZoom;
       sizeInline(fig, svg, vb);
       pz.resize(); pz.fit(); pz.center();
+      pz.zoom(z);
+      var s1 = pz.getSizes();
+      pz.pan({ x: s1.width / 2 - cx * s1.realZoom, y: s1.height / 2 - cy * s1.realZoom });
     });
   }
 
