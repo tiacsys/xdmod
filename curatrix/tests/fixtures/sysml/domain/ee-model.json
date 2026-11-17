@@ -7958,22 +7958,34 @@
      "@id": "EeVariants/7/0"
     },
     {
-     "@id": "EeVariants::ServoA"
+     "@id": "EeVariants::ComboX"
     },
     {
      "@id": "EeVariants/9/0"
     },
     {
+     "@id": "EeVariants/10/0"
+    },
+    {
+     "@id": "EeVariants::ServoA"
+    },
+    {
+     "@id": "EeVariants/12/0"
+    },
+    {
      "@id": "EeVariants::ServoB"
     },
     {
-     "@id": "EeVariants/11/0"
+     "@id": "EeVariants/14/0"
     },
     {
      "@id": "EeVariants::ServoC"
     },
     {
-     "@id": "EeVariants/13/0"
+     "@id": "EeVariants/16/0"
+    },
+    {
+     "@id": "EeVariants/17/0"
     }
    ],
    "ownedRelationship": [
@@ -8018,6 +8030,18 @@
     },
     {
      "@id": "EeVariants/13"
+    },
+    {
+     "@id": "EeVariants/14"
+    },
+    {
+     "@id": "EeVariants/15"
+    },
+    {
+     "@id": "EeVariants/16"
+    },
+    {
+     "@id": "EeVariants/17"
     }
    ],
    "qualifiedName": "EeVariants"
@@ -8094,6 +8118,236 @@
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
+    "@id": "EeVariants/10/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants/10/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants/10/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants/10/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/10/0"
+  },
+  "payload": {
+   "@id": "EeVariants/10/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "EeVariants::ComboX"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/10"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ComboX"
+    },
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::drv1"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ComboX"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::drv1"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::drv1"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/11"
+  },
+  "payload": {
+   "@id": "EeVariants/11",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::ServoA"
+   },
+   "memberName": "ServoA",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/12"
+  },
+  "payload": {
+   "@id": "EeVariants/12",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants/12/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants/12/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants/12/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants/12/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/12/0"
+  },
+  "payload": {
+   "@id": "EeVariants/12/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/12"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoA"
+    },
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/13"
+  },
+  "payload": {
+   "@id": "EeVariants/13",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
     "@id": "EeVariants::ServoB"
    },
    "memberName": "ServoB",
@@ -8127,21 +8381,21 @@
  },
  {
   "identity": {
-   "@id": "EeVariants/11"
+   "@id": "EeVariants/14"
   },
   "payload": {
-   "@id": "EeVariants/11",
+   "@id": "EeVariants/14",
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
-    "@id": "EeVariants/11/0"
+    "@id": "EeVariants/14/0"
    },
    "membershipOwningNamespace": {
     "@id": "EeVariants"
    },
    "ownedRelatedElement": [
     {
-     "@id": "EeVariants/11/0"
+     "@id": "EeVariants/14/0"
     }
    ],
    "relatedElement": [
@@ -8149,7 +8403,7 @@
      "@id": "EeVariants"
     },
     {
-     "@id": "EeVariants/11/0"
+     "@id": "EeVariants/14/0"
     }
    ],
    "source": [
@@ -8159,17 +8413,17 @@
    ],
    "target": [
     {
-     "@id": "EeVariants/11/0"
+     "@id": "EeVariants/14/0"
     }
    ]
   }
  },
  {
   "identity": {
-   "@id": "EeVariants/11/0"
+   "@id": "EeVariants/14/0"
   },
   "payload": {
-   "@id": "EeVariants/11/0",
+   "@id": "EeVariants/14/0",
    "@type": "Dependency",
    "client": [
     {
@@ -8184,7 +8438,7 @@
     "@id": "EeVariants"
    },
    "owningRelationship": {
-    "@id": "EeVariants/11"
+    "@id": "EeVariants/14"
    },
    "relatedElement": [
     {
@@ -8222,10 +8476,10 @@
  },
  {
   "identity": {
-   "@id": "EeVariants/12"
+   "@id": "EeVariants/15"
   },
   "payload": {
-   "@id": "EeVariants/12",
+   "@id": "EeVariants/15",
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
@@ -8262,21 +8516,21 @@
  },
  {
   "identity": {
-   "@id": "EeVariants/13"
+   "@id": "EeVariants/16"
   },
   "payload": {
-   "@id": "EeVariants/13",
+   "@id": "EeVariants/16",
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
-    "@id": "EeVariants/13/0"
+    "@id": "EeVariants/16/0"
    },
    "membershipOwningNamespace": {
     "@id": "EeVariants"
    },
    "ownedRelatedElement": [
     {
-     "@id": "EeVariants/13/0"
+     "@id": "EeVariants/16/0"
     }
    ],
    "relatedElement": [
@@ -8284,7 +8538,7 @@
      "@id": "EeVariants"
     },
     {
-     "@id": "EeVariants/13/0"
+     "@id": "EeVariants/16/0"
     }
    ],
    "source": [
@@ -8294,17 +8548,17 @@
    ],
    "target": [
     {
-     "@id": "EeVariants/13/0"
+     "@id": "EeVariants/16/0"
     }
    ]
   }
  },
  {
   "identity": {
-   "@id": "EeVariants/13/0"
+   "@id": "EeVariants/16/0"
   },
   "payload": {
-   "@id": "EeVariants/13/0",
+   "@id": "EeVariants/16/0",
    "@type": "Dependency",
    "client": [
     {
@@ -8319,7 +8573,7 @@
     "@id": "EeVariants"
    },
    "owningRelationship": {
-    "@id": "EeVariants/13"
+    "@id": "EeVariants/16"
    },
    "relatedElement": [
     {
@@ -8351,6 +8605,92 @@
     },
     {
      "@id": "lib:Sys::Arm::ctrlA"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/17"
+  },
+  "payload": {
+   "@id": "EeVariants/17",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants/17/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants/17/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants/17/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants/17/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/17/0"
+  },
+  "payload": {
+   "@id": "EeVariants/17/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/17"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoA"
+    },
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:Sys::Arm::servo1"
     }
    ]
   }
@@ -8769,15 +9109,15 @@
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
-    "@id": "EeVariants::ServoA"
+    "@id": "EeVariants::ComboX"
    },
-   "memberName": "ServoA",
+   "memberName": "ComboX",
    "membershipOwningNamespace": {
     "@id": "EeVariants"
    },
    "ownedRelatedElement": [
     {
-     "@id": "EeVariants::ServoA"
+     "@id": "EeVariants::ComboX"
     }
    ],
    "relatedElement": [
@@ -8785,7 +9125,7 @@
      "@id": "EeVariants"
     },
     {
-     "@id": "EeVariants::ServoA"
+     "@id": "EeVariants::ComboX"
     }
    ],
    "source": [
@@ -8795,7 +9135,7 @@
    ],
    "target": [
     {
-     "@id": "EeVariants::ServoA"
+     "@id": "EeVariants::ComboX"
     }
    ]
   }
@@ -8848,7 +9188,7 @@
    "@type": "Dependency",
    "client": [
     {
-     "@id": "EeVariants::ServoA"
+     "@id": "EeVariants::ComboX"
     }
    ],
    "isLibraryElement": false,
@@ -8863,18 +9203,24 @@
    },
    "relatedElement": [
     {
-     "@id": "EeVariants::ServoA"
+     "@id": "EeVariants::ComboX"
     },
     {
      "@id": "lib:Sys::Basic"
     },
     {
-     "@id": "lib:Sys::Arm::servo1"
+     "@id": "lib:Sys::Full"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlB"
     }
    ],
    "source": [
     {
-     "@id": "EeVariants::ServoA"
+     "@id": "EeVariants::ComboX"
     }
    ],
    "supplier": [
@@ -8882,7 +9228,13 @@
      "@id": "lib:Sys::Basic"
     },
     {
-     "@id": "lib:Sys::Arm::servo1"
+     "@id": "lib:Sys::Full"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlB"
     }
    ],
    "target": [
@@ -8890,9 +9242,366 @@
      "@id": "lib:Sys::Basic"
     },
     {
-     "@id": "lib:Sys::Arm::servo1"
+     "@id": "lib:Sys::Full"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlB"
     }
    ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ComboX"
+  },
+  "payload": {
+   "@id": "EeVariants::ComboX",
+   "@type": "PartDefinition",
+   "declaredName": "ComboX",
+   "feature": [
+    {
+     "@id": "EeVariants::ComboX::variantName"
+    },
+    {
+     "@id": "EeBoards::ComboBoard2::servoOut"
+    },
+    {
+     "@id": "EeBoards::ComboBoard2::bus"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "ComboX",
+   "ownedFeature": [
+    {
+     "@id": "EeVariants::ComboX::variantName"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeVariants::ComboX::variantName"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::ComboX/0"
+    },
+    {
+     "@id": "EeVariants::ComboX/1"
+    },
+    {
+     "@id": "EeVariants::ComboX/2"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/8"
+   },
+   "qualifiedName": "EeVariants::ComboX"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ComboX/0"
+  },
+  "payload": {
+   "@id": "EeVariants::ComboX/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "EeBoards::ComboBoard2"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ComboX"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ComboX"
+    },
+    {
+     "@id": "EeBoards::ComboBoard2"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ComboX"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ComboX"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::ComboX"
+   },
+   "superclassifier": {
+    "@id": "EeBoards::ComboBoard2"
+   },
+   "target": [
+    {
+     "@id": "EeBoards::ComboBoard2"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ComboX/1"
+  },
+  "payload": {
+   "@id": "EeVariants::ComboX/1",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ComboX"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ComboX"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ComboX"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ComboX"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::ComboX"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ComboX/2"
+  },
+  "payload": {
+   "@id": "EeVariants::ComboX/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::ComboX::variantName"
+   },
+   "memberName": "variantName",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants::ComboX"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::ComboX::variantName"
+    }
+   ],
+   "owningType": {
+    "@id": "EeVariants::ComboX"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ComboX"
+    },
+    {
+     "@id": "EeVariants::ComboX::variantName"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ComboX"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::ComboX::variantName"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ComboX::variantName"
+  },
+  "payload": {
+   "@id": "EeVariants::ComboX::variantName",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "variantName",
+   "ownedMember": [
+    {
+     "@id": "EeVariants::ComboX::variantName/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::ComboX::variantName/0"
+    },
+    {
+     "@id": "EeVariants::ComboX::variantName/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants::ComboX"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants::ComboX"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants::ComboX/2"
+   },
+   "owningType": {
+    "@id": "EeVariants::ComboX"
+   },
+   "qualifiedName": "EeVariants::ComboX::variantName",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ComboX::variantName/0"
+  },
+  "payload": {
+   "@id": "EeVariants::ComboX::variantName/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ComboX::variantName"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ComboX::variantName"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ComboX::variantName"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ComboX::variantName"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ComboX::variantName/1"
+  },
+  "payload": {
+   "@id": "EeVariants::ComboX::variantName/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "EeVariants::ComboX::variantName"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::ComboX::variantName/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants::ComboX::variantName"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::ComboX::variantName/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ComboX::variantName"
+    },
+    {
+     "@id": "EeVariants::ComboX::variantName/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ComboX::variantName"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::ComboX::variantName/1/0"
+    }
+   ],
+   "value": {
+    "@id": "EeVariants::ComboX::variantName/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ComboX::variantName/1/0"
+  },
+  "payload": {
+   "@id": "EeVariants::ComboX::variantName/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants::ComboX::variantName"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants::ComboX::variantName"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants::ComboX::variantName/1"
+   },
+   "value": "x"
   }
  },
  {
@@ -9646,7 +10355,7 @@
     "@id": "EeVariants"
    },
    "owningRelationship": {
-    "@id": "EeVariants/8"
+    "@id": "EeVariants/11"
    },
    "qualifiedName": "EeVariants::ServoA"
   }
@@ -9994,7 +10703,7 @@
     "@id": "EeVariants"
    },
    "owningRelationship": {
-    "@id": "EeVariants/10"
+    "@id": "EeVariants/13"
    },
    "qualifiedName": "EeVariants::ServoB"
   }
@@ -10329,7 +11038,7 @@
     "@id": "EeVariants"
    },
    "owningRelationship": {
-    "@id": "EeVariants/12"
+    "@id": "EeVariants/15"
    },
    "qualifiedName": "EeVariants::ServoC"
   }
@@ -10470,6 +11179,19 @@
    "isLibraryElement": true,
    "name": "ctrlB",
    "qualifiedName": "Sys::Arm::ctrlB"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:Sys::Arm::drv1"
+  },
+  "payload": {
+   "@id": "lib:Sys::Arm::drv1",
+   "@type": "PartUsage",
+   "declaredName": "drv1",
+   "isLibraryElement": true,
+   "name": "drv1",
+   "qualifiedName": "Sys::Arm::drv1"
   }
  },
  {

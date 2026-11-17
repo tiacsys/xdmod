@@ -46,7 +46,7 @@ checks:
   CK-B8:
     need: XD-CHECK-0034
     enforces: [XD-RULE-0048]
-    description: "Variants across levels, against the published system model: exactly one domain variant per configuration and usage; the variant names only configurations and usages of what its board or assembly realizes; it exists in the KiCad project or FreeCAD configuration table; Zephyr board variants map to board variants by name; at most two variants per board or assembly. The computed table \"configuration -> variant per usage\" is in the check's log."
+    description: "Variants across levels, against the published system model: exactly one domain variant per configuration and usage; pairs are built per realized system def; the variant serves only such pairs and every dependency names a configuration and a usage; every named variant (also an unused one) exists in the KiCad project or FreeCAD configuration table; an upstream model without configurations is a finding; Zephyr board variants map to board variants by name; at most two variants per board or assembly. The computed table \"configuration -> variant per usage\" is in the check's log."
   CK-B5:
     need: XD-CHECK-0010
     enforces: [XD-RULE-0016]

@@ -91,3 +91,47 @@ def test_freecad_configuration_table(tmp_path):
     with zipfile.ZipFile(f, "w") as z:
         z.writestr("Document.xml", doc)
     assert dv.freecad_variants(f) == ["short", "long"]
+
+
+def test_pairs_per_realized_def():
+    """ComboBoard2 realizes Controller (Basic, Full) and Driver (Basic only): drv1 needs a variant
+    in Basic, not in Full (no cross product over the realized defs)."""
+    m, up = models()
+    f, rows = dv.check(m, up)
+    t = {(r.config, r.usage) for r in rows if r.owner == "EE-PCBA-0005"}
+    assert ("SYS-CFG-0001", "Sys::Arm::drv1") in t and ("SYS-CFG-0002", "Sys::Arm::drv1") not in t
+    assert not [x for x in f if "ComboX" in x and "KiCad" not in x], f
+
+
+def test_dependency_without_configuration_is_a_finding():
+    m, up = models()
+    f, _ = dv.check(m, up)
+    assert "EeVariants::ServoA: a dependency names usages but no configuration (SYS-CFG)" in f, f
+
+
+def test_upstream_without_configurations_is_a_finding():
+    m, _ = models()
+    data = json.loads((DOMAIN / "sys-model.json").read_text())
+    for x in data:
+        if str(x["payload"].get("declaredShortName", "")).startswith("SYS-CFG-"):
+            del x["payload"]["declaredShortName"]
+    f, rows = dv.check(m, [model.Model(data)])
+    assert rows == [] and any(x.startswith("the upstream model has no configuration") for x in f), f
+
+
+def test_unused_variant_is_checked_against_kicad(tmp_path):
+    """A variant that serves no pair is not reported as unused, but it must be in KiCad."""
+    data = json.loads((DOMAIN / "ee-model.json").read_text())
+    data = [x for x in data if not (x["payload"].get("@type") == "Dependency" and
+                                    x["payload"].get("client") == [{"@id": "EeVariants::CtrlFast"}])]
+    m, up = model.Model(data), models()[1]
+    f, _ = dv.check(m, up, [project(tmp_path, "controller-board", "EE-PCBA-0001", ["std"])])
+    assert any(x.startswith("EeVariants::CtrlFast: variant 'fast' is not in") for x in f), f
+
+
+def test_two_projects_for_one_board(tmp_path):
+    m, up = models()
+    roots = [project(tmp_path, "a-board", "EE-PCBA-0001", ["std", "fast"]),
+             project(tmp_path, "b-board", "EE-PCBA-0001", ["std", "fast"])]
+    f, _ = dv.check(m, up, roots)
+    assert any("more than one KiCad project names EE-PCBA-0001" in x for x in f), f

@@ -31,7 +31,10 @@ package Sys {
         part ctrlA : Controller;
         part ctrlB : Controller;
         part servo1 : Servo;
+        part drv1 : Driver;
     }
+    // Basic also configures Driver, Full does not: pairs are per realized def (ComboBoard)
+    dependency from Basic to Driver;
     // a nested package: not a top package (top_packages counts brace depth)
     package Detail {
         part def <'SYS-EL-0003'> Sensor {

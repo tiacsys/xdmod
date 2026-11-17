@@ -91,7 +91,9 @@ model:                              # CK-E1, CK-D2 (needs the Pilot), CK-B4 (var
   upstream: ["{ws}/myproj-syseng/generated/model.json"]   # domain models: the upstream's committed model JSON (CK-E4, CK-B8)
 
 variants:                           # CK-B8 variants across levels (domain repos; needs model.upstream, reads cad.kicad / cad.freecad)
-  zephyr: ["{ws}/myproj-sw/boards"] # optional: Zephyr board roots; their board.yml variants map to board variants by name
+  zephyr: ["{ws}/myproj-sw/boards"] # optional: Zephyr board roots; their board.yml variants map to board variants by name.
+                                    # Zephyr board = KiCad project name, lower case, `-` as `_`; `outer/inner` counts as `inner`;
+                                    # a Zephyr board without such a project is ignored
 
 stubs:                              # CK-D1
   out: model/generated/NeedStubs.sysml   # default
