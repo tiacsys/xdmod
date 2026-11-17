@@ -51,6 +51,7 @@ EDGE_STYLE = {
     "include": "dashed=1;endArrow=open;",
     "association": "endArrow=none;",
     "connection": "endArrow=none;",
+    "allocation": "dashed=1;endArrow=open;",
 }
 LEGEND = {
     "general": "Legend (SysML v2 general view): sharp box = definition, rounded box = usage, dashed = reference usage; "
@@ -70,6 +71,21 @@ LEGEND = {
                        "shown; rounded box = part usage (name : definition; colour = layer: blue functional, green "
                        "logical, yellow product); small squares = ports, conjugated (~) ports on the entry side (left or top); lines = "
                        "connections and interfaces between ports; thick arrow = flow. A box with a need ID links to its page.",
+    "decomposition": "Legend (decomposition, a SysML v2 general view of the part tree): sharp box = the definition "
+                     "(«keyword», <need ID>, name); rounded box = part usage (name : definition; colour = layer: blue "
+                     "functional, green logical, yellow product); filled diamond = composite feature (the owner holds "
+                     "the part). A box with a need ID links to its page.",
+    "context": "Legend (system context, a SysML v2 interconnection view of the context part): frame = the context; "
+               "rounded box = the system or an actor or external system around it (name : definition; colour = "
+               "layer); small squares = ports; lines = connections and interfaces between ports; thick arrow = flow. "
+               "A box with a need ID links to its page.",
+    "allocation": "Legend (allocation): white = the domain model, grey = the system model it refines; "
+                  "sharp box = definition with its «keyword» and <need ID>; dashed arrow = trace link from the "
+                  "concrete to the abstract element, labelled with the link type («realizes», «conforms», "
+                  "«part of»), derived from :> specialization, dependency and allocate. A box links to its need.",
+    "variants": "Legend (variants): sharp box = definition (grey: of the system model), rounded = usage; hollow triangle = the variant "
+                "specializes the definition (its variantName and documentation inside); dashed «serves» arrow = "
+                "the configuration and system usage the variant serves. A box with a need ID links to its page.",
     "usecases": "Legend (SysML v2 use cases): stick figure = actor (its part definition); ellipse = use case "
                 "definition; frame = subject; line = the actor takes part; dashed «include» arrow = included use case.",
 }
@@ -100,7 +116,13 @@ def to_elk(g: dict) -> dict:
         if kids:
             el.pop("width"), el.pop("height")
             el["children"] = [box(k) for k in kids]
-            el["layoutOptions"].update({"elk.padding": f"[top={n['header_h'] + 14},left=24,bottom=20,right=24]",
+            # a frame with ports of its own (a board, an assembly): room for their names inside
+            lw = {sd: max([len(p["label"]) for p in n["ports"] if p["side"] == sd] or [0]) * 6 for sd in
+                  ("WEST", "EAST", "NORTH", "SOUTH")}
+            top = n["header_h"] + 14 + (16 if lw["NORTH"] else 0)
+            left, right = (24 + (round(lw[sd]) + 8 if lw[sd] else 0) for sd in ("WEST", "EAST"))
+            bottom = 20 + (16 if lw["SOUTH"] else 0)
+            el["layoutOptions"].update({"elk.padding": f"[top={top},left={left},bottom={bottom},right={right}]",
                                         "elk.direction": direction})
         return el
 
@@ -138,7 +160,7 @@ def to_elk(g: dict) -> dict:
                               # state machines and interconnections: room for transition labels
                               # and port names between the boxes
                               **({"elk.spacing.nodeNode": "48", "elk.layered.spacing.nodeNodeBetweenLayers": "72"}
-                                 if g["kind"] in ("statetransition", "interconnection") else {}),
+                                 if g["kind"] in ("statetransition", "interconnection", "context", "allocation", "variants") else {}),
                               # long chains: cut the layers into rows (or columns) towards a 4:3 canvas
                               **({"elk.layered.wrapping.strategy": "MULTI_EDGE", "elk.aspectRatio": "1.33",
                                   "elk.layered.wrapping.additionalEdgeSpacing": "16"}
