@@ -10,7 +10,7 @@ IDs follow the scheme in `id-scheme.md` (task 3.2).
    Backlinks ("refined by", "verified by") are only ever computed.
 2. **Every link type is declared only on the need type that owns it** (D36, D64h). There is no global link table.
    A link written on the wrong side is a build error, and so is a link to an unknown ID or a wrong target type. The spike proved all three.
-3. **Interfaces between peer domains live in syseng** as interface needs (`SYS-IF`). Both domains link to them; neither domain links to the other (D36). Two exceptions (Phase 5): **SW reads the board pin maps from the EE model** and may link to `EE-PCBA` / `EE-PORT`, EE never links to SW (XD-ADR-0131); **ME writes board geometry into EE's KiCad project**, only inside a co-design change and without any trace link (XD-ADR-0134, proposed).
+3. **Interfaces between peer domains live in syseng** as interface needs (`SYS-IF`). Both domains link to them; neither domain links to the other (D36). Two exceptions (Phase 5): **SW reads the board pin maps from the EE model** and may link to `EE-PCBA` / `EE-PORT`, EE never links to SW (XD-ADR-0131); **ME writes board geometry into EE's KiCad project**, only inside a co-design change and without any trace link (XD-ADR-0134).
 4. **Allocation is stored on the concrete side.** A product-layer element `realizes` the logical element it was allocated from (D36, D102).
 5. **Variants follow VAMOS through PLEML** (D102, `variants.md`). The core is the functional and logical architecture. Variants live in the 150 % product architecture. Elements carry `configs`, and requirements carry `where` (D103).
 6. **Generated needs** (from SysML, KiCad, FreeCAD, code and test results) follow the same rules as authored needs.
