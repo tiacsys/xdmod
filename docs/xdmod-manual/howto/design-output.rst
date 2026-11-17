@@ -65,8 +65,16 @@ jobset there (the shared template, CK-F10). Title blocks show ``${XD_BOARD}`` as
 
 The run fails when a job fails or fewer jobs ran than the jobset has. After you add a variant, write
 the jobset again with ``curatrix cam robarm-ee <board> --update-jobset``. STEP and renderings show
-the parts only when the KiCad 3D models are in the workspace (role ``ee3d`` or ``full``); otherwise
-the board is bare and ``curatrix doctor`` says so.
+the parts only when the KiCad 3D models are in the workspace (``libs/kicad/packages3D``, the west
+group ``kicad-3d``, about 1.8 GB). Only the roles ``ee3d`` and ``full`` include that group; the roles
+``ee``, ``me`` and ``integration`` leave it out, though they can run ``curatrix cam``. Without the
+models KiCad renders the bare board without a message, so curatrix says it in four places:
+``curatrix doctor`` warns in every role that runs design output (``ee``, ``ee3d``, ``me``,
+``integration``, ``full``); ``curatrix cam`` prints a warning, records ``kicad_3d_models``
+(``present``, ``partial``, ``missing`` or ``none``) and the missing model paths in ``cam.json``, and
+puts a red banner on every ``render-*.png``; and the board document's renderings section shows a
+warning. To get the models: ``curatrix bootstrap --role full --adopt`` (or ``--role ee3d``), then
+run ``curatrix cam`` again.
 
 A harness (``harness/<name>/<name>.yml``) gets its WireViz diagram (``<name>.svg``, ``.png``) with
 the version as label and its BOM (``<name>.bom.tsv``) (:need:`XD-ADR-0127`).
