@@ -44,7 +44,7 @@ def find_board(cfg, element: str) -> tuple[str, str]:
                        f"def of the EE model (XD-ADR-0128)")
     mj = cfg.resolve(s.get("json", "generated/model.json"))
     if not mj.exists():
-        raise NewError(f"{mj} missing; run `curatrix gen model {cfg.repo.name}`")
+        raise NewError(f"{cfg.repo.name}/{mj.relative_to(cfg.repo)} missing; run `curatrix gen model {cfg.repo.name}`")
     m = modelmod.Model.load(mj)
     boards, externals, _ = eeprojects.model_defs(m)
     for bid, p in boards.items():
@@ -54,7 +54,7 @@ def find_board(cfg, element: str) -> tuple[str, str]:
         if element in (p.get("name"), p.get("qualifiedName")):
             raise NewError(f"{element} is an external part: it has ports, but no KiCad project (XD-ADR-0135)")
     known = ", ".join(sorted(p.get("name") for p in boards.values())) or "none"
-    raise NewError(f"no board def {element!r} in {mj} (board defs: {known}); add `part def <'EE-PCBA-NEW-x'> "
+    raise NewError(f"no board def {element!r} in {cfg.repo.name}/{mj.relative_to(cfg.repo)} (board defs: {known}); add `part def <'EE-PCBA-NEW-x'> "
                    f"{element} :> <system block>, XdDomain::Pcba` to the model, `curatrix ids fix`, `curatrix gen model`")
 
 
@@ -94,17 +94,8 @@ def add_registry_entry(registry: Path, doc_id: str, title: str, project: str) ->
     return True
 
 
-def new_pcba(ws, repo, cfg, element: str, kicad: bool = True, log=print) -> Path:
+def _make_project(ws, folder: Path, tmpl: Path, values: dict, name: str, kicad: bool, log) -> None:
     from curatrix import limits
-    name_el, bid = find_board(cfg, element)
-    name = eeprojects.kebab(name_el)
-    folder = cfg.repo / "pcba" / name
-    if folder.exists():
-        raise NewError(f"{ws.rel(folder)} exists")
-    tmpl = ws.xdmod / "templates" / "kicad-pcba"
-    title = title_of(name_el)
-    values = {"__NAME__": name, "__TITLE__": title, "__ID__": bid, "__ROOT_UUID__": str(uuid.uuid4()),
-              "__TEXT_UUID__": str(uuid.uuid4())}
     folder.mkdir(parents=True)
     for src, dst in TEMPLATE_FILES.items():
         (folder / dst.format(name=name)).write_text(_subst((tmpl / src).read_text(encoding="utf-8"), values),
@@ -118,6 +109,24 @@ def new_pcba(ws, repo, cfg, element: str, kicad: bool = True, log=print) -> Path
                 raise NewError(f"{' '.join(argv[:3])}: exit {r.returncode} {limits.explain_rc(r.returncode)} "
                                f"{(r.stdout + r.stderr)[-500:]}")
         log("  saved by KiCad: schematic and board (kicad-cli sch|pcb upgrade --force)")
+
+
+def new_pcba(ws, repo, cfg, element: str, kicad: bool = True, log=print) -> Path:
+    name_el, bid = find_board(cfg, element)
+    name = eeprojects.kebab(name_el)
+    folder = cfg.repo / "pcba" / name
+    if folder.exists():
+        raise NewError(f"{ws.rel(folder)} exists")
+    tmpl = ws.xdmod / "templates" / "kicad-pcba"
+    title = title_of(name_el)
+    values = {"__NAME__": name, "__TITLE__": title, "__ID__": bid, "__ROOT_UUID__": str(uuid.uuid4()),
+              "__TEXT_UUID__": str(uuid.uuid4()), "__OUTLINE_UUID__": str(uuid.uuid4())}
+    try:
+        _make_project(ws, folder, tmpl, values, name, kicad, log)
+    except BaseException:
+        import shutil
+        shutil.rmtree(folder, ignore_errors=True)          # no half-made project folder stays behind
+        raise
     doc_id = f"pcba-{name}"
     reg = cfg.docs_registry
     if reg is not None:

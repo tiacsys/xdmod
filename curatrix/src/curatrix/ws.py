@@ -213,6 +213,9 @@ class Workspace:
         e["XD_KICAD_FOOTPRINTS"] = str(libs / "kicad" / "footprints")
         e["XD_KICAD_3DMODELS"] = str(libs / "kicad" / "packages3D")
         e["XD_KICAD_TEMPLATES"] = str(libs / "kicad" / "templates")
+        # output folder of a KiCad jobset from the template (task 5.17; D46: output only under build/);
+        # `curatrix cam` (task 5.20) sets its own per run
+        e["XD_CAM_OUT"] = os.environ.get("XD_CAM_OUT") or str(self.root / "build" / "cam")
         e["XD_FREECAD_PARTS"] = str(libs / "freecad")
         e["XD_SYSMOD_LIB"] = str(libs / "sysmod-sysmlv2")
         e["XD_PLEML_LIB"] = str(libs / "pleml")

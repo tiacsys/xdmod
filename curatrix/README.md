@@ -20,7 +20,7 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 
 | Command | Does |
 |---|---|
-| `curatrix env [--shell fish]` | prints the workspace env: `eval "$(curatrix env)"` (`PATH`, `ZEPHYR_BASE`, `JAVA_HOME`, `XD_KICAD_*`, `XD_FREECAD_PARTS`, `env:` of tools.yaml tools such as `ZEPHYR_SDK_INSTALL_DIR`, `PYTHONDONTWRITEBYTECODE=1`) |
+| `curatrix env [--shell fish]` | prints the workspace env: `eval "$(curatrix env)"` (`PATH`, `ZEPHYR_BASE`, `JAVA_HOME`, `XD_KICAD_*`, `XD_CAM_OUT` (`build/cam`, the output folder of the template jobset), `XD_FREECAD_PARTS`, `env:` of tools.yaml tools such as `ZEPHYR_SDK_INSTALL_DIR`, `PYTHONDONTWRITEBYTECODE=1`) |
 | `curatrix run [--use USE] [-m MEM] [-t TIME] [-v] -- CMD…` | any command with the workspace env and limits (default use `script`, 1G/5m). Exit 124 = timeout, 137 = killed (memory) |
 | `curatrix limits` | resolved limits table and backend (systemd / ulimit) |
 | `curatrix fixtures` | runs the planted error of every built-in check (`curatrix/tests/test_planted_errors.py`, also the tool-backed ones) under limits and records the result in `build/fixtures/planted.json` (rule, test, result, tool versions, date). Exit 1 if a check did not fail on its planted error. Run for the Phase 5 review and at every baseline |
@@ -91,7 +91,7 @@ model:                              # CK-E1, CK-D2 (needs the Pilot), CK-B4 (var
   variants: true                    # run CK-B4 on the model JSON
   upstream: ["{ws}/myproj-syseng/generated/model.json"]   # domain models: the upstream's committed model JSON (CK-E4, CK-B8)
 
-variants:                           # CK-B8 variants across levels (domain repos; needs model.upstream, reads cad.kicad / cad.freecad)
+variants:                           # CK-B8 variants across levels (domain repos; needs model.upstream, reads cad.kicad, cad.projects, cad.freecad)
   zephyr: ["{ws}/myproj-sw/boards"] # optional: Zephyr board roots; their board.yml variants map to board variants by name.
                                     # Zephyr board = KiCad project name, lower case, `-` as `_`; `outer/inner` counts as `inner`;
                                     # a Zephyr board without such a project is ignored
