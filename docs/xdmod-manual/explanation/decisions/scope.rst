@@ -138,26 +138,35 @@ What is in iteration 1 and what moved to iteration 2.
    GLB is deferred; renderings come at the end of Phase 5 (task 5.30). Output only under ``build/``,
    only locally. Based on the FreeCAD spike (§5, §6).
 
-.. xd-adr:: ME renderings without OpenGL and without Blender
+.. xd-adr:: ME renderings without OpenGL, the fallback when Blender is absent
    :id: XD-ADR-0147
    :date: 2026-11-17
    :decision_status: proposed
    :status: valid
    :refines: XD-ADR-0143
 
-   Proposed by the agent of task 5.30, for the owner to accept or change. The owner decided: **no
-   Blender**; renderings use FreeCAD's own means. The spike (``claude/notes/me-renderings-spike.md``)
-   found that neither the Render workbench (an addon that needs an external renderer, none of which
-   is installed or allowed as a system package) nor a Coin3D snapshot (``saveImage`` in the GUI
-   binary offscreen gives a blank image; ``SoOffscreenRenderer`` finds no GL context) works headless.
+   Proposed by the agent of task 5.30, for the owner to accept or change. The spike
+   (``claude/notes/me-renderings-spike.md``) found that neither the Render workbench (an addon that
+   needs an external renderer) nor a Coin3D snapshot (``saveImage`` in the GUI binary offscreen gives a
+   blank image; ``SoOffscreenRenderer`` finds no GL context) works headless. The owner first ruled out
+   Blender, then allowed it as an optional local renderer (a separate change); this decision is the
+   renderer ``curatrix cam`` uses **when Blender is absent**, and in every environment without it.
 
-   ``curatrix cam <repo> <asm>`` therefore writes ``renderings/front|top|right|iso.png`` per variant
-   from the same ``FreeCADCmd`` run: FreeCAD tessellates the present parts, the script draws the
-   facets flat-shaded into a z-buffer (numpy, a dependency of FreeCAD) with the visible edges on top,
-   and FreeCAD's Qt writes the text and the PNG. The views are the ones of the drawing (``right`` is
-   the side view). Colours come from the BOM kind, not from the document. Each image carries the
-   assembly, the variant, the full version and the view, and ``PREVIEW`` unless a release; a
-   rendering without a drawn facet fails the run. A photo-realistic rendering stays out of scope.
+   ``curatrix cam <repo> <asm>`` writes ``renderings/front|top|right|iso.png`` per variant from the
+   same ``FreeCADCmd`` run (method ``zbuffer`` in ``cam.json``): FreeCAD tessellates the present
+   parts, the script draws the facets flat-shaded into a z-buffer (numpy, a dependency of FreeCAD)
+   with the visible edges on top, and FreeCAD's Qt writes the text and the PNG. The views are the
+   ones of the drawing (``right`` is the side view); front, top and right share one scale, iso has
+   its own, and the scale is on each image. Colours come from the BOM kind, not from the document.
+   Each image carries the assembly, the variant, the full version and the view, and ``PREVIEW``
+   unless a release; a rendering without a drawn facet, or a pinned font that does not load, fails
+   the run.
+
+   **Limits:** orthographic and flat-shaded, no perspective, shadows or materials; where two parts
+   overlap in one plane (a collision) the part drawn first shows, and edges that lie in another
+   part's face show through. Time grows with the drawn pixels and the facet count: 4 to 8 s per view
+   for 272 000 facets (60 filleted tubes), about 1 s per view for a few boxes, on the owner's machine,
+   well inside the ``freecad`` limit of 10 minutes for a few variants.
 
 .. xd-adr:: A PCB layout in iteration 1, without routing
    :id: XD-ADR-0144
