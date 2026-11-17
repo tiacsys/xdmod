@@ -657,14 +657,88 @@ def bootstrap(ws: Workspace, role: str, adopt: bool = False, skip_west: bool = F
     return doctor(ws)
 
 
-def update(ws: Workspace, adopt: bool = False) -> int:
-    if ws.has_west:
+def sync_manifest(ws: Workspace) -> str:
+    """Fast-forward the manifest repo to its remote default branch, so that `west update` reads the
+    pins merged on GitHub (bump PRs). Only when it is on that branch, clean and not ahead; otherwise
+    it warns and leaves the repo alone. Never `git pull` (a global pull.rebase setting breaks it):
+    fetch, then `merge --ff-only`. Returns what it did: moved, current, warned, skipped."""
+    mp = ws.manifest_path
+    if mp is None or not (mp / ".git").exists():
+        return "skipped"
+    name = mp.name
+    say(f"== manifest repo {name}")
+    remotes = git(["remote"], mp, ws, check=False).stdout.split()
+    if not remotes:
+        say(f"  WARN {name} has no remote: pins not refreshed")
+        return "warned"
+    remote = "origin" if "origin" in remotes else remotes[0]
+    f = git(["fetch", "--quiet", remote], mp, ws, check=False)
+    if f.returncode:
+        say(f"  WARN git fetch {remote} failed in {name}: {f.stderr.strip()}; west uses the local pins")
+        return "warned"
+    head = git(["symbolic-ref", "--quiet", "--short", f"refs/remotes/{remote}/HEAD"], mp, ws, check=False)
+    default = head.stdout.strip().split("/", 1)[-1] if head.returncode == 0 and head.stdout.strip() else "main"
+    upstream = f"{remote}/{default}"
+    if git(["rev-parse", "--verify", "--quiet", upstream], mp, ws, check=False).returncode:
+        say(f"  WARN {name}: no {upstream}; west uses the local pins")
+        return "warned"
+    behind = int(git(["rev-list", "--count", f"HEAD..{upstream}"], mp, ws).stdout.strip() or 0)
+    ahead = int(git(["rev-list", "--count", f"{upstream}..HEAD"], mp, ws).stdout.strip() or 0)
+    branch = git(["symbolic-ref", "--quiet", "--short", "HEAD"], mp, ws, check=False).stdout.strip()
+    if branch != default:
+        if behind:
+            say(f"  WARN {name} is on {branch or 'a detached HEAD'}, not {default}, and {behind} commit(s) "
+                f"behind {upstream}: west uses the pins of this checkout")
+        else:
+            say(f"  {name} is on {branch or 'a detached HEAD'} (not {default}): left alone")
+        return "warned" if behind else "current"
+    if not behind:
+        say(f"  {name} {default} is current with {upstream}" + (f" ({ahead} local commit(s) ahead)" if ahead else ""))
+        return "current"
+    if ahead:
+        say(f"  WARN {name} {default} has diverged from {upstream} ({ahead} ahead, {behind} behind): "
+            "not moved; west uses the local pins")
+        return "warned"
+    dirty = git(["status", "--porcelain", "--untracked-files=no"], mp, ws, check=False).stdout.strip()
+    if dirty:
+        say(f"  WARN {name} has uncommitted changes and is {behind} commit(s) behind {upstream}: not moved; "
+            "west uses the local pins")
+        return "warned"
+    r = git(["merge", "--ff-only", "--quiet", upstream], mp, ws, check=False)
+    if r.returncode:
+        say(f"  WARN git merge --ff-only {upstream} failed in {name}: {r.stderr.strip()}")
+        return "warned"
+    say(f"  {name} {default}: fast-forwarded {behind} commit(s) to {upstream}")
+    return "moved"
+
+
+def xdmod_head(ws: Workspace) -> str:
+    r = git(["rev-parse", "HEAD"], ws.xdmod, ws, check=False)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def reexec_update(adopt: bool) -> None:
+    """Run the rest of `update` in a new process: west moved xdmod, and this process still has the
+    old curatrix modules loaded (a new tools.yaml key crashed the old parser)."""
+    say("== xdmod moved: continuing with the new curatrix")
+    args = [sys.executable, "-m", "curatrix", "update", "--after-west", *(["--adopt"] if adopt else [])]
+    os.execv(sys.executable, args)
+
+
+def update(ws: Workspace, adopt: bool = False, after_west: bool = False) -> int:
+    if ws.has_west and not after_west:
+        sync_manifest(ws)
         role = ws.role
         if role in ROLES:            # a role's groups may change (task 5.14: me and sw get +ee)
             say(f"== role {role}: group filter {','.join(ROLES[role]) or '(manifest default)'}")
             set_role(ws, role)
+        before = xdmod_head(ws)
         if west(ws, "update", "-k"):
             raise SetupError("west update -k failed")
         ws.__dict__.pop("repos", None)
+        after = xdmod_head(ws)
+        # re-exec only when this process runs the moved checkout (the editable install of xdmod)
+        if before and after and before != after and Path(__file__).resolve().is_relative_to(ws.xdmod.resolve()):
+            reexec_update(adopt)
     refresh(ws, adopt=adopt)
     return doctor(ws, quiet=True)

@@ -72,7 +72,7 @@ the owner's review (D126). A change across repos uses one branch name in every r
 | Command | Does |
 |---|---|
 | `curatrix doctor` | tools, versions (tools.yaml), paths, hooks, west state |
-| `curatrix update` | `west update -k`, refresh `.venv`, tools, `.claude/` links, hooks |
+| `curatrix update` | fast-forward the manifest repo, `west update -k`, refresh `.venv`, tools, `.claude/` links, hooks |
 | `curatrix check <repo> --stage local` | the repo's checks (`<repo>/checks.yaml`); `--no-cad`, `--only CK-D3`, `--json` |
 | `curatrix docs <repo>` / `docs full` | strict zdocs build into `build/<area>/docs/` |
 | `curatrix gen stubs\|model\|cad-needs\|code-needs\|freecad-json\|all <repo>` | regenerate the committed generated files |
