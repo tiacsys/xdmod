@@ -28,7 +28,11 @@ workspace-local config) once per variant into ``build/<area>/cam/<asm>/<version>
   the PNG. Front, top and right share one scale, iso has its own; the scale (px/mm) is on the
   image and in ``cam.json``. Assembly, variant, full version and view are written on each image,
   and ``PREVIEW`` in red unless a release. A rendering without a drawn facet fails the run;
-* ``bom.csv``: the flat BOM with totals, one row per part (sub-assemblies resolved).
+* ``bom.csv``: the flat BOM with totals, one row per part (sub-assemblies resolved);
+* ``mass.json``: mass and center of gravity (``asmdoc.mass``, task 5.27);
+* in the version folder, ``findings.json``: the findings of the ME checks CK-F4c, CK-F16, CK-F17
+  for this assembly and the shared documents, with their acceptance state (``accepted.yaml``), for
+  the assembly document (task 5.27).
 
 Variants: the ``Configs`` of the links (presence, XD-ADR-0137; only a link's own property, as the ME
 checks read it): one output per configuration a link names, and ``base`` with only the links
@@ -56,7 +60,7 @@ from pathlib import Path
 
 import yaml
 
-from curatrix import cad, meassemblies
+from curatrix import asmdoc, cad, meassemblies
 from curatrix.cam import CamError, _git, version as git_version
 
 SCRIPT = Path("templates") / "freecad-asm" / "cam-asm.py"
@@ -485,6 +489,8 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
         (dest / "drawing.pdf").write_bytes(sheet_pdf(lines, texts))
         rows = bom_rows(res.get("bom") or [], cfg.repo)
         _write_csv(dest / "bom.csv", rows)
+        (dest / "mass.json").write_text(json.dumps(asmdoc.mass(res.get("bom") or []), indent=2) + "\n",
+                                        encoding="utf-8")
         for r in rows:
             p = r["print_profile"]
             if not p:
@@ -500,6 +506,7 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
                       "renderings": {v: f"{name}/{vname}/renderings/{v}.png" for v in VIEWS},
                       "painted": res.get("painted") or {}, "facets": res.get("facets", 0),
                       "render_scale": res.get("render_scale") or {}}
+    (top / "findings.json").write_text(json.dumps(findings(ws, cfg, folder, top), indent=2) + "\n", encoding="utf-8")
     after = _md5(sources)
     changed = sorted(ws.rel(Path(p)) for p in before if after.get(p) != before[p])
     if changed:
@@ -513,6 +520,27 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
     (top / "cam.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
     log(f"  {name}: {len(files)} files in {ws.rel(out)} ({'release' if release else 'preview'}); sources unchanged")
     return rec
+
+
+def findings(ws, cfg, folder: Path, top: Path) -> dict:
+    """The ME check findings of this assembly (CK-F4c, CK-F16, CK-F17; findings of shared documents
+    too) with their acceptance state, and the reason CK-F18 skipped, for the assembly document
+    (task 5.27; tied to the commit like the rest of the output). One FreeCADCmd run (mechecks)."""
+    from curatrix import ercdrc, mechecks
+    try:
+        res = mechecks.run(ws, cfg, top)
+    except mechecks.MeCheckError as e:
+        raise CamError(f"{folder.name}: the ME checks failed: {e}") from None
+    mine = str(folder.relative_to(cfg.repo))
+    entries, _ = mechecks.folder_entries(cfg, ercdrc.Acceptors(cfg.repo))
+    rows = []
+    for check in mechecks.RULES:
+        found = [(f, x) for f, x in mechecks.findings(cfg, res, check) if f in (mine, None)]
+        rows += mechecks.evaluate(cfg, check, found, entries).rows
+    b = mechecks.boards(res)
+    return {"checks": list(mechecks.RULES), "rows": rows,
+            "skipped": {"CK-F18": f"board model(s) {', '.join(b)} placed; the space budget is not checked yet"
+                        if b else "no board model in the assembly"}}
 
 
 def run(ws, repo, cfg, name: str | None = None, log=print) -> list[dict]:

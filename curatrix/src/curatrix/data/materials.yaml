@@ -1,0 +1,18 @@
+# Densities for the mass in the assembly document (task 5.27, curatrix/asmdoc.py), in g/cm³, by the
+# value of a part's Material property (case-insensitive). A part's own Mass or Density property
+# wins. Nominal values of solid material: printed parts count as solid (no infill applied).
+densities:
+  PLA: 1.24
+  PETG: 1.27
+  ABS: 1.04
+  ASA: 1.07
+  TPU: 1.21
+  PA12: 1.01
+  PC: 1.20
+  steel: 7.85
+  stainless steel: 7.90
+  A2: 7.90
+  A4: 7.95
+  aluminium: 2.70
+  brass: 8.50
+  FR4: 1.85

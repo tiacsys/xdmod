@@ -1,21 +1,64 @@
 __TITLE_RST__
 
 This document describes the assembly ``__NAME__`` (``__ID__``): the FreeCAD top document
-``assemblies/__NAME__/__NAME__.FCStd``, its skeleton ``skeleton.FCStd`` and the assembly def of
-the ME model it implements. It was made by ``curatrix new asm``; every assembly document has the
-same sections (ME-4, task 5.27).
+``assemblies/__NAME__/__NAME__.FCStd``, its skeleton ``__NAME__-skeleton.FCStd`` and the assembly
+def of the ME model it implements. It was made by ``curatrix new asm``; every assembly document has
+the same sections (ME-4, XD-ADR-0129). Parameters, materials, interfaces and the BOM come from the
+FreeCAD files and the ME model in plain Python; drawings, exploded view, renderings, mass and
+findings come from the local ``curatrix cam`` output of the current commit and are not part of CI
+builds.
+
+Overview
+--------
+
+.. xd-asm-overview:: __NAME__
+
+Drawings
+--------
+
+.. xd-asm-drawing:: __NAME__
+
+Exploded view
+-------------
+
+.. xd-asm-exploded:: __NAME__
+
+Renderings
+----------
+
+.. xd-asm-renderings:: __NAME__
+
+Mass and center of gravity
+--------------------------
+
+.. xd-asm-mass:: __NAME__
 
 Parameters
 ----------
 
-No data yet.
+.. xd-asm-parameters:: __NAME__
+
+Materials
+---------
+
+.. xd-asm-materials:: __NAME__
 
 Interfaces
 ----------
 
-No data yet.
+.. xd-asm-interfaces:: __NAME__
 
-Bill of materials
------------------
+Findings
+--------
 
-No data yet.
+.. xd-asm-findings:: __NAME__
+
+Sub-assemblies
+--------------
+
+.. xd-asm-subassemblies:: __NAME__
+
+Appendix: bill of materials
+---------------------------
+
+.. xd-asm-bom:: __NAME__

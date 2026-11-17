@@ -21,7 +21,8 @@
 # (TechDraw views front, top, right, iso of the assembly), exploded.svg (TechDraw view of the
 # exploded compound with explosion lines), renderings/<view>.png (front, top, right, iso; shaded
 # with visible edges, from FreeCAD's tessellation, without OpenGL, task 5.30). The result lists the BOM rows
-# (one per present leaf link) and the files.
+# (one per present leaf link, with the volume and center of mass of the placed shape, task 5.27) and
+# the files.
 import json
 import os
 import traceback
@@ -31,7 +32,7 @@ import FreeCAD as App
 res = os.environ.get("XD_RESULT", "")
 out = {"ok": False}
 LCS_TYPES = ("Part::LocalCoordinateSystem", "PartDesign::CoordinateSystem")
-BOM_PROPS = ("TraceID", "PrintProfile", "Material", "Standard", "Manufacturer", "MPN")
+BOM_PROPS = ("TraceID", "PrintProfile", "Material", "Standard", "Manufacturer", "MPN", "Mass", "Density")
 # view: (Direction, the view normal towards the viewer; XDirection, the model direction that points
 # right in the view). Up is Direction x XDirection: +z for front, right and iso, +y for top.
 VIEWS = {"front": ((0, -1, 0), (1, 0, 0)), "top": ((0, 0, 1), (1, 0, 0)), "right": ((1, 0, 0), (0, 1, 0)),
@@ -67,7 +68,28 @@ def walk(asm, variant, path, rows, placement):
             walk(t, variant, path + [c.Name], rows, pl)
             continue
         rows.append({"path": "/".join(path + [c.Name]), "file": f, "object": t.Name if t else "",
-                     "label": t.Label if t else c.Label, **{p: prop(t, p) for p in BOM_PROPS}, "_obj": t, "_pl": pl})
+                     "label": t.Label if t else c.Label, **{p: prop(t, p) for p in BOM_PROPS}, "_obj": t, "_pl": pl,
+                     **volume_com(c, placement)})
+
+
+def volume_com(link, outer):
+    """Volume (mm³) and center of mass (mm, in the frame of the top-level assembly) of the shape a
+    link places (task 5.27: mass and center of gravity in the assembly document)."""
+    import Part
+    try:
+        s = Part.getShape(link)
+        s.Placement = outer.multiply(s.Placement)
+        solids = s.Solids
+        vol = sum(x.Volume for x in solids)
+        if not solids or vol <= 0:
+            return {"volume": None, "com": None}
+        c = App.Vector(0, 0, 0)
+        for x in solids:
+            c += x.CenterOfMass * x.Volume
+        c = c * (1.0 / vol)
+        return {"volume": round(vol, 4), "com": [round(c.x, 4), round(c.y, 4), round(c.z, 4)]}
+    except Exception:
+        return {"volume": None, "com": None}
 
 
 def view_svg(shape, view, name, d):

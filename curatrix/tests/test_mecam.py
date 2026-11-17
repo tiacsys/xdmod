@@ -137,8 +137,11 @@ def _cam_repo(tmp_path, configs=""):
 
 def _fake_script(edges=1, touch=None, painted=1):
     """A stand-in for cam-asm.py: writes the views and renderings, reports the edges and the painted
-    facets, optionally changes a file."""
+    facets, optionally changes a file; and for check-asm.py (the findings of the assembly document,
+    task 5.27): no findings."""
     def run_script(ws, script, env, result):
+        if "XD_FILES" in env:
+            return {"ok": True, "recompute": [], "parts": [], "solids": [], "assemblies": []}
         dest = __import__("pathlib").Path(env["XD_OUT"])
         (dest / "views").mkdir(parents=True, exist_ok=True)
         for v in mecam.VIEWS:
@@ -164,6 +167,9 @@ def test_cam_variants_base(tmp_path, monkeypatch):
         rec = mecam.run(Workspace(root), Repo("r", repo, "r"), checkcfg.load(repo / "checks.yaml", root), "fx",
                         log=lambda *_: None)[0]
         assert rec["variants"] == want, rec["variants"]
+        assert all(f"fx/{v}/mass.json" in rec["files"] for v in want)            # task 5.27
+        top = Workspace(root).build("r") / "cam" / "fx" / rec["version"].split("/", 1)[1]
+        assert json.loads((top / "findings.json").read_text())["rows"] == []
 
 
 def test_cam_md5_guard_and_empty_view(tmp_path, monkeypatch):

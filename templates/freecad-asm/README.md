@@ -10,9 +10,9 @@ code (FreeCADCmd exits 0 when a script raises).
 |---|---|
 | `new-asm.py` | makes `<name>-skeleton.FCStd` (App::Part `Skeleton` with the master sketch `MasterSketch`, spreadsheet `Params`) and the top document `<name>.FCStd` (`Assembly::AssemblyObject` `Assembly` with `TraceID` = the def's `ME-ASM`, a `Joints` group, an `App::Link` to the skeleton) |
 | `check-asm.py` | not a template: the `FreeCADCmd` script of the ME checks CK-F4c, CK-F16, CK-F17, CK-F18 (task 5.25, `mechecks.py`); opens every document, recomputes, never saves, writes a result file |
-| `cam-asm.py` | not a template: the `FreeCADCmd` script of `curatrix cam` for an assembly (task 5.26, `mecam.py`): STEP, 3MF/STL of the printed parts with the version embossed, TechDraw view SVGs, the exploded view; never saves |
+| `cam-asm.py` | not a template: the `FreeCADCmd` script of `curatrix cam` for an assembly (task 5.26, `mecam.py`): STEP, 3MF/STL of the printed parts with the version embossed, TechDraw view SVGs, the exploded view, volume and center of mass per part for `mass.json` (task 5.27); never saves |
 | `fonts/` | the pinned font of the version emboss (DejaVu Sans Mono Bold, with its licence) |
-| `doc/` | the `asm-<name>` document skeleton (`__NAME__`, `__TITLE__`, `__ID__`, `__TITLE_RST__`); `new asm` also adds its entry to `docs/documents.yaml` |
+| `doc/` | the `asm-<name>` document (`__NAME__`, `__TITLE__`, `__ID__`, `__TITLE_RST__`): one `xd-asm-*` directive per section (task 5.27, `xdmod/sphinx/xdmod_sphinx/asm.py`); `new asm` also adds its entry to `docs/documents.yaml` |
 
 The skeleton's file name carries the assembly name because FreeCAD names a document after its
 file and a cross-document expression names that document (`canary_assembly_skeleton#MasterSketch...`):

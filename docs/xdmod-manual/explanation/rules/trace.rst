@@ -240,7 +240,7 @@ The principles of the trace model and the rules on the trace graph.
    :status: valid
    :decided_by: XD-ADR-0129
 
-   Every part in a board's bill of materials, in the base schematic or in any variant, has the fields ``Manufacturer`` and ``MPN``. A standard part carries a field ``Standard`` with its standard designation instead. A variant that changes a part's value or footprint names its own MPN. A missing field is a warning (owner, EE-8).
+   Every part in a board's bill of materials, in the base schematic or in any variant, has the fields ``Manufacturer`` and ``MPN``. A standard part carries a field ``Standard`` with its standard designation instead. A variant that changes a part's value or footprint names its own MPN. A missing field is a warning (owner, EE-8). In an assembly the same holds for bought mechanical parts: a standard fastener carries its standard designation (``ISO 4762 M3x10, A2``) in a property ``Standard``, any other bought part ``Manufacturer`` and ``MPN``, and an own part its ``Material``; a board or harness is one line and its parts stay in the EE BOM (owner, ME-8).
 
 .. xd-rule:: The board document's BOM is KiCad's BOM
    :id: XD-RULE-0059
@@ -250,13 +250,13 @@ The principles of the trace model and the rules on the trace graph.
 
    The board document reads the BOM in plain Python, so CI shows it without KiCad. For every board, without a variant and for each variant, the reader gives the same parts, values, footprints, DNP marks, ``Manufacturer``, ``MPN`` and ``Setting`` as ``kicad-cli sch export bom --variant`` (P5-15).
 
-.. xd-rule:: A board document shows only the output of its own commit
+.. xd-rule:: A board or assembly document shows only the output of its own commit
    :id: XD-RULE-0060
    :tags: checks, cad
    :status: valid
    :decided_by: XD-ADR-0129
 
-   Renderings, schematic and ERC/DRC findings of a board come from the local ``curatrix cam`` output of the commit the repo is at; with uncommitted changes in the project folder, from a run on exactly that uncommitted state (a hash of ``git status`` and the changed files, kept in ``cam.json``). Older output is never shown: the section prints a fixed sentence instead, as in CI. Missing output is a local warning, and an error at the baseline once the check ran on the canary.
+   Renderings, schematic and ERC/DRC findings of a board, and drawings, exploded view, renderings, mass and check findings of an assembly, come from the local ``curatrix cam`` output of the commit the repo is at; with uncommitted changes in the project folder, from a run on exactly that uncommitted state (a hash of ``git status`` and the changed files, kept in ``cam.json``). Older output is never shown: the section prints a fixed sentence instead, as in CI. Missing output is a local warning, and an error at the baseline once the check ran on the canary.
 
 .. xd-rule:: The board library holds only tagged board versions
    :id: XD-RULE-0064

@@ -46,8 +46,88 @@ For review, ``git diff`` shows ``.FCStd`` changes as semantic JSON through the t
 that the bootstrap installs. GitHub does not, so reviewers read the committed JSON.
 
 .. note:: The full review report (drawing SVGs, image diff, 3D views) stays local in iteration 1
-   (:need:`XD-ADR-0124`). Publishing it as a Pages preview (:need:`XD-ADR-0098`) comes later. TechDraw and GLB
+   (:need:`XD-ADR-0124`). Publishing it as a Pages preview (:need:`XD-ADR-0098`) comes later. The
+   drawings and the exploded view of an assembly come from ``curatrix cam`` (see below); GLB
    exports are not implemented yet.
+
+The assembly document
+---------------------
+
+Every top-level assembly has one document ``asm-<name>`` (:need:`XD-ADR-0129`), made by
+``curatrix new asm`` with the same sections for every assembly, and a chapter per sub-assembly.
+Each section is one ``xd-asm-*`` directive with the assembly name as its argument:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Section
+     - Directive
+     - Source
+     - In CI
+   * - Overview
+     - ``xd-asm-overview``
+     - FreeCAD files, local output (version)
+     - yes, without the version
+   * - Drawings
+     - ``xd-asm-drawing``
+     - ``drawing.svg`` per variant; the PDF is named, not linked
+     - fixed sentence
+   * - Exploded view
+     - ``xd-asm-exploded``
+     - ``exploded.svg`` per variant (``explode.yaml`` or automatic moves)
+     - fixed sentence
+   * - Renderings
+     - ``xd-asm-renderings``
+     - ``<variant>/renderings/<view>.png`` (front, top, right or side, iso or 3d first)
+     - fixed sentence
+   * - Mass and center of gravity
+     - ``xd-asm-mass``
+     - ``mass.json`` per variant
+     - fixed sentence
+   * - Parameters
+     - ``xd-asm-parameters``
+     - ME model and the skeleton's ``Params`` (budget copies marked)
+     - yes
+   * - Materials
+     - ``xd-asm-materials``
+     - ``Material`` and ``PrintProfile`` of the parts, densities of ``curatrix/data/materials.yaml``
+     - yes
+   * - Interfaces
+     - ``xd-asm-interfaces``
+     - the ports of the assembly def: ``ME-PORT``, ``SYS-IF``, placement, LCS, values
+     - yes
+   * - Findings
+     - ``xd-asm-findings``
+     - ``findings.json``: CK-F4c, CK-F16, CK-F17 with their acceptance state
+     - fixed sentence
+   * - Sub-assemblies
+     - ``xd-asm-subassemblies``
+     - one chapter per sub-assembly (overview, interfaces, materials, mass, findings with ``:sub:``)
+     - partly
+   * - Appendix: bill of materials
+     - ``xd-asm-bom``
+     - the indented BOM along the structure, a quantity column per variant
+     - yes
+
+The local sections show only the ``curatrix cam`` output of the commit the repo is at
+(:need:`XD-RULE-0060`); CK-D10 warns locally when it is missing. Make it before you build the
+document:
+
+.. code-block:: sh
+
+   curatrix cam robarm-me <name>
+   curatrix docs robarm-me
+
+The mass is the solid volume of each present part times the density of its ``Material``, or the
+part's own ``Mass`` (``12 g``) or ``Density`` (``1.24 g/cm^3``) property. Printed parts count as
+solid; the infill of the print profile is not applied, so the mass is an upper bound. The center of
+gravity is in the frame of the top-level assembly.
+
+In the BOM, a standard fastener (a ``lib/`` object with a ``Standard`` property such as
+``ISO 4762 M3x10, A2``) is named by its standard designation; another bought part names
+``Manufacturer`` and ``MPN``; a board model or harness is one line with its version and its
+``pcba-<name>`` / ``harness-<name>`` document, its parts stay in the EE BOM. CK-F12 warns about a
+bought part without them and about an own part without ``Material`` (:need:`XD-RULE-0058`).
 
 Pitfalls
 --------

@@ -186,7 +186,7 @@ checks:
   CK-F12:
     need: XD-CHECK-0049
     enforces: [XD-RULE-0058]
-    description: "Every part in the BOM of a pcba/ board, as the base schematic and each variant see it, has the fields Manufacturer and MPN, or a field Standard with its standard designation instead; a variant that changes the value or footprint also overrides the MPN."
+    description: "Every part in the BOM of a pcba/ board, as the base schematic and each variant see it, has the fields Manufacturer and MPN, or a field Standard with its standard designation instead; a variant that changes the value or footprint also overrides the MPN. In an ME repo (task 5.27): every bought part below a top-level assembly (a lib/ object, or one with Manufacturer or MPN) that is not a standard fastener (Standard property) has Manufacturer and MPN, every own part has a Material, and every link points to an object that is there; boards and harnesses are one BOM line and need nothing."
   CK-D9:
     need: XD-CHECK-0050
     enforces: [XD-RULE-0059]
@@ -194,7 +194,7 @@ checks:
   CK-D10:
     need: XD-CHECK-0051
     enforces: [XD-RULE-0060]
-    description: "The local curatrix cam output of every pcba/ board exists for the commit the repo is at (with uncommitted changes in the project folder: from exactly that state, by a hash in cam.json), so the board document shows renderings, schematic and ERC/DRC findings; never in CI."
+    description: "The local curatrix cam output of every pcba/ board exists for the commit the repo is at (with uncommitted changes in the project folder: from exactly that state, by a hash in cam.json), so the board document shows renderings, schematic and ERC/DRC findings; the same for every top-level assembly of an ME repo (mecam.current), so the assembly document shows drawings, exploded view, renderings, mass and findings (task 5.27); never in CI."
   CK-G1:
     need: XD-CHECK-0023
     enforces: [XD-RULE-0038]
