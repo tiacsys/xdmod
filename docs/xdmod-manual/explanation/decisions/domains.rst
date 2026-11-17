@@ -308,8 +308,10 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    Task 5.29 showed the headless STEP import (``FreeCADCmd``, ``Part.Shape.read``, canary board:
    about 0.04 MB per variant without component models) and settled the details: one file per tagged
    version and variant at ``boards/<board>/<board>-vX.Y.Z[-<variant>].FCStd``; an ``App::Part``
-   ``Board`` with ``TraceID`` (the ``EE-PCBA``), ``Version``, ``Variant`` and ``Commit``; ``curatrix
-   cam <ee repo> <board> --library`` refuses anything but an exact tag on main with a clean project
-   folder and never overwrites a file. The repo is top level (not under ``libs/``), because it is a
-   design repo with its own checks: worktree sets and the CI sibling resolution handle only
-   top-level repos. Checks: :need:`XD-RULE-0061` (CK-F20) and :need:`XD-RULE-0062` (CK-F21).
+   ``Board`` with ``TraceID`` (the ``EE-PCBA``), ``Version``, ``Variant``, ``Board`` and ``Commit``;
+   ``curatrix cam <ee repo> <board> --library`` refuses anything but an exact release tag
+   ``<board>/vX.Y.Z`` (no suffix such as ``-rc1``) on main with a clean project folder, writes only
+   into a checkout with a ``board_library`` section on a branch, and never overwrites a file; CK-F20
+   (an error) reports a changed or deleted board file against the PR base. The repo is top level
+   (not under ``libs/``), because it is a design repo with its own checks: worktree sets and the CI
+   sibling resolution handle only top-level repos. Checks: :need:`XD-RULE-0061` (CK-F20) and :need:`XD-RULE-0062` (CK-F21).

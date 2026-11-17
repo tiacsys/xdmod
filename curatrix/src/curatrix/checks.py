@@ -134,7 +134,7 @@ BUILTIN = [
     ("CK-F19", "every printed part (PrintProfile) has a version mark (LCS with Role = version-emboss)",
      _lv({"local": "warning", "pr": "warning"}), "cad.freecad", False, "c_version_face"),
     ("CK-F20", "board library: every file names an existing board tag and its EE-PCBA; at most 5 MB per file",
-     _lv({"local": "warning", "pr": "warning", "full": "warning"}), "board_library", False, "c_board_library"),
+     _lv({"local": "error", "pr": "error", "full": "error"}), "board_library", False, "c_board_library"),
     ("CK-F21", "board versions: links into the board library that have a newer version there",
      _lv({"local": "warning", "pr": "warning", "full": "warning"}), "cad.board_library", False, "c_board_versions"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
@@ -440,7 +440,7 @@ def c_freecad_params(ctx: Ctx, r: Result):
 def c_board_library(ctx: Ctx, r: Result):
     """CK-F20 (XD-ADR-0139): board library files against the board tags of the EE repo."""
     from curatrix import boardlib
-    r.findings = boardlib.library_findings(ctx.ws, ctx.cfg)
+    r.findings = boardlib.library_findings(ctx.ws, ctx.cfg, _base_ref(ctx.repo.path))
 
 
 def c_board_versions(ctx: Ctx, r: Result):
