@@ -649,7 +649,7 @@ validate.local = { properties = { satisfies = { minItems = 1 } }, required = ["s
 [[needs.schema_definitions.schemas]]
 id = "XD-S-R3-no-orphan-design"
 severity = "violation"
-select = { properties = { type = { enum = ["sw-arch", "ee-pcba", "ee-cmp", "me-asm", "me-part"] }, status = { enum = ["draft", "valid"] }, realizes = { maxItems = 0 } } }
+select = { properties = { type = { enum = ["sw-arch", "ee-pcba", "ee-cmp", "ee-har", "me-asm", "me-part"] }, status = { enum = ["draft", "valid"] }, realizes = { maxItems = 0 } } }
 validate.local = { properties = { satisfies = { minItems = 1 } }, required = ["satisfies"] }
 
 # --- R5: a HIL result carries the firmware hash and the pinned SHAs (D57, D60)

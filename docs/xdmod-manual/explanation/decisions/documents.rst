@@ -162,7 +162,9 @@ The linked document set, zdocs, and how documents get their content.
 
    **WireViz is adopted** for cables between boards and external parts. It is a pinned pip package
    (xdmod ``requirements.txt``), plain Python with Graphviz, so CI and Pages can draw the diagrams
-   too. Each harness is one folder ``harness/<name>/`` with one WireViz YAML ``<name>.yml`` as entry
+   too. Licence check (2026-11-17): WireViz is GPL-3.0, xdmod is Apache-2.0. curatrix runs the
+   ``wireviz`` command as a separate process through ``curatrix run`` and never imports it, so it is
+   used as a tool; its output (diagrams, BOMs) is not covered by the GPL. Each harness is one folder ``harness/<name>/`` with one WireViz YAML ``<name>.yml`` as entry
    point, 1:1 with a cable def in the EE model (``EE-HAR``, :need:`XD-ADR-0128`). The connectors at
    both ends name the ``EE-PORT`` they mate with, also on external parts; CK-F1 checks pin to pin
    against both ends. ``curatrix cam`` makes the diagram, the harness BOM (with Manufacturer and MPN)

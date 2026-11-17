@@ -79,7 +79,7 @@ Only assemblies are tagged (`<name>/vX.Y.Z`, owner only, XD-ADR-0140). Design ou
 
 ### robarm-freecad-pcba (board library, XD-ADR-0139, proposed; created in task 5.29 after the owner's approval)
 ```
-<board>/<board>-<version>.FCStd   one file per tagged board version and variant: board body, connectors, tall parts,
+<board>/<board>-<version>[-<variant>].FCStd   one file per tagged board version and variant: board body, connectors, tall parts,
                                   no tracks; properties EE-PCBA ID and version; at most 5 MB per file to start
 checks.yaml  ids.yaml  claude/  .github/
 ```

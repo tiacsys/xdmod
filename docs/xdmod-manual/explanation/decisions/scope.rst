@@ -117,7 +117,7 @@ What is in iteration 1 and what moved to iteration 2.
 .. xd-adr:: ME design output in iteration 1
    :id: XD-ADR-0143
    :date: 2026-11-17
-   :decision_status: proposed
+   :decision_status: accepted
    :status: valid
    :revises: XD-ADR-0037
    :refines: XD-ADR-0018, XD-ADR-0024
@@ -125,7 +125,7 @@ What is in iteration 1 and what moved to iteration 2.
    **The ME part of the CAM pipeline moves into iteration 1.** ``curatrix cam <repo> <asm>`` runs
    FreeCAD headless under limits into ``build/<repo>/cam/<asm>/<version>/``: STEP of the assembly; 3MF
    and STL per printed part with its print profile (:need:`XD-ADR-0024`); TechDraw drawings as PDF and
-   SVG; the exploded view as a TechDraw view (GUI binary offscreen, :need:`XD-ADR-0137`); a flat BOM
+   SVG; the exploded view as a TechDraw view SVG, built in ``FreeCADCmd`` (:need:`XD-ADR-0137`); a flat BOM
    CSV with totals. Per variant: set the variant row, recompute, export, close without saving;
    presence by ``Configs``. The version comes from the assembly tags (:need:`XD-ADR-0140`), with the
    same preview marking as EE. A shared part from ``parts/`` carries the version of the assembly
@@ -136,7 +136,7 @@ What is in iteration 1 and what moved to iteration 2.
    short version (the full string goes into the drawing) with a font pinned in xdmod; the
    ``.FCStd`` stays unchanged, and the export fails unless the result is exactly one valid solid.
    GLB is deferred; renderings come at the end of Phase 5 (task 5.30). Output only under ``build/``,
-   only locally. Proposed until the FreeCAD spike is merged.
+   only locally. Based on the FreeCAD spike (§5, §6).
 
 .. xd-adr:: A PCB layout in iteration 1, without routing
    :id: XD-ADR-0144

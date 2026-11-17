@@ -334,6 +334,18 @@ def launch(ws: Workspace, tool: str, args: list[str]) -> int:
 
 
 # ------------------------------------------------------------------ doctor (§5, 4.4b)
+def kicad_models_row(ws: Workspace, role: str | None, ci: bool = False) -> tuple[str, str, str] | None:
+    """A doctor warning when a role that should have the KiCad 3D models (group kicad-3d) lacks
+    them: STEP exports and renderings then show bare boards. Roles that leave them out on purpose
+    (ee, me, integration, CI) get no warning."""
+    if ci or "+kicad-3d" not in ROLES.get(role or "", []):
+        return None
+    if (ws.root / "libs" / "kicad" / "packages3D").is_dir():
+        return None
+    return ("warn", "KiCad 3D models (libs/kicad/packages3D) missing", "west update; STEP and renderings show bare boards")
+
+
+
 def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
     """Exit 1 on any FAIL. `ci`: on a CI runner the system tools come from the runner image, not
     from the pinned local toolchain (D19), so their mismatches are warnings; tools.yaml tools
@@ -370,9 +382,9 @@ def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
                 "runner image (--ci)" if ci else st.source)
         else:
             add("ok", f"{st.name} {have}")
-    if "kicad-cli" in ts.system and not (ws.root / "libs" / "kicad" / "packages3D").is_dir():
-        add("warn", "KiCad 3D models (libs/kicad/packages3D) missing",
-            "STEP and renderings show bare boards; role ee3d or full")
+    row = kicad_models_row(ws, role, ci)
+    if row:
+        add(*row)
     lim_backend = limits.backend()
     add("ok" if lim_backend == "systemd" else "warn", f"limits backend: {lim_backend}",
         "" if lim_backend == "systemd" else "no systemd user session: timeout + ulimit -v fallback")
@@ -436,6 +448,10 @@ def bootstrap(ws: Workspace, role: str, adopt: bool = False, skip_west: bool = F
 
 def update(ws: Workspace, adopt: bool = False) -> int:
     if ws.has_west:
+        role = ws.role
+        if role in ROLES:            # a role's groups may change (task 5.14: me and sw get +ee)
+            say(f"== role {role}: group filter {','.join(ROLES[role]) or '(manifest default)'}")
+            set_role(ws, role)
         if west(ws, "update", "-k"):
             raise SetupError("west update -k failed")
         ws.__dict__.pop("repos", None)

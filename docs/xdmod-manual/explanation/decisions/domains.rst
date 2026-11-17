@@ -14,8 +14,9 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    :status: valid
    :refines: XD-ADR-0030
 
-   **Each domain repo has its own SysML model in** ``model/`` **and refines the system model by
-   specialization.** There are three levels of detail:
+   **The EE and ME repos each have their own SysML model in** ``model/`` **and refine the system
+   model by specialization.** SW keeps its architecture in rst in iteration 1 (:need:`XD-ADR-0069`);
+   a SW sub-model would follow the same pattern in iteration 2. There are three levels of detail:
 
    - **System model** (the systems engineering repo): what crosses a domain boundary. Blocks down to
      the product level (one part def per board, assembly and SW component), their ports, and the
@@ -37,8 +38,8 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    pwm``). Inside a def that specializes a system def, outer elements are named by qualified name,
    because inherited members hide outer names.
 
-   A domain model imports only the system model and the xdmod libraries (SW may also import the EE
-   model, :need:`XD-ADR-0131`). It reads the upstream model twice, both from the same west pin: as a
+   A domain model imports only the system model and the xdmod libraries; SW reads the EE model
+   (:need:`XD-ADR-0131`). It reads the upstream model twice, both from the same west pin: as a
    library set for the Pilot, and as the upstream's committed ``generated/model.json`` for the
    checks that run without Java. The repo's own model files are read as one set, so their order does
    not matter. Each domain model costs one more Pilot run; the owner accepted that. Based on the
@@ -109,8 +110,10 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
      FreeCAD it is an LCS with a ``Port`` property.
    - ``EE-HAR``: a wiring harness, 1:1 with a cable def in the EE model. It ``connects`` the two or more
      ``EE-PORT`` s its ends mate with. The harness is built to fit those ports, so it is the more
-     concrete side and holds the link (:need:`XD-ADR-0004`). It may also ``realizes`` a ``SYS-EL``,
-     ``satisfies`` an ``EE-REQ`` and ``conforms`` to a ``SYS-IF``.
+     concrete side and holds the link (:need:`XD-ADR-0004`). Like every design element it must
+     ``realizes`` a ``SYS-EL`` or ``satisfies`` an ``EE-REQ`` (no orphans, :need:`XD-RULE-0010`); it may
+     also ``conforms`` to a ``SYS-IF``. Ports are not in the orphan rule: a port of an external part
+     may conform to nothing.
 
 .. xd-adr:: SW reads the board pin maps from EE
    :id: XD-ADR-0131
@@ -144,7 +147,8 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    by KiCad 10 before the commit. The EE side reviews and merges its part. ME never takes EE geometry
    outside such a change, and ME needs never link to EE needs. Keep-outs, connector positions, the
    harness length and route, and pushing back from EE are decided by the co-design spike (task
-   5.28). Proposed until the FreeCAD spike (StepUp not yet run on a KiCad 10 board) and 5.28 report.
+   5.28). Proposed until StepUp has run on a KiCad 10 board (FreeCAD spike §7: not run) and 5.28
+   reports.
 
 .. xd-adr:: External parts and prototype projects
    :id: XD-ADR-0135
@@ -203,7 +207,7 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
 .. xd-adr:: FreeCAD assemblies: a skeleton document, values from the model
    :id: XD-ADR-0137
    :date: 2026-11-17
-   :decision_status: proposed
+   :decision_status: accepted
    :status: valid
    :refines: XD-ADR-0130
 
@@ -223,17 +227,21 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
 
    **Interfaces** are LCS with a ``Port`` property (the ``ME-PORT`` ID). **Variants** are rows of a
    configuration table in ``Params`` plus ``Configs`` on the links; part presence comes from
-   ``Configs``, never from a suppressed state. Checks and value writes run in ``FreeCADCmd``; outputs
-   that need the GUI (exploded views, full TechDraw pages, StepUp) run the GUI binary with
-   ``QT_QPA_PLATFORM=offscreen``. Both run through curatrix with the workspace-local configuration.
-   Proposed until the FreeCAD spike is merged.
+   ``Configs``, never from a suppressed state. Checks, value writes and the exploded view run in
+   ``FreeCADCmd``. The exploded view uses the fallback of the FreeCAD spike (§5): the moves are data
+   (a small table per assembly, or read from the ``Move`` objects in ``Document.xml``), and a script
+   builds the exploded compound and its TechDraw view; the Assembly workbench's exploded view in the
+   GUI binary hung in 6 of 8 runs, so it is only a design aid. Only full TechDraw pages and StepUp
+   need the GUI binary with ``QT_QPA_PLATFORM=offscreen``; task 5.26 first shows that the page export
+   runs reliably, or falls back to view SVGs. Both run through curatrix with the workspace-local
+   configuration. Based on the FreeCAD spike (``claude/notes/freecad-spike.md``).
 
 .. xd-adr:: A board library repo for ME
    :id: XD-ADR-0139
    :date: 2026-11-17
    :decision_status: proposed
    :status: valid
-   :refines: XD-ADR-0134
+   :refines: XD-ADR-0128, XD-ADR-0141
 
    **FreeCAD models of the boards live in their own repo,** ``robarm-freecad-pcba`` in the robot arm
    (path ``libs/freecad-pcba``, in a west group that the ee and me roles both get). EE writes into it,
@@ -243,4 +251,5 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    opens the PR that adds a board version. At most 5 MB per file to start (board body, connectors and
    tall parts, no tracks). An ME assembly links one fixed board version; a newer version gives a note
    or an issue on the ME repo, and moving to it is an ME change. Creating the repo is an admin action
-   that needs the owner's approval (:need:`XD-ADR-0112`). Proposed until the FreeCAD spike is merged.
+   that needs the owner's approval (:need:`XD-ADR-0112`). Proposed until task 5.29 has shown the
+   headless STEP import (the FreeCAD spike did not test it).

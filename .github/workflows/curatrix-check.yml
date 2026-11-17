@@ -178,8 +178,9 @@ jobs:
           case "$ROLE" in
             syseng) ;;
             ee) west config manifest.group-filter -- +ee ;;
-            me) west config manifest.group-filter -- +me ;;
-            sw) west config manifest.group-filter -- +sw ;;
+            # same groups as curatrix setup.ROLES, without the big libraries (task 5.14: me and sw get +ee)
+            me) west config manifest.group-filter -- +me,+ee ;;
+            sw) west config manifest.group-filter -- +sw,+ee ;;
             full) west config manifest.group-filter -- +ee,+me,+sw,+integration,+kicad-3d,+freecad-parts ;;
             *) west config manifest.group-filter -- +ee,+me,+sw,+integration ;;
           esac

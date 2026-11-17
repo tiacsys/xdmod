@@ -165,6 +165,13 @@ BAD = {
    :satisfies: ME-REQ-0001
    :conforms: EE-PORT-0001
 """,
+    "sw-conforms-to-ee-cmp": """
+.. sw-dd:: Bad
+   :id: SW-DD-0090
+   :status: valid
+   :refines: SW-ARCH-0001
+   :conforms: EE-CMP-0001
+""",
     "bad-decision-status": """
 .. xd-adr:: Bad
    :id: XD-ADR-0090
@@ -181,7 +188,23 @@ BAD = {
 }
 
 
+# Why the Phase 5 cases must fail (task 5.14), so that they do not pass for another reason.
+REASON = {
+    "ee-port-conforms-to-element": "needs.link_target_type",
+    "ee-port-part-of-assembly": "needs.link_target_type",
+    "harness-with-one-end": "schema violations",
+    "harness-to-a-board": "needs.link_target_type",
+    "me-port-part-of-board": "needs.link_target_type",
+    "ee-links-to-sw": "needs.link_target_type",
+    "me-conforms-to-ee-port": "needs.link_target_type",
+    "sw-conforms-to-ee-cmp": "needs.link_target_type",
+    "bad-decision-status": "schema violations",
+}
+
+
 @pytest.mark.parametrize("name", sorted(BAD))
 def test_planted_error_fails(tmp_path, name):
     rc, log, _ = build(tmp_path, BAD[name])
     assert rc != 0, f"{name} should fail the strict build:\n{log}"
+    if name in REASON:
+        assert REASON[name] in log, log

@@ -14,6 +14,32 @@ def test_roles_match_repo_topology():
     assert "+ee" in setup.ROLES["me"] and "+ee" in setup.ROLES["sw"]   # task 5.14: KiCad files, pin maps
 
 
+def test_update_reapplies_the_role(monkeypatch):
+    from types import SimpleNamespace
+    calls = []
+    ws = SimpleNamespace(has_west=True, role="sw")
+    monkeypatch.setattr(setup, "set_role", lambda w, r: calls.append(("role", r)))
+    monkeypatch.setattr(setup, "west", lambda w, *a, **k: calls.append(("west", a)) or 0)
+    monkeypatch.setattr(setup, "refresh", lambda w, adopt=False: None)
+    monkeypatch.setattr(setup, "doctor", lambda w, quiet=False: 0)
+    assert setup.update(ws) == 0
+    assert calls == [("role", "sw"), ("west", ("update", "-k"))]   # filter first, then the update
+    calls.clear()
+    ws.role = None                                                    # no role: filter untouched
+    setup.update(ws)
+    assert calls == [("west", ("update", "-k"))]
+
+
+def test_doctor_warns_on_missing_kicad_models_only_for_3d_roles(tmp_path):
+    ws = Workspace(make_ws(tmp_path))
+    for role in ("ee", "me", "integration", "sw", None):
+        assert setup.kicad_models_row(ws, role) is None
+    assert setup.kicad_models_row(ws, "ee3d")[0] == "warn"
+    assert setup.kicad_models_row(ws, "full", ci=True) is None
+    (ws.root / "libs" / "kicad" / "packages3D").mkdir(parents=True)
+    assert setup.kicad_models_row(ws, "full") is None
+
+
 def test_claude_links(tmp_path, monkeypatch):
     root = make_ws(tmp_path)
     repo = root / "robarm-ee"
