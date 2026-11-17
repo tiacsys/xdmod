@@ -46,3 +46,51 @@ def test_top_packages(tmp_path):
     f = tmp_path / "a.sysml"
     f.write_text("library package XdTrace {\n}\npackage <'P'> 'My Pkg' { }\nstandard library package S;\n")
     assert model.top_packages([f]) == {"XdTrace", "My Pkg", "S"}
+
+
+def test_top_packages_skips_nested_packages_comments_and_strings(tmp_path):
+    f = tmp_path / "a.sysml"
+    f.write_text("package A {\n    public package Inner { part def X; }\n    // package C {\n"
+                 "    doc /* package D { */\n    attribute s = \"package E {\";\n}\npackage B;\n")
+    assert model.top_packages([f]) == {"A", "B"}
+
+
+DOMAIN = FIXTURES / "sysml" / "domain"      # made by test_tools_live.py::test_domain_model_fixture_is_fresh
+
+
+def domain():
+    return model.Model.load(DOMAIN / "ee-model.json"), model.Model.load(DOMAIN / "sys-model.json")
+
+
+def test_domain_needs_links_from_specialization():
+    doc, findings = model.to_needs(domain()[0], "ee")
+    n = doc["versions"][""]["needs"]
+    assert findings == []
+    assert n["EE-PCBA-0001"]["realizes"] == ["SYS-EL-0001"] and n["EE-PCBA-0001"]["type"] == "ee-pcba"
+    assert n["EE-PCBA-0002"]["realizes"] == ["SYS-EL-0003"]                      # super in a nested package
+    assert n["EE-PCBA-0004"]["realizes"] == ["SYS-EL-0001", "SYS-EL-0002"]      # multiple specialization
+    assert n["EE-PORT-0001"]["conforms"] == ["SYS-IF-0002"]
+    assert n["EE-PORT-0001"]["part_of"] == ["EE-PCBA-0001", "EE-PCBA-0004", "EE-PCBA-0005"]
+    assert "realizes" not in n["EE-PORT-0009"]                                   # no link type: CK-E4 says so
+
+
+def test_conformance_planted_errors():
+    d, u = domain()
+    f = model.conformance(d, [u])
+    expect = [
+        "EeBoards::ComboBoard: port servoOut (from Sys::Driver) is not redefined",
+        "EeBoards::ComboBoard: inherits port name 'servoOut' more than once",
+        "EeBoards::NoIdBoard: specializes SYS-EL-0002 (Sys::Driver) but has no ID of its own",
+        "EeBoards::OddBoard: EE-PORT-0009 specializes SYS-EL-0002, but there is no trace link from EE-PORT to SYS-EL",
+        "EeBoards::SensorBoard: port bus (from Sys::Detail::Sensor) is not redefined",
+        "EeBoards::WrongBoard: port servoOut (from Sys::Controller) is redefined by EeBoards::WrongBoard::servoOut "
+        "with EePorts::BusHeader, which does not specialize Sys::ServoIf",
+    ]
+    assert len(f) == len(expect) and all(x.startswith(e) for x, e in zip(f, expect)), f
+    # clean: the good board, its variant without own redefinitions, one port redefining both
+    # supers' `servoOut`, and the signal ports of the port defs (Pin :> ElSignal, no ID needed)
+    assert not [x for x in f if x.startswith(("EeBoards::ControllerBoard", "EeBoards::ComboBoard2", "EePorts::"))]
+
+
+def test_conformance_without_upstream_finds_nothing():
+    assert model.conformance(domain()[0], []) == []

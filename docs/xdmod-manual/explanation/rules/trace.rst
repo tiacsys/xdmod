@@ -57,7 +57,7 @@ The principles of the trace model and the rules on the trace graph.
    :status: valid
    :decided_by: XD-ADR-0017, XD-ADR-0023, XD-ADR-0100
 
-   Needs generated from SysML, KiCad, FreeCAD, code and test results follow the same rules as authored needs. Their links come from the source files: SysML ``satisfy``, CAD trace fields, Doxygen ``\satisfies`` and ZTEST ``\verifies``.
+   Needs generated from SysML, KiCad, FreeCAD, code and test results follow the same rules as authored needs. Their links come from the source files: SysML ``satisfy`` and ``:>`` across the repo boundary, CAD trace fields, Doxygen ``\satisfies`` and ZTEST ``\verifies``.
 
 .. xd-rule:: One shared needs configuration
    :id: XD-RULE-0007
@@ -130,3 +130,11 @@ The principles of the trace model and the rules on the trace graph.
    :decided_by: XD-ADR-0038, XD-ADR-0052, XD-ADR-0121
 
    A link is suspect when its target changed after the link was last confirmed. Until affirmatrix is adapted, "last confirmed" means the ``needs.json`` of the last baseline (for pull requests: of ``main``). A change is a change of title, content, status, value fields or links. Suspect links are reported in pull requests and block a baseline.
+
+.. xd-rule:: Domain models conform to the system model
+   :id: XD-RULE-0047
+   :tags: trace
+   :status: valid
+   :decided_by: XD-ADR-0130, XD-ADR-0132
+
+   A domain def (board, connector, cable, assembly, mechanical port) specializes the system def it realizes or the interface def it meets. Every port it inherits from a system def is redefined somewhere in the chain by a port whose def specializes the inherited port's def; inside port defs the same holds for the signal ports. A port name inherited more than once is redefined by one port that redefines all of them. The trace link of a specialization comes from the pair of kinds (``realizes`` to a ``SYS-EL``, ``conforms`` to a ``SYS-IF``); a pair without a link type is a finding.

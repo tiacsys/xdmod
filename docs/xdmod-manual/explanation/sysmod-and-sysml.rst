@@ -67,6 +67,34 @@ also exports the model as JSON (:need:`XD-ADR-0058`). XDMOD's own Python tools r
 stores a compact form of it in ``generated/model.json``, so later steps (views, variants, needs)
 need no Java. The model must parse with 0 errors (:need:`XD-RULE-0035`, :need:`XD-CHECK-0016`).
 
+The repo's model files are read as one set, after the libraries, so their order does not matter
+(:need:`XD-ADR-0130`).
+
+Domain models
+-------------
+
+The EE and ME repos have their own model in ``model/`` (:need:`XD-ADR-0130`). A domain def
+specializes the system def it realizes and one base def of the xdmod library ``XdDomain``
+(``Pcba``, ``ExternalPart``, ``Cable``, ``Assembly``; ``ConnectorPort``, ``PinSignal``,
+``MechanicalPort`` for ports):
+
+.. code-block:: text
+
+   part def <'EE-PCBA-0012'> JointControllerBoard :> RobArmProduct::JointController, XdDomain::Pcba {
+       port :>> servoOut : ServoHeader;
+   }
+   port def <'EE-PORT-0003'> ServoHeader :> RobArmInterfaces::ServoIf, XdDomain::ConnectorPort {
+       :>> connector = "JST-XH-3";
+       out port :>> pwm : Pin { :>> pin = "1"; :>> net = "SERVO_PWM"; }
+   }
+
+The domain repo's ``checks.yaml`` lists the system model files as ``model.libraries`` and the
+system repo's committed ``generated/model.json`` as ``model.upstream``. ``curatrix gen model``
+emits the ``EE-PCBA``, ``EE-PORT``, ``EE-HAR``, ``ME-ASM`` and ``ME-PORT`` needs and derives their
+links from ``:>``: ``realizes`` to a ``SYS-EL``, ``conforms`` to a ``SYS-IF``, and ``part_of`` from a
+port def to the board or assembly that has a port of it (:need:`XD-ADR-0132`, :need:`XD-ADR-0133`).
+:need:`XD-CHECK-0033` checks conformance (:need:`XD-RULE-0047`).
+
 Views of the model are SysML ``view`` definitions with an ``@XdView`` annotation (:need:`XD-ADR-0085`).
 curatrix renders them as editable ``.drawio.svg`` files (:need:`XD-ADR-0087`).
 

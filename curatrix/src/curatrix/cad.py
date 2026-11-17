@@ -2,7 +2,8 @@
 
 Trace fields (id-scheme.md §5), the same names in both tools:
 
-    TraceID     the need ID (EE-PCBA, EE-CMP, ME-ASM, ME-PART)
+    TraceID     the need ID (EE-CMP, ME-PART); on a KiCad project or a FreeCAD top document the
+                ID of its domain def (EE-PCBA, ME-ASM), a reference only (XD-ADR-0128)
     Realizes    comma list of IDs  -> realizes
     Satisfies   comma list         -> satisfies
     Conforms    comma list         -> conforms
@@ -28,6 +29,8 @@ from pathlib import Path
 
 from curatrix import ids as idmod
 
+# kinds the domain model owns (XD-ADR-0128): a CAD file names them, it does not make the need
+MODEL_OWNED = ("EE-PCBA", "EE-PORT", "EE-HAR", "ME-ASM", "ME-PORT")
 LINK_FIELDS = {"Realizes": "realizes", "Satisfies": "satisfies", "Conforms": "conforms", "PartOf": "part_of"}
 TRACE_FIELDS = ("TraceID", *LINK_FIELDS, "Status", "Configs")
 
@@ -44,6 +47,8 @@ def trace_need(fields: dict[str, str], title: str, content: str, source: str) ->
     kind = idmod.kind_of(tid)
     if kind is None:
         return None, [f"{source}: TraceID {tid!r} is not a valid ID"]
+    if kind in MODEL_OWNED:
+        return None, []          # a reference to the domain model's need (XD-ADR-0128)
     n = {"id": tid, "type": idmod.directive_of(kind), "title": title, "content": content,
          "status": (fields.get("Status") or "valid").strip() or "valid", "source_file": source}
     findings = []

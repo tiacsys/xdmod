@@ -77,3 +77,49 @@ def test_pilot_library_set_errors_name_file_and_line(tmp_path):
     r = pilot.run(WS, [], [], None, tmpdir=tmp_path, libraries=[d / "LibA.sysml", d / "LibB.sysml", d / "BadLib.sysml"])
     assert not r.ok and r.errors == 1
     assert f"{(d / 'BadLib.sysml').resolve()} line : 3" in r.log, r.log
+
+
+DOMAIN = FIXTURES / "sysml" / "domain"
+
+
+def domain_models(tmp_path) -> tuple[str, str]:
+    """The compact JSON of the fixture system model and of the domain model read against it, as
+    `curatrix gen model` makes them (libraries as one set, the repo's files as one set). Rewrite
+    the committed fixtures with XD_REGEN=1."""
+    import os
+    libs = sorted((XDTRACE.parent).glob("*.sysml"))
+    out = {}
+    for name, lib, files in (("sys", libs, [DOMAIN / "Sys.sysml"]),
+                             ("ee", libs + [DOMAIN / "Sys.sysml"], [DOMAIN / "a_boards.sysml", DOMAIN / "b_ports.sysml"])):
+        raw = tmp_path / f"{name}.json"
+        r = pilot.run(WS, files, sorted(model.top_packages(files)), raw, tmpdir=tmp_path, libraries=lib, one_set=True)
+        assert r.ok, r.log
+        out[name] = model.dumps(model.compact(json.loads(raw.read_text()), model.top_packages(lib)))
+        if os.environ.get("XD_REGEN"):
+            (DOMAIN / f"{name}-model.json").write_text(out[name])
+    return out["sys"], out["ee"]
+
+
+def test_domain_model_fixture_is_fresh(tmp_path):
+    """The Pilot reads the domain files as one set (a forward import works), the system model's
+    nested package is no export target, and the committed fixture JSON is what the Pilot makes."""
+    need_pilot()
+    s, e = domain_models(tmp_path)
+    assert s == (DOMAIN / "sys-model.json").read_text()
+    assert e == (DOMAIN / "ee-model.json").read_text()
+
+
+def test_pilot_files_in_name_order_fail_without_one_set(tmp_path):
+    need_pilot()
+    libs = sorted((XDTRACE.parent).glob("*.sysml")) + [DOMAIN / "Sys.sysml"]
+    r = pilot.run(WS, [DOMAIN / "a_boards.sysml", DOMAIN / "b_ports.sysml"], [], None, tmpdir=tmp_path, libraries=libs)
+    assert not r.ok and "EePorts" in r.log
+
+
+def test_pilot_export_error_is_an_error(tmp_path):
+    """An export the Pilot cannot resolve (e.g. a nested package by its simple name) returns an
+    `ERROR:` string; it counts as an error and is never written into the JSON (model spike §3)."""
+    need_pilot()
+    out = tmp_path / "x.json"
+    r = pilot.run(WS, [DOMAIN / "Sys.sysml"], ["Sys", "Detail"], out, tmpdir=tmp_path, libraries=[XDTRACE])
+    assert not r.ok and r.errors == 1 and "EXPORT Detail: ERROR:" in r.log and not out.exists()

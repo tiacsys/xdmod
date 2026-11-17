@@ -18,6 +18,7 @@ with ``{ws}/`` (the workspace root).
       json: generated/model.json
       needs: generated/model-needs.json
       variants: true
+      upstream: ["{ws}/myproj-syseng/generated/model.json"]   # CK-E4 conformance (domain models)
     stubs:                           # CK-D1
       out: model/generated/NeedStubs.sysml
       docs: [se-req]
@@ -65,7 +66,7 @@ TOP_KEYS = {"version", "area", "docs", "ids", "model", "stubs", "views", "cad", 
 SECTION_KEYS = {
     "docs": {"registry"},
     "ids": {"ledger", "exclude"},
-    "model": {"libraries", "files", "export", "json", "needs", "variants"},
+    "model": {"libraries", "files", "export", "json", "needs", "variants", "upstream"},
     "stubs": {"out", "docs", "package"},
     "views": {"dir", "model"},
     "cad": {"kicad", "freecad", "needs", "freecad_json"},

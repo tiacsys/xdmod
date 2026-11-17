@@ -138,6 +138,8 @@ def graph(m: Model, v: ViewDef) -> dict:
     rid = root["qualifiedName"]
     g["nodes"].append(_node(m, root, rid, root.get("name") or rid, root["@type"], "1"))
     if v.kind == "interconnection":
+        # the root's own ports sit on its border (a board with its connectors, XD-ADR-0130)
+        g["nodes"][0]["ports"] = _ports(m, root)
         parts = []
         for ref in (root.get("ownedPart") or []) or [x["@id"] for _, x in m.owned(root) if x.get("@type") == "PartUsage"]:
             u = m.get(ref)
@@ -192,12 +194,18 @@ def to_elk(g: dict) -> dict:
     if g["kind"] == "interconnection":
         rid = g["nodes"][0]["id"]
         outer = {"id": rid, "labels": [{"text": g["nodes"][0]["label"], "width": 160, "height": 16}],
-                 "ports": [], "children": [box(n) for n in g["nodes"][1:]],
+                 "ports": [port(p) for p in g["nodes"][0]["ports"]], "children": [box(n) for n in g["nodes"][1:]],
                  "edges": [{"id": e["id"], "sources": [e["src"]], "targets": [e["dst"]]} for e in g["edges"]],
                  "layoutOptions": {"elk.algorithm": "layered", "elk.direction": "RIGHT", "elk.edgeRouting": "ORTHOGONAL",
                                    "elk.portConstraints": "FIXED_SIDE",
                                    "elk.padding": "[top=40,left=40,bottom=30,right=40]", "elk.spacing.nodeNode": "40",
                                    "elk.layered.spacing.nodeNodeBetweenLayers": "60"}}
+        if not outer["children"]:
+            # a def with only its own ports (a board with its connectors): a box that, with the
+            # legend below it, keeps the drawing between 16:9 and 9:16
+            n = max(len(g["nodes"][0]["ports"]), 1)
+            outer["layoutOptions"].update({"elk.nodeSize.constraints": "MINIMUM_SIZE",
+                                           "elk.nodeSize.minimum": f"(520,{max(240, 40 * n + 80)})"})
         return {"id": "root", "children": [outer],
                 "layoutOptions": {"elk.algorithm": "layered", "elk.hierarchyHandling": "INCLUDE_CHILDREN",
                                   "elk.json.shapeCoords": "ROOT", "elk.json.edgeCoords": "ROOT"}}

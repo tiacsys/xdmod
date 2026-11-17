@@ -38,16 +38,26 @@ KEEP = {
 }
 STUB_KEYS = ("@type", "name", "declaredName", "declaredShortName", "qualifiedName")
 
-# need kinds generated from the model (trace-model.md §2)
-MODEL_KINDS = ("SYS-EL", "SYS-IF", "SYS-UC", "SYS-CFG", "SYS-FEAT")
-# (source kind, target kind) -> link type, for `dependency from S to T` and `allocate T to S`
+# need kinds generated from a model (trace-model.md §2): the system model's and the domain
+# models' (XD-ADR-0128, XD-ADR-0133)
+MODEL_KINDS = ("SYS-EL", "SYS-IF", "SYS-UC", "SYS-CFG", "SYS-FEAT", "EE-PCBA", "EE-PORT", "EE-HAR", "ME-ASM", "ME-PORT")
+# (source kind, target kind) -> link type, for `dependency from S to T`, `allocate T to S` and,
+# across the repo boundary, `S :> T` (XD-ADR-0132)
 LINK_BY_KINDS = {
     ("SYS-UC", "SYS-NEED"): "addresses",
     ("SYS-EL", "SYS-UC"): "realizes",
     ("SYS-EL", "SYS-EL"): "realizes",
     ("SYS-EL", "SYS-REQ"): "satisfies",
     ("SYS-CFG", "SYS-EL"): "configures",
+    ("EE-PCBA", "SYS-EL"): "realizes",
+    ("EE-HAR", "SYS-EL"): "realizes",
+    ("ME-ASM", "SYS-EL"): "realizes",
+    ("EE-PORT", "SYS-IF"): "conforms",
+    ("ME-PORT", "SYS-IF"): "conforms",
 }
+# a port need is `part_of` the domain defs of these kinds that own a port typed by it (XD-ADR-0133)
+PART_OF_KINDS = {"EE-PORT": ("EE-PCBA",), "ME-PORT": ("ME-ASM",)}
+LINK_KEYS = ("satisfies", "realizes", "addresses", "configures", "conforms", "part_of")
 LAYERS = tracemodel.field_enum("layer")          # from needs_config.toml (task 5.2)
 STATUSES = tracemodel.field_enum("status")
 
@@ -157,15 +167,39 @@ class Model:
     def types_of(self, p: dict) -> list[dict]:
         return [t for t in (self.get(x) for x in p.get("type", []) or []) if t]
 
+    def rels(self, p: dict, typ: str):
+        """p's owned relationships of @type `typ`."""
+        for r in p.get("ownedRelationship", []) or []:
+            rel = self.get(r)
+            if rel and rel.get("@type") == typ:
+                yield rel
+
+    def supers(self, p: dict) -> list[dict]:
+        """Direct superclassifiers (``:>`` of a definition)."""
+        return [x for x in (self.get(r.get("superclassifier") or r.get("general"))
+                            for r in self.rels(p, "Subclassification")) if x]
+
 
 # ------------------------------------------------------------------ compaction
+_PKG = re.compile(r"(?<![\w:])(?:standard\s+)?(?:library\s+)?package\s+(?:<'?[^>]*'?>\s*)?('[^']+'|\w+)")
+_BLANK = re.compile(r"//[^\n]*|/\*.*?\*/|\"(?:\\.|[^\"\\])*\"", re.S)
+
+
 def top_packages(files: list[Path]) -> set[str]:
-    """Top-level package names declared in library files (they become stubs)."""
+    """Top-level package names declared in the files (for library files: they become stubs).
+    Nested packages are not top-level: the brace depth of the declaration must be 0 (comments,
+    doc texts and strings are blanked first). The Pilot cannot export a nested package by its
+    simple name, and its top package exports it anyway (model spike)."""
     out = set()
     for f in files:
-        for m in re.finditer(r"^\s*(?:standard\s+)?(?:library\s+)?package\s+(?:<'?[^>]*'?>\s*)?('[^']+'|\w+)",
-                             Path(f).read_text(), re.M):
-            out.add(m.group(1).strip("'"))
+        text = _BLANK.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), Path(f).read_text())
+        depth, pos = 0, 0
+        for m in _PKG.finditer(text):
+            seg = text[pos:m.start()]
+            depth += seg.count("{") - seg.count("}")
+            pos = m.start()
+            if depth == 0:
+                out.add(m.group(1).strip("'"))
     return out
 
 
@@ -404,12 +438,189 @@ def to_needs(m: Model, project: str = "model", source_of: dict[str, str] | None 
             for t in tgts:
                 relate(t, s, f"allocation {m.qn(s)} -> {m.qn(t)}")  # target realizes source
 
+    # across the repo boundary: `D :> S` with S an upstream (library) element with an ID (XD-ADR-0132).
+    # Pairs without a link type are CK-E4 findings (conformance()), not CK-D2 ones.
+    for p, sid, sup, tid in specializations(m):
+        link = LINK_BY_KINDS.get((idmod.kind_of(sid), idmod.kind_of(tid)))
+        if link:
+            add_link([sid], link, [tid], m.qn(p))
+    # a port need is part of the domain defs that own a port typed by it (XD-ADR-0133)
+    for p in m.user():
+        oid = element_id(m, p)
+        if not oid or oid not in needs or p.get("@type") not in ("PartDefinition", "PortDefinition"):
+            continue
+        for f in owned_ports(m, p):
+            for t in m.types_of(f):
+                tid = element_id(m, t)
+                if tid in needs and idmod.kind_of(oid) in PART_OF_KINDS.get(idmod.kind_of(tid), ()):
+                    add_link([tid], "part_of", [oid], m.qn(f))
+
     for n in needs.values():
-        for k in ("satisfies", "realizes", "addresses", "configures"):
+        for k in LINK_KEYS:
             if k in n:
                 n[k] = sorted(n[k])
     doc = needs_doc(needs, project)
     return doc, findings
+
+
+def owned_ports(m: Model, p: dict):
+    """Ports declared in p (``port x : T;``, ``port :>> x : T;``)."""
+    for kind in ("FeatureMembership", "OwningMembership"):
+        for r in m.rels(p, kind):
+            for x in r.get("ownedRelatedElement", []) or []:
+                f = m.get(x)
+                if f and f.get("@type") == "PortUsage":
+                    yield f
+
+
+def specializations(m: Model):
+    """(def, its ID, upstream super, the super's ID) for every own definition with an ID that
+    specializes an upstream element with an ID (a library stub in the compact JSON)."""
+    for p in m.user():
+        sid = p.get("declaredShortName")
+        if not sid or not idmod.valid_id(sid) or not p.get("@type", "").endswith("Definition"):
+            continue
+        for sup in m.supers(p):
+            tid = element_id(m, sup)
+            if sup.get("isLibraryElement") and tid:
+                yield p, sid, sup, tid
+
+
+# ------------------------------------------------------------------ conformance (CK-E4, XD-ADR-0132)
+class Joined:
+    """A domain model and its upstream models as one: a stub ``lib:<qn>`` of the domain JSON
+    resolves to the full upstream element of that qualified name (the stubs keep no features
+    and no types, model spike §2)."""
+
+    def __init__(self, domain: Model, upstream: list[Model]):
+        self.d = domain
+        self.up: dict[str, tuple[Model, dict]] = {}
+        for um in upstream:
+            for p in um.user():
+                q = p.get("qualifiedName")
+                if q and q not in self.up:
+                    self.up[q] = (um, p)
+
+    def upstream(self, p: dict | None) -> bool:
+        return bool(p) and p.get("qualifiedName") in self.up and \
+            (p.get("isLibraryElement") or p is self.up[p["qualifiedName"]][1])
+
+    def full(self, p: dict | None) -> tuple[Model, dict | None]:
+        """(the model that holds p's full payload, that payload)."""
+        if p and p.get("isLibraryElement") and p.get("qualifiedName") in self.up:
+            return self.up[p["qualifiedName"]]
+        if p and p.get("qualifiedName") in self.up and p is self.up[p["qualifiedName"]][1]:
+            return self.up[p["qualifiedName"]]
+        return self.d, p
+
+    def by_qn(self, q: str) -> dict | None:
+        if q in self.up:
+            return self.up[q][1]
+        return next((p for p in self.d.user() if p.get("qualifiedName") == q), None)
+
+    def supers(self, p: dict) -> list[dict]:
+        m, f = self.full(p)
+        return [self.full(s)[1] or s for s in m.supers(f)] if f else []
+
+    def all_supers(self, p: dict) -> list[dict]:
+        """All superclassifiers, breadth-first (most specific first)."""
+        seen, queue, out = {p.get("qualifiedName")}, list(self.supers(p)), []
+        while queue:
+            s = queue.pop(0)
+            if s.get("qualifiedName") not in seen:
+                seen.add(s.get("qualifiedName"))
+                out.append(s)
+                queue += self.supers(s)
+        return out
+
+    def specializes(self, t: dict, general: dict) -> bool:
+        g = general.get("qualifiedName")
+        return t.get("qualifiedName") == g or any(s.get("qualifiedName") == g for s in self.all_supers(t))
+
+    def ports(self, p: dict) -> list[dict]:
+        m, f = self.full(p)
+        return list(owned_ports(m, f)) if f else []
+
+    def redefined(self, f: dict) -> list[str]:
+        m, g = self.full(f)
+        out = []
+        for r in m.rels(g, "Redefinition"):
+            t = m.get(r.get("redefinedFeature"))
+            if t and t.get("qualifiedName"):
+                out.append(t["qualifiedName"])
+        return out
+
+    def type_of(self, f: dict) -> dict | None:
+        m, g = self.full(f)
+        t = next(iter(m.types_of(g)), None)
+        return self.full(t)[1] if t else None
+
+
+def conformance(domain: Model, upstream: list[Model]) -> list[str]:
+    """CK-E4 (XD-ADR-0132). For every own part or port def that specializes an upstream def:
+
+    * every port it inherits from an upstream def is redefined somewhere in the chain between
+      the two, and the most specific redefinition's def specializes the inherited port's def
+      (inside port defs the same holds for the signal ports);
+    * a port name inherited from more than one upstream port is redefined by one port that
+      redefines all of them;
+    * a specialization between two IDs has a link type (LINK_BY_KINDS);
+    * a def without an ID of its own that specializes an upstream element is a finding, except
+      below the port level (a port def used only inside port defs)."""
+    j = Joined(domain, upstream)
+    findings: list[str] = []
+    used_in_part = set()
+    for p in domain.user():
+        if p.get("@type") == "PartDefinition":
+            for f in owned_ports(domain, p):
+                used_in_part.update(t.get("qualifiedName") for t in domain.types_of(f))
+    defs = [p for p in domain.user() if p.get("@type") in ("PartDefinition", "PortDefinition")]
+    for d in sorted(defs, key=lambda p: p.get("qualifiedName") or ""):
+        dq, did = d.get("qualifiedName") or d["@id"], element_id(domain, d)
+        chain = [d] + j.all_supers(d)
+        if not any(j.upstream(s) for s in chain[1:]):
+            continue
+        for s in (s for s in domain.supers(d) if j.upstream(s)):
+            sid = element_id(domain, s)
+            if did and sid:
+                pair = (idmod.kind_of(did), idmod.kind_of(sid))
+                if pair not in LINK_BY_KINDS:
+                    findings.append(f"{dq}: {did} specializes {sid}, but there is no trace link from {pair[0]} to {pair[1]}")
+            elif sid and not (d.get("@type") == "PortDefinition" and dq not in used_in_part):
+                findings.append(f"{dq}: specializes {sid} ({s.get('qualifiedName')}) but has no ID of its own")
+        ports = [(o, f) for o in chain for f in j.ports(o)]
+
+        def closure(f, seen=None):
+            seen = seen if seen is not None else set()
+            for q in j.redefined(f):
+                if q not in seen:
+                    seen.add(q)
+                    g = j.by_qn(q)
+                    if g:
+                        closure(g, seen)
+            return seen
+
+        closures = [(f, closure(f)) for _, f in ports]
+        names: dict[str, list[tuple[str, str | None]]] = defaultdict(list)
+        for o, p in ports:
+            if not j.upstream(o):
+                continue
+            q = p.get("qualifiedName")
+            where = f"{dq}: port {p.get('name')} (from {o.get('qualifiedName')})"
+            r = next((f for f, c in closures if q in c), None)
+            names[p.get("name")].append((q, r and r.get("qualifiedName")))
+            if r is None:
+                findings.append(f"{where} is not redefined")
+                continue
+            want, got = j.type_of(p), j.type_of(r)
+            if want and got and not j.specializes(got, want):
+                findings.append(f"{where} is redefined by {r.get('qualifiedName')} with {got.get('qualifiedName')}, "
+                                f"which does not specialize {want.get('qualifiedName')}")
+        for n, qs in sorted(names.items()):
+            if len(qs) > 1 and (None in [r for _, r in qs] or len({r for _, r in qs}) != 1):
+                findings.append(f"{dq}: inherits port name {n!r} more than once ({', '.join(q for q, _ in qs)}); "
+                                f"redefine all of them in one port (port :>> A::{n}, B::{n} : X;)")
+    return findings
 
 
 def needs_doc(needs: dict[str, dict], project: str) -> dict:

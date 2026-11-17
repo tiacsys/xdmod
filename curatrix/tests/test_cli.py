@@ -35,7 +35,7 @@ def test_gen_and_check_cad_needs(ws, capsys):
     assert run("check", "robarm-ee", "--only", "CK-D4") == 1                  # not generated yet
     assert run("gen", "cad-needs", "robarm-ee") == 0
     n = json.loads((ws / "robarm-ee/generated/cad-needs.json").read_text())["versions"][""]["needs"]
-    assert sorted(n) == ["EE-CMP-0001", "EE-CMP-0002", "EE-CMP-0003", "EE-PCBA-0001"]
+    assert sorted(n) == ["EE-CMP-0001", "EE-CMP-0002", "EE-CMP-0003"]           # EE-PCBA: the model's
     assert run("check", "robarm-ee", "--stage", "local") == 0
     s = summary(ws)
     assert s["CK-D4"]["status"] == "pass" and s["CK-C1"]["status"] == "pass" and s["CK-X1"]["status"] == "pass"
@@ -52,6 +52,19 @@ def test_gen_and_check_cad_needs(ws, capsys):
     assert list(tomb) == ["EE-CMP-0001"] and tomb["EE-CMP-0001"]["status"] == "retired"
     assert run("check", "robarm-ee", "--stage", "local") == 0                  # CK-B7 is a warning
     assert summary(ws)["CK-B7"]["status"] == "warn"
+
+
+def test_need_moved_to_another_generated_file_is_no_tombstone(ws):
+    """EE-PCBA moves from cad-needs.json to model-needs.json (XD-ADR-0128): no tombstone."""
+    from curatrix import checkcfg, gen, needs as needsmod
+    repo = ws / "robarm-ee"
+    old = {"EE-PCBA-0001": {"id": "EE-PCBA-0001", "type": "ee-pcba", "title": "b", "status": "valid"}}
+    needsmod.write(repo / "generated/cad-needs.json", old, "x")
+    needsmod.write(repo / "generated/model-needs.json", old, "x")
+    (repo / "checks.yaml").write_text((repo / "checks.yaml").read_text() + "model: {files: [model/a.sysml]}\n")
+    cfg = checkcfg.load(repo / "checks.yaml", ws)
+    tomb, msgs = gen.tombstones(cfg, [gen.cad_needs(None, cfg)])
+    assert needsmod.needs_of(json.loads(tomb.text)) == {} and msgs == []
 
 
 def test_ids_and_placeholders(ws, capsys):

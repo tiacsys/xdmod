@@ -81,6 +81,8 @@ BUILTIN = [
     ("CK-D6", "code-needs.json matches the code (@xdid blocks, ZTEST comments)", _lv({"local": "error", "pr": "error", "baseline": "error"}), "code", False, "c_codeneeds"),
     ("CK-D5", "generated files record the pinned tool versions (provenance.json)",
      _lv({"local": "warning", "pr": "warning", "full": "warning", "baseline": "error"}), "provenance", False, "c_provenance"),
+    ("CK-E4", "domain model conforms to its upstream model (ports, link types)",
+     _lv({"local": "warning", "pr": "warning"}), "model.upstream", False, "c_conformance"),
     ("CK-E2", "requirement values agree with the sentence", _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "requirements", False, "c_ears"),
     ("CK-E3", "EARS pattern matches the sentence", _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "requirements", False, "c_ears"),
     ("CK-G1", "needs-diff against the base (change impact)", _lv({"pr": "report", "full": "report"}), "docs", False, "c_diff"),
@@ -95,7 +97,7 @@ BUILTIN = [
 ]
 
 # Why a built-in check is off for a repo: the checks.yaml key it needs.
-NEED_TEXT = {"model.variants": "model.variants: true", "generated": "a model, cad or code section",
+NEED_TEXT = {"model.variants": "model.variants: true", "model.upstream": "model.upstream", "generated": "a model, cad or code section",
              "requirements": "requirements: true and a docs section", "provenance": "a model section or cad.freecad_json",
              "views": "views and model sections"}
 
@@ -106,6 +108,8 @@ def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
     if need == "model.variants":
         s = cfg.section("model")
         return bool(s and s.get("variants"))
+    if need == "model.upstream":
+        return bool((cfg.section("model") or {}).get("upstream"))
     if need == "generated":
         return any(cfg.section(x) for x in ("model", "cad", "code"))
     if need == "requirements":
@@ -216,6 +220,18 @@ def c_model(ctx: Ctx, r: Result):
         return
     fix = f"curatrix gen model {ctx.repo.name}"
     r.findings = _compare(mjson, "the model", ctx.ws, fix) + _compare(mneeds, "the model", ctx.ws, fix) + mneeds.findings
+
+
+def c_conformance(ctx: Ctx, r: Result):
+    """CK-E4 (XD-ADR-0132): on the committed model.json and the upstream ones, no Java."""
+    s = ctx.cfg.section("model") or {}
+    mj = ctx.cfg.resolve(s.get("json", "generated/model.json"))
+    if not mj.exists():
+        r.findings = [f"{ctx.ws.rel(mj)} missing; run `curatrix gen model {ctx.repo.name}`"]
+        return
+    ups, r.findings = gen.upstream_models(ctx.cfg)
+    if not r.findings:
+        r.findings = modelmod.conformance(modelmod.Model.load(mj), ups)
 
 
 def c_views(ctx: Ctx, r: Result):
