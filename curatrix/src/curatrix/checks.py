@@ -99,6 +99,14 @@ BUILTIN = [
      "cad.connectors", True, "c_connectors_netlist"),
     ("CK-F1", "connectors match the pin maps of the EE model (Port, pin numbers, net names)",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.connectors+model", False, "c_connectors_model"),
+    ("CK-F4a", "KiCad ERC per project: errors excluded or accepted (Accepted-by)",
+     _lv({"local": "warning", "baseline": "warning"}), "cad.projects", True, "c_erc"),
+    ("CK-F4b", "KiCad DRC per board: errors excluded or accepted (Accepted-by); unrouted nets in one entry",
+     _lv({"local": "warning", "baseline": "warning"}), "cad.projects", True, "c_drc"),
+    ("CK-F8", "ERC and DRC severities equal the new-pcba template",
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects", False, "c_severities"),
+    ("CK-F9", "accepted.yaml well formed; entries and KiCad exclusions accepted by a human (Accepted-by)",
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects", False, "c_acceptance"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
     ("CK-H2", "no build output inside the repo", _lv({"local": "error", "pr": "error"}), None, False, "c_hygiene_build"),
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
@@ -395,6 +403,71 @@ def c_connectors_model(ctx: Ctx, r: Result):
             continue
         r.findings += conn.conformance(json.loads(f.read_text()), (pr.variables().get("TraceID") or "").strip(), m,
                                        str(pr.sch.relative_to(ctx.repo.path)))
+
+
+def _erc_drc(ctx: Ctx, r: Result, kind: str):
+    """CK-F4a (kind erc, every project) / CK-F4b (drc, every pcba/ board): kicad-cli JSON, evaluated
+    against the KiCad exclusions and accepted.yaml (XD-ADR-0126). Warnings go to the report only."""
+    from curatrix import eeprojects, ercdrc
+    out = ctx.out / "erc-drc"
+    acc = ercdrc.Acceptors(ctx.repo.path)
+    lines: list[str] = []
+    for pr in eeprojects.discover(ctx.cfg):
+        if not pr.sch.is_file() or (kind == "drc" and (pr.kind != "pcba" or not pr.pro.with_suffix(".kicad_pcb").is_file())):
+            continue
+        problems, listed, err = ercdrc.check_project(ctx.ws, ctx.cfg, pr, kind, out, acc)
+        if err:
+            r.level = "error"
+            r.findings.append(err)
+            continue
+        r.findings += problems
+        lines += problems + [f"{pr.name}: {x}" for x in listed]
+    out.mkdir(parents=True, exist_ok=True)
+    rep = out / f"{kind}.txt"
+    rep.write_text("".join(f"{x}\n" for x in lines) or "no findings\n")
+    r.log = ctx.ws.rel(rep)
+
+
+def c_erc(ctx: Ctx, r: Result):
+    _erc_drc(ctx, r, "erc")
+
+
+def c_drc(ctx: Ctx, r: Result):
+    _erc_drc(ctx, r, "drc")
+
+
+def c_severities(ctx: Ctx, r: Result):
+    """CK-F8 (XD-ADR-0126): ERC/DRC severities of each project equal the new-pcba template's."""
+    from curatrix import eeprojects, ercdrc
+    tmpl = ctx.ws.xdmod / "templates" / "kicad-pcba" / "pcba.kicad_pro"
+    acc = ercdrc.Acceptors(ctx.repo.path)
+    for pr in eeprojects.discover(ctx.cfg):
+        entries, _ = ercdrc.project_entries(ctx.cfg, pr, acc)
+        rel = pr.pro.relative_to(ctx.repo.path)
+        for rule, text in ercdrc.severity_diffs(pr.pro, tmpl):
+            e = next((e for e in entries if e.check == "CK-F8" and e.rule == rule), None)
+            if e is None:
+                r.findings.append(f"{rel}: {text}; set it back or accept it in {ercdrc.ACCEPTED} (check: CK-F8, rule: {rule})")
+            elif e.status != "accepted":
+                r.findings.append(f"{rel}: {text}; {ercdrc.ACCEPTED} {e.label()} is a proposal ({e.why})")
+
+
+def c_acceptance(ctx: Ctx, r: Result):
+    """CK-F9 (XD-ADR-0126): accepted.yaml entries and KiCad exclusions; accepted only by a human
+    commit with `Accepted-by:`, no agent mark and nothing else changed; else a proposal."""
+    from curatrix import eeprojects, ercdrc
+    acc = ercdrc.Acceptors(ctx.repo.path)
+    for pr in eeprojects.discover(ctx.cfg):
+        entries, errs = ercdrc.project_entries(ctx.cfg, pr, acc)
+        r.findings += errs
+        rel = (pr.folder / ercdrc.ACCEPTED).relative_to(ctx.repo.path)
+        r.findings += [f"{rel} {e.label()}: proposal, not accepted ({e.why})" for e in entries if e.status != "accepted"]
+        rel_pro = str(pr.pro.relative_to(ctx.repo.path))
+        for kind, key, comment in ercdrc.exclusions(pr.pro):
+            ok, why = acc.exclusion(rel_pro, key)
+            if not ok:
+                r.findings.append(f"{rel_pro}: {kind.upper()} exclusion {key.split('|', 1)[0]} ({comment or 'no comment'}): "
+                                  f"proposal, not accepted ({why})")
 
 
 def c_codeneeds(ctx: Ctx, r: Result):
