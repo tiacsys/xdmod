@@ -354,12 +354,13 @@ def _csv(path: Path, cols, rows) -> None:
 
 
 # ------------------------------------------------------------------ the output of the current commit
-def tree_state(repo: Path, folder: Path) -> str:
-    """A hash of the uncommitted state of a project folder: ``git status`` of the folder and the
-    content of every changed or untracked file ("" for a clean folder). A file that is reverted or
-    deleted later changes it too (task 5.21)."""
-    rel = str(folder.resolve().relative_to(repo.resolve()))
-    status = _git(repo, "status", "--porcelain", "--untracked-files=all", "--", rel).stdout
+def tree_state(repo: Path, folder: Path, *more: Path) -> str:
+    """A hash of the uncommitted state of a project folder (and of ``more`` folders, e.g. the shared
+    ``parts/``, ``lib/``, ``print/`` of an ME repo): ``git status`` of the folders and the content
+    of every changed or untracked file ("" for a clean tree). A file that is reverted or deleted
+    later changes it too (task 5.21; assemblies: task 5.27)."""
+    rels = [str(f.resolve().relative_to(repo.resolve())) for f in (folder, *more)]
+    status = _git(repo, "status", "--porcelain", "--untracked-files=all", "--", *rels).stdout
     if not status.strip():
         return ""
     h = hashlib.sha256(status.encode())

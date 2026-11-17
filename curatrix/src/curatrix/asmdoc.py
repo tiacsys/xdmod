@@ -22,8 +22,10 @@ committed ``model.json``, so CI shows it:
 Local only (``FreeCADCmd`` in ``curatrix cam``): ``mass`` turns the volume and center of mass of
 every present part (in the frame of the top-level assembly) into masses and the center of gravity.
 The mass of a part is its ``Mass`` property (``12 g``, ``0.012 kg``) if it has one, else its volume
-times the density of its ``Density`` property (g/cm³) or of its ``Material`` in
-``data/materials.yaml``; a part without either has no mass and the total is marked incomplete.
+times the density of its ``Density`` property (``1.24 g/cm^3``) or of its ``Material`` in
+``data/materials.yaml``. Both properties need a unit, and a density outside 0.01..25 g/cm³ is
+refused; a part without a usable value has no mass (the reason is shown) and the total is marked
+incomplete.
 Printed parts count as solid: the infill of the print profile is not applied (an upper bound).
 """
 from __future__ import annotations
@@ -284,8 +286,9 @@ def materials(root: Node, dens: dict[str, float] | None = None) -> list[dict]:
 
 # ------------------------------------------------------------------ mass and center of gravity (local)
 _QTY = re.compile(r"^\s*([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*([^\d\s].*)?$")
-MASS_UNITS = {"": 1.0, "g": 1.0, "kg": 1000.0, "mg": 0.001}
-DENSITY_UNITS = {"": 1.0, "g/cm^3": 1.0, "g/cm³": 1.0, "g/cm3": 1.0, "kg/m^3": 0.001, "kg/m³": 0.001, "kg/m3": 0.001,
+MASS_UNITS = {"g": 1.0, "kg": 1000.0, "mg": 0.001}          # a unit is required
+DENSITY_RANGE = (0.01, 25.0)                     # g/cm³: plausible solids (aerogel .. osmium)
+DENSITY_UNITS = {"g/cm^3": 1.0, "g/cm³": 1.0, "g/cm3": 1.0, "kg/m^3": 0.001, "kg/m³": 0.001, "kg/m3": 0.001,
                  "kg/mm^3": 1e6}
 
 
@@ -303,21 +306,32 @@ def mass(rows: list[dict], dens: dict[str, float] | None = None) -> dict:
     parts, missing = [], []
     total, mx, my, mz = 0.0, 0.0, 0.0, 0.0
     for r in rows:
-        g = quantity(r.get("Mass"), MASS_UNITS) if r.get("Mass") else None
-        src = "Mass property"
-        if g is None:
-            d = quantity(r.get("Density"), DENSITY_UNITS) if r.get("Density") else None
-            src = "Density property"
+        g, src, problem = None, "", ""
+        if r.get("Mass"):
+            g, src = quantity(r["Mass"], MASS_UNITS), "Mass property"
+            if g is None:
+                problem = f"Mass {r['Mass']!r} needs a unit (g, kg, mg)"
+        elif r.get("Density"):
+            d, src = quantity(r["Density"], DENSITY_UNITS), "Density property"
             if d is None:
-                d = dens.get(str(r.get("Material") or "").lower())
-                src = f"material {r.get('Material')}"
+                problem = f"Density {r['Density']!r} needs a unit (g/cm^3, kg/m^3)"
+            elif not DENSITY_RANGE[0] <= d <= DENSITY_RANGE[1]:
+                problem, d = f"Density {r['Density']!r} is {d:g} g/cm³, outside {DENSITY_RANGE[0]:g}..{DENSITY_RANGE[1]:g}", None
+            vol = r.get("volume")
+            g = vol / 1000.0 * d if d is not None and vol is not None else None
+        else:
+            d = dens.get(str(r.get("Material") or "").lower())
+            src = f"material {r.get('Material')}"
+            if d is None:
+                problem = f"no density for Material {r.get('Material')!r} (data/materials.yaml)" if r.get("Material") \
+                    else "no Material, Mass or Density"
             vol = r.get("volume")
             g = vol / 1000.0 * d if d is not None and vol is not None else None
         name = r.get("label") or r.get("object") or ""
         com = r.get("com")
         p = {"path": r.get("path", ""), "id": r.get("TraceID", ""), "name": name, "material": r.get("Material", ""),
              "volume_mm3": r.get("volume"), "mass_g": None if g is None else round(g, 4),
-             "source": src if g is not None else "", "com_mm": com}
+             "source": src if g is not None else problem, "com_mm": com}
         parts.append(p)
         if g is None or com is None:
             missing.append(p["path"] or name)

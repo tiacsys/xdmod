@@ -45,7 +45,8 @@ tag on main with a clean tree; here "clean" covers the assembly folder and the s
 ``lib/`` and ``print/``. The full version goes into the title block, the short one (``vX.Y.Z``,
 ``P`` appended for a preview) onto the printed parts. The sources are never saved: their md5 before
 and after the run must be equal, else the run fails. ``cam.json`` (``kind: assembly``) records it.
-``current()`` gives the run the assembly document may show (CK-D10-like freshness, task 5.27).
+``current()`` gives the run the assembly document may show: the current commit and the same
+``cam.tree_state`` of the assembly folder and the shared folders (CK-D10, task 5.27).
 """
 from __future__ import annotations
 
@@ -61,6 +62,7 @@ from pathlib import Path
 import yaml
 
 from curatrix import asmdoc, cad, meassemblies
+from curatrix import cam
 from curatrix.cam import CamError, _git, version as git_version
 
 SCRIPT = Path("templates") / "freecad-asm" / "cam-asm.py"
@@ -439,6 +441,7 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
     for w in warnings:
         log(f"  warn CK-F19 {w}")
     ver, release, short = version(repo.path, name, folder)
+    state = cam.tree_state(repo.path, folder, *shared_folders(repo.path))
     tag = ver.split("/", 1)[1] if "/" in ver else ver
     top = ws.build(cfg.area) / "cam" / name / tag
     if top.exists():
@@ -513,7 +516,7 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print) -> dict:
         raise CamError(f"{name}: the CAM run changed the source documents {', '.join(changed)} (it must never save)")
     files = sorted(str(f.relative_to(top)) for f in out.rglob("*") if f.is_file())
     rec = {"kind": "assembly", "project": name, "assembly": aid, "version": ver, "release": release,
-           "emboss": short, "commit": head, "date": date, "variants": vs,
+           "emboss": short, "commit": head, "tree_state": state, "date": date, "variants": vs,
            "print_profiles": profiles, "sources_unchanged": True,
            "renderings": {"views": list(VIEWS), "method": RENDER_METHOD, "marking": "release" if release else "PREVIEW"}, "per_variant": per, "warnings": warnings,
            "files": files}
@@ -551,17 +554,17 @@ def run(ws, repo, cfg, name: str | None = None, log=print) -> list[dict]:
     return [run_assembly(ws, repo, cfg, d, log) for d in folders]
 
 
+def shared_folders(repo: Path) -> list[Path]:
+    return [repo / s for s in SHARED if (repo / s).exists()]
+
+
 def current(cam_dir: Path, name: str, repo: Path, folder: Path) -> tuple[dict | None, Path | None, str]:
     """(cam.json record, its version folder, why there is none) of the ``curatrix cam`` run of an
-    assembly that the assembly document may show: one of the commit ``repo`` is at; with uncommitted
-    changes in the assembly folder or the shared folders, one from such a tree that is newer than
-    every changed file; without changes, one from a clean tree (the rule of the board document)."""
+    assembly that the assembly document may show: one of the commit ``repo`` is at, from an
+    assembly folder and shared ``parts/``, ``lib/``, ``print/`` in exactly the uncommitted state
+    they are in now (``cam.tree_state``, the rule of the board document; task 5.27)."""
     head = _git(repo, "rev-parse", "HEAD").stdout.strip()
-    rels = [str(folder.resolve().relative_to(repo.resolve()))] + [s for s in SHARED if (repo / s).exists()]
-    changed = [repo / ln[3:].split(" -> ")[-1].strip('"') for ln in
-               _git(repo, "status", "--porcelain", "--untracked-files=all", "--", *rels).stdout.splitlines() if ln]
-    dirty = bool(changed)
-    newest = max((f.stat().st_mtime for f in changed if f.is_file()), default=0.0)
+    state = cam.tree_state(repo, folder, *shared_folders(repo))
     none = f"no `curatrix cam` output of {name} for commit {head[:12]}"
     best, why = None, none
     for f in sorted((cam_dir / name).glob("*/cam.json")):
@@ -571,13 +574,9 @@ def current(cam_dir: Path, name: str, repo: Path, folder: Path) -> tuple[dict | 
             continue
         if rec.get("kind") != "assembly" or rec.get("commit") != head:
             continue
-        if ("-dirty" in rec.get("version", "")) != dirty:
-            why = why if why != none else (
-                "the `curatrix cam` output of this commit is from a tree with uncommitted changes" if not dirty
-                else "uncommitted changes since the `curatrix cam` run")
-            continue
-        if dirty and f.stat().st_mtime < newest:
-            why = "a source file changed after the `curatrix cam` run"
+        if rec.get("tree_state", "") != state:
+            why = ("uncommitted changes that differ from those of the `curatrix cam` run" if state
+                   else "the `curatrix cam` output of this commit is from a tree with uncommitted changes")
             continue
         if best is None or f.stat().st_mtime > best[0]:
             best = (f.stat().st_mtime, rec, f.parent)

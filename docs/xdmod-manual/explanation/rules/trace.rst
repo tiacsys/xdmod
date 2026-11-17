@@ -256,7 +256,7 @@ The principles of the trace model and the rules on the trace graph.
    :status: valid
    :decided_by: XD-ADR-0129
 
-   Renderings, schematic and ERC/DRC findings of a board, and drawings, exploded view, renderings, mass and check findings of an assembly, come from the local ``curatrix cam`` output of the commit the repo is at; with uncommitted changes in the project folder, from a run on exactly that uncommitted state (a hash of ``git status`` and the changed files, kept in ``cam.json``). Older output is never shown: the section prints a fixed sentence instead, as in CI. Missing output is a local warning, and an error at the baseline once the check ran on the canary.
+   Renderings, schematic and ERC/DRC findings of a board, and drawings, exploded view, renderings, mass and check findings of an assembly, come from the local ``curatrix cam`` output of the commit the repo is at; with uncommitted changes in the project folder (for an assembly: its folder and the shared ``parts/``, ``lib/``, ``print/``), from a run on exactly that uncommitted state (a hash of ``git status`` and the changed files, kept in ``cam.json``). Older output is never shown: the section prints a fixed sentence instead, as in CI. Missing output is a local warning, and an error at the baseline once the check ran on the canary.
 
 .. xd-rule:: The board library holds only tagged board versions
    :id: XD-RULE-0064
