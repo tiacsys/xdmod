@@ -130,15 +130,19 @@ checks:
   CK-D7:
     need: XD-CHECK-0037
     enforces: [XD-RULE-0050]
-    description: "The committed generated/<project>.connectors.json equals the connector tables read from the KiCad schematic in plain Python (pins, pin names, nets, Port); no file of a removed project."
+    description: "The committed generated/<project>.connectors.json equals the connector tables read from the KiCad schematic in plain Python (pins, pin names, nets, the port fields portName, portType, portTypeID); no file of a removed project."
   CK-D8:
     need: XD-CHECK-0038
     enforces: [XD-RULE-0050]
-    description: "The plain-Python connector extraction equals KiCad's XML netlist (kicad-cli sch export netlist --format kicadxml) on every project: Port, pin numbers, pin names (from libparts) and nets (local, needs KiCad)."
+    description: "The plain-Python connector extraction equals KiCad's XML netlist (kicad-cli sch export netlist --format kicadxml) on every project: portName, portType, portTypeID, pin numbers, pin names (from libparts) and nets (local, needs KiCad)."
   CK-F1:
     need: XD-CHECK-0039
     enforces: [XD-RULE-0050]
-    description: "Every connector of a pcba/ project has a Port field (- = none); each Port names a connector port def of the board def; each port of the board def is named by one connector; pin numbers and net names equal the pin map of the EE model. Each harness end (a WireViz connector) names its EE-PORT (`Port:` in its notes); its pins and pin labels contain that pin map (pin numbers and net names; both ends use the same net names, also an external part); every conductor, loops included, joins pins of one net and no wired pin is outside the pin map; the ends are the ports of the cable def (also ports of external parts)."
+    description: "Every connector of a pcba/ project has a portName field (- = none) naming a port usage of the board def, with portType = the name of that port's def and portTypeID = its EE-PORT ID; the old Port field is a finding; each port of the board def is named by exactly one connector; pin numbers and net names equal the pin map of the EE model. Each harness end (a WireViz connector) names the end port of the cable def the same way (lines `portName:`, `portType:`, `portTypeID:` in its notes); its pins and pin labels contain that pin map (pin numbers and net names; both ends use the same net names, also an external part); every conductor, loops included, joins pins of one net and no wired pin is outside the pin map; the ends are the ports of the cable def (also ports of external parts)."
+  CK-F22:
+    need: XD-CHECK-0059
+    enforces: [XD-RULE-0066]
+    description: "Port usages of the parts of the EE model (boards, cables, external parts) have functional lowerCamelCase names, not reference designators (one to three letters and a number, such as j1, p3, x2); every part of a pcba/ project with a portName field has an X designator (X1, X2, ...). A warning (owner decisions Q10, Q11)."
   CK-F4a:
     need: XD-CHECK-0040
     enforces: [XD-RULE-0051]

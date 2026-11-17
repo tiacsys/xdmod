@@ -178,7 +178,7 @@ def test_board_document(tmp_path):
     _commit(repo, "no board need in this document")
     (repo / "generated").mkdir()
     (repo / "generated" / "bom.connectors.json").write_text(json.dumps({"connectors": [
-        {"ref": "J1", "port": "-", "value": "Conn_01x03", "footprint": "fp",
+        {"ref": "J1", "portName": "-", "value": "Conn_01x03", "footprint": "fp",
          "pins": [{"number": "1", "name": "Pin_1", "net": "/A"}]}]}))
     src = tmp_path / "src"
     shutil.copytree(FIXTURES / "sphinxdoc", src)

@@ -827,7 +827,7 @@
 				)
 			)
 		)
-		(property "Port" "-"
+		(property "portName" "-"
 			(at 180.34 120.65 0)
 			(hide yes)
 			(show_name no)
@@ -845,7 +845,7 @@
 			(uuid "b085a3da-a40a-4f17-8e3d-6a45ab079647")
 		)
 		(instances
-			(project "t"
+			(project "conn"
 				(path "/11111111-2222-3333-4444-555555555555"
 					(reference "J2")
 					(unit 1)
@@ -919,7 +919,7 @@
 			(uuid "935afe2d-68b5-4c8f-a98f-603b0c6d9d03")
 		)
 		(instances
-			(project "t"
+			(project "conn"
 				(path "/11111111-2222-3333-4444-555555555555"
 					(reference "#PWR01")
 					(unit 1)
@@ -996,7 +996,7 @@
 			(uuid "bdd54501-134b-4ad9-88e3-501f28acce3b")
 		)
 		(instances
-			(project "t"
+			(project "conn"
 				(path "/11111111-2222-3333-4444-555555555555"
 					(reference "R1")
 					(unit 1)
@@ -1066,7 +1066,29 @@
 				)
 			)
 		)
-		(property "Port" "EE-PORT-0001"
+		(property "portName" "servoOut"
+			(at 100.33 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "portType" "ServoHeader"
+			(at 100.33 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "portTypeID" "EE-PORT-0001"
 			(at 100.33 100.33 0)
 			(hide yes)
 			(show_name no)
@@ -1087,7 +1109,7 @@
 			(uuid "11ab2f28-d4ad-4f52-b8d8-374b270f631e")
 		)
 		(instances
-			(project "t"
+			(project "conn"
 				(path "/11111111-2222-3333-4444-555555555555"
 					(reference "J1")
 					(unit 1)
@@ -1165,7 +1187,7 @@
 			(uuid "21d45907-06fb-4170-9b9a-09d98a6ef339")
 		)
 		(instances
-			(project "t"
+			(project "conn"
 				(path "/11111111-2222-3333-4444-555555555555"
 					(reference "R2")
 					(unit 1)

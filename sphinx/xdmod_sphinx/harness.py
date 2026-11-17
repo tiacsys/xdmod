@@ -102,18 +102,23 @@ class HarnessEnds(Directive):
         kebab = curatrix_module("eeprojects").kebab
         rows = []
         for des, c in sorted(h.connectors().items()):
+            f = hm.port_fields(c or {})
             port = hm.port_of(c or {}) or ""
             parts = []
-            for kind, name, oid in owners.get(port, []):
+            for kind, name, oid, pname in owners.get(port, []):
                 if kind == "board":
                     doc = f"pcba-{kebab(name)}"
                     link = f", :external+{docs[doc]}:doc:`{doc} <index>`" if doc in docs else ""
-                    parts.append(f"board {name} (:need:`{oid}`{link})" if oid else f"board {name}")
+                    parts.append(f"board {name} port ``{pname}`` (:need:`{oid}`{link})" if oid
+                                 else f"board {name} port ``{pname}``")
                 else:
-                    parts.append(f"external part {name}")
+                    parts.append(f"external part {name} port ``{pname}``")
             pins, labels = hm.pins_of(c or {})
-            rows.append([des, f":need:`{port}`" if port.startswith("EE-PORT-") else _cell(port),
-                         "; ".join(parts) or "—", _cell(", ".join(f"{p} {lb}" for p, lb in zip(pins, labels)))])
+            end = f.get("portName") or ""
+            pdesc = (f"``{end}`` ({f.get('portType') or '?'}, :need:`{port}`)" if port.startswith("EE-PORT-") and end
+                     else (f":need:`{port}`" if port.startswith("EE-PORT-") else _cell(end or port)))
+            rows.append([des, pdesc, "; ".join(parts) or "—",
+                         _cell(", ".join(f"{p} {lb}" for p, lb in zip(pins, labels)))])
         if not rows:
             return out + [nodes.paragraph(text=NO_DATA)]
         return out + _rst_table(self, ["End", "Port", "Mates with", "Pins"], rows)

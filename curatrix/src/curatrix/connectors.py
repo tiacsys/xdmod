@@ -1,9 +1,11 @@
 """Connector pin tables of a KiCad project, in plain Python (task 5.18; EE-6, XD-ADR-0128,
 XD-ADR-0129; checks CK-D7, CK-D8, CK-F1).
 
-``generated/<project>.connectors.json`` lists every connector of a project: designator, its
-``Port`` field (the ``EE-PORT`` it implements, ``-`` = none), value, footprint, and per pin the
-number, the pin name and the net. The nets come from the schematic's connectivity, computed here
+``generated/<project>.connectors.json`` lists every connector of a project: designator, its port
+fields (XD-ADR-0128, owner decisions Q10/Q11 of tiacsys/xdmod#69): ``portName`` (the name of the
+port usage of the board def it implements, e.g. ``canaryLink``; ``-`` = none), ``portType`` (the
+name of that port's def, e.g. ``CanaryHeader``) and ``portTypeID`` (the def's ``EE-PORT`` ID), then
+value, footprint, and per pin the number, the pin name and the net. The nets come from the schematic's connectivity, computed here
 without KiCad:
 
 * connection points: wire ends, pins, labels, junctions, sheet pins; items at the same point
@@ -41,13 +43,26 @@ from pathlib import Path
 
 from curatrix.cad import _children, _props, sexpr
 
-CONNECTOR_REF = re.compile(r"^(J|P|CN)\d")
+CONNECTOR_REF = re.compile(r"^(X|J|P|CN)\d")
 NO_PORT = "-"
+# the connector fields that name the port (Q10/Q11): usage name, def name, def ID; `Port` is the old
+# single field (the EE-PORT ID), reported by CK-F1 until it is replaced
+PORT_FIELDS = ("portName", "portType", "portTypeID")
+OLD_PORT = "Port"
 SCALE = 10000                       # file units (mm, 4 decimals) -> integers
 
 
 def is_connector(ref: str, fields: dict) -> bool:
-    return "Port" in fields or bool(CONNECTOR_REF.match(ref))
+    return any(f in fields for f in (*PORT_FIELDS, OLD_PORT)) or bool(CONNECTOR_REF.match(ref))
+
+
+def port_fields(fields: dict) -> dict:
+    """The port fields of a connector for connectors.json: portName, portType, portTypeID (None if
+    absent), and `Port` only while the old field is still there."""
+    out = {k: fields.get(k) for k in PORT_FIELDS}
+    if OLD_PORT in fields:
+        out[OLD_PORT] = fields.get(OLD_PORT)
+    return out
 
 
 def _pt(x, y) -> tuple[int, int]:
@@ -341,12 +356,12 @@ def _ref_key(s: str):
 
 
 def connectors(nl: Netlist) -> list[dict]:
-    """The connector table (sorted by designator): ref, Port, value, footprint, pins."""
+    """The connector table (sorted by designator): ref, port fields, value, footprint, pins."""
     out: dict[str, dict] = {}
     for s in nl.symbols:
         if not is_connector(s.ref, s.fields):
             continue
-        c = out.setdefault(s.ref, {"ref": s.ref, "port": s.fields.get("Port"), "value": s.value,
+        c = out.setdefault(s.ref, {"ref": s.ref, **port_fields(s.fields), "value": s.value,
                                    "footprint": s.footprint, "lib_id": s.lib_id, "sheet": s.sheet, "pins": {}})
         for p in s.pins:
             c["pins"][p.number] = {"number": p.number, "name": p.name, "net": nl.nets.get((s.ref, p.number), "")}
@@ -392,7 +407,7 @@ def from_xml(xml: Path) -> list[dict]:
         ls = comp.find("libsource")
         lib, part = (ls.get("lib"), ls.get("part")) if ls is not None else ("", "")
         pins = libpins.get((lib, part), {})
-        out.append({"ref": ref, "port": fields.get("Port"), "value": comp.findtext("value") or "",
+        out.append({"ref": ref, **port_fields(fields), "value": comp.findtext("value") or "",
                     "pins": [{"number": k, "name": "" if pins[k] == "~" else pins[k], "net": nets.get((ref, k), "")}
                              for k in sorted(pins, key=_ref_key)]})
     return sorted(out, key=lambda c: _ref_key(c["ref"]))
@@ -410,8 +425,9 @@ def compare(mine: list[dict], kicad: list[dict], where: str) -> list[str]:
         if ref not in b:
             findings.append(f"{where}: {ref} is in the extraction, not in KiCad's netlist")
             continue
-        if a[ref].get("port") != b[ref].get("port"):
-            findings.append(f"{where}: {ref}: Port {a[ref].get('port')!r} here, {b[ref].get('port')!r} in KiCad")
+        for k in (*PORT_FIELDS, OLD_PORT):
+            if a[ref].get(k) != b[ref].get(k):
+                findings.append(f"{where}: {ref}: {k} {a[ref].get(k)!r} here, {b[ref].get(k)!r} in KiCad")
         pa = {p["number"]: p for p in a[ref]["pins"]}
         pb = {p["number"]: p for p in b[ref]["pins"]}
         for n in sorted(set(pa) | set(pb), key=_ref_key):
@@ -463,14 +479,49 @@ def _ports_with_supers(m, p, seen=None):
 
 def board_ports(m, board) -> list[tuple[str, str]]:
     """(port name, EE-PORT ID of its def) for each port of a board def (conjugated `~X` = X)."""
+    return [(n, sid) for n, _, sid in port_table(m, board)]
+
+
+def port_table(m, owner) -> list[tuple[str, str, str]]:
+    """(port name, def name, EE-PORT ID of the def) for each port a board, cable or external part
+    def declares (conjugated `~X` = X): what a connector's portName, portType and portTypeID say."""
     from curatrix.model import owned_ports
     out = []
-    for f in owned_ports(m, board):
+    for f in owned_ports(m, owner):
         t = next(iter(m.declared_types(f)), None)
         d, _ = m.port_def(t)
-        sid = (d or {}).get("declaredShortName") or ""
-        out.append((f.get("name") or "", sid))
+        out.append((f.get("name") or "", (d or {}).get("name") or "", (d or {}).get("declaredShortName") or ""))
     return out
+
+
+def check_port_fields(fields: dict, ports: dict[str, tuple[str, str]], what: str, where: str,
+                      missing: str = "has no portName field; name the port it implements, or `-` for none"
+                      ) -> tuple[str | None, list[str]]:
+    """(EE-PORT ID or None, findings) for the port fields of one connector or harness end against
+    the ports of its def (name -> (def name, EE-PORT ID)): portName names a port of the def,
+    portType is that port's def name and portTypeID its ID. `-` = no port; the old `Port` field is a
+    finding."""
+    out = []
+    if (fields.get(OLD_PORT) or "").strip():
+        out.append(f"{where}: {what} has the old field Port = {fields[OLD_PORT]!r}; replace it by portName (the port "
+                   f"usage name), portType (its def name) and portTypeID (its EE-PORT ID)")
+    name = (fields.get("portName") or "").strip()
+    if not name:
+        if not out:
+            out.append(f"{where}: {what} {missing}")
+        return None, out
+    if name == NO_PORT:
+        return None, out
+    if name not in ports:
+        out.append(f"{where}: {what}: portName {name!r} is no port of the def (ports: {', '.join(sorted(ports)) or 'none'})")
+        return None, out
+    dname, did = ports[name]
+    for k, want in (("portType", dname), ("portTypeID", did)):
+        have = (fields.get(k) or "").strip()
+        if have != want:
+            out.append(f"{where}: {what}: {k} is {have or '(empty)'!r}, the port {name} is typed by {dname} ({did}): "
+                       f"{k} = {want}")
+    return (did or None), out
 
 
 def strip_root(net: str) -> str:
@@ -479,10 +530,10 @@ def strip_root(net: str) -> str:
 
 
 def conformance(doc: dict, board_id: str | None, m, where: str) -> list[str]:
-    """CK-F1 for one project: every connector has a Port (``-`` = none); each Port names an
-    EE-PORT that is the def of a port of the board def; each port of the board def is named by
-    one connector (or as many as the board has ports of that def); pin numbers and net names
-    equal the pin map."""
+    """CK-F1 for one project: every connector has a portName (``-`` = none) that names a port of
+    the board def, with portType and portTypeID = that port's def name and EE-PORT ID; each port of
+    the board def is named by exactly one connector; pin numbers and net names equal the pin map of
+    the port's def."""
     from curatrix import eeprojects
     findings = []
     boards, _, _ = eeprojects.model_defs(m)
@@ -491,22 +542,20 @@ def conformance(doc: dict, board_id: str | None, m, where: str) -> list[str]:
     if board is None:
         return [f"{where}: TraceID {board_id!r} names no board def of the EE model (see CK-F7)"]
     findings += [f"{where}: {u}" for u in doc.get("unsupported", [])]
-    want: dict[str, list[str]] = {}
-    for pname, pid in board_ports(m, board):
-        if pid:
-            want.setdefault(pid, []).append(pname)
+    ports = {n: (dn, did) for n, dn, did in port_table(m, board)}
     have: dict[str, list[str]] = {}
     for c in doc.get("connectors", []):
-        port = (c.get("port") or "").strip()
-        if not port:
-            findings.append(f"{where}: {c['ref']} has no Port field; name its EE-PORT, or `-` for none")
-            continue
-        if port == NO_PORT:
+        port, f = check_port_fields(c, ports, c["ref"], where)
+        findings += f
+        name = (c.get("portName") or "").strip()
+        if name in ports:
+            have.setdefault(name, []).append(c["ref"])
+        if port is None:
             continue
         if port not in maps:
-            findings.append(f"{where}: {c['ref']}: Port {port} is no connector port def (EE-PORT) of the EE model")
+            findings.append(f"{where}: {c['ref']}: the port {name} is typed by {ports[name][0]}, which is no "
+                            f"connector port def (EE-PORT with a pin map) of the EE model")
             continue
-        have.setdefault(port, []).append(c["ref"])
         pins = {p["number"]: p for p in c["pins"]}
         for num, p in sorted(pins.items(), key=lambda kv: _ref_key(kv[0])):
             if num not in maps[port] and not p["net"].startswith("unconnected-"):
@@ -519,12 +568,47 @@ def conformance(doc: dict, board_id: str | None, m, where: str) -> list[str]:
             elif strip_root(p["net"]) != net:
                 findings.append(f"{where}: {c['ref']} ({names[port]}): pin {num} is on net {p['net']!r}, "
                                 f"the pin map says {net!r}")
-    for pid, pnames in sorted(want.items()):
-        refs = have.get(pid, [])
-        if len(refs) != len(pnames):
-            findings.append(f"{where}: the board def has {len(pnames)} port(s) of {names.get(pid, pid)} "
-                            f"({', '.join(pnames)}), {len(refs)} connector(s) name it ({', '.join(refs) or 'none'})")
-    for pid, refs in sorted(have.items()):
-        if pid not in want:
-            findings.append(f"{where}: {', '.join(refs)}: Port {pid} is not a port of the board def {m.qn(board)}")
+    for name, (dname, did) in sorted(ports.items()):
+        refs = have.get(name, [])
+        if did and len(refs) != 1:
+            findings.append(f"{where}: the port {name} ({dname}) of the board def {m.qn(board)} is named by "
+                            f"{len(refs)} connector(s) ({', '.join(refs) or 'none'}); exactly one names it in portName")
     return findings
+
+
+# ------------------------------------------------------------------ CK-F22: port and connector names
+# a reference designator as a name: one to three letters and a number (j1, p3, x2, cn1, jp2)
+DESIGNATOR_LIKE = re.compile(r"^[A-Za-z]{1,3}\d+[A-Za-z]?$")
+LOWER_CAMEL = re.compile(r"^[a-z][A-Za-z0-9]*$")
+CONNECTOR_PREFIX = re.compile(r"^X\d+$")
+
+
+def port_name_findings(m) -> list[str]:
+    """CK-F22, model side: port usages of parts (board, cable, external part defs and their usages)
+    have functional lowerCamelCase names, never reference designators (owner decision Q10). Ports
+    inside port defs (pins, signals) are not interfaces and are left out."""
+    out = []
+    for p in m.user():
+        if p.get("@type") != "PortUsage":
+            continue
+        owner = m.owner(p)
+        if not owner or owner.get("isLibraryElement") or owner.get("@type") not in ("PartDefinition", "PartUsage"):
+            continue
+        name = p.get("name") or ""
+        if DESIGNATOR_LIKE.match(name):
+            out.append(f"model {m.qn(p)}: the port name {name!r} looks like a reference designator; give the "
+                       f"interface a functional lowerCamelCase name (e.g. servoBase, canaryLink)")
+        elif name and not LOWER_CAMEL.match(name):
+            out.append(f"model {m.qn(p)}: the port name {name!r} is not lowerCamelCase")
+    return out
+
+
+def designator_findings(doc: dict, where: str) -> list[str]:
+    """CK-F22, KiCad side: a part with a portName field is a connector and has an X designator
+    (X1, X2, ...), so connectors are told apart from jumpers (J, JP) (owner decision Q11)."""
+    out = []
+    for c in doc.get("connectors", []):
+        if c.get("portName") is not None and not CONNECTOR_PREFIX.match(c.get("ref") or ""):
+            out.append(f"{where}: {c['ref']} has a portName but no X designator; connectors are X1, X2, ... "
+                       f"(set the reference prefix to X)")
+    return out

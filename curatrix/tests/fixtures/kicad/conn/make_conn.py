@@ -48,11 +48,11 @@ def label(kind, name, at):
     extra = ' (shape input)' if kind == "global_label" else ""
     items.append(f'({kind} "{name}"{extra} (at {at[0]} {at[1]} 0) (effects (font (size 1.27 1.27))) (uuid "{U()}"))')
 
-j1 = sym("Connector_Generic", "Conn_01x03", "J1", "Conn_01x03", (100.33, 100.33, 0), fields={"Port": "EE-PORT-0001"},
+j1 = sym("Connector_Generic", "Conn_01x03", "J1", "Conn_01x03", (100.33, 100.33, 0), fields={"portName": "servoOut", "portType": "ServoHeader", "portTypeID": "EE-PORT-0001"},
          fp="Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical")
 r1 = sym("Device", "R", "R1", "10k", (130.81, 120.65, 90))
 r2 = sym("Device", "R", "R2", "1k", (160.02, 80.01, 270), mirror="x")
-j2 = sym("Connector_Generic", "Conn_01x02", "J2", "Conn_01x02", (180.34, 120.65, 180), mirror="y", fields={"Port": "-"})
+j2 = sym("Connector_Generic", "Conn_01x02", "J2", "Conn_01x02", (180.34, 120.65, 180), mirror="y", fields={"portName": "-"})
 gnd = sym("power", "GND", "#PWR01", "GND", (90.17, 130.81, 0))
 p = j1["1"]; q = (p[0] - 7.62, p[1]); wire(p, q); label("label", "CANARY_A", q)
 p = j1["2"]; q = (p[0] - 5.08, p[1]); wire(p, q); wire(q, (q[0], r1["1"][1])); wire((q[0], r1["1"][1]), r1["1"])

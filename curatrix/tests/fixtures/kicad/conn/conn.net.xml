@@ -4,6 +4,7 @@
     <source>conn.kicad_sch</source>
     <date/>
     <tool>Eeschema 10.0.8</tool>
+    <textvar name="TraceID">EE-PCBA-0001</textvar>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
         <title/>
@@ -28,15 +29,19 @@
       <value>Conn_01x03</value>
       <footprint>Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical</footprint>
       <fields>
-        <field name="Port">EE-PORT-0001</field>
+        <field name="portName">servoOut</field>
+        <field name="portType">ServoHeader</field>
+        <field name="portTypeID">EE-PORT-0001</field>
         <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical</field>
         <field name="Datasheet"/>
         <field name="Description"/>
       </fields>
       <libsource lib="Connector_Generic" part="Conn_01x03" description="Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
-      <property name="Port" value="EE-PORT-0001"/>
+      <property name="portName" value="servoOut"/>
+      <property name="portType" value="ServoHeader"/>
+      <property name="portTypeID" value="EE-PORT-0001"/>
       <property name="Sheetname" value="Root"/>
-      <property name="Sheetfile" value="t.kicad_sch"/>
+      <property name="Sheetfile" value="conn.kicad_sch"/>
       <property name="ki_keywords" value="connector"/>
       <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
       <sheetpath names="/" tstamps="/"/>
@@ -54,15 +59,15 @@
     <comp ref="J2">
       <value>Conn_01x02</value>
       <fields>
-        <field name="Port">-</field>
+        <field name="portName">-</field>
         <field name="Footprint"/>
         <field name="Datasheet"/>
         <field name="Description"/>
       </fields>
       <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
-      <property name="Port" value="-"/>
+      <property name="portName" value="-"/>
       <property name="Sheetname" value="Root"/>
-      <property name="Sheetfile" value="t.kicad_sch"/>
+      <property name="Sheetfile" value="conn.kicad_sch"/>
       <property name="ki_keywords" value="connector"/>
       <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
       <sheetpath names="/" tstamps="/"/>
@@ -85,7 +90,7 @@
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value="Root"/>
-      <property name="Sheetfile" value="t.kicad_sch"/>
+      <property name="Sheetfile" value="conn.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
       <property name="ki_fp_filters" value="R_*"/>
       <sheetpath names="/" tstamps="/"/>
@@ -108,7 +113,7 @@
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="Sheetname" value="Root"/>
-      <property name="Sheetfile" value="t.kicad_sch"/>
+      <property name="Sheetfile" value="conn.kicad_sch"/>
       <property name="ki_keywords" value="R res resistor"/>
       <property name="ki_fp_filters" value="R_*"/>
       <sheetpath names="/" tstamps="/"/>

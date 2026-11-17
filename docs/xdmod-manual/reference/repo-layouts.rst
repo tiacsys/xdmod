@@ -70,9 +70,12 @@ KiCad library tables refer to the shared libraries only through variables (``${X
 and so on) and to ``lib/`` through ``${KIPRJMOD}``. ``curatrix launch kicad`` sets the variables
 (:need:`XD-ADR-0080`). The domain model owns the board, port and harness IDs; KiCad and WireViz
 files refer to them (:need:`XD-ADR-0128`): a KiCad project by its ``TraceID`` text variable, a
-WireViz harness by ``metadata: {TraceID: EE-HAR-....}``, and each of its connectors by a line
-``Port: EE-PORT-....`` in its ``notes`` (the port it mates with, on a board or an external part;
-WireViz shows the notes in the diagram). The connector's ``pins`` and ``pinlabels`` are the pin
+WireViz harness by ``metadata: {TraceID: EE-HAR-....}``, and each of its connectors by three
+lines in its ``notes`` that name the end port of the cable def, as a KiCad connector's fields name
+the port of its board def: ``portName: boardEnd``, ``portType: CanaryHeader``, ``portTypeID:
+EE-PORT-0001`` (the def is also the port it mates with, on a board or an external part; WireViz
+shows the notes in the diagram; ``portName: -`` for none). Port usages have functional names, and
+board connectors the designator prefix ``X`` (:need:`XD-RULE-0066`). The connector's ``pins`` and ``pinlabels`` are the pin
 numbers and net names of that port's pin map; the pin maps at both ends use the same net names
 (the pin map of a bought part names its pins with our nets, not the vendor's). The cable def has one port per end, typed by the
 (conjugated) port def it mates with; ``EE-HAR connects EE-PORT`` comes from these ports (one target

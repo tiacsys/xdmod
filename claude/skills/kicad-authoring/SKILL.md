@@ -29,6 +29,15 @@ Read first: `robarm-ee/claude/CLAUDE.md`, `robarm-ee/pcba/README.md`, `xdmod/cur
   `Status`, `Configs`; the PCBA ID is a project text variable. Use real IDs (`curatrix ids new
   EE-CMP`, skill `xd-issue-ids`). After task 5.14 the project carries the model's `EE-PCBA` ID only
   as a reference and `Realizes` / `Conforms` go away (P5-8).
+- **Connectors** (owner decisions Q10, Q11 of tiacsys/xdmod#69, XD-RULE "Ports have functional
+  names, connectors X designators"): reference prefix `X` (`X1`, `X2`; KiCad's connector symbols
+  default to `J`, so change it when placing), and three hidden fields: `portName` = the port usage
+  of the board def (`canaryLink`, `-` for none), `portType` = its def name (`CanaryHeader`),
+  `portTypeID` = the def's `EE-PORT` ID. The model's port usages get functional lowerCamelCase
+  names, never designators. Set the same fields on the footprint. CK-F1 checks the fields against
+  the model, CK-F22 warns on designator-like port names and connectors without `X`. A WireViz
+  harness end names the end port of its cable def the same way, on `portName:` / `portType:` /
+  `portTypeID:` lines of its `notes`.
 - After every change: `curatrix gen cad-needs robarm-ee`, commit `generated/cad-needs.json`
   (CK-D4; PR CI sees KiCad content only through this file).
 - Never commit `*.lck`, `*-backups/`, `fp-info-cache`.
@@ -49,5 +58,5 @@ and usage each one serves (`--json` for tools). The PLEML feature rules are `cur
 ## To be added after the spike
 
 Jobset template and `curatrix new pcba`; variants (`--variant`); ERC/DRC with exclusions and
-`accepted.yaml` (only humans write `Accepted-by:`); connector `Port` fields; CAM output;
+`accepted.yaml` (only humans write `Accepted-by:`); CAM output;
 the MCP server and how to use it under limits.
