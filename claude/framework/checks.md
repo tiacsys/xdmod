@@ -64,7 +64,7 @@ Check IDs use the prefix `CK-` (e.g. `CK-D4`) so that they can't be confused wit
 | # | Check | Stages | Level |
 |---|---|---|---|
 | CK-E1 | The Pilot parses and resolves the model with 0 errors (marker line, since jshell's exit code is unreliable) | local, PR (syseng) | error |
-| CK-E2 | Requirement value fields agree with the EARS sentence (number and unit in the text match `max`/`unit`, D83) | local, PR | error |
+| CK-E2 | Requirement value fields agree with the EARS sentence: each of `min`/`max`/`nominal` occurs as a number (any format), the `unit` once as symbol or name (D83, task 5.4) | local, PR | warning until it ran on real requirements |
 | CK-E3 | EARS pattern: the sentence matches its `ears` field | local, PR | warning |
 
 ### CK-F. Domain consistency against syseng interfaces (`SYS-IF`): checked, not generated

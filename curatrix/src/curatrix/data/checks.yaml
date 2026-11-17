@@ -90,7 +90,7 @@ checks:
   CK-E2:
     need: XD-CHECK-0021
     enforces: [XD-RULE-0036]
-    description: "The value fields of a requirement appear in its sentence (number and unit)."
+    description: "Each of min, max and nominal of a requirement occurs as a number in its sentence (in any order and format: thousands separators, decimals, a ± b), and the unit occurs once, as symbol or name. A warning until it has run on the real requirements (task 5.4)."
   CK-E3:
     need: XD-CHECK-0022
     enforces: [XD-RULE-0037]
