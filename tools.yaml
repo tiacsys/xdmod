@@ -48,16 +48,18 @@ tools:
     location: opt/gh
     links: {gh: bin/gh}
 
-# Tools used from the machine (D19). Versions are the ones tested on the reference machine.
+# Tools used from the machine (D19). Exact pins only for tools that shape committed output
+# (views: firefox; the tools above); minimum versions for the rest, so that a rolling distro's
+# patch release does not break `curatrix doctor` (task 5.5, P4-12). CI runs older minimums.
 system:
   - {name: python3, version: "3.14.*", regex: 'Python (\d+\.\d+\.\d+)'}
-  - {name: git, version: "2.56.1"}
-  - {name: cmake, version: "4.5.0"}
-  - {name: ninja, version: "1.13.2"}
-  - {name: node, version: "26.13.1", regex: 'v(\d+\.\d+\.\d+)'}
-  - {name: npm, version: "12.2.2"}
+  - {name: git, version: ">=2.43"}
+  - {name: cmake, version: ">=3.28"}
+  - {name: ninja, version: ">=1.11"}
+  - {name: node, version: ">=22", regex: 'v(\d+\.\d+\.\d+)'}                     # runs elkjs, which is pinned
+  - {name: npm, version: ">=10"}
   - {name: firefox, version: "160.0", regex: 'Firefox (\d+\.\d+(?:\.\d+)?)'}   # headless SVG export of views
-  - {name: dot, version: "16.1.1", cmd: [dot, -V]}                               # needflow (graphviz)
+  - {name: dot, version: ">=2.43", cmd: [dot, -V]}                               # needflow (graphviz): HTML only, never committed
   - {name: curl, version: "any"}
   - {name: tar, version: "any"}
   - {name: zstd, version: "any", cmd: [zstd, --version], regex: 'v(\d+\.\d+\.\d+)'}

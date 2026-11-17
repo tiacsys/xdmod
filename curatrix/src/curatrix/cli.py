@@ -361,7 +361,10 @@ def cmd_views(a):
         if not errs:
             from curatrix import provenance
             built = [vdir / f"{n}.drawio.svg" for n in a.view] if a.view else sorted(vdir.glob("*.drawio.svg"))
-            if provenance.record(ws, cfg, built, "views"):
+            # a full build also drops the records of views that are gone (xdmod#23)
+            gone = [] if a.view else [cfg.repo / rel for rel, e in provenance.load(cfg)["files"].items()
+                                      if e.get("made_by") == provenance.KINDS["views"][0] and not (cfg.repo / rel).exists()]
+            if provenance.record(ws, cfg, built, "views", drop=gone):
                 print(f"  wrote {ws.rel(provenance.path(cfg))} (views: {provenance.used(ws, 'views')})")
     elif a.action == "normalize":
         errs = render.normalize(ws, sorted(vdir.glob("*.drawio.svg")), ws.build(cfg.area) / "views" / "_normalize",
