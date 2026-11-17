@@ -234,7 +234,7 @@ are at the end of the same notes file.
 - [ ] 6.2 Stakeholder needs and use cases (mirror, store pose, recall pose, …)
 - [ ] 6.3 System requirements, including interfaces and performance (latency, update rate, accuracy)
 - [ ] 6.4 Functional (short, D85) and logical architecture in SysML; product architecture down to EE/ME/SW elements; trade study on the PCBA split (D28)
-- [ ] 6.5 Feature model, configurations (prototype, product) and the 150 % product architecture with PLEML; `curatrix check variants`; the prototype's mechanics: bench rig and printed arm are two variants of one assembly (D102–D107; owner 2026-11-17)
+- [ ] 6.5 Feature model, configurations (prototype, product) and the 150 % product architecture with PLEML; `curatrix pleml check`; the prototype's mechanics: bench rig and printed arm are two variants of one assembly (D102–D107; owner 2026-11-17)
 - [ ] 6.6 Generated views (drawio → SVG) embedded in the syseng docs
 
 **Vertical bar: one joint, end to end (prototype variant)**

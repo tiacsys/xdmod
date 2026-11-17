@@ -120,7 +120,7 @@ def variants(m: modelmod.Model) -> tuple[list[Variant], list[str]]:
     return sorted(out, key=lambda v: (v.owner, v.qn)), findings
 
 
-def _required(m: modelmod.Model, upstream: list[modelmod.Model]) -> tuple[dict[str, set], set[str]]:
+def required_pairs(m: modelmod.Model, upstream: list[modelmod.Model]) -> tuple[dict[str, set], set[str]]:
     """(board or assembly ID -> the (configuration, usage) pairs it must serve, all configurations
     of the upstream model). Pairs per realized system def, then the union (not a cross product
     over the defs)."""
@@ -253,7 +253,7 @@ def check(m: modelmod.Model, upstream: list[modelmod.Model], kicad_roots: list[P
           freecad_files: list[Path] = (), zephyr_roots: list[Path] = ()) -> tuple[list[str], list[Row]]:
     """CK-B8 findings and the computed table."""
     vs, findings = variants(m)
-    required, all_cfgs = _required(m, upstream)
+    required, all_cfgs = required_pairs(m, upstream)
     rows = table(vs, required)
     projects = kicad_projects(list(kicad_roots))
     fc_docs = freecad_documents(list(freecad_files)) if freecad_files else {}
