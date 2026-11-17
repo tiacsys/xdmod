@@ -159,3 +159,24 @@ def test_before_docs_commands_run_first(tmp_path):
     cfg = checkcfg.load(repo.path / "checks.yaml", ws.root)
     ids = [i[0] for i in checks.plan(cfg, "local", False, None)]
     assert ids[0] == "CK-X2" and ids.index("CK-A6") == 1 and ids[-1] == "CK-X1"
+
+
+def test_failing_before_docs_command_is_reported_and_the_rest_runs(tmp_path):
+    """A failing before_docs command fails with its reproduce line; the next before_docs command and
+    the other checks still run. Preview outputs of an earlier run are removed at the start."""
+    ws, repo = _repo(tmp_path, "version: 1\nids: {ledger: ids.yaml}\n"
+                     "commands:\n"
+                     "  - {id: CK-X1, name: tests, run: ['{python}', '-c', 'raise SystemExit(3)'], before_docs: true}\n"
+                     "  - {id: CK-X2, name: preview, run: ['{python}', '-c', 'print(1)'], before_docs: true}\n"
+                     "expect: [CK-C1, CK-C2, CK-H1, CK-H2, CK-H3, CK-H6, CK-H7, CK-X1, CK-X2]\n")
+    (ws.root / ".venv" / "bin").mkdir(parents=True)
+    import sys
+    (ws.root / ".venv" / "bin" / "python").symlink_to(sys.executable)
+    old = ws.build("r") / "checks" / "preview" / "tr-needs.json"
+    old.parent.mkdir(parents=True)
+    old.write_text("{}")
+    ok, by_id, summary, lines = _run(ws, repo)
+    assert not ok and [c["id"] for c in summary["checks"]][:2] == ["CK-X1", "CK-X2"]
+    assert by_id["CK-X1"]["status"] == "fail" and by_id["CK-X2"]["status"] == "pass" and by_id["CK-C1"]["status"] == "pass"
+    assert any("reproduce: curatrix check r --stage local --only CK-X1" in x for x in lines)
+    assert not old.exists()

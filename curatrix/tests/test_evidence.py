@@ -81,7 +81,7 @@ def test_preview_needs_from_a_twister_dir(tmp_path):
     assert list(n) == ["TR-SW-TC-0007-" + ev.test_suffix("preview", "robarm.joint.joint.limits@native_sim/native")]
     tr = next(iter(n.values()))
     assert tr["verdict"] == "failed" and tr["result_of"] == ["SW-TC-0007"] and tr["tags"] == ["preview"]
-    assert tr["config"] == "SYS-CFG-0001" and "not evidence" in tr["content"]
+    assert tr["config"] == "SYS-CFG-0001" and "not evidence" in tr["content"] and "2026-11-17" in tr["title"]
     assert ev.preview_needs(tw, [tmp_path / "tests"]) == ev.preview_needs(tw, [tmp_path / "tests"])   # stable
 
 
@@ -93,6 +93,15 @@ def test_preview_cli_without_twister_output_removes_the_old_file(tmp_path, monke
     out.write_text("{}")
     assert cli.main(["evidence", "preview", str(root / "build" / "none"), "-o", str(out)]) == 0
     assert not out.exists() and "no preview test results" in capsys.readouterr().out
+    bad = root / "build" / "tw"
+    bad.mkdir()
+    (bad / "twister.json").write_text("{not json")
+    assert cli.main(["evidence", "preview", str(bad), "-o", str(out)]) == 1            # one line, no traceback
+    assert "not a usable Twister report" in capsys.readouterr().err and not out.exists()
+    (bad / "twister.json").write_text(json.dumps({"environment": {"run_date": "2026-11-17T10:00:00"}, "testsuites": []}))
+    assert cli.main(["evidence", "preview", str(bad), "-o", str(out), "--commit-of", str(root)]) == 0
+    st = json.loads(ev.stamp_path(out).read_text())
+    assert out.exists() and st["run_date"] == "2026-11-17T10:00:00" and "commit" in st
 
 
 TRID = "TR-SW-TC-0007-" + ev.test_suffix("20261115T010203Z-0123abcd", "robarm.joint.joint.limits")

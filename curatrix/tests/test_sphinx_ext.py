@@ -10,14 +10,15 @@ from helpers import FIXTURES
 pytestmark = pytest.mark.sphinx
 
 
-def build(tmp_path, extra="", env=None):
+def build(tmp_path, extra="", env=None, defines=()):
     src = tmp_path / "src"
     shutil.copytree(FIXTURES / "sphinxdoc", src)
     if extra:
         with open(src / "index.rst", "a") as f:
             f.write("\n" + extra)
     out = tmp_path / "out"
-    r = subprocess.run([sys.executable, "-m", "sphinx", "-W", "--keep-going", "-q", "-b", "html", str(src), str(out)],
+    r = subprocess.run([sys.executable, "-m", "sphinx", "-W", "--keep-going", "-q", "-b", "html",
+                        *[x for d in defines for x in ("-D", d)], str(src), str(out)],
                        capture_output=True, text=True, timeout=300, env=env)
     return r.returncode, r.stdout + r.stderr, out
 
@@ -65,3 +66,45 @@ def test_needimport_missing_prints_the_sentence(tmp_path):
     rc, log, out = build(tmp_path, ".. xd-needimport:: /build/preview.json\n   :missing: No local test run yet.\n")
     assert rc == 0, log
     assert "No local test run yet." in (out / "index.html").read_text()
+
+
+def test_needimport_missing_without_text_prints_a_default(tmp_path):
+    rc, log, out = build(tmp_path, ".. xd-needimport:: /build/preview.json\n   :missing:\n")
+    assert rc == 0, log
+    assert "No results: the file is not there in this build." in (out / "index.html").read_text()
+
+
+def test_needimport_stamp_shows_only_the_run_of_this_commit(tmp_path):
+    """A stamped preview is shown with its date and commit only while the repo is at that commit;
+    an older run shows the :missing: sentence (task 5.10, review of xdmod#43)."""
+    import json
+    from helpers import git_init
+    repo = git_init(tmp_path / "repo")
+    (repo / "a").write_text("a")
+    subprocess.run(["git", "-C", str(repo), "add", "a"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", "a"], check=True)
+    head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    tr = {"SYS-EL-0099": {"id": "SYS-EL-0099", "type": "sys-el", "title": "imported", "status": "valid",
+                          "layer": "logical"}}            # any need type: the test is about the stamp
+    doc = {"created": "", "current_version": "", "project": "p", "versions": {"": {"needs": tr}}}
+    extra = ".. xd-needimport:: /prev/tr-needs.json\n   :stamp:\n   :missing: No local run.\n"
+    for commit, shown in ((head, True), ("0" * 40, False)):
+        d = tmp_path / str(shown)
+        d.mkdir()
+        src_extra = d / "prev"
+        src_extra.mkdir()
+        (src_extra / "tr-needs.json").write_text(json.dumps(doc))
+        (src_extra / "tr-needs.stamp.json").write_text(json.dumps({"run_date": "2026-11-17T10:00:00",
+                                                                    "commit": commit, "dirty": False}))
+        src = d / "src"
+        shutil.copytree(FIXTURES / "sphinxdoc", src)
+        shutil.copytree(src_extra, src / "prev")
+        with open(src / "index.rst", "a") as f:
+            f.write("\n" + extra)
+        out = d / "out"
+        r = subprocess.run([sys.executable, "-m", "sphinx", "-W", "--keep-going", "-q", "-b", "html",
+                            "-D", f"xd_repo={repo}", str(src), str(out)], capture_output=True, text=True, timeout=300)
+        assert r.returncode == 0, r.stdout + r.stderr
+        page = (out / "index.html").read_text()
+        assert ("SYS-EL-0099" in page) is shown
+        assert (f"commit {head[:12]}" in page) is shown and ("No local run." in page) is not shown

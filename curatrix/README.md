@@ -130,6 +130,9 @@ Placeholders in `run` and `cwd`: `{ws}` workspace root, `{repo}` repo folder, `{
 `build/<area>/checks`, `{area}`, `{python}` the venv's python. A command fails when it exits non-zero;
 its output is in `build/<area>/checks/<id>.log`. Commands with `before_docs: true` run first, in
 the order of the file, before CK-A6 and the other built-in checks; all other commands run last.
+Every check run first removes `build/<area>/checks/preview/` (`{build}/preview`): outputs that
+belong to one run, such as preview test results, go there, so no later docs build of another run
+shows them as its own.
 
 **Summary JSON** (`build/<area>/checks/summary.json`, also `--json`):
 `{"repo", "area", "stage", "no_cad", "ok", "checks": [{"id", "name", "status", "level", "findings": [str], "log", "repro", "seconds"}]}`
@@ -353,9 +356,17 @@ straight into `TR` needs with the tag `preview` (all suites and platforms, no fi
 workspace state, IDs `TR-<test case>-<8 hex of "preview" and the test>`). A repo runs its Twister
 command and the preview command with `before_docs: true`, so the test report of the same
 `curatrix check` run shows them; the report imports the file with
-`.. xd-needimport:: /…/tr-needs.json` and `:missing: <sentence>` (printed when there is no run, e.g.
-in CI without Twister). Previews never go onto the evidence branch; published results stay
-`evidence read`.
+`.. xd-needimport:: /…/tr-needs.json`, `:stamp:` and `:missing: <sentence>`. With `--commit-of
+<repo>`, `preview` writes a run stamp (`tr-needs.stamp.json`: run date, commit, uncommitted changes);
+the docs show the previews with the line "results of the local test run of <date>, commit <sha>"
+only while the repo is at that commit, and the sentence otherwise (no run in this check run,
+`curatrix docs` alone after a new commit, no Twister). Previews never go onto the evidence branch;
+published results stay `evidence read`.
+
+**A preview never counts** (D60): a `TR` with the tag `preview` is never coverage, never a
+baseline result and never evidence. Every consumer of TR needs (trace report, coverage, CK-B*)
+must check the tag. A repo runs its preview command at the stages `local` and `pr` only, never at
+`baseline`.
 
 ## SysML model conventions
 

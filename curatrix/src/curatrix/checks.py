@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -625,6 +626,9 @@ def run(ws, repo, stage: str = "local", no_cad: bool = False, only: list[str] | 
     cfg = checkcfg.load(repo.path / "checks.yaml", ws.root)
     out = ws.build(cfg.area) / "checks"
     out.mkdir(parents=True, exist_ok=True)
+    # outputs that belong to one check run (e.g. preview test results for the docs): never left
+    # over from an earlier run, so a docs build in this run cannot show an old result
+    shutil.rmtree(out / "preview", ignore_errors=True)
     ctx = Ctx(ws, repo, cfg, stage, no_cad, base, out)
     items = plan(cfg, stage, no_cad, only)
     results: list[Result] = []
