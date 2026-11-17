@@ -136,7 +136,9 @@ def copy_launch_claude(ws: Workspace) -> None:
 
 
 def repo_prefix(name: str) -> str:
-    return "xd" if name == "xdmod" else name.removeprefix("robarm-")
+    """Short prefix of a repo's skills and commands in .claude/: `xd` for xdmod, else the part after
+    the project prefix (`<project>-ee` -> `ee`, `<project>-manifest` -> `manifest`)."""
+    return "xd" if name == "xdmod" else name.split("-", 1)[-1]
 
 
 def assemble_claude(ws: Workspace) -> list[str]:

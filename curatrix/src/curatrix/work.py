@@ -3,12 +3,12 @@
 ``curatrix work start <branch> <repos...>`` makes ``<ws>/.worktrees/<branch>/`` a workspace root
 of its own:
 
-- **every** framework repo (xdmod, the manifest, every robarm-* repo: the active west projects
+- **every** framework repo (xdmod, the manifest and every design repo: the active west projects
   with a ``checks.yaml``, plus xdmod) is a **git worktree** there. The named repos are on
   ``<branch>`` (new from the repo's ``main``, or the existing local/remote branch); all others are
   **detached at the main checkout's HEAD** (read-only by convention). That way every path between
   our repos stays inside the set, also when it is resolved physically: a registry path
-  ``../../robarm-syseng/docs/se-req`` from any repo of the set reaches the set's robarm-syseng,
+  ``../../<project>-syseng/docs/se-req`` from any repo of the set reaches the set's syseng repo,
   whichever repos the change touches;
 - third-party trees and shared state (``zephyr/``, ``modules/``, ``tools/``, ``libs/``, ``.venv``,
   ``.xdmod``, ``CLAUDE.md``, ``.claude``) are **relative symlinks** to the main checkout (not
@@ -123,7 +123,7 @@ def start(ws: Workspace, branch: str, repos: list[str], log=print) -> Path:
     for name in repos:
         r = ws.repo(name)
         if r.rel not in fw:
-            raise WorkError(f"{name}: not a top-level framework repo (xdmod, the manifest, robarm-*)")
+            raise WorkError(f"{name}: not a top-level framework repo (xdmod or a project with a checks.yaml)")
         on_branch.append(r.rel)
     meta = json.loads((wroot / MARKER).read_text()) if (wroot / MARKER).is_file() else {
         "branch": branch, "main_workspace": str(ws.root), "build": ws.rel(ws.build(slug(branch))),

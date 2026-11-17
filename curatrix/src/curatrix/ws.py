@@ -46,7 +46,13 @@ class Repo:
     @property
     def is_framework_repo(self) -> bool:
         """A repo that uses XDMOD (has a checks.yaml) or is xdmod itself."""
-        return self.checks_file.is_file() or self.name == "xdmod"
+        return is_framework_path(self.path, self.name)
+
+
+def is_framework_path(path: Path, name: str) -> bool:
+    """A west project that uses XDMOD (a checks.yaml at its top) or is xdmod itself. XDMOD never
+    knows the example project's repo names (D66, D111, P4-16)."""
+    return (Path(path) / "checks.yaml").is_file() or name == "xdmod"
 
 
 def find_root(start: Path | None = None) -> Path:

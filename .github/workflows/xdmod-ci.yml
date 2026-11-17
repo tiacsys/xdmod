@@ -37,3 +37,4 @@ jobs:
     with:
       repo: xdmod
       role: integration
+      manifest: tiacsys/robarm-manifest   # the example project's manifest builds xdmod's workspace

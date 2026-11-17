@@ -27,6 +27,14 @@ def _repo(ws, name: str | None):
     return r
 
 
+def _integration_repo(ws) -> str:
+    """The INT domain repo (`<project>-integration`, repo-layouts.md), which holds the evidence branch."""
+    names = [r.name for r in ws.framework_repos if r.name.endswith("-integration")]
+    if len(names) != 1:
+        raise SystemExit(f"curatrix: name the evidence repo with --repo (integration repos found: {names or 'none'})")
+    return names[0]
+
+
 def _cfg(ws, repo):
     from curatrix import checkcfg
     return checkcfg.load(repo.path / "checks.yaml", ws.root)
@@ -134,7 +142,7 @@ def cmd_evidence(a):
             print(f"  {e}")
         print(f"{a.target}: {'INVALID' if errs else 'valid'} ({ev.SCHEMA_ID})")
         return 1 if errs else 0
-    repo = ws.repo(a.repo)
+    repo = ws.repo(a.repo or _integration_repo(ws))
     url = next((p["url"] for p in ev._west_projects(ws) if p["name"] == repo.name), "") if ws.has_west else ""
     url = url or str(repo.path)
     if a.action == "read":
@@ -528,7 +536,7 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--tests", action="append", help="test source folders for the ZTEST -> test case IDs (default: Twister's testsuite roots)")
     s.add_argument("--map", action="append", help="TEST=ID: test case ID for a Twister test (overrides the source comments)")
     s.add_argument("--note")
-    s.add_argument("--repo", default="robarm-integration")
+    s.add_argument("--repo", help="the repo with the evidence branch (default: the framework repo named <project>-integration)")
     s.add_argument("--branch", default="evidence", help="evidence (default) or a scratch branch for records that are not evidence")
     s.add_argument("--create", action="store_true", help="create the branch as an orphan if it does not exist")
     s.add_argument("--trailer", help="trailer line for the commit (agents: Co-Authored-By: ...)")

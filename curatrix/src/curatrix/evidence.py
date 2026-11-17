@@ -3,7 +3,7 @@
 A **run record** (schema ``data/run-record.schema.json``, README "Evidence") describes one
 Twister run: the firmware hash, the SHAs of every west project, the configuration (``SYS-CFG``),
 the results, and whether the evidence rule held. Records live on the orphan branch ``evidence``
-of robarm-integration as ``runs/<YYYY>/<run id>/record.json`` (+ the Twister reports), never on
+of the integration repo (``<project>-integration``) as ``runs/<YYYY>/<run id>/record.json`` (+ the Twister reports), never on
 ``main``.
 
 ``record``  build a record from a Twister output dir and the workspace state.
@@ -14,7 +14,7 @@ of robarm-integration as ``runs/<YYYY>/<run id>/record.json`` (+ the Twister rep
             docs; a record whose SHAs differ from the current pins is tagged ``stale`` (D131).
 
 Evidence rule (D60): every west project at its manifest pin with a clean tree, and the commits of
-xdmod, the manifest and every robarm repo on ``main`` (or, for the manifest, a ``baseline/*`` tag).
+xdmod, the manifest and every framework repo (a project with a ``checks.yaml``) on ``main`` (or, for the manifest, a ``baseline/*`` tag).
 """
 from __future__ import annotations
 
@@ -27,14 +27,13 @@ import subprocess
 from pathlib import Path
 
 from curatrix import limits
-from curatrix.ws import Workspace
+from curatrix.ws import Workspace, is_framework_path
 
 SCHEMA_FILE = Path(__file__).resolve().parent / "data" / "run-record.schema.json"
 SCHEMA_ID = "xdmod-run-record/1"
 TC_RE = re.compile(r"\b(?:SW|EE|ME|INT|SYS)-(?:TC|ITC|STC)-[0-9]{4,}\b")
 ZTEST_RE = re.compile(
     r"/\*(?P<c>(?:(?!\*/).)*)\*/\s*ZTEST(?:_F|_USER|_USER_F)?\(\s*(?P<suite>\w+)\s*,\s*(?P<name>\w+)\s*\)", re.S)
-TRACKED = ("xdmod", "robarm-")          # repos whose commits must be on main (D60)
 REPORTS = ("twister.json", "twister_report.xml")
 VERDICT = {"passed": "passed", "failed": "failed", "skipped": "skipped", "error": "error",
            "blocked": "error", "filtered": "skipped", "not run": "skipped"}
@@ -149,14 +148,14 @@ def workspace_state(ws: Workspace, check_remote: bool = True) -> tuple[dict, dic
             problems.append(f"{name}: tree not clean")
         if not is_manifest and head != p["pin"]:
             problems.append(f"{name}: HEAD {head[:12]} is not the manifest pin {p['pin'][:12]}")
-        if check_remote and (is_manifest or name.startswith(TRACKED)):
+        if check_remote and (is_manifest or is_framework_path(path, name)):
             on = _on_main_or_baseline(path, url, head, ws, is_manifest) if url else None
             e["on"] = on
             if on is None:
                 problems.append(f"{name}: {head[:12]} is not on main" + (" or a baseline tag" if is_manifest else ""))
             elif is_manifest and on.startswith("baseline/"):
                 base = on
-        elif is_manifest or name.startswith(TRACKED):
+        elif is_manifest or is_framework_path(path, name):
             problems.append(f"{name}: main/baseline not checked (offline)")
         if is_manifest:
             manifest = e
