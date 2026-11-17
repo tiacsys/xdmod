@@ -9,9 +9,9 @@ figure.xd-zoom > svg {
   height: auto;
   background: #fff;              /* the SVGs come without a page colour; lines stay readable in dark themes */
   border: 1px solid #c8c8c8;
-  cursor: grab;
 }
-figure.xd-zoom > svg:active { cursor: grabbing; }
+figure.xd-zoom-on > svg { cursor: grab; }            /* only once the script runs */
+figure.xd-zoom-on > svg:active { cursor: grabbing; }
 .xd-svgview-enlarge {
   position: absolute;
   top: 0.4em;

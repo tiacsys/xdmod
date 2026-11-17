@@ -4,6 +4,8 @@
 # (test_sphinx_ext.py::test_vendored_files_match_the_record compares them).
 svg-pan-zoom:
   version: "3.6.2"
+  # 3.6.2 is published only on npm (the GitHub repository has no 3.6.2 tag or release), so the
+  # npm tarball is the source; its sha512 matched the registry's `integrity` below.
   license: BSD-2-Clause
   homepage: https://github.com/bumbu/svg-pan-zoom
   tarball: https://registry.npmjs.org/svg-pan-zoom/-/svg-pan-zoom-3.6.2.tgz

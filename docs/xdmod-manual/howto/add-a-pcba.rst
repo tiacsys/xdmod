@@ -161,6 +161,19 @@ from the KiCad files in plain Python and show in CI too. Renderings, schematic a
 from the ``curatrix cam`` output of the commit the repo is at (:need:`XD-RULE-0060`); without it, and
 in CI, they print a fixed sentence, and CK-D10 warns locally.
 
+The variants appear in the same order in every section (variants table, renderings, BOM columns),
+taken from the EE model, not from KiCad's list in ``.kicad_pro``:
+
+1. the variant named ``default``;
+2. the variant defs that serve a configuration, by their lowest ``SYS-CFG`` ID;
+3. the other variant defs of the board, by qualified name;
+4. variants that only the KiCad project names, in KiCad's order.
+
+Without variant defs for the board in the model, KiCad's order is used, still with ``default``
+first. Every variant shows its full set of renderings (top, bottom, 3D), also when two images are
+the same. The schematic sheets, like every inline SVG, have pan and zoom and an "Enlarge" pop-up
+(reference ``xdmod-ref``, "Sphinx extensions").
+
 Checks
 ------
 
