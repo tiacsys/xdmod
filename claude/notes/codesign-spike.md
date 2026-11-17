@@ -93,3 +93,37 @@ the push into a board already re-saved by KiCad (multi-line items) worked too.
 - Exit criterion 4 (one co-design change through three repos on one branch name) is ready, not
   done: it is shown when xdmod#59, the manifest bump, robarm-syseng#10, robarm-me#12 and
   robarm-ee#15 are merged in that order.
+
+## Addendum 2026-11-18: StepUp's board load in a real GUI through the FreeCAD MCP server
+
+xdmod#69 findings 17 and 18, owner decisions Q1 and Q2; PR feat/freecad-mcp (stacked on
+feat/curated-stepup and feat/kicad-3d-warn). The `Open` items "StepUp pin in tools.yaml" and "3D
+models" are done by those PRs.
+
+Set-up: `curatrix launch freecad --mcp` (FreeCAD 1.1.4 GUI on the owner's display, workspace
+config, `HOME=.xdmod/stepup/home`, addon FreeCADMCP 0.1.32 in the workspace `Mod/`, port 127.0.0.1:9875
+with token); the MCP server `freecad-mcp` 0.1.32 (stdio) from a throwaway venv under `build/`
+(Python 3.14), called by a small `mcp` client; a copy of the canary board in
+`build/wt-feat-freecad-mcp/codesign-mcp/`. Role `full`, so `libs/kicad/packages3D` was there.
+
+| Run | What | Result |
+|---|---|---|
+| 0 | `get_rpc_status`; a call with a wrong token | healthy dispatch, `authentication_required: true`, version check ok; wrong token refused |
+| 1 | `execute_code` (timeout 600): StepUp on `sys.path`, `onLoadBoard(file_name=<copy>)`, prefix set in the wrong preference group (`Mod/kicadStepUp`) | stuck: StepUp found no models (`added 0 model(s)`) and opened its "missing models" `QMessageBox.information`; the call returned `still_running` / `GUI_DISPATCH_STUCK` after 600 s, as the addon documents; FreeCAD stopped by SIGTERM |
+| 2 | prefix in `Mod/kicadStepUpGui/prefix3d_1`; `QtGui.QMessageBox` static methods replaced by logging | models found (`added 2 model(s)`), stuck again after "GridOrigin is set in FC Preferences but not set in KiCAD pcbnew file" (default `pcb_placement` 0 = grid origin; the canary has none) |
+| 3 | also `pcb_placement = 2` (board base origin), `QMessageBox.exec` and `QDialog.exec` logged | **works**: load 1.4 s; document `canary_board` with `Pcb_3411` (green 0.2/0.6/0.4) and one coloured `Part::Feature` per component (`R1_R_0603_1608Metric_…`, `J1_PinHeader_1x02_P254mm_Vertical_…`) under `Step_Models/Top`; `get_view` isometric screenshot shows board, holes, header and resistor in colour. Logged instead of shown: StepUp's summary box (board placed at 0;0, pcb 30 x 20 x 1.6 mm) and one `QDialog` |
+
+So the cause of the stall in the spike (row 4) is not the offscreen platform alone: StepUp's load
+opens modal boxes (missing models, grid-origin warning, a summary box, a dialog), and nobody clicks
+them. In a GUI session the MCP addon reports this cleanly (`still_running`, `get_rpc_status` busy),
+but the call stays blocked until a human closes the box. Recipe for agents (goes into the
+freecad-authoring skill): set `Mod/kicadStepUpGui` `prefix3d_1` to `libs/kicad/packages3D` and
+`pcb_placement` to 2 (or give the board a grid origin), replace the `QMessageBox` statics and
+`exec`/`exec_` of `QMessageBox`/`QDialog` by logging for the call, then `onLoadBoard(file_name=…)`.
+StepUp 13.1.7 keeps its settings in FreeCAD's preferences (workspace `user.cfg`); it wrote no
+`ksu-config.ini`, neither in the sandbox `HOME` nor in `~`. `~/.config`, `~/.cache` and
+`~/.local/share` of KiCad, FreeCAD and Blender were unchanged (`ls -la --time-style=full-iso` before
+and after). After each stop the addon setting `auto_start_rpc` was false again and the port closed.
+
+Not tried yet: the push back (`export_pcb`, report §8 steps 3-4) through the MCP server, and a
+headless load with the same patches (would answer finding 17 without a GUI).

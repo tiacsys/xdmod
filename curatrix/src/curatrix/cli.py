@@ -677,7 +677,8 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--after-west", action="store_true", help=argparse.SUPPRESS)   # re-exec after west moved xdmod
     s.set_defaults(func=cmd_update)
 
-    s = sub.add_parser("launch", help="start a GUI tool / Claude Code with workspace-local config")
+    s = sub.add_parser("launch", help="start a GUI tool / Claude Code with workspace-local config; "
+                       "`freecad --mcp` also starts the FreeCAD MCP RPC server (loopback, token) for that run")
     s.add_argument("tool", choices=["kicad", "freecad", "blender", "drawio", "claude"])
     s.add_argument("args", nargs=argparse.REMAINDER)
     s.set_defaults(func=cmd_launch)

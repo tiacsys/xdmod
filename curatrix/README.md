@@ -20,7 +20,7 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 
 | Command | Does |
 |---|---|
-| `curatrix env [--shell fish]` | prints the workspace env: `eval "$(curatrix env)"` (`PATH`, `ZEPHYR_BASE`, `JAVA_HOME`, `XD_KICAD_*`, `XD_CAM_OUT` (`build/cam`, the output folder of the template jobset), `XD_FREECAD_PARTS`, `env:` of tools.yaml tools such as `ZEPHYR_SDK_INSTALL_DIR` and `XD_STEPUP`, `PYTHONDONTWRITEBYTECODE=1`) |
+| `curatrix env [--shell fish]` | prints the workspace env: `eval "$(curatrix env)"` (`PATH`, `ZEPHYR_BASE`, `JAVA_HOME`, `XD_KICAD_*`, `XD_CAM_OUT` (`build/cam`, the output folder of the template jobset), `XD_FREECAD_PARTS`, `env:` of tools.yaml tools such as `ZEPHYR_SDK_INSTALL_DIR` and `XD_STEPUP`, `XD_FREECAD_MCP_TOKEN` (from `.xdmod/freecad/mcp-token`), `PYTHONDONTWRITEBYTECODE=1`) |
 | `curatrix run [--use USE] [-m MEM] [-t TIME] [-v] -- CMD…` | any command with the workspace env and limits (default use `script`, 1G/5m; `blender` for a `blender` command). Exit 124 = timeout, 137 = killed (memory) |
 | `curatrix limits` | resolved limits table and backend (systemd / ulimit) |
 | `curatrix fixtures` | runs the planted error of every built-in check (`curatrix/tests/test_planted_errors.py`, also the tool-backed ones) under limits and records the result in `build/fixtures/planted.json` (rule, test, result, tool versions, date). Exit 1 if a check did not fail on its planted error. Run for the Phase 5 review and at every baseline |
@@ -64,7 +64,7 @@ Roles (`--role`, repo-topology.md §4): `syseng` (manifest default, D93), `ee` (
 | Tool | Environment |
 |---|---|
 | `kicad` | `KICAD_CONFIG_HOME=<ws>/.xdmod/kicad` (with empty global `sym-lib-table`/`fp-lib-table` in `10.0/`, so no user-global libraries and no first-run dialog); `XD_KICAD_SYMBOLS`, `XD_KICAD_FOOTPRINTS`, `XD_KICAD_3DMODELS`, `XD_KICAD_TEMPLATES` → `libs/kicad/*`, also as `KICAD10_*_DIR`. A `.kicad_sch` argument opens eeschema |
-| `freecad` | `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME` → `<ws>/.xdmod/freecad/{config,data,cache}`. **Verified with FreeCAD 1.1.4**: it then reads `…/config/FreeCAD/v1-1/user.cfg`; curatrix keeps `BaseApp/Preferences/Document/CompressionLevel = 0` there (D63; a save then stores entries at ~100 %). `FREECAD_USER_HOME`/`FREECAD_USER_DATA` are ignored by 1.1. `XD_FREECAD_PARTS` → `libs/freecad` (the parts-library add-on preference is not set yet) |
+| `freecad` | `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME` → `<ws>/.xdmod/freecad/{config,data,cache}`. **Verified with FreeCAD 1.1.4**: it then reads `…/config/FreeCAD/v1-1/user.cfg`; curatrix keeps `BaseApp/Preferences/Document/CompressionLevel = 0` there (D63; a save then stores entries at ~100 %). `FREECAD_USER_HOME`/`FREECAD_USER_DATA` are ignored by 1.1. `XD_FREECAD_PARTS` → `libs/freecad` (the parts-library add-on preference is not set yet). `--mcp`: the FreeCAD MCP addon (tools.yaml `freecad-mcp-addon`, in the workspace `Mod/`) starts its XML-RPC server on 127.0.0.1:9875 (token, remote off) for this run only (`auto_start_rpc` on, and off again when FreeCAD exits; every launch without `--mcp` switches it off), with `HOME=.xdmod/stepup/home` (StepUp writes `~/ksu-config.ini`; `XAUTHORITY` kept) |
 | `blender` | Always `--factory-startup --offline-mode --disable-autoexec`; `BLENDER_USER_RESOURCES`, `BLENDER_USER_CONFIG`, `_SCRIPTS`, `_DATAFILES`, `_EXTENSIONS` → `<ws>/.xdmod/blender/user/…`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME` → `<ws>/.xdmod/blender/xdg/…`, `TMPDIR` → `<ws>/.xdmod/blender/tmp`; without `VIRTUAL_ENV` and without any venv on `PATH` (Blender's Python would take the workspace venv and miss its own numpy); `<ws>/.xdmod/blender/bin` (a copy of the shim) first on `PATH`, so a `blender` that a child process starts is isolated too. The same for `curatrix run -- blender` (limits `blender`) and the `.venv/bin/blender` shim. **Verified with Blender 5.2.3**: `~/.config/blender` and `~/.cache/blender` unchanged. Optional, not pinnable (owner decision 2026-11-17) |
 | `drawio` | `/usr/bin/drawio --user-data-dir=<ws>/.xdmod/drawio`; after saving a `.drawio.svg`, run `curatrix views normalize <file>` (the pre-commit hook insists) |
 | `claude` | Claude Code at the root with the workspace env; memory limit `claude` (8G), no timeout |
@@ -303,7 +303,18 @@ compares stamps with tools.yaml and fails when an adopted checkout moved off its
 
 Curated tools of xdmod beyond the pip packages: `stepup` (KiCad StepUp, git pin, into
 `.xdmod/stepup/kicadStepUpMod`, `XD_STEPUP` and `XD_STEPUP_HOME` (its sandbox `HOME`) from `curatrix env`;
-AGPL-3.0 claimed without a LICENSE file: called in its own FreeCAD process, never imported). The Zephyr SDK belongs in robarm-sw's tools.yaml (D138), e.g.
+AGPL-3.0 claimed without a LICENSE file: called in its own FreeCAD process, never imported), and
+the FreeCAD MCP server (neka-nat/freecad-mcp, MIT; xdmod#69 finding 18): the addon
+`freecad-mcp-addon` (tarball with `subdir`, into `.xdmod/freecad/data/FreeCAD/v1-1/Mod/FreeCADMCP`)
+and the pip package `freecad-mcp` at the same version. `curatrix update` also makes the token file
+`.xdmod/freecad/mcp-token` (0600), writes the addon settings (`freecad_mcp_settings.json`: remote
+off, allowed IPs 127.0.0.1, the token, auto-start off), the server `freecad` in `<ws>/.mcp.json`
+(`.venv/bin/freecad-mcp`, headless runs through `curatrix run --use freecad -- FreeCADCmd`,
+`FREECAD_MCP_TOKEN=${XD_FREECAD_MCP_TOKEN}`) and its approval in `<ws>/.claude/settings.local.json`;
+`curatrix env` exports `XD_FREECAD_MCP_TOKEN`, so start Claude Code with `curatrix launch claude`
+or after `eval "$(curatrix env)"`. `doctor` fails on another addon or pip version, unsafe or stale
+settings, and warns about auto-start left on, a missing `.mcp.json` entry, or a user-global
+`~/.local/share/FreeCAD/*/Mod/FreeCADMCP`. The Zephyr SDK belongs in robarm-sw's tools.yaml (D138), e.g.
 `env: {ZEPHYR_SDK_INSTALL_DIR: "{location}"}`.
 
 ## ids.yaml (the ledger)

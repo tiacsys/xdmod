@@ -20,6 +20,8 @@ docutils==0.22.4
 pytest==9.2.0
 wireviz==0.4.1                    # harness diagrams and BOMs (XD-ADR-0127); here, not in the EE repo, because
                                   # curatrix cam, the harness directive and every full-set docs build use it
+freecad-mcp==0.1.32               # MCP server for the FreeCAD GUI (neka-nat, MIT; xdmod#69 finding 18, owner
+                                  # decision Q1); same version as tools.yaml freecad-mcp-addon (doctor compares)
 # indirect
 click==8.5.1                      # wireviz
 graphviz==0.21                    # wireviz (Python binding; the dot binary is a system tool)
@@ -71,3 +73,31 @@ markdown-it-py==4.3.0
 mdurl==0.1.2
 sphinx-markdown-builder==0.6.11
 tabulate==0.10.0
+# indirect, freecad-mcp (resolved with uv pip compile for Python 3.14 against the pins above; all
+# binary ones have cp314 or abi3 wheels)
+annotated-doc==0.0.6
+annotated-types==0.8.0
+anyio==4.16.0
+cffi==2.1.1
+cryptography==50.0.2
+h11==0.16.0
+httpcore2==2.16.2
+httpx2==2.16.2
+mcp==2.3.0
+mcp-types==2.3.0
+opentelemetry-api==1.45.2
+pycparser==3.12
+pydantic==2.14.3
+pydantic-core==2.50.4
+pyjwt==2.15.1
+python-dotenv==1.2.4
+python-multipart==0.0.34
+rich==15.0.0
+shellingham==1.5.4
+sse-starlette==3.7.0
+starlette==1.10.0
+truststore==0.10.5
+typer==0.29.1
+typing-inspection==0.4.5
+uvicorn==0.54.0
+validators==0.36.0
