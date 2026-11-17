@@ -216,6 +216,8 @@ def test_cam_renders_with_blender_when_there(tmp_path, monkeypatch):
     fake = _fake_script()
 
     def run_script(ws_, script, env, result):
+        if "XD_FILES" in env:                     # check-asm.py (findings), not cam-asm.py
+            return fake(ws_, script, env, result)
         seen["scene"] = env["XD_SCENE"]
         return {**fake(ws_, script, env, result), "painted": {}}
     calls = []
