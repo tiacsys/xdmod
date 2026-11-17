@@ -18,8 +18,9 @@ errors, and compares the stored hash with the embedded diagram (picture freshnes
 View definitions are SysML ``view``s with ``@XdView { kind = "..."; root = "..."; }`` (D94).
 Implemented kinds: ``interconnection`` and ``decomposition`` (here), and the SysML v2 standard
 views ``general``, ``actionflow``, ``statetransition`` and ``usecases`` (``views/sysml.py`` builds
-the graph, ``views/draw.py`` lays it out and writes drawio). The others are reported as not
-implemented.
+the graph, ``views/draw.py`` lays it out and writes drawio), ``context`` (the interconnection
+view of the context part), and ``allocation`` and ``variants`` between a domain model and the
+system model (``views/domain.py``).
 """
 from __future__ import annotations
 
@@ -38,7 +39,8 @@ from curatrix.model import Model, element_id
 
 HERE = Path(__file__).resolve().parent
 SYSML_KINDS = ("general", "actionflow", "statetransition", "usecases")
-IMPLEMENTED = ("interconnection", "decomposition", *SYSML_KINDS)
+DOMAIN_KINDS = ("allocation", "variants")       # views/domain.py: a domain model against the system model
+IMPLEMENTED = ("context", "interconnection", "decomposition", *SYSML_KINDS, *DOMAIN_KINDS)
 KNOWN = ("context", "usecases", "decomposition", "interconnection", "allocation", "variants", *SYSML_KINDS[:3])
 HASH_ATTR = "data-xdmod-hash"
 PORT = 12
@@ -149,10 +151,18 @@ def graph(m: Model, v: ViewDef) -> dict:
     if not v.root:
         raise ViewError(f"view {v.name}: @XdView needs root")
     root = _find(m, v.root)
+    if v.kind in DOMAIN_KINDS:
+        from curatrix.views import domain, sysml
+        try:
+            g = getattr(domain, v.kind)(m, v, v.opts, root)
+        except sysml.GraphError as e:
+            raise ViewError(f"view {v.name}: {e}") from None
+        g.update({"view": v.name, "kind": v.kind, "short_id": v.short_id or "", "root": v.root, "draw": True})
+        return g
     g = {"view": v.name, "kind": v.kind, "short_id": v.short_id or "", "root": v.root, "nodes": [], "edges": []}
     rid = root["qualifiedName"]
     g["nodes"].append(_node(m, root, rid, root.get("name") or rid, root["@type"], "1"))
-    if v.kind == "interconnection":
+    if v.kind in ("interconnection", "context"):   # a context view is the interconnection of the context part
         # the root's own ports sit on its border (a board with its connectors, XD-ADR-0130)
         g["nodes"][0]["ports"] = _ports(m, root)
         parts = []
@@ -202,7 +212,30 @@ def graph(m: Model, v: ViewDef) -> dict:
                         rec(t, uid, depth + 1)
         g["nodes"][0]["parent"] = "1"
         rec(root, rid, 0)
+        _tree_as_drawn(g, root, v)
     return g
+
+
+def _tree_as_drawn(g: dict, root: dict, v: ViewDef) -> None:
+    """Decomposition graphs are drawn by views/draw.py too: the root definition as a sharp box
+    (keyword, short name), the part usages as rounded boxes, composition lines with the filled
+    diamond at the owner (SysML v2 notation)."""
+    from curatrix.views.sysml import header, node as snode, size_for
+    g["draw"] = True
+    g["direction"] = (v.opts.get("direction") or "DOWN").upper()
+    out = []
+    for i, n in enumerate(g["nodes"]):
+        if i == 0:
+            d = snode(n["id"], header(root), n["sysml_kind"], shape="def", trace_id=n["trace_id"])
+        else:
+            w, h = size_for([n["label"]], min_w=150)
+            d = snode(n["id"], n["label"], n["sysml_kind"], shape="usage", trace_id=n["trace_id"], w=w, h=h + 8)
+            d["fill"] = LAYER_FILL.get(n["layer"] or None, "#FFFFFF")
+        d.update({k: n[k] for k in ("layer", "configs")})
+        out.append(d)
+    g["nodes"] = out
+    for e in g["edges"]:
+        e["rel"] = "composition"
 
 
 def _as_drawn(g: dict, root: dict, v: ViewDef) -> None:
@@ -353,7 +386,8 @@ def layout(ws, m: Model, v: ViewDef, log=lambda *_: None) -> tuple[dict, str, fl
     Only geometry changes between the tries: the content (CK-D3) is the same."""
     fixed = bool(v.opts.get("fixed"))
     tries = [{}]
-    turn = v.kind in ("general", "actionflow", "statetransition", "usecases", "interconnection") and not fixed
+    turn = v.kind in ("general", "actionflow", "statetransition", "usecases", "interconnection", "context", "decomposition",
+                     *DOMAIN_KINDS) and not fixed
     if turn:
         other = PERPENDICULAR.get(graph(m, v).get("direction", "DOWN"), "RIGHT")
         tries.append({"direction": other})

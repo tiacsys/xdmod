@@ -18,12 +18,12 @@ Status: **AGREED 2026-11-14** (review answers → D94–D97). Built on D2, D38, 
 
 | View kind | Shows | Mainly from SYSMOD step | Layout |
 |---|---|---|---|
-| `context` | the system, its actors, system ports, interfaces | 07 | ELK layered |
+| `context` | the system, its actors, system ports, interfaces: the interconnection view of the context part, with its own legend (decided 2026-11-18, P5R-2) | 07 | as `interconnection` |
 | `usecases` | use cases, actors, the needs they address | 08 | ELK layered |
-| `decomposition` | parts and their sub-parts (BDD-like), per layer: functional, logical, product | 10a–10c | ELK layered (tree) |
+| `decomposition` | parts and their sub-parts (BDD-like), per layer: functional, logical, product; drawn in SysML v2 notation (sharp definition, rounded usages, composite diamonds) since 2026-11-18 | 10a–10c | ELK layered (tree) |
 | `interconnection` | parts with ports and connectors inside one part (IBD-like) | 10b–10d | ELK layered, ports on borders |
-| `allocation` | functional → logical → product (150 %) (`realizes`) | 10a–10d | ELK layered, three columns |
-| `variants` | per configuration: the variant chosen at each variation point, side by side (D102) | 10c–10d | ELK layered, one column per configuration |
+| `allocation` | a domain model against the system model it refines: boards, harnesses, assemblies and their ports, and the SYS-EL / SYS-IF they realize or conform to; exactly the trace links `model.to_needs` derives (`:>`, `dependency`, `allocate`; `part_of`, `connects` inside the domain). `root` = a package or a def. Implemented 2026-11-18 (xdmod#69 finding 4); the functional → logical → product chain inside the system model uses the same kind once SYS-EL realize each other | 10a–10d, domains | ELK layered, upward (system model on top, grey) |
+| `variants` | a domain def and its variants (`XdDomain::DomainVariant`, XD-ADR-0136) with `variantName` and doc, and the configurations and system usages each serves («serves», from the variant's dependencies). `root` = the def. Implemented 2026-11-18; the PLEML per-configuration table of the system model is `curatrix variants list` (Q14), not a view | 10c–10d, domains | ELK layered, upward |
 | `general` | SysML v2 general view: what `expose`/`filter` select; definitions, usages, specialization, composite and reference features, dependencies (added 2026-11-15 for the XDMOD self-model); `between` = only the relations across packages (one view per pair of domains) | any | ELK layered, `direction` option |
 | `actionflow` | SysML v2 action flow view: actions with pins, successions, flows, decide/merge/fork/join, start/done | any | ELK layered, model-order cycle breaking |
 | `statetransition` | SysML v2 state transition view: states, entry, transitions with trigger and guard | any | ELK layered |

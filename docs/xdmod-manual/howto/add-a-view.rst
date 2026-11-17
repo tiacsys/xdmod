@@ -67,7 +67,12 @@ Checks
    page, upright or across (a width to height ratio from 9:16 to 16:9). When it does not,
    ``views build`` turns the layout by 90 degrees, wraps long chains and moves the legend, and
    reports the ratio; ``RIGHT!`` forbids turning. If no layout fits, split the view.
-   ``context``, ``allocation`` and ``variants`` come later. Keeping manual layout
+   Between a domain model and the system model: ``allocation`` (``root`` = a package or a
+   def) draws the domain's boards, harnesses, assemblies and ports with the system elements and
+   interfaces they realize or conform to, exactly the trace links of the generated needs;
+   ``variants`` (``root`` = a board or assembly def) its variants, their ``variantName`` and the
+   configurations and usages each serves. ``context`` is the ``interconnection`` view of the
+   system context part. Keeping manual layout
    across rebuilds is iteration 2 (:need:`XD-ADR-0037`). Trace graphs use ``needflow``, not drawio
    (:need:`XD-ADR-0086`).
 

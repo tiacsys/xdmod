@@ -85,11 +85,9 @@ def test_normalize_is_idempotent_and_drops_editor_attributes():
     assert views.diagram_hash(edited) == views.diagram_hash(exp)
 
 
-def test_unknown_or_unimplemented_kind():
+def test_unknown_kind():
     v, _ = expected()
-    v.kind = "allocation"
-    with pytest.raises(views.ViewError, match="not implemented"):
-        views.graph(probe(), v)
+    assert set(views.KNOWN) <= set(views.IMPLEMENTED)
     v.kind = "bogus"
     with pytest.raises(views.ViewError, match="unknown kind"):
         views.graph(probe(), v)
