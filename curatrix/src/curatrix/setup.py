@@ -300,6 +300,11 @@ def launch_env(ws: Workspace, tool: str) -> dict[str, str]:
     env = ws.run_env()
     if tool == "kicad":
         env["KICAD_CONFIG_HOME"] = str(ensure_kicad_config(ws))
+        # KiCad 10 also writes ~/.cache/kicad (3D models) and ~/.local/share/kicad (documents,
+        # plugins) unless these are set (KiCad spike, task 5.12)
+        for var, sub in (("KICAD_CACHE_HOME", "kicad-cache"), ("KICAD_DOCUMENTS_HOME", "kicad-documents")):
+            (ws.state / sub).mkdir(parents=True, exist_ok=True)
+            env[var] = str(ws.state / sub)
         for k, sub in (("SYMBOL_DIR", "XD_KICAD_SYMBOLS"), ("FOOTPRINT_DIR", "XD_KICAD_FOOTPRINTS"),
                        ("3DMODEL_DIR", "XD_KICAD_3DMODELS"), ("TEMPLATE_DIR", "XD_KICAD_TEMPLATES")):
             env[f"KICAD10_{k}"] = env[sub]

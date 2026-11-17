@@ -74,6 +74,8 @@ def test_kicad_and_freecad_runs_get_the_workspace_config(tmp_path, monkeypatch):
     k = limits.tool_env(ws, "script", {"HOME": "/home/x"}, ["python", "board.py"])   # imports pcbnew
     assert k["KICAD_CONFIG_HOME"].startswith(str(ws.root)) and k["HOME"] == "/home/x"
     assert "XDG_CONFIG_HOME" not in k                       # not for non-FreeCAD runs (git, gh)
+    assert k["KICAD_CACHE_HOME"].startswith(str(ws.root)) and k["KICAD_DOCUMENTS_HOME"].startswith(str(ws.root))
+    assert limits.tool_env(ws, "kicad-cli", {}, ["kicad-cli", "pcb", "export"])["LC_ALL"] == "C.UTF-8"
     f = limits.tool_env(ws, "script", {}, ["/usr/bin/FreeCADCmd", "-c", "x"])
     assert f["XDG_CONFIG_HOME"].startswith(str(ws.root))
     assert limits.tool_env(ws, "freecad", {}, ["python"])["XDG_CONFIG_HOME"].startswith(str(ws.root))
