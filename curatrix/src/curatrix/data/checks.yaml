@@ -138,7 +138,7 @@ checks:
   CK-F8:
     need: XD-CHECK-0042
     enforces: [XD-RULE-0052]
-    description: "The ERC and DRC severities of every project (.kicad_pro, custom rules in .kicad_dru) equal the curatrix new pcba template; a difference needs an accepted entry."
+    description: "The ERC and DRC severities and the ERC pin conflict matrix of every project (.kicad_pro, custom rules in .kicad_dru) equal the curatrix new pcba template; a difference needs an accepted entry."
   CK-F9:
     need: XD-CHECK-0043
     enforces: [XD-RULE-0051]

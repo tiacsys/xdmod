@@ -450,6 +450,9 @@ def c_severities(ctx: Ctx, r: Result):
                 r.findings.append(f"{rel}: {text}; set it back or accept it in {ercdrc.ACCEPTED} (check: CK-F8, rule: {rule})")
             elif e.status != "accepted":
                 r.findings.append(f"{rel}: {text}; {ercdrc.ACCEPTED} {e.label()} is a proposal ({e.why})")
+        diffs = {rule for rule, _ in ercdrc.severity_diffs(pr.pro, tmpl)}
+        r.findings += [f"{(pr.folder / ercdrc.ACCEPTED).relative_to(ctx.repo.path)} {e.label()} matches no severity "
+                       f"difference; remove it" for e in entries if e.check == "CK-F8" and e.rule not in diffs]
 
 
 def c_acceptance(ctx: Ctx, r: Result):

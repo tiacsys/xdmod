@@ -6,18 +6,25 @@ XD-ADR-0144; checks CK-F4a, CK-F4b, CK-F8, CK-F9).
   --severity-all`` and evaluate the JSON here. An error passes only when it is excluded in KiCad or
   matched by an entry of ``<project>/accepted.yaml``, and that exclusion or entry is *accepted*
   (below). Warnings are listed in the report file, never as findings.
-* **CK-F8**: the project's ERC and DRC rule severities equal those of the ``curatrix new pcba``
-  template (a missing ``erc`` section counts as the template, which holds KiCad 10.0.8's defaults);
+* **CK-F8**: the project's ERC and DRC rule severities and the ERC pin conflict matrix equal those
+  of the ``curatrix new pcba`` template (a missing ``erc`` section counts as the template, which holds KiCad 10.0.8's defaults);
   a custom rule in ``.kicad_dru`` that lowers its severity counts as a difference. A difference
   needs an accepted entry ``{check: CK-F8, rule: <rule>}``.
 * **CK-F9**: ``accepted.yaml`` is well formed, and every entry and KiCad exclusion is either
   accepted or reported as a proposal.
 
-Accepted (XD-ADR-0126): the newest commit that wrote one of the entry's lines (``git blame``), or
-the one that added the exclusion to the ``.kicad_pro`` (``git log -S``), carries an ``Accepted-by:`` trailer, has no
-agent mark, and changes nothing but ``accepted.yaml`` files and the exclusion lists of
-``.kicad_pro`` files. Anything else, also an entry that is not committed, is a proposal. Agents
-never write ``Accepted-by:``.
+Accepted (XD-ADR-0126): the newest commit that wrote one of the entry's own lines (``git blame``),
+or the one that added the exclusion to the ``.kicad_pro`` (``git log -S``), carries an
+``Accepted-by:`` trailer (a real git trailer, not a line in the subject or prose), has one parent and
+no agent mark, and changes nothing but ``accepted.yaml`` files and the exclusion lists of
+``.kicad_pro`` files; every other commit that wrote the entry's lines is an ancestor of it (a
+change merged in from a parallel branch is not accepted). Anything else, also an entry that is not
+committed, is a proposal. Agents never write ``Accepted-by:``.
+
+This relies on **rebase merges** (the rulesets of the design repos allow only these): a rebase keeps
+the owner's commit message with its trailer. A squash merge would put the agent's proposal and the
+owner's acceptance into one commit with the agent trailer, so every acceptance becomes a proposal
+(fail-closed); a merge commit never accepts.
 
 ``accepted.yaml``::
 
@@ -45,7 +52,6 @@ import yaml
 ACCEPTED = "accepted.yaml"
 ENTRY_CHECKS = ("CK-F4a", "CK-F4b", "CK-F8")
 ENTRY_KEYS = {"check", "rule", "items", "reason"}
-ACCEPTED_BY = re.compile(r"^Accepted-by:[ \t]*\S.*$", re.M)
 REF = re.compile(r"\b(?:of|[Ss]ymbol|[Ff]ootprint)\s+([A-Za-z_#]*[A-Za-z][0-9]+[A-Za-z0-9_]*)\b")
 UNCOMMITTED = "0" * 40
 
@@ -129,6 +135,13 @@ def load_entries(path: Path) -> tuple[list[Entry], list[str]]:
         return [], errs + ["accepted: must be a list of entries"]
     nodes = next((v.value for k, v in root.value if k.value == "accepted"), []) if root is not None else []
     out = []
+    lines = text.splitlines()
+
+    def trimmed(first: int, last: int) -> int:          # no trailing blank or comment lines
+        while last > first and (last > len(lines) or not lines[last - 1].strip()
+                                or lines[last - 1].lstrip().startswith("#")):
+            last -= 1
+        return last
     for i, (e, node) in enumerate(zip(items, nodes), 1):
         bad = []
         if not isinstance(e, dict):
@@ -149,9 +162,21 @@ def load_entries(path: Path) -> tuple[list[Entry], list[str]]:
             errs.append(f"entry {i}: " + "; ".join(bad))
             continue
         out.append(Entry(i, e["check"], e["rule"], its, e["reason"].strip(),
-                         (node.start_mark.line + 1, max(node.start_mark.line + 1, node.end_mark.line
-                                                        - (1 if node.end_mark.column == 0 else 0) + 1))))
+                         (node.start_mark.line + 1, trimmed(node.start_mark.line + 1, _last_line(node)))))
     return out, errs
+
+
+def _last_line(node) -> int:
+    """1-based last line of a YAML node's own content. A node's end mark points behind it: at the
+    next entry's ``- `` (column > 0 on that line) or at column 0 of the line after; neither line
+    belongs to the node. So take the end of the deepest last value instead."""
+    while isinstance(node, (yaml.MappingNode, yaml.SequenceNode)) and node.value:
+        last = node.value[-1]
+        node = last[1] if isinstance(node, yaml.MappingNode) else last
+    m = node.end_mark
+    if isinstance(node, yaml.ScalarNode) and node.style in ("|", ">"):
+        return m.line if m.column == 0 else m.line + 1     # a block scalar ends on the next line
+    return m.line + 1
 
 
 # ------------------------------------------------------------------ who accepted (git)
@@ -196,8 +221,12 @@ class Acceptors:
         body = _git(self.repo, "show", "-s", "--format=%B", sha).stdout
         if AGENT_MARK.search(body):
             return False, f"commit {short} is an agent commit (agents never accept)"
-        m = ACCEPTED_BY.search(body)
-        if not m:
+        parents = _git(self.repo, "show", "-s", "--format=%P", sha).stdout.split()
+        if len(parents) > 1:
+            return False, f"commit {short} is a merge commit (an acceptance is a single commit, rebase merges only)"
+        by = [v.strip() for v in _git(self.repo, "show", "-s", "--format=%(trailers:key=Accepted-by,valueonly)",
+                                      sha).stdout.splitlines() if v.strip()]
+        if not by:
             return False, f"commit {short} has no `Accepted-by:` trailer"
         files = _git(self.repo, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha).stdout.split()
         for f in files:
@@ -212,19 +241,25 @@ class Acceptors:
                     continue
                 return False, f"commit {short} changes {f} beyond its ERC/DRC exclusions"
             return False, f"commit {short} also changes {f} (an acceptance commit changes nothing else)"
-        return True, f"{m.group(0).strip()} in {short}"
+        return True, f"Accepted-by: {by[0]} in {short}"
 
     def entry(self, rel: str, e: Entry) -> None:
         """Set e.status/why from the newest commit that wrote one of the entry's lines: the owner
         accepts a proposal by a commit that changes the entry (for example its reason); a later
         change by anyone else turns it back into a proposal."""
-        p = _git(self.repo, "blame", "--porcelain", "-L", f"{e.lines[0]},{e.lines[1]}", "--", rel)
+        p = _git(self.repo, "blame", "--porcelain", "--ignore-revs-file=", "-L", f"{e.lines[0]},{e.lines[1]}",
+                 "--", rel)
         shas = {m.group(1) for m in re.finditer(r"^([0-9a-f]{40}) \d+ \d+", p.stdout, re.M)} if p.returncode == 0 else set()
         if not shas or UNCOMMITTED in shas:
             e.status, e.why = "proposed", "not committed"
             return
         newest = _git(self.repo, "rev-list", "--topo-order", "-n", "1", *sorted(shas)).stdout.strip()
         ok, e.why = self.verdict(newest)
+        side = [s for s in shas if s != newest and
+                _git(self.repo, "merge-base", "--is-ancestor", s, newest).returncode != 0]
+        if ok and side:
+            ok, e.why = False, (f"commit {side[0][:10]} changed the entry on a parallel branch, not before the "
+                                f"acceptance {newest[:10]}")
         e.status = "accepted" if ok else "proposed"
 
     def exclusion(self, rel_pro: str, key: str) -> tuple[bool, str]:
@@ -258,7 +293,7 @@ def exclusion_key(f: Finding, keys: list[str]) -> str | None:
     """The exclusion key of an excluded finding: same rule, every item UUID in the key."""
     for k in keys:
         parts = k.split("|")
-        if parts[0] == f.rule and set(f.uuids) <= {x.lstrip("/") for x in parts}:
+        if f.uuids and parts[0] == f.rule and set(f.uuids) <= {x.lstrip("/") for x in parts}:
             return k
     return None
 
@@ -352,6 +387,13 @@ def severity_diffs(pro: Path, template: Path) -> list[tuple[str, str]]:
                 out.append((k, f"{kind} rule {k}: {have!r}; not in the template (another KiCad version?)"))
             elif have != want:
                 out.append((k, f"{kind} rule {k}: {have!r}, the template has {want!r}"))
+    t_pin = (json.loads(template.read_text(encoding="utf-8")).get("erc") or {}).get("pin_map")
+    p_pin = (json.loads(pro.read_text(encoding="utf-8")).get("erc") or {}).get("pin_map")
+    if p_pin is not None and p_pin != t_pin:
+        cells = [f"[{i}][{j}] {v} (template {t_pin[i][j]})" for i, row in enumerate(p_pin) for j, v in enumerate(row)
+                 if t_pin and i < len(t_pin) and j < len(t_pin[i]) and t_pin[i][j] != v]
+        out.append(("pin_map", f"ERC pin conflict matrix erc.pin_map differs from the template: "
+                               + (", ".join(cells[:6]) + (" ..." if len(cells) > 6 else "") if cells else "other size")))
     for name, sev in dru_lowered(pro.with_suffix(".kicad_dru")):
         out.append((f"dru:{name}", f"custom rule {name!r} in {pro.with_suffix('.kicad_dru').name}: severity {sev}"))
     return out
