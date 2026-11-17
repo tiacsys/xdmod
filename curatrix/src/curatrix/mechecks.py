@@ -10,20 +10,22 @@ load fully through its links), recomputes everything without saving and reports:
 * **CK-F16** objects with an ``ME-PART`` ``TraceID`` whose shape is not valid solids (Part check:
   valid, at least one solid, every solid valid with a volume, no face or shell outside the solids).
 * **CK-F17** overlaps between the direct children of an assembly (the links in the group of each
-  object with an ``ME-ASM`` ``TraceID``), per variant: a link with ``Configs`` is there only in the
-  configurations it names. The skeleton link and library fasteners (a link to an object in ``lib/``
+  object with an ``ME-ASM`` ``TraceID``), per variant: a link with its own ``Configs`` is there only
+  in the configurations it names (an overlap of two parts that are in every variant is one finding
+  without a variant). The skeleton link and library fasteners (a link to an object in ``lib/``
   with a ``Standard`` property, the standard designation) are left out. Common volume above
   ``OVERLAP_TOL`` is a finding; parts joined by an assembly joint (``Reference1`` and
   ``Reference2`` of a joint name both links) may touch and get ``JOINED_TOL``, the numerical noise of
   a boolean on coincident faces. Touching faces give no volume, so touching is free for every pair.
 * **CK-F18** each board model (a link whose target carries an ``EE-PCBA`` ``TraceID``) inside its
-  ``SYS-IF`` space budget. The budget's form comes from the co-design task 5.28; until then a board
-  model is reported as not checked, and an assembly without a board model is a skip with its reason.
+  ``SYS-IF`` space budget. The budget's form comes from the co-design task 5.28; until then the
+  check is always a skip with its reason (no board model, or board models placed but not checked),
+  never a finding that would need acceptance.
 
 Every error can be accepted in ``assemblies/<name>/accepted.yaml``, in the format and with the
-acceptor rule of ``ercdrc`` (XD-ADR-0126, CK-F9): ``check`` CK-F4c | CK-F16 | CK-F17 | CK-F18,
-``rule`` recompute | solid | overlap | space-budget, ``items`` the part names (CK-F17: the two link
-names; CK-F4c and CK-F16: ``<document stem>#<object>``; CK-F18: the board link), never positions.
+acceptor rule of ``ercdrc`` (XD-ADR-0126, CK-F9): ``check`` CK-F4c | CK-F16 | CK-F17, ``rule``
+recompute | solid | overlap, ``items`` the part names (CK-F17: the two link names; CK-F4c and
+CK-F16: ``<document stem>#<object>``), never positions.
 A finding of a document inside ``assemblies/<name>/`` is accepted there; a finding of a shared
 document (``parts/``, ``lib/``) in the ``accepted.yaml`` of any assembly. Agents never write
 ``Accepted-by:``.
@@ -38,7 +40,7 @@ from curatrix import ercdrc, meassemblies
 SCRIPT = Path("templates") / "freecad-asm" / "check-asm.py"
 OVERLAP_TOL = 1e-3          # mm^3
 JOINED_TOL = 0.1            # mm^3, parts joined by an assembly joint
-RULES = {"CK-F4c": "recompute", "CK-F16": "solid", "CK-F17": "overlap", "CK-F18": "space-budget"}
+RULES = {"CK-F4c": "recompute", "CK-F16": "solid", "CK-F17": "overlap"}   # CK-F18: a skip until 5.28
 _CACHE: dict[tuple, dict] = {}
 
 
@@ -113,30 +115,23 @@ def findings(cfg, res: dict, check: str) -> list[tuple[str | None, ercdrc.Findin
         for a in res.get("assemblies") or []:
             rel = _rel(cfg, a["doc"])
             kids = {k["name"]: k for k in a.get("children") or []}
-            configs = sorted({c for k in kids.values() for c in meassemblies.cad._list(k.get("configs") or "")}) or [""]
+            configs = sorted({c for k in kids.values() for c in meassemblies.cad._list(k.get("configs") or "")})
             joined = {tuple(sorted(j)) for j in a.get("joined") or []}
             for o in a.get("overlaps") or []:
                 pair = tuple(sorted((o["a"], o["b"])))
                 tol = JOINED_TOL if pair in joined else OVERLAP_TOL
                 if o["volume"] <= tol:
                     continue
-                for c in configs:
-                    here = [n for n in pair if _present(kids.get(n), c)]
-                    if len(here) < 2:
-                        continue
-                    where = f" (variant {c})" if c else ""
-                    j = ", joined" if pair in joined else ""
+                if all(not meassemblies.cad._list(kids.get(n, {}).get("configs") or "") for n in pair):
+                    where = [""]                   # both parts are in every variant: one finding
+                else:
+                    where = [c for c in configs if all(_present(kids.get(n), c) for n in pair)]
+                j = ", joined" if pair in joined else ""
+                for c in where:
+                    label = f" (variant {c})" if c else ""
                     out.append((_folder(cfg, rel), _finding(
-                        check, f"{rel}{where}: {pair[0]} and {pair[1]} overlap by {o['volume']:.4g} mm³ "
+                        check, f"{rel}{label}: {pair[0]} and {pair[1]} overlap by {o['volume']:.4g} mm³ "
                                f"(tolerance {tol:g} mm³{j})", list(pair))))
-    elif check == "CK-F18":
-        for a in res.get("assemblies") or []:
-            rel = _rel(cfg, a["doc"])
-            for k in a.get("children") or []:
-                if k.get("kind") == "board":
-                    out.append((_folder(cfg, rel), _finding(
-                        check, f"{rel}: board model {k['name']} ({k.get('id')}): its SYS-IF space budget is not "
-                               f"checked yet; the budget's form comes from the co-design task 5.28", [k["name"]])))
     return out
 
 

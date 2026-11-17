@@ -9,9 +9,10 @@
 #   parts/sheet.FCStd    Part::Plane with an ME-PART TraceID (a face, not a solid)
 #   lib/screw.FCStd      Part::Cylinder with Standard = "ISO 4762 M3x10" (a library fastener)
 #   assemblies/fx/fx.FCStd  Assembly (ME-ASM-0001) with links: A at 0, B overlapping A by 5 mm
-#                (500 mm^3), C (box-a again) touching B and joined to it, Screw through A and B (a
-#                fastener, left out), Sheet (a face inside C, no volume), D (box-b, Configs
-#                SYS-CFG-0002) overlapping C by 500 mm^3
+#                (500 mm^3), C (box-a again) joined to B but overlapping it by 100 mm^3 (above the
+#                joint tolerance), Screw through A and B (a fastener, left out), Sheet (a face
+#                inside C, no volume), D (box-b, Configs SYS-CFG-0002) overlapping C by 400 mm^3,
+#                E (box-b) touching A and B without a joint
 #   assemblies/fx/fx-skeleton.FCStd  the skeleton (linked, never checked for overlaps)
 import json
 import os
@@ -111,10 +112,11 @@ try:
     link("Skeleton", skp, (0, 0, 0))
     a = link("A", made["box-a"][1], (0, 0, 0))
     b = link("B", made["box-b"][1], (5, 0, 0))            # 5 x 10 x 10 = 500 mm^3 into A
-    c = link("C", made["box-a"][1], (15, 0, 0))           # touches B (x = 15), joined to it
+    c = link("C", made["box-a"][1], (14, 0, 0))           # joined to B, but 1 mm into it (100 mm^3)
     link("Screw", made["screw"][1], (5, 5, -10))           # through A and B: a fastener, left out
     link("Sheet", made["sheet"][1], (16, 0, 5))           # a face inside C: no volume, no overlap
-    link("D", made["box-b"][1], (20, 0, 0), "SYS-CFG-0002")   # into C, only in SYS-CFG-0002
+    link("D", made["box-b"][1], (20, 0, 0), "SYS-CFG-0002")   # into C (400 mm^3), only in SYS-CFG-0002
+    link("E", made["box-b"][1], (0, 10, 0))               # touches A and B, no joint: no volume, no finding
     j = top.addObject("App::FeaturePython", "Joint")
     j.addProperty("App::PropertyXLinkSubHidden", "Reference1", "Joint")
     j.addProperty("App::PropertyXLinkSubHidden", "Reference2", "Joint")

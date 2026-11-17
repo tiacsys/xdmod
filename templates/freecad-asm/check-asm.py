@@ -128,7 +128,9 @@ try:
                     k = "board"
                 kids.append({"name": c.Name, "label": c.Label, "file": tf, "object": t.Name if t else "",
                              "id": tid(t) if t is not None else "", "kind": k,
-                             "configs": str(getattr(c, "Configs", "") or "")})
+                             # the link's own Configs only: an App::Link passes unknown
+                             # attributes on to its target (the same rule as `curatrix cam`)
+                             "configs": str(c.Configs or "") if "Configs" in c.PropertiesList else ""})
             names = {k["name"] for k in kids}
             joined = []
             for j in d.Objects:
