@@ -380,6 +380,7 @@ def preview_needs(twister_dir: Path, test_dirs: list[Path] | None = None, config
     roots = tw.get("environment", {}).get("options", {}).get("testsuite_root", [])
     mapping = test_case_map(test_dirs or [Path(r) for r in roots])
     when = tw.get("environment", {}).get("run_date", "")
+    day = when[:10]
     needs = {}
     for suite in tw.get("testsuites", []):
         if suite.get("status") == "filtered":
@@ -391,7 +392,7 @@ def preview_needs(twister_dir: Path, test_dirs: list[Path] | None = None, config
                 continue
             verdict = VERDICT.get(tc.get("status", "not run"), "error")
             nid = f"TR-{tcid}-{test_suffix('preview', tc['identifier'] + '@' + plat)}"
-            n = {"id": nid, "type": "tr", "title": f"{tcid} {verdict} ({plat}, local preview)",
+            n = {"id": nid, "type": "tr", "title": f"{tcid} {verdict} ({plat}, local preview{', ' + day if day else ''})",
                  "content": (f"Local Twister run{(' of ' + when) if when else ''}, test ``{tc['identifier']}`` on "
                              f"``{plat}``. A preview from this build, not evidence (D60): published results "
                              f"come from the evidence branch."),
@@ -401,3 +402,21 @@ def preview_needs(twister_dir: Path, test_dirs: list[Path] | None = None, config
             needs[nid] = n
     return {"created": "", "current_version": "", "project": project,
             "versions": {"": {"needs": {k: needs[k] for k in sorted(needs)}}}}
+
+
+def stamp_path(needs_file: Path) -> Path:
+    """The run stamp next to a preview needs file: ``tr-needs.json`` -> ``tr-needs.stamp.json``."""
+    return needs_file.with_name(needs_file.stem + ".stamp.json")
+
+
+def preview_stamp(twister_dir: Path, repo: Path | None) -> dict:
+    """When the previewed run happened and which commit of the repo it tested. The docs show a
+    preview only while the repo is still at that commit (``xd-needimport :stamp:``)."""
+    tw = parse_twister(twister_dir)
+    st = {"run_date": tw.get("environment", {}).get("run_date", ""), "commit": "", "dirty": False}
+    if repo is not None:
+        st["commit"] = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True,
+                                      text=True).stdout.strip()
+        st["dirty"] = bool(subprocess.run(["git", "-C", str(repo), "status", "--porcelain"], capture_output=True,
+                                          text=True).stdout.strip())
+    return st

@@ -156,18 +156,27 @@ def cmd_evidence(a):
         return 1 if errs else 0
     if a.action == "preview":
         if not a.target or not a.out:
-            raise SystemExit("usage: curatrix evidence preview TWISTER_DIR -o FILE [--tests DIR] [--config SYS-CFG-nnnn]")
+            raise SystemExit("usage: curatrix evidence preview TWISTER_DIR -o FILE [--tests DIR] [--config SYS-CFG-nnnn] "
+                             "[--commit-of REPO]")
         out = Path(a.out)
+        stamp = ev.stamp_path(out)
+        out.unlink(missing_ok=True)              # no old preview may pose as this run's result
+        stamp.unlink(missing_ok=True)
         if not (Path(a.target) / "twister.json").is_file():
-            out.unlink(missing_ok=True)          # no old preview may pose as this run's result
             print(f"  no Twister output in {a.target}: no preview test results")
             return 0
-        doc = ev.preview_needs(Path(a.target), [Path(d) for d in a.tests] if a.tests else None, a.config,
-                               project=f"{Path(a.target).name}-preview")
+        try:
+            doc = ev.preview_needs(Path(a.target), [Path(d) for d in a.tests] if a.tests else None, a.config,
+                                   project=f"{Path(a.target).name}-preview")
+        except (ValueError, KeyError, ev.EvidenceError) as e:
+            print(f"curatrix evidence preview: {a.target}/twister.json is not a usable Twister report ({e})", file=sys.stderr)
+            return 1
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+        stamp.write_text(json.dumps(ev.preview_stamp(Path(a.target), Path(a.commit_of) if a.commit_of else None),
+                                    indent=2, sort_keys=True) + "\n")
         n = doc["versions"][""]["needs"]
-        print(f"  {len(n)} preview TR need(s) -> {ws.rel(out)}")
+        print(f"  {len(n)} preview TR need(s) -> {ws.rel(out)} (stamp {ws.rel(stamp)})")
         return 0
     repo = ws.repo(a.repo or _integration_repo(ws))
     url = next((p["url"] for p in ev._west_projects(ws) if p["name"] == repo.name), "") if ws.has_west else ""
@@ -618,6 +627,7 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--dry-run", action="store_true", help="record: print the record, write nothing")
     s.add_argument("--offline", action="store_true", help="record: don't check main/baseline at the remotes (the rule then fails)")
     s.add_argument("--ref", help="read: a git ref instead of the remote branch")
+    s.add_argument("--commit-of", help="preview: the repo whose commit the stamp records (the docs show the preview only for that commit)")
     s.add_argument("-o", "--out", help="read: output file (default build/<repo>/evidence/tr-needs.json); preview: output file (required)")
     s.set_defaults(func=cmd_evidence)
 

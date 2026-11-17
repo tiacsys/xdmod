@@ -74,7 +74,7 @@ Check IDs use the prefix `CK-` (e.g. `CK-D4`) so that they can't be confused wit
 |---|---|---|---|
 | CK-F1 | KiCad connectors and harness ends match the pin maps of the domain model (net name and pin number per signal); extended in Phase 5, see §2a | local, PR, baseline | warning until it ran on the canary, then error |
 | CK-F2 | Zephyr devicetree matches the model (pins, buses, channels, `trace-id` in our own binding, D64f) | local, PR (robarm-sw CI builds the firmware with the Zephyr SDK, D101) | error |
-| CK-F5 | Firmware builds for `nucleo_g474re`; unit tests pass on `native_sim` (Twister); the Twister run has `before_docs: true` and its results show as preview `TR` needs in the SW test report of the same run (task 5.10) | local, PR (robarm-sw, D101) | error |
+| CK-F5 | Firmware builds for `nucleo_g474re`; unit tests pass on `native_sim` (Twister); the Twister run has `before_docs: true` and its results show as preview `TR` needs in the SW test report of the same run (task 5.10). A preview never counts: not coverage, not a baseline result, not evidence (D60); the preview command runs at `local` and `pr` only | local, PR (robarm-sw, D101) | error |
 | CK-F3 | FreeCAD spreadsheet parameters and LCS placements match model attributes, every variant row; extended in Phase 5, see §2a | local, PR, baseline | warning until it ran on the canary, then error |
 | ~~CK-F4~~ | KiCad ERC passes; FreeCAD documents recompute. Split 2026-11-17 into CK-F4a (ERC), CK-F4b (DRC), CK-F4c (FreeCAD recompute), see §2a; never built | — | — |
 

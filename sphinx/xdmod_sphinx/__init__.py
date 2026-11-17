@@ -14,7 +14,10 @@ Directives
     (all other options are passed on), but an optional file that does not exist is skipped
     silently (e.g. ``retired-needs.json`` before the first tombstone). ``:missing: <sentence>``
     makes the file optional too, and prints the sentence in its place (e.g. preview test results
-    that exist only after a local test run).
+    that exist only after a local test run). ``:stamp:`` reads the run stamp next to the file
+    (``<name>.stamp.json``, written by ``curatrix evidence preview --commit-of``): the needs are shown
+    with a line "results of the local test run of <date>, commit <sha>" only while the repo is at
+    that commit; otherwise (or without a stamp) the ``:missing:`` sentence is shown.
 
 ``kicad-sheet``, ``kicad-bom``, ``kicad-nets``, ``freecad-drawing``, ``freecad-3d``
     CAD content that needs the CAD tools. The argument names an export below ``xd_cad_dir``
@@ -135,22 +138,51 @@ class XdNeedimportDirective(Directive):
     required_arguments = 1
     final_argument_whitespace = False
     has_content = False
-    option_spec = {"optional": directives.flag, "missing": directives.unchanged}
+    option_spec = {"optional": directives.flag, "missing": directives.unchanged, "stamp": directives.flag}
+    MISSING = "No results: the file is not there in this build."
 
     def run(self):
         _, path = _src_path(self, self.arguments[0])
+        missing = [nodes.paragraph(text=self.options.get("missing") or self.MISSING)]
         if not path.exists():
             if "missing" in self.options:
-                return [nodes.paragraph(text=self.options["missing"] or "")]
+                return missing
             if "optional" in self.options:
                 return []
             raise self.error(f"xd-needimport: {self.arguments[0]} not found")
+        out = []
+        if "stamp" in self.options:
+            line = _stamp_line(self.state.document.settings.env.config, path)
+            if line is None:
+                return missing
+            out.append(nodes.paragraph(text=line))
         lines = [f".. needimport:: {self.arguments[0]}"]
         for k, v in self.options.items():
-            if k not in ("optional", "missing"):
+            if k not in ("optional", "missing", "stamp"):
                 lines.append(f"   :{k}: {v if v is not None else ''}".rstrip())
         self.state_machine.insert_input(lines, self.state_machine.input_lines.source(0))
-        return []
+        return out
+
+
+def _stamp_line(config, path: Path) -> str | None:
+    """The line shown above stamped previews, or None if there is no stamp or the repo has moved
+    on from the stamped commit (an old run must not look like this build's result)."""
+    import json
+    import subprocess
+    sp = path.with_name(path.stem + ".stamp.json")
+    if not sp.exists():
+        return None
+    try:
+        st = json.loads(sp.read_text())
+    except ValueError:
+        return None
+    repo = getattr(config, "xd_repo", "") or ""
+    head = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip() \
+        if repo else ""
+    if not st.get("commit") or st["commit"] != head:
+        return None
+    return (f"Results of the local test run of {st.get('run_date') or 'an unknown date'}, commit {st['commit'][:12]}"
+            f"{' with uncommitted changes' if st.get('dirty') else ''}. They are previews, never evidence.")
 
 
 def _passthrough_options(d):
