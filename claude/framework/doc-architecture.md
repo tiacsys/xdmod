@@ -62,7 +62,7 @@ The robarm documents link to `xdmod-manual` (method references). xdmod never lin
 | `coverage-matrix` | requirement × configuration matrix (D104) | needs + test results | yes |
 | `xd-pcba-*` (overview, renderings, schematic, stackup, rules, connectors, findings, variants, BOM) | the `pcba-<name>` document (task 5.21) | KiCad files (plain Python), `generated/<project>.connectors.json`, local CAM output | stackup, rules, connectors, variants, BOM: yes; renderings, schematic, findings: placeholder |
 | `xd-harness` | the `harness-<name>` document (task 5.22) | WireViz YAML (plain Python + Graphviz) | yes |
-| `xd-asm-*` (drawings, exploded view, mass, parameters, materials, interfaces, findings, BOM) | the `asm-<name>` document (task 5.27) | semantic JSON (plain Python), local CAM output | parameters, materials, interfaces, BOM: yes; drawings, exploded view, mass, findings: placeholder |
+| `xd-asm-*` (overview, drawing, exploded, renderings, mass, parameters, materials, interfaces, findings, subassemblies, BOM) | the `asm-<name>` document (task 5.27) | `.FCStd` files and model.json (plain Python), local CAM output (`mass.json`, `findings.json`, `renderings/<view>.png` from task 5.30) | overview, parameters, materials, interfaces, sub-assembly chapters, BOM: yes; drawings, exploded view, renderings, mass, findings: placeholder |
 | `testmodule` (zdocs), `test-report` (sphinx-test-reports) | test specs from ZTEST, results from JUnit / run records | code, results | yes |
 | `needflow` (graphviz) | trace graphs (D95) | needs | yes |
 

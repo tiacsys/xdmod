@@ -153,3 +153,52 @@ def test_harness_diagram_documents_are_always_outdated():
     assert hd._outdated(None, env, set(), set(), set()) == ["harness"]
     hd._purge(None, env, "harness")
     assert env.xd_harness_docs == {"gone"}
+
+
+def test_assembly_document_directives(tmp_path):
+    """The asm-<name> directives (task 5.27): overview, materials, sub-assembly chapters and the
+    indented BOM in plain Python; drawings, mass, renderings and findings only from the cam output
+    of the current commit, a fixed sentence without it (CI); renderings: a placeholder until the
+    output has renderings/<view>.png."""
+    import json
+    import os
+    from test_asmdoc import _setup
+    root, repo, cfg, a = _setup(tmp_path / "w")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", "asm"], check=True)
+    needs = "".join(f".. me-asm:: {t}\n   :id: {i}\n   :status: valid\n   :realizes: SYS-EL-0002\n\n"
+                    for t, i in (("Top", "ME-ASM-0001"), ("Arm", "ME-ASM-0002")))
+    text = needs + "".join(f".. xd-asm-{d}:: top\n\n" for d in (
+        "overview", "drawing", "exploded", "renderings", "mass", "materials", "findings", "subassemblies", "bom"))
+    env = dict(os.environ, XD_CAM_DIR=str(tmp_path / "cam"))
+    rc, log, out = build(tmp_path, text, env=env, defines=[f"xd_repo={repo}"])
+    assert rc == 0, log
+    html = (out / "index.html").read_text()
+    assert "Made locally with FreeCAD (curatrix cam)" in html
+    assert "Sub-assembly arm (ME-ASM-0002)" in html and "Used 2 times in top" in html
+    assert "ISO 4762 M3x10, A2" in html and "canary-board canary-board/v0.1.0" in html and "pcba-canary-board" in html
+    head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    v = tmp_path / "cam" / "top" / "v0.1.0"
+    for var in ("SYS-CFG-0002", "base"):
+        (v / "top" / var).mkdir(parents=True)
+        (v / "top" / var / "drawing.svg").write_text(f'<svg xmlns="http://www.w3.org/2000/svg" id="d-{var}"/>')
+        (v / "top" / var / "mass.json").write_text(json.dumps({"total_g": 3.5, "cog_mm": [1, 2, 3], "complete": True,
+                                                               "missing": [], "parts": [
+            {"path": "Arm1/L", "id": "ME-PART-0003", "name": "link", "material": "PETG", "volume_mm3": 1000.0,
+             "mass_g": 1.27, "source": "material PETG", "com_mm": [4, 0, 0]},
+            {"path": "B1", "id": "ME-PART-0002", "name": "bracket", "material": "PLA", "volume_mm3": 1000.0,
+             "mass_g": 1.24, "source": "material PLA", "com_mm": [0, 0, 0]}]}))
+    (v / "findings.json").write_text(json.dumps({"checks": ["CK-F17"], "rows": [
+        {"check": "CK-F17", "rule": "overlap", "severity": "error", "state": "proposal", "items": "B1, Plate",
+         "description": "assemblies/top/top.FCStd: B1 and Plate overlap by 2 mm³", "note": "on purpose"}],
+        "skipped": {"CK-F18": "no board model"}}))
+    (v / "cam.json").write_text(json.dumps({"kind": "assembly", "project": "top", "commit": head,
+                                            "version": "top/v0.1.0", "variants": ["SYS-CFG-0002", "base"]}))
+    shutil.rmtree(out)
+    rc, log, out = build(tmp_path / "again", text, env=env, defines=[f"xd_repo={repo}"])
+    assert rc == 0, log
+    html = (out / "index.html").read_text()
+    assert 'id="d-base"' in html and "top/v0.1.0" in html
+    assert "mass 3.5 g" in html and "(1, 2, 3) mm" in html and "mass 1.27 g" in html   # the arm's own mass
+    assert "proposed, not accepted" in html and "B1 and Plate overlap" in html
+    assert "has no renderings" in html

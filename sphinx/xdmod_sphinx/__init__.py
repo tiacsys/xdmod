@@ -41,6 +41,11 @@ Directives
 ``xd-pcba-bom``, ``xd-pcba-renderings``, ``xd-pcba-schematic``, ``xd-pcba-findings``
     The ``pcba-<name>`` board document (task 5.21); see ``pcba.py``.
 
+``xd-asm-overview``, ``xd-asm-drawing``, ``xd-asm-exploded``, ``xd-asm-renderings``, ``xd-asm-mass``,
+``xd-asm-parameters``, ``xd-asm-materials``, ``xd-asm-interfaces``, ``xd-asm-findings``,
+``xd-asm-subassemblies``, ``xd-asm-bom``
+    The ``asm-<name>`` assembly document (task 5.27); see ``asm.py``.
+
 Reference directives (``xd-need-types``, ``xd-link-types``, ``xd-need-fields``, ``xd-id-kinds``,
 ``xd-check-table``, ``xd-check-needs``, ``xd-cli``)
     Tables and needs generated from needs_config.toml and curatrix; see ``reference.py``.
@@ -384,9 +389,10 @@ def setup(app):
     app.add_directive("coverage-matrix", make_stub("coverage-matrix", "requirement x configuration coverage (D104)"))
     app.add_directive("config-page", make_stub("config-page", "one generated page per configuration (D106)"))
     app.add_directive("sysml-element", make_stub("sysml-element", "attributes, ports and relations of a model element"))
-    from xdmod_sphinx import harness, pcba, reference
+    from xdmod_sphinx import asm, harness, pcba, reference
     reference.setup(app)
     harness.setup(app)
     pcba.setup(app)
+    asm.setup(app)
     app.connect("doctree-resolved", resolve)
     return {"version": __version__, "parallel_read_safe": True, "parallel_write_safe": True}

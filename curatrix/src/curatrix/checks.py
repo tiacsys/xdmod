@@ -117,12 +117,12 @@ BUILTIN = [
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.freecad+model", False, "c_link_counts"),
     ("CK-F3", "FreeCAD Params aliases and LCS placements equal the ME model (tolerance per kind)",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.freecad+model", False, "c_freecad_params"),
-    ("CK-F12", "every BOM part has Manufacturer and MPN, or a Standard designation",
-     _lv({"local": "warning", "pr": "warning"}), "cad.projects", False, "c_bom_fields"),
+    ("CK-F12", "every BOM part has Manufacturer and MPN, or a Standard designation; ME: own parts name a Material",
+     _lv({"local": "warning", "pr": "warning"}), "cad.design", False, "c_bom_fields"),
     ("CK-D9", "the plain-Python BOM equals kicad-cli sch export bom, every board and variant",
      _lv({"local": "warning", "baseline": "warning"}), "cad.projects", True, "c_bom_kicad"),
-    ("CK-D10", "the local curatrix cam output of the current commit exists for every board",
-     _lv({"local": "warning", "baseline": "warning"}), "cad.projects", True, "c_cam_output"),
+    ("CK-D10", "the local curatrix cam output of the current commit exists for every board and top-level assembly",
+     _lv({"local": "warning", "baseline": "warning"}), "cad.design", True, "c_cam_output"),
     ("CK-F4c", "FreeCAD documents recompute without errors (FreeCADCmd); errors accepted (Accepted-by)",
      _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_recompute"),
     ("CK-F16", "every part shape (ME-PART) is valid solids (FreeCADCmd)",
@@ -155,7 +155,7 @@ NEED_TEXT = {"model.variants": "model.variants: true", "model.upstream": "model.
              "cad.connectors": "cad.projects and cad.connectors",
              "cad.connectors+model": "cad.projects, cad.connectors and a model section",
              "cad.freecad+model": "cad.freecad and a model section", "cad.freecad": "cad.freecad",
-             "cad.acceptance": "cad.projects or cad.freecad",
+             "cad.acceptance": "cad.projects or cad.freecad", "cad.design": "cad.projects or cad.freecad",
              "board_library": "a board_library section (the board library repo)",
              "cad.board_library": "cad.board_library (an ME repo that links board models)"}
 
@@ -183,7 +183,7 @@ def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
         return bool(c.get("projects") and c.get("connectors")) and (need == "cad.connectors" or cfg.section("model") is not None)
     if need == "cad.freecad":
         return bool((cfg.section("cad") or {}).get("freecad"))
-    if need == "cad.acceptance":
+    if need in ("cad.acceptance", "cad.design"):
         c = cfg.section("cad") or {}
         return bool(c.get("projects") or c.get("freecad"))
     if need == "cad.freecad+model":
@@ -650,11 +650,22 @@ def _boards(ctx: Ctx):
 
 
 def c_bom_fields(ctx: Ctx, r: Result):
-    """CK-F12 (XD-ADR-0129): Manufacturer and MPN on every BOM part of every board (plain Python)."""
+    """CK-F12 (XD-ADR-0129): Manufacturer and MPN on every BOM part of every board; in an ME repo
+    (task 5.27, owner ME-8) on every bought part of every top-level assembly that is not a standard
+    fastener, and a Material on every own part (plain Python)."""
     from curatrix import bom
-    for pr in _boards(ctx):
-        r.findings += bom.field_findings(bom.read(pr.sch), domvariants.kicad_variants(pr.pro),
-                                         str(pr.sch.relative_to(ctx.repo.path)))
+    if (ctx.cfg.section("cad") or {}).get("projects"):
+        for pr in _boards(ctx):
+            r.findings += bom.field_findings(bom.read(pr.sch), domvariants.kicad_variants(pr.pro),
+                                             str(pr.sch.relative_to(ctx.repo.path)))
+    if (ctx.cfg.section("cad") or {}).get("freecad"):
+        from curatrix import asmdoc, meassemblies
+        docs = meassemblies.documents(ctx.cfg)
+        for folder in meassemblies.top_folders(ctx.cfg):
+            t = asmdoc.tree(ctx.cfg, folder, docs)
+            if t is not None:
+                r.findings += asmdoc.bom_field_findings(t)
+        r.findings = list(dict.fromkeys(r.findings))
 
 
 def c_bom_kicad(ctx: Ctx, r: Result):
@@ -679,14 +690,23 @@ def c_bom_kicad(ctx: Ctx, r: Result):
 
 
 def c_cam_output(ctx: Ctx, r: Result):
-    """CK-D10 (XD-ADR-0129): the board document's local output (`curatrix cam`) is there for the
-    commit the repo is at; never in CI."""
+    """CK-D10 (XD-ADR-0129): the local output (`curatrix cam`) of the board and assembly documents is
+    there for the commit the repo is at; never in CI."""
     from curatrix import cam
-    for pr in _boards(ctx):
-        rec, _, why = cam.current(ctx.ws.build(ctx.cfg.area) / "cam", pr.name, ctx.repo.path, pr.folder)
-        if rec is None:
-            r.findings.append(f"{pr.name}: {why}; the board document shows no renderings, schematic or ERC/DRC "
-                              f"findings; run `curatrix cam {ctx.repo.name} {pr.name}`")
+    cam_dir = ctx.ws.build(ctx.cfg.area) / "cam"
+    if (ctx.cfg.section("cad") or {}).get("projects"):
+        for pr in _boards(ctx):
+            rec, _, why = cam.current(cam_dir, pr.name, ctx.repo.path, pr.folder)
+            if rec is None:
+                r.findings.append(f"{pr.name}: {why}; the board document shows no renderings, schematic or ERC/DRC "
+                                  f"findings; run `curatrix cam {ctx.repo.name} {pr.name}`")
+    if (ctx.cfg.section("cad") or {}).get("freecad"):      # ME: the assembly document (task 5.27)
+        from curatrix import meassemblies, mecam
+        for folder in meassemblies.top_folders(ctx.cfg):
+            rec, _, why = mecam.current(cam_dir, folder.name, ctx.repo.path, folder)
+            if rec is None:
+                r.findings.append(f"{folder.name}: {why}; the assembly document shows no drawings, exploded view, "
+                                  f"renderings, mass or findings; run `curatrix cam {ctx.repo.name} {folder.name}`")
 
 
 def c_codeneeds(ctx: Ctx, r: Result):

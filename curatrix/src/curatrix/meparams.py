@@ -52,6 +52,7 @@ class Param:
     kind: str                 # length | angle | number
     tol: float                # in the base unit
     port: str | None          # the ME-PORT ID of a port usage
+    budget: bool = False      # a copy of a SYS-IF space-budget value (not chosen in ME)
 
     @property
     def text(self) -> str:
@@ -159,8 +160,9 @@ def model_params(m, asm) -> tuple[list[Param], list[str]]:
             if a["name"] in PLACEMENT and kind != ("angle" if a["name"] in PLACEMENT[3:] else "length"):
                 findings.append(f"model {m.qn(a)}: {a['name']} needs a {'angle' if a['name'] in PLACEMENT[3:] else 'length'} "
                                 f"with a unit")
-            params.append(Param(alias, u["name"], a["name"], value, kind, _tolerance(m, a, kind, factor), port))
-            budget += _redefines(m, a, budgets)
+            copied = _redefines(m, a, budgets)
+            params.append(Param(alias, u["name"], a["name"], value, kind, _tolerance(m, a, kind, factor), port, copied))
+            budget += copied
     if len(params) - budget > MAX_PARAMS:
         findings.append(f"model {m.qn(asm)}: {len(params) - budget} parameters (without {budget} values of SYS-IF budgets); "
                         f"at most {MAX_PARAMS} per assembly in iteration 1 (XD-ADR-0137)")
