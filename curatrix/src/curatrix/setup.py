@@ -659,7 +659,8 @@ def bootstrap(ws: Workspace, role: str, adopt: bool = False, skip_west: bool = F
 
 def sync_manifest(ws: Workspace) -> str:
     """Fast-forward the manifest repo to its remote default branch, so that `west update` reads the
-    pins merged on GitHub (bump PRs). Only when it is on that branch, clean and not ahead; otherwise
+    pins merged on GitHub (bump PRs). Only when it is on that branch, has no changes to tracked files
+    and is not ahead; otherwise
     it warns and leaves the repo alone. Never `git pull` (a global pull.rebase setting breaks it):
     fetch, then `merge --ff-only`. Returns what it did: moved, current, warned, skipped."""
     mp = ws.manifest_path
@@ -726,8 +727,13 @@ def reexec_update(adopt: bool) -> None:
 
 
 def update(ws: Workspace, adopt: bool = False, after_west: bool = False) -> int:
+    from curatrix.work import MARKER
+    if (Path(ws.root) / MARKER).exists():
+        raise SetupError("curatrix update does not run inside a worktree set (west would move the set's "
+                         "worktrees to the pins); run it from the main workspace root")
+    state = "skipped"
     if ws.has_west and not after_west:
-        sync_manifest(ws)
+        state = sync_manifest(ws)
         role = ws.role
         if role in ROLES:            # a role's groups may change (task 5.14: me and sw get +ee)
             say(f"== role {role}: group filter {','.join(ROLES[role]) or '(manifest default)'}")
@@ -741,4 +747,6 @@ def update(ws: Workspace, adopt: bool = False, after_west: bool = False) -> int:
         if before and after and before != after and Path(__file__).resolve().is_relative_to(ws.xdmod.resolve()):
             reexec_update(adopt)
     refresh(ws, adopt=adopt)
+    if state == "warned":
+        say("NOTE: the manifest repo was not moved (see the WARN above); the pins may be older than origin")
     return doctor(ws, quiet=True)

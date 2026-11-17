@@ -104,9 +104,19 @@ every project back to its pin, as a detached HEAD.
 Before the west step, ``curatrix update`` fetches the manifest repo and fast-forwards it to its
 remote default branch (``git fetch`` and ``git merge --ff-only``, never ``git pull``), so the pins
 merged on GitHub by bump PRs are the ones west checks out. It does so only when the manifest repo
-is on that branch, has no uncommitted changes and no local commits; otherwise it warns and west
-uses the pins of the local checkout. When the west step moved ``xdmod``, ``curatrix update``
-starts itself again, so the rest of the update runs the new curatrix code.
+is on that branch, has no changes to tracked files and no local commits; otherwise it warns and
+west uses the pins of the local checkout. When the west step moved ``xdmod``, ``curatrix update``
+starts itself again, so the rest of the update runs the new curatrix code. It refuses to run inside
+a worktree set.
+
+.. note:: The first ``curatrix update`` on a machine after this behaviour came in still runs the
+   old code, which neither moves the manifest repo nor restarts itself. Fast-forward the manifest
+   repo by hand once before it (never ``git pull``):
+
+   .. code-block:: sh
+
+      git -C robarm-manifest fetch origin && git -C robarm-manifest merge --ff-only origin/main
+      curatrix update
 
 Environment
 -----------
