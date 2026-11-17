@@ -57,7 +57,9 @@ LINK_BY_KINDS = {
 }
 # a port need is `part_of` the domain defs of these kinds that own a port typed by it (XD-ADR-0133)
 PART_OF_KINDS = {"EE-PORT": ("EE-PCBA",), "ME-PORT": ("ME-ASM",)}
-LINK_KEYS = ("satisfies", "realizes", "addresses", "configures", "conforms", "part_of")
+# a harness `connects` the port defs that type the ports (ends) of its cable def (XD-ADR-0133)
+CONNECTS_KINDS = {"EE-HAR": ("EE-PORT",)}
+LINK_KEYS = ("satisfies", "realizes", "addresses", "configures", "conforms", "part_of", "connects")
 LAYERS = tracemodel.field_enum("layer")          # from needs_config.toml (task 5.2)
 STATUSES = tracemodel.field_enum("status")
 
@@ -461,7 +463,8 @@ def to_needs(m: Model, project: str = "model", source_of: dict[str, str] | None 
         link = LINK_BY_KINDS.get((idmod.kind_of(sid), idmod.kind_of(tid)))
         if link:
             add_link([sid], link, [tid], m.qn(p))
-    # a port need is part of the domain defs that own a port typed by it (XD-ADR-0133)
+    # a port need is part of the domain defs that own a port typed by it; a harness connects the
+    # port defs of its ends (XD-ADR-0133)
     for p in m.user():
         oid = element_id(m, p)
         if not oid or oid not in needs or p.get("@type") not in ("PartDefinition", "PortDefinition"):
@@ -471,6 +474,8 @@ def to_needs(m: Model, project: str = "model", source_of: dict[str, str] | None 
                 tid = element_id(m, m.port_def(t)[0])          # `~X` counts as X
                 if tid in needs and idmod.kind_of(oid) in PART_OF_KINDS.get(idmod.kind_of(tid), ()):
                     add_link([tid], "part_of", [oid], m.qn(f))
+                elif tid and idmod.kind_of(tid) in CONNECTS_KINDS.get(idmod.kind_of(oid), ()):
+                    add_link([oid], "connects", [tid], m.qn(f))   # also a port defined upstream
 
     for n in needs.values():
         for k in LINK_KEYS:

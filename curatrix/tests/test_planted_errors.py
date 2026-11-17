@@ -18,7 +18,8 @@ from helpers import git_init
 
 HERE = "curatrix/tests/test_planted_errors.py"
 
-# check ID -> node id (relative to xdmod/) of the test that plants an error it must find
+# check ID -> node id (relative to xdmod/) of the test that plants an error it must find; a list
+# for a check extended by a later task (each part has its planted error)
 PLANTED = {
     "CK-A6": "curatrix/tests/test_needs_config.py::test_planted_error_fails",
     "CK-A1": f"{HERE}::test_a1_unknown_link",
@@ -42,10 +43,12 @@ PLANTED = {
     "CK-E4": f"{HERE}::test_e4_conformance",
     "CK-B8": f"{HERE}::test_b8_variants_across_levels",
     "CK-F6": "curatrix/tests/test_eeprojects.py::test_f6_folder_rule",
-    "CK-F7": "curatrix/tests/test_eeprojects.py::test_f7_one_to_one",
+    "CK-F7": ["curatrix/tests/test_eeprojects.py::test_f7_one_to_one",
+              "curatrix/tests/test_harness.py::test_f7_cables_one_to_one"],
     "CK-D7": "curatrix/tests/test_connectors.py::test_d7_fresh",
     "CK-D8": "curatrix/tests/test_connectors.py::test_d8_against_kicad_cli",
-    "CK-F1": "curatrix/tests/test_connectors.py::test_f1_against_the_model",
+    "CK-F1": ["curatrix/tests/test_connectors.py::test_f1_against_the_model",
+              "curatrix/tests/test_harness.py::test_f1_harness_ends"],
     "CK-F4a": "curatrix/tests/test_ercdrc.py::test_f4a_erc",
     "CK-F4b": "curatrix/tests/test_ercdrc.py::test_f4b_unrouted_board",
     "CK-F8": "curatrix/tests/test_ercdrc.py::test_f8_severities",

@@ -114,7 +114,7 @@ checks:
   CK-F7:
     need: XD-CHECK-0036
     enforces: [XD-RULE-0049]
-    description: "Each board def of the EE model has exactly one pcba/ project whose TraceID is its EE-PCBA ID, in the folder named after the def; every pcba/ project names one board def; external parts have no project; no link variables on projects."
+    description: "Each board def of the EE model has exactly one pcba/ project whose TraceID is its EE-PCBA ID, in the folder named after the def; every pcba/ project names one board def; external parts have no project; no link variables on projects. Each cable def (XdDomain::Cable, EE-HAR) has exactly one harness/<name>/<name>.yml whose metadata TraceID is its EE-HAR, in the folder named after the def, and back (cad.harnesses)."
   CK-D7:
     need: XD-CHECK-0037
     enforces: [XD-RULE-0050]
@@ -126,7 +126,7 @@ checks:
   CK-F1:
     need: XD-CHECK-0039
     enforces: [XD-RULE-0050]
-    description: "Every connector of a pcba/ project has a Port field (- = none); each Port names a connector port def of the board def; each port of the board def is named by one connector; pin numbers and net names equal the pin map of the EE model."
+    description: "Every connector of a pcba/ project has a Port field (- = none); each Port names a connector port def of the board def; each port of the board def is named by one connector; pin numbers and net names equal the pin map of the EE model. Each harness end (a WireViz connector) names its EE-PORT (`Port:` in its notes); its pins and pin labels equal that pin map; every conductor joins pins of one net; the ends are the ports of the cable def (also ports of external parts)."
   CK-F4a:
     need: XD-CHECK-0040
     enforces: [XD-RULE-0051]

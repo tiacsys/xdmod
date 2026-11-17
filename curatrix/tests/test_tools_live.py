@@ -90,7 +90,8 @@ def domain_models(tmp_path) -> tuple[str, str]:
     libs = sorted((XDTRACE.parent).glob("*.sysml"))
     out = {}
     for name, lib, files in (("sys", libs, [DOMAIN / "Sys.sysml"]),
-                             ("ee", libs + [DOMAIN / "Sys.sysml"], [DOMAIN / "a_boards.sysml", DOMAIN / "b_ports.sysml", DOMAIN / "c_variants.sysml"])):
+                             ("ee", libs + [DOMAIN / "Sys.sysml"], [DOMAIN / "a_boards.sysml", DOMAIN / "b_ports.sysml", DOMAIN / "c_variants.sysml",
+                                                            DOMAIN / "d_cables.sysml"])):
         raw = tmp_path / f"{name}.json"
         r = pilot.run(WS, files, sorted(model.top_packages(files)), raw, tmpdir=tmp_path, libraries=lib, one_set=True)
         assert r.ok, r.log

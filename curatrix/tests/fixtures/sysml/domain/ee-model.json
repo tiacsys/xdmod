@@ -4590,6 +4590,2796 @@
  },
  {
   "identity": {
+   "@id": "EeCables"
+  },
+  "payload": {
+   "@id": "EeCables",
+   "@type": "Package",
+   "declaredName": "EeCables",
+   "importedMembership": [
+    {
+     "@id": "EePorts/2"
+    },
+    {
+     "@id": "EePorts/3"
+    },
+    {
+     "@id": "EePorts/4"
+    }
+   ],
+   "isLibraryElement": false,
+   "name": "EeCables",
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoPlug"
+    },
+    {
+     "@id": "EeCables::ServoMotor"
+    },
+    {
+     "@id": "EeCables::ServoCable"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables/0"
+    },
+    {
+     "@id": "EeCables/1"
+    },
+    {
+     "@id": "EeCables/2"
+    },
+    {
+     "@id": "EeCables/3"
+    },
+    {
+     "@id": "EeCables/4"
+    }
+   ],
+   "qualifiedName": "EeCables"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables/0"
+  },
+  "payload": {
+   "@id": "EeCables/0",
+   "@type": "NamespaceImport",
+   "importedNamespace": {
+    "@id": "lib:XdDomain"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "EeCables"
+    },
+    {
+     "@id": "lib:XdDomain"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:XdDomain"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables/1"
+  },
+  "payload": {
+   "@id": "EeCables/1",
+   "@type": "NamespaceImport",
+   "importedNamespace": {
+    "@id": "EePorts"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "EeCables"
+    },
+    {
+     "@id": "EePorts"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EePorts"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables/2"
+  },
+  "payload": {
+   "@id": "EeCables/2",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "memberName": "ServoPlug",
+   "membershipOwningNamespace": {
+    "@id": "EeCables"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables"
+    },
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables/3"
+  },
+  "payload": {
+   "@id": "EeCables/3",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoMotor"
+   },
+   "memberName": "ServoMotor",
+   "membershipOwningNamespace": {
+    "@id": "EeCables"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoMotor"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables"
+    },
+    {
+     "@id": "EeCables::ServoMotor"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoMotor"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables/4"
+  },
+  "payload": {
+   "@id": "EeCables/4",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoCable"
+   },
+   "memberName": "ServoCable",
+   "membershipOwningNamespace": {
+    "@id": "EeCables"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoCable"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables"
+    },
+    {
+     "@id": "EeCables::ServoCable"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoCable"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable",
+   "@type": "PartDefinition",
+   "declaredName": "ServoCable",
+   "declaredShortName": "EE-HAR-0001",
+   "feature": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd"
+    },
+    {
+     "@id": "EeCables::ServoCable::servoEnd"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "ServoCable",
+   "ownedFeature": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd"
+    },
+    {
+     "@id": "EeCables::ServoCable::servoEnd"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd"
+    },
+    {
+     "@id": "EeCables::ServoCable::servoEnd"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoCable/0"
+    },
+    {
+     "@id": "EeCables::ServoCable/1"
+    },
+    {
+     "@id": "EeCables::ServoCable/2"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables"
+   },
+   "owningNamespace": {
+    "@id": "EeCables"
+   },
+   "owningRelationship": {
+    "@id": "EeCables/4"
+   },
+   "qualifiedName": "EeCables::ServoCable",
+   "shortName": "EE-HAR-0001"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::Cable"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoCable"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoCable"
+    },
+    {
+     "@id": "lib:XdDomain::Cable"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoCable"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoCable"
+   },
+   "subclassifier": {
+    "@id": "EeCables::ServoCable"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::Cable"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::Cable"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoCable::boardEnd"
+   },
+   "memberName": "boardEnd",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoCable"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd"
+    }
+   ],
+   "owningType": {
+    "@id": "EeCables::ServoCable"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoCable"
+    },
+    {
+     "@id": "EeCables::ServoCable::boardEnd"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoCable"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable/2"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoCable::servoEnd"
+   },
+   "memberName": "servoEnd",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoCable"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoCable::servoEnd"
+    }
+   ],
+   "owningType": {
+    "@id": "EeCables::ServoCable"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoCable"
+    },
+    {
+     "@id": "EeCables::ServoCable::servoEnd"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoCable"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoCable::servoEnd"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable::boardEnd"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable::boardEnd",
+   "@type": "PortUsage",
+   "declaredName": "boardEnd",
+   "definition": [
+    {
+     "@id": "EePorts::ServoHeader::'~ServoHeader'"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "boardEnd",
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd/0"
+    },
+    {
+     "@id": "EeCables::ServoCable::boardEnd/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoCable"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoCable"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoCable/1"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoCable"
+   },
+   "qualifiedName": "EeCables::ServoCable::boardEnd",
+   "type": [
+    {
+     "@id": "EePorts::ServoHeader::'~ServoHeader'"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable::boardEnd/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable::boardEnd/0",
+   "@type": "ConjugatedPortTyping",
+   "conjugatedPortDefinition": {
+    "@id": "EePorts::ServoHeader::'~ServoHeader'"
+   },
+   "general": {
+    "@id": "EePorts::ServoHeader::'~ServoHeader'"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoCable::boardEnd"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd"
+    },
+    {
+     "@id": "EePorts::ServoHeader::'~ServoHeader'"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoCable::boardEnd"
+   },
+   "target": [
+    {
+     "@id": "EePorts::ServoHeader::'~ServoHeader'"
+    }
+   ],
+   "type": {
+    "@id": "EePorts::ServoHeader::'~ServoHeader'"
+   },
+   "typedFeature": {
+    "@id": "EeCables::ServoCable::boardEnd"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable::boardEnd/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable::boardEnd/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoCable::boardEnd/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoCable::boardEnd"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd"
+    },
+    {
+     "@id": "EeCables::ServoCable::boardEnd/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoCable::boardEnd/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable::boardEnd/1/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable::boardEnd/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeCables::ServoCable::boardEnd"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoCable::boardEnd"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoCable::boardEnd/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable::servoEnd"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable::servoEnd",
+   "@type": "PortUsage",
+   "declaredName": "servoEnd",
+   "definition": [
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "servoEnd",
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoCable::servoEnd/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoCable::servoEnd/0"
+    },
+    {
+     "@id": "EeCables::ServoCable::servoEnd/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoCable"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoCable"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoCable/2"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoCable"
+   },
+   "qualifiedName": "EeCables::ServoCable::servoEnd",
+   "type": [
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable::servoEnd/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable::servoEnd/0",
+   "@type": "ConjugatedPortTyping",
+   "conjugatedPortDefinition": {
+    "@id": "EeCables::ServoPlug::'~ServoPlug'"
+   },
+   "general": {
+    "@id": "EeCables::ServoPlug::'~ServoPlug'"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoCable::servoEnd"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoCable::servoEnd"
+    },
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoCable::servoEnd"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoCable::servoEnd"
+   },
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'"
+    }
+   ],
+   "type": {
+    "@id": "EeCables::ServoPlug::'~ServoPlug'"
+   },
+   "typedFeature": {
+    "@id": "EeCables::ServoCable::servoEnd"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable::servoEnd/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable::servoEnd/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoCable::servoEnd/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoCable::servoEnd"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoCable::servoEnd/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoCable::servoEnd"
+    },
+    {
+     "@id": "EeCables::ServoCable::servoEnd/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoCable::servoEnd"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoCable::servoEnd/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoCable::servoEnd/1/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoCable::servoEnd/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeCables::ServoCable::servoEnd"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoCable::servoEnd"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoCable::servoEnd/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoMotor"
+  },
+  "payload": {
+   "@id": "EeCables::ServoMotor",
+   "@type": "PartDefinition",
+   "declaredName": "ServoMotor",
+   "feature": [
+    {
+     "@id": "EeCables::ServoMotor::plug"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "ServoMotor",
+   "ownedFeature": [
+    {
+     "@id": "EeCables::ServoMotor::plug"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoMotor::plug"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoMotor/0"
+    },
+    {
+     "@id": "EeCables::ServoMotor/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables"
+   },
+   "owningNamespace": {
+    "@id": "EeCables"
+   },
+   "owningRelationship": {
+    "@id": "EeCables/3"
+   },
+   "qualifiedName": "EeCables::ServoMotor"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoMotor/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoMotor/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::ExternalPart"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoMotor"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoMotor"
+    },
+    {
+     "@id": "lib:XdDomain::ExternalPart"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoMotor"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoMotor"
+   },
+   "subclassifier": {
+    "@id": "EeCables::ServoMotor"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::ExternalPart"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::ExternalPart"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoMotor/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoMotor/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoMotor::plug"
+   },
+   "memberName": "plug",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoMotor"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoMotor::plug"
+    }
+   ],
+   "owningType": {
+    "@id": "EeCables::ServoMotor"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoMotor"
+    },
+    {
+     "@id": "EeCables::ServoMotor::plug"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoMotor"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoMotor::plug"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoMotor::plug"
+  },
+  "payload": {
+   "@id": "EeCables::ServoMotor::plug",
+   "@type": "PortUsage",
+   "declaredName": "plug",
+   "definition": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "plug",
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoMotor::plug/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoMotor::plug/0"
+    },
+    {
+     "@id": "EeCables::ServoMotor::plug/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoMotor"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoMotor"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoMotor/1"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoMotor"
+   },
+   "qualifiedName": "EeCables::ServoMotor::plug",
+   "type": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoMotor::plug/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoMotor::plug/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoMotor::plug"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoMotor::plug"
+    },
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoMotor::plug"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoMotor::plug"
+   },
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "type": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "typedFeature": {
+    "@id": "EeCables::ServoMotor::plug"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoMotor::plug/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoMotor::plug/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoMotor::plug/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoMotor::plug"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoMotor::plug/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoMotor::plug"
+    },
+    {
+     "@id": "EeCables::ServoMotor::plug/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoMotor::plug"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoMotor::plug/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoMotor::plug/1/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoMotor::plug/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeCables::ServoMotor::plug"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoMotor::plug"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoMotor::plug/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug",
+   "@type": "PortDefinition",
+   "conjugatedPortDefinition": {
+    "@id": "EeCables::ServoPlug::'~ServoPlug'"
+   },
+   "declaredName": "ServoPlug",
+   "declaredShortName": "EE-PORT-0010",
+   "feature": [
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "ServoPlug",
+   "ownedFeature": [
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    },
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoPlug/0"
+    },
+    {
+     "@id": "EeCables::ServoPlug/1"
+    },
+    {
+     "@id": "EeCables::ServoPlug/2"
+    },
+    {
+     "@id": "EeCables::ServoPlug/3"
+    },
+    {
+     "@id": "EeCables::ServoPlug/4"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables"
+   },
+   "owningNamespace": {
+    "@id": "EeCables"
+   },
+   "owningRelationship": {
+    "@id": "EeCables/2"
+   },
+   "qualifiedName": "EeCables::ServoPlug",
+   "shortName": "EE-PORT-0010"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::ConnectorPort"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug"
+    },
+    {
+     "@id": "lib:XdDomain::ConnectorPort"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "subclassifier": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::ConnectorPort"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::ConnectorPort"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::connector"
+   },
+   "memberName": "connector",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    }
+   ],
+   "owningType": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug"
+    },
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug/2"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "memberName": "pwm",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    }
+   ],
+   "owningType": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug/3"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug/3",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "memberName": "gnd",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    }
+   ],
+   "owningType": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug/4"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug/4",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::'~ServoPlug'"
+   },
+   "memberName": "~ServoPlug",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug"
+    },
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::'~ServoPlug'"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::'~ServoPlug'",
+   "@type": "ConjugatedPortDefinition",
+   "isAbstract": false,
+   "isConjugated": true,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "~ServoPlug",
+   "originalPortDefinition": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'/0"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug/4"
+   },
+   "qualifiedName": "EeCables::ServoPlug::'~ServoPlug'"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::'~ServoPlug'/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::'~ServoPlug'/0",
+   "@type": "PortConjugation",
+   "conjugatedPortDefinition": {
+    "@id": "EeCables::ServoPlug::'~ServoPlug'"
+   },
+   "isLibraryElement": false,
+   "originalPortDefinition": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoPlug::'~ServoPlug'"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'"
+    },
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::'~ServoPlug'"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::connector"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::connector",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "connector",
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoPlug::connector/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoPlug::connector/0"
+    },
+    {
+     "@id": "EeCables::ServoPlug::connector/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug/1"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "qualifiedName": "EeCables::ServoPlug::connector",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::connector/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::connector/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdDomain::ConnectorPort::connector"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoPlug::connector"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdDomain::ConnectorPort::connector"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    },
+    {
+     "@id": "lib:XdDomain::ConnectorPort::connector"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoPlug::connector"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdDomain::ConnectorPort::connector"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::ConnectorPort::connector"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::connector/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::connector/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "EeCables::ServoPlug::connector"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::connector/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::connector"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::connector/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    },
+    {
+     "@id": "EeCables::ServoPlug::connector/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::connector"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::connector/1/0"
+    }
+   ],
+   "value": {
+    "@id": "EeCables::ServoPlug::connector/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::connector/1/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::connector/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeCables::ServoPlug::connector"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::connector"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::connector/1"
+   },
+   "value": "JST-XH-3 plug"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd",
+   "@type": "PortUsage",
+   "declaredName": "gnd",
+   "definition": [
+    {
+     "@id": "lib:XdDomain::PinSignal"
+    }
+   ],
+   "direction": "inout",
+   "feature": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd::net"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "gnd",
+   "ownedFeature": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd::net"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd::net"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd/3/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoPlug::gnd/0"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd/1"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd/2"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd/3"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug/3"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "qualifiedName": "EeCables::ServoPlug::gnd",
+   "type": [
+    {
+     "@id": "lib:XdDomain::PinSignal"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "lib:XdDomain::PinSignal"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    },
+    {
+     "@id": "lib:XdDomain::PinSignal"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::PinSignal"
+    }
+   ],
+   "type": {
+    "@id": "lib:XdDomain::PinSignal"
+   },
+   "typedFeature": {
+    "@id": "EeCables::ServoPlug::gnd"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::gnd::pin"
+   },
+   "memberName": "pin",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin"
+    }
+   ],
+   "owningType": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd/2"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::gnd::net"
+   },
+   "memberName": "net",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::net"
+    }
+   ],
+   "owningType": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd::net"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::net"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd/3"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd/3",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::gnd/3/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd/3/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd/3/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::gnd"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::gnd/3/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd/3/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd/3/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::gnd/3"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd::net"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd::net",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "net",
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::net/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::net/0"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd::net/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::gnd/2"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "qualifiedName": "EeCables::ServoPlug::gnd::net",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd::net/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd::net/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdDomain::PinSignal::net"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoPlug::gnd::net"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdDomain::PinSignal::net"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::net"
+    },
+    {
+     "@id": "lib:XdDomain::PinSignal::net"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::net"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoPlug::gnd::net"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdDomain::PinSignal::net"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::PinSignal::net"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd::net/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd::net/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "EeCables::ServoPlug::gnd::net"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::gnd::net/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::gnd::net"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::net/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::net"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd::net/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::net"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::net/1/0"
+    }
+   ],
+   "value": {
+    "@id": "EeCables::ServoPlug::gnd::net/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd::net/1/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd::net/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeCables::ServoPlug::gnd::net"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::gnd::net"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::gnd::net/1"
+   },
+   "value": "GND"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd::pin"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd::pin",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "pin",
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin/0"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::gnd/1"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoPlug::gnd"
+   },
+   "qualifiedName": "EeCables::ServoPlug::gnd::pin",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd::pin/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd::pin/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdDomain::PinSignal::pin"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoPlug::gnd::pin"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdDomain::PinSignal::pin"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin"
+    },
+    {
+     "@id": "lib:XdDomain::PinSignal::pin"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoPlug::gnd::pin"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdDomain::PinSignal::pin"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::PinSignal::pin"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd::pin/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd::pin/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "EeCables::ServoPlug::gnd::pin"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::gnd::pin/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::gnd::pin"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin"
+    },
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::gnd::pin/1/0"
+    }
+   ],
+   "value": {
+    "@id": "EeCables::ServoPlug::gnd::pin/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::gnd::pin/1/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::gnd::pin/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeCables::ServoPlug::gnd::pin"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::gnd::pin"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::gnd::pin/1"
+   },
+   "value": "3"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm",
+   "@type": "PortUsage",
+   "declaredName": "pwm",
+   "definition": [
+    {
+     "@id": "lib:XdDomain::PinSignal"
+    }
+   ],
+   "direction": "inout",
+   "feature": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm::net"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "pwm",
+   "ownedFeature": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm::net"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm::net"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm/3/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoPlug::pwm/0"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm/1"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm/2"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm/3"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug/2"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoPlug"
+   },
+   "qualifiedName": "EeCables::ServoPlug::pwm",
+   "type": [
+    {
+     "@id": "lib:XdDomain::PinSignal"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "lib:XdDomain::PinSignal"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    },
+    {
+     "@id": "lib:XdDomain::PinSignal"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::PinSignal"
+    }
+   ],
+   "type": {
+    "@id": "lib:XdDomain::PinSignal"
+   },
+   "typedFeature": {
+    "@id": "EeCables::ServoPlug::pwm"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::pwm::pin"
+   },
+   "memberName": "pin",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin"
+    }
+   ],
+   "owningType": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm/2"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::pwm::net"
+   },
+   "memberName": "net",
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::net"
+    }
+   ],
+   "owningType": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm::net"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::net"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm/3"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm/3",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::pwm/3/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm/3/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm/3/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::pwm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::pwm/3/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm/3/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm/3/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::pwm/3"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm::net"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm::net",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "net",
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::net/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::net/0"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm::net/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::pwm/2"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "qualifiedName": "EeCables::ServoPlug::pwm::net",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm::net/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm::net/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdDomain::PinSignal::net"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoPlug::pwm::net"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdDomain::PinSignal::net"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::net"
+    },
+    {
+     "@id": "lib:XdDomain::PinSignal::net"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::net"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoPlug::pwm::net"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdDomain::PinSignal::net"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::PinSignal::net"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm::net/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm::net/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "EeCables::ServoPlug::pwm::net"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::pwm::net/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::pwm::net"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::net/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::net"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm::net/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::net"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::net/1/0"
+    }
+   ],
+   "value": {
+    "@id": "EeCables::ServoPlug::pwm::net/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm::net/1/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm::net/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeCables::ServoPlug::pwm::net"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::pwm::net"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::pwm::net/1"
+   },
+   "value": "SERVO_PWM"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm::pin"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm::pin",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "pin",
+   "ownedMember": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin/0"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::pwm/1"
+   },
+   "owningType": {
+    "@id": "EeCables::ServoPlug::pwm"
+   },
+   "qualifiedName": "EeCables::ServoPlug::pwm::pin",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm::pin/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm::pin/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdDomain::PinSignal::pin"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeCables::ServoPlug::pwm::pin"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdDomain::PinSignal::pin"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin"
+    },
+    {
+     "@id": "lib:XdDomain::PinSignal::pin"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin"
+    }
+   ],
+   "specific": {
+    "@id": "EeCables::ServoPlug::pwm::pin"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdDomain::PinSignal::pin"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::PinSignal::pin"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm::pin/1"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm::pin/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "EeCables::ServoPlug::pwm::pin"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeCables::ServoPlug::pwm::pin/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeCables::ServoPlug::pwm::pin"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin"
+    },
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeCables::ServoPlug::pwm::pin/1/0"
+    }
+   ],
+   "value": {
+    "@id": "EeCables::ServoPlug::pwm::pin/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeCables::ServoPlug::pwm::pin/1/0"
+  },
+  "payload": {
+   "@id": "EeCables::ServoPlug::pwm::pin/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeCables::ServoPlug::pwm::pin"
+   },
+   "owningNamespace": {
+    "@id": "EeCables::ServoPlug::pwm::pin"
+   },
+   "owningRelationship": {
+    "@id": "EeCables::ServoPlug::pwm::pin/1"
+   },
+   "value": "1"
+  }
+ },
+ {
+  "identity": {
    "@id": "EePorts"
   },
   "payload": {
@@ -11464,6 +14254,19 @@
  },
  {
   "identity": {
+   "@id": "lib:XdDomain::Cable"
+  },
+  "payload": {
+   "@id": "lib:XdDomain::Cable",
+   "@type": "PartDefinition",
+   "declaredName": "Cable",
+   "isLibraryElement": true,
+   "name": "Cable",
+   "qualifiedName": "XdDomain::Cable"
+  }
+ },
+ {
+  "identity": {
    "@id": "lib:XdDomain::ConnectorPort"
   },
   "payload": {
@@ -11512,6 +14315,19 @@
    "isLibraryElement": true,
    "name": "variantName",
    "qualifiedName": "XdDomain::DomainVariant::variantName"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdDomain::ExternalPart"
+  },
+  "payload": {
+   "@id": "lib:XdDomain::ExternalPart",
+   "@type": "PartDefinition",
+   "declaredName": "ExternalPart",
+   "isLibraryElement": true,
+   "name": "ExternalPart",
+   "qualifiedName": "XdDomain::ExternalPart"
   }
  },
  {
