@@ -45,7 +45,8 @@ No other ADR on `main` is `proposed` (checked 2026-11-17).
    choices.
 2. **`Configs` on the link, not on the part:** the presence of a part per configuration is set on the
    FreeCAD link (as the FreeCAD spike found it works), not on the part document. Confirm.
-3. **Sub-assembly chapters with fixed sentences:** in the assembly document, a sub-assembly chapter
+3. **Sub-assembly chapters with fixed sentences** (question added by the 5.32 agent, from the 5.27
+   agent's report and the review of xdmod#61): in the assembly document, a sub-assembly chapter
    prints a fixed sentence for drawings, exploded view, renderings and parameters (only the top-level
    assembly has them in iteration 1). Confirm, or ask for more in iteration 2.
 4. **`.venv/bin` first on `PATH` in agent sessions:** a workspace `.claude/settings.json` env entry

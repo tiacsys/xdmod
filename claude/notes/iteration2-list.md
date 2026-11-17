@@ -61,8 +61,7 @@ Sources: **P** = `plan.md` "Iteration 2 backlog"; **L** = `phase5-decisions.md` 
 | C11 | `mecam.current` freshness by the `tree_state` hash everywhere; the board line and sub-assembly chapters tested on real data, not only fixtures | L 5.27 | partly fixed in the #61 review; no real sub-assembly yet |
 | C12 | Overlapping faces in Blender renderings (z-fighting) | L 5.30 | cosmetic |
 | C13 | Better renderings than the z-buffer fallback in CI (or Blender in CI) | L owner decision 5.30 | Blender is not pinnable; CI has the placeholder |
-| C14 | Skeleton document names unique per assembly (today every skeleton's document name is `skeleton`, clash when two are open) | L 5.23/5.24 | one assembly on the canary |
-| C15 | Semantic JSON: XLink targets, expressions, named constraints, `Port`, the variant table | L 5.13 | partly done in 5.23-5.27; the rest when reviews need it |
+| C14 | Semantic JSON: XLink targets, expressions, named constraints, `Port`, the variant table | L 5.13 | partly done in 5.23-5.27; the rest when reviews need it |
 
 ## D. Co-design and board library
 
@@ -118,7 +117,9 @@ Sources: **P** = `plan.md` "Iteration 2 backlog"; **L** = `phase5-decisions.md` 
 ## Not on this list (fixed in Phase 5)
 
 - `curatrix update` did not move the manifest repo, and ran old code after `west update` moved xdmod:
-  fixed by xdmod#64 (`fix/update-manifest`, task 5.32). If #64 is not merged, both go back on the
-  list (E).
+  fix proposed in xdmod#64 (`fix/update-manifest`, task 5.32), not yet merged at the time of writing.
+  If #64 is not merged, both go back on the list (E).
+- Skeleton document names unique per assembly (`<name>-skeleton.FCStd`, document `<name>_skeleton`):
+  done in 5.23/5.24 (XD-ADR-0146).
 - The doc inconsistencies `build/<branch>/` vs `build/wt-<branch>/` and the stale `curatrix work`
   note: fixed by the manual PR of task 5.32.
