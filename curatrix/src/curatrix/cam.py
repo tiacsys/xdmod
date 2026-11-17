@@ -12,14 +12,16 @@ there (``kicad-cli jobset run``) with ``XD_CAM_OUT`` = the version folder, so th
   ``.kicad_pro`` and ``.kicad_dru`` (KiCad exports neither);
 * ``cam.json`` in the version folder: version, commit, jobs, files.
 
-Guards: the jobset must pass the hard rules of CK-F10 (no Execute Command job, no Copy Files or
-output outside ``${XD_CAM_OUT}``, it parses); the number of jobs KiCad reports as succeeded must equal
+Guards: the jobset must pass the hard rules of CK-F10 (no Execute Command job, no Copy Files,
+output folder or job file name outside ``${XD_CAM_OUT}``, it parses, no job without a variant after
+a variant job, every variant job names one variant of the project); the number of jobs KiCad reports as succeeded must equal
 the number of jobs in the jobset (one job KiCad cannot parse drops all jobs, with exit code 0).
 
 Version (XD-ADR-0142): ``git describe --tags --match '<project>/*'``; without a tag
 ``<project>/v0.0.0-<n>-g<sha>``. Only an exact tag on a commit of ``main``, with a clean project
 folder, is a release; anything else gets ``-dirty`` (uncommitted changes in the project folder) and
-``-preview``. The full version goes into a title-block comment line and a silkscreen text; the
+``-preview``. ``-dirty`` looks only at the project folder: the libraries and 3D models come from
+other repos (``libs/``) and can change the STEP model and the renderings without a mark. The full version goes into a title-block comment line and a silkscreen text; the
 title-block ``Rev`` field stays empty, because KiCad cuts long values off there (KiCad spike §2.1).
 
 Jobset template (``xdmod/templates/kicad-pcba/pcba.kicad_jobset``): the jobs without a variant come
@@ -51,7 +53,7 @@ FORBIDDEN = {
     "sch_erc": "an ERC job (ERC is CK-F4a, not part of the CAM run)",
     "pcb_drc": "a DRC job (DRC is CK-F4b, not part of the CAM run)",
 }
-HARD = ("special_execute", "special_copyfiles", "output", "parse")
+HARD = ("special_execute", "special_copyfiles", "output", "jobfile", "parse", "order", "variant")
 BOM_DELIMITERS = ("field_delimiter", "string_delimiter", "ref_delimiter", "ref_range_delimiter")
 TEMPLATE = Path("templates") / "kicad-pcba" / "pcba.kicad_jobset"
 VAR = "${XD_VERSION}"
@@ -141,6 +143,10 @@ def jobset_findings(ws, pr, variants: list[str]) -> list[tuple[str, str]]:
             dest = str(s.get("dest") or "")
             if not _inside(dest):
                 out.append(("special_copyfiles", f"job {jid!r}: Copy Files to {dest!r}, outside the output folder"))
+        for k in FILE_KEYS:
+            if k in s and not _inside(str(s[k])):
+                out.append(("jobfile", f"job {jid!r}: {k} {s[k]!r} leaves the output folder ${{XD_CAM_OUT}} (D46); "
+                                       f"use a relative name"))
         if typ == "sch_export_bom":
             miss = [k for k in BOM_DELIMITERS if not s.get(k)]
             if miss:
@@ -173,10 +179,10 @@ def jobset_findings(ws, pr, variants: list[str]) -> list[tuple[str, str]]:
                 out.append(("template", f"job {jid!r} of the shared template is missing"
                                         + (f" (variant {v})" if v else "")))
                 continue
-            if j["type"] != t["type"] or (v and _strip(j.get("settings") or {}) != _strip(t["settings"])):
+            if j["type"] != t["type"] or _strip(j.get("settings") or {}) != _strip(t["settings"]):
                 out.append(("template", f"job {jid!r} differs from the template job {t['id']!r} in more than its "
                                         f"variant and file name"))
-            elif v and job_variants(j) != [v]:
+            elif job_variants(j) != ([v] if v else []):
                 out.append(("variant", f"job {jid!r} names {job_variants(j) or 'no variant'}, not {v!r}"))
     return out
 
@@ -279,18 +285,24 @@ def stackup(pcb: Path) -> tuple[list[dict], str]:
     copper = [lay[1] for lay in layers[1:] if isinstance(lay, list) and len(lay) > 2 and lay[1].endswith(".Cu")]
     copper = copper or ["F.Cu", "B.Cu"]
     order = ["F.Cu"] + [c for c in copper if c not in ("F.Cu", "B.Cu")] + ["B.Cu"]
-    cu = 0.035
-    diel = round((thick - cu * len(order)) / max(1, len(order) - 1), 4)
+    cu, mask = 0.035, 0.01             # KiCad's defaults; the board thickness includes both masks (.gbrjob)
+    diel = round((thick - cu * len(order) - 2 * mask) / max(1, len(order) - 1), 4)
     rows = [{"layer": "F.SilkS", "type": "Top Silk Screen"}, {"layer": "F.Mask", "type": "Top Solder Mask",
                                                                "thickness_mm": "0.01"}]
     for i, c in enumerate(order):
         rows.append({"layer": c, "type": "copper", "thickness_mm": f"{cu}"})
         if i < len(order) - 1:
-            rows.append({"layer": f"dielectric {i + 1}", "type": "core" if i == 0 else "prepreg", "material": "FR4",
+            core = len(order) == 2 or i % 2 == 1          # 2 layers: one core; more: prepreg outside, core inside
+            rows.append({"layer": f"dielectric {i + 1}", "type": "core" if core else "prepreg", "material": "FR4",
                          "thickness_mm": f"{diel}", "epsilon_r": "4.5", "loss_tangent": "0.02"})
     rows += [{"layer": "B.Mask", "type": "Bottom Solder Mask", "thickness_mm": "0.01"},
              {"layer": "B.SilkS", "type": "Bottom Silk Screen"}]
-    return rows, f"KiCad default ({len(order)} copper layers, board thickness {thick} mm; no stackup in Board Setup)"
+    note = "" if len(order) == 2 else "; dielectrics split evenly, an approximation of KiCad's default"
+    return rows, (f"KiCad default ({len(order)} copper layers, board thickness {thick} mm; no stackup in Board "
+                  f"Setup{note})")
+
+
+UNITLESS = {"min_resolved_spokes", "max_error_count"}
 
 
 def _sx(node) -> str:
@@ -306,21 +318,23 @@ def design_rules(pro: Path) -> list[dict]:
     rows = []
     rules = ((d.get("board") or {}).get("design_settings") or {}).get("rules") or {}
     for k in sorted(rules):
-        rows.append({"scope": "board", "rule": k, "value": json.dumps(rules[k]) if isinstance(rules[k], bool) else rules[k]})
+        v = rules[k]
+        unit = "" if isinstance(v, bool) or k in UNITLESS else "mm"
+        rows.append({"scope": "board", "rule": k, "value": json.dumps(v) if isinstance(v, bool) else v, "unit": unit})
     for c in (d.get("net_settings") or {}).get("classes") or []:
         for k in sorted(c):
             if k in ("name", "pcb_color", "schematic_color", "wire_width", "bus_width", "line_style", "priority",
                      "tuning_profile"):
                 continue
             if isinstance(c[k], (int, float)) and not isinstance(c[k], bool):
-                rows.append({"scope": f"net class {c.get('name')}", "rule": k, "value": c[k]})
+                rows.append({"scope": f"net class {c.get('name')}", "rule": k, "value": c[k], "unit": "mm"})
     dru = pro.with_suffix(".kicad_dru")
     if dru.is_file():
         root = cad.sexpr("(dru " + dru.read_text(encoding="utf-8") + ")")
         for r in root[1:]:
             if isinstance(r, list) and r and r[0] == "rule":
                 rows.append({"scope": "custom rule", "rule": r[1],
-                             "value": " ".join(_sx(c) for c in r[2:])})
+                             "value": " ".join(_sx(c) for c in r[2:]), "unit": ""})
     return rows
 
 
@@ -403,7 +417,7 @@ def run_project(ws, repo, cfg, pr, log=print) -> dict:
     pcb = copy_dir / f"{pr.name}.kicad_pcb"
     rows, source = stackup(pcb) if pcb.is_file() else ([], "no board")
     _csv(out / "stackup.csv", STACKUP_COLS, rows)
-    _csv(out / "design-rules.csv", ("scope", "rule", "value"), design_rules(pro))
+    _csv(out / "design-rules.csv", ("scope", "rule", "value", "unit"), design_rules(pro))
     shutil.rmtree(tmp, ignore_errors=True)
     files = sorted(str(f.relative_to(top)) for f in out.rglob("*") if f.is_file())
     head = _git(repo.path, "rev-parse", "HEAD").stdout.strip()

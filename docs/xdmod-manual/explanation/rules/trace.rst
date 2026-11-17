@@ -176,7 +176,7 @@ The principles of the trace model and the rules on the trace graph.
    :status: valid
    :decided_by: XD-ADR-0142
 
-   A board's jobset is the shared template of ``curatrix new pcba``: no "Execute Command" job, no "Copy Files" job and no output outside ``${XD_CAM_OUT}``, no statistics job, no ERC or DRC job, BOM delimiters set. In a project with variants, each variant-dependent template job is replaced by one job per variant (``<template id>-<variant>``) that equals the template job except for the variant and the file name; the variant names in the jobs equal the project's variants, and the jobs without a variant come first, because KiCad keeps the variant of the last job for the following ones. ``curatrix cam`` runs it only on a copy under ``build/``.
+   A board's jobset is the shared template of ``curatrix new pcba``: no "Execute Command" job, no "Copy Files" job, output folder or job file name outside ``${XD_CAM_OUT}``, no statistics job, no ERC or DRC job, BOM delimiters set. Every job equals its template job; in a project with variants, each variant-dependent template job is replaced by one job per variant (``<template id>-<variant>``) that equals the template job except for the variant and the file name; the variant names in the jobs equal the project's variants, and the jobs without a variant come first, because KiCad keeps the variant of the last job for the following ones. ``curatrix cam`` runs it only on a copy under ``build/``.
 
 .. xd-rule:: The version is shown in the frames and on the silkscreen
    :id: XD-RULE-0054

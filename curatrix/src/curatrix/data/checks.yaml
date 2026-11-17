@@ -146,7 +146,7 @@ checks:
   CK-F10:
     need: XD-CHECK-0044
     enforces: [XD-RULE-0053]
-    description: "The jobset of every pcba/ project: no Execute Command, Copy Files or output outside ${XD_CAM_OUT}, no statistics, ERC or DRC job, BOM delimiters set; every job of the shared template, per variant where the project has variants, equal to the template job except variant and file name; no job without a variant after a variant job."
+    description: "The jobset of every pcba/ project: no Execute Command, Copy Files, output folder or job file name outside ${XD_CAM_OUT}, no statistics, ERC or DRC job, BOM delimiters set; every job of the shared template, per variant where the project has variants, equal to the template job except variant and file name; no job without a variant after a variant job."
   CK-F11:
     need: XD-CHECK-0045
     enforces: [XD-RULE-0054]
