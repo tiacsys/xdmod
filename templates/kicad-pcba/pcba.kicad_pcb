@@ -92,8 +92,19 @@
 			(outputdirectory "")
 		)
 	)
+	(gr_rect
+		(start 80 80)
+		(end 130 120)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "Edge.Cuts")
+		(uuid "__OUTLINE_UUID__")
+	)
 	(gr_text "${XD_VERSION}"
-		(at 100 100 0)
+		(at 105 115 0)
 		(layer "F.SilkS")
 		(uuid "__TEXT_UUID__")
 		(effects

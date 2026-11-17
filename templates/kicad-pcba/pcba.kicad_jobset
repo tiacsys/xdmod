@@ -65,7 +65,7 @@
       "only": [],
       "description": "all",
       "settings": {
-        "output_path": "out"
+        "output_path": "${XD_CAM_OUT}/__NAME__"
       }
     }
   ]

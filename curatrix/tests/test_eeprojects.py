@@ -55,6 +55,7 @@ def _repo(tmp_path, yaml_text=PROJECTS + "model: {files: [model/*.sysml]}\n", de
 
 
 def _run(root, repo, cid, fn):
+    (root / "out").mkdir(exist_ok=True)
     ctx = checks.Ctx(Workspace(root), Repo("r", repo, "r"), checkcfg.load(repo / "checks.yaml", root), "local",
                      False, None, root / "out")
     r = checks.Result(cid, cid, level="warning")
@@ -248,3 +249,22 @@ def test_f7_board_variants_are_not_boards(tmp_path):
     assert _run(root, repo, "CK-F7", "c_ee_one_to_one") == []
     boards, _, _ = eeprojects.model_defs(modelmod.Model(data))
     assert sorted(boards) == ["EE-PCBA-0001", "EE-PCBA-0002"]
+
+
+def test_new_pcba_failure_leaves_no_folder(tmp_path, monkeypatch):
+    """If KiCad cannot save the new files, the half-made folder is removed, so a second run works."""
+    from curatrix import limits
+    root, repo = _new_pcba_repo(tmp_path)
+    monkeypatch.setattr(limits, "run", lambda *a, **k: subprocess.CompletedProcess(a[0], 3, "", "boom"))
+    with pytest.raises(newpcba.NewError, match="boom"):
+        newpcba.new_pcba(Workspace(root), Repo("r", repo, "r"), checkcfg.load(repo / "checks.yaml", root),
+                         "CanaryBoard", log=lambda *_: None)
+    assert not (repo / "pcba/canary-board").exists()
+
+
+def test_template_jobset_writes_under_build():
+    """D46: the template jobset's output folder is ${XD_CAM_OUT} (the workspace env: build/cam), never
+    a folder inside the repo."""
+    js = json.loads((XDMOD / "templates/kicad-pcba/pcba.kicad_jobset").read_text())
+    assert [o["settings"]["output_path"] for o in js["outputs"]] == ["${XD_CAM_OUT}/__NAME__"]
+    assert Workspace(XDMOD.parent).env()["XD_CAM_OUT"].endswith("/build/cam")

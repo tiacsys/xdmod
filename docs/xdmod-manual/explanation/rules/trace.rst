@@ -140,7 +140,7 @@ The principles of the trace model and the rules on the trace graph.
    A domain def (board, connector, cable, assembly, mechanical port) specializes the system def it realizes or the interface def it meets. Every port it inherits from a system def is redefined somewhere in the chain by a port whose def specializes the inherited port's def; inside port defs the same holds for the signal ports. A port name inherited more than once is redefined by one port that redefines all of them. The trace link of a specialization comes from the pair of kinds (``realizes`` to a ``SYS-EL``, ``conforms`` to a ``SYS-IF``); a pair without a link type is a finding.
 
 .. xd-rule:: One KiCad project per board def
-   :id: XD-RULE-NEW-eeproj
+   :id: XD-RULE-0049
    :tags: trace, cad
    :status: valid
    :decided_by: XD-ADR-0128, XD-ADR-0135

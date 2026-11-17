@@ -75,10 +75,11 @@ def root_sheets(cfg) -> list[Path]:
     return out
 
 
-def _repo_files(repo: Path) -> list[str]:
+def _repo_files(repo: Path, ws=None) -> list[str]:
+    from curatrix import limits
     try:
-        p = subprocess.run(["git", "-C", str(repo), "ls-files", "-co", "--exclude-standard"],
-                           capture_output=True, text=True, timeout=60)
+        p = limits.run(["git", "-C", str(repo), "ls-files", "-co", "--exclude-standard"], "git", ws,
+                       capture_output=True, text=True)
         if p.returncode == 0:
             return p.stdout.splitlines()
     except (OSError, subprocess.SubprocessError):
@@ -144,7 +145,7 @@ def model_defs(m) -> tuple[dict[str, dict], dict[str, dict], list[str]]:
         if p.get("@type") != "PartDefinition":
             continue
         sup = _direct_supers(m, p)
-        if VARIANT_DEF in sup:
+        if VARIANT_DEF in sup:          # defensive: a variant specializes its board def, not Pcba directly
             continue
         for qn, into in ((PCBA_DEF, boards), (EXTERNAL_DEF, externals)):
             if qn not in sup:
