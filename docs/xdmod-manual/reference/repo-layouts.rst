@@ -100,7 +100,7 @@ ME repo
 FreeCAD files are stored uncompressed, with a git textconv for readable diffs (:need:`XD-ADR-0056`,
 :need:`XD-RULE-0039`). Parts refer only to the skeleton, never to the top document
 (:need:`XD-ADR-0137`, proposed). Board models come at fixed versions from a board library repo
-(:need:`XD-ADR-0139`, proposed). Boards, harnesses and assemblies have their own tags
+(:need:`XD-ADR-0139`). Boards, harnesses and assemblies have their own tags
 ``<name>/vX.Y.Z``, made by the owner only (:need:`XD-ADR-0140`).
 
 Board library repo
@@ -115,7 +115,7 @@ Board library repo
    docs/                   board-library: the list of board versions, made from the files
    checks.yaml             board_library: {source: "{ws}/<ee repo>"} (CK-F20); no ids.yaml
 
-A top-level west project in the west groups of EE and ME (:need:`XD-ADR-0139`, proposed). EE writes
+A top-level west project in the west groups of EE and ME (:need:`XD-ADR-0139`). EE writes
 a tagged board version with ``curatrix cam <ee repo> <board> --library`` and opens the pull request;
 ME links one fixed version, and ``cad.board_library`` in the ME repo's checks.yaml notes a newer one
 (CK-F21).

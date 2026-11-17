@@ -91,7 +91,7 @@ harness, each assembly def one FreeCAD document; external parts have none (:need
 
 Two exceptions to the peer rule (:need:`XD-RULE-0003`): SW reads the board pin maps from the EE model
 (:need:`XD-ADR-0131`), and ME writes board geometry into the KiCad files inside a co-design change
-(:need:`XD-ADR-0134`, proposed).
+(:need:`XD-ADR-0134`).
 
 Definitions and instances
 -------------------------

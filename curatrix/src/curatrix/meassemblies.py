@@ -2,7 +2,7 @@
 (task 5.23; XD-ADR-0128, XD-ADR-0137, XD-ADR-0138; checks CK-F14, CK-F15). Plain Python, no FreeCAD:
 it reads ``Document.xml`` of the ``.FCStd`` files (``cad.freecad_trace``).
 
-Layout (XD-ADR-0137, file name of the skeleton as proposed in XD-ADR-0146): each top-level
+Layout (XD-ADR-0137, file name of the skeleton as decided in XD-ADR-0146): each top-level
 assembly is a folder ``assemblies/<name>/`` with its top document ``<name>.FCStd`` and the skeleton
 ``<name>-skeleton.FCStd`` (a name unique in the repo, because FreeCAD names a document after its
 file and cross-document expressions name the document); its own parts and sub-assembly documents

@@ -141,7 +141,7 @@ What is in iteration 1 and what moved to iteration 2.
 .. xd-adr:: ME renderings without OpenGL, the fallback when Blender is absent
    :id: XD-ADR-0147
    :date: 2026-11-17
-   :decision_status: proposed
+   :decision_status: accepted
    :status: valid
    :refines: XD-ADR-0143
 
@@ -171,7 +171,7 @@ What is in iteration 1 and what moved to iteration 2.
 .. xd-adr:: Blender as an optional local renderer of the ME renderings
    :id: XD-ADR-0148
    :date: 2026-11-17
-   :decision_status: proposed
+   :decision_status: accepted
    :status: valid
    :refines: XD-ADR-0147
 
