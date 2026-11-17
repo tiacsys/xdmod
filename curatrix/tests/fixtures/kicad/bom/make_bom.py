@@ -63,13 +63,14 @@ ch.write(OUT / "bom_ch.kicad_sch", CHILD)
 
 rt = Sheet()
 p = f"/{ROOT}"
-# R1: value 4k7 in variant a (a field override)
-rt.sym("Device", "R", [(p, "R1", '(variant (name "a") (field (name "Value") (value "4k7")))')], "10k", R0603,
+# R1: value 4k7 and its MPN in variant a (field overrides)
+rt.sym("Device", "R", [(p, "R1", '(variant (name "a") (field (name "Value") (value "4k7")) '
+                                 '(field (name "MPN") (value "RC0603FR-074K7L")))')], "10k", R0603,
        {"Manufacturer": "Yageo", "MPN": "RC0603FR-0710KL"})
-# U1: two units of one dual op-amp, one part in the BOM
+# U1: two units of one dual op-amp, one part in the BOM; DNP on unit 2 only marks the part DNP (KiCad)
 for unit in (1, 2):
     rt.sym("Amplifier_Operational", "LM2904", [(p, "U1", "")], "LM2904", "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
-           {"Manufacturer": "Texas Instruments", "MPN": "LM2904DR"}, unit=unit)
+           {"Manufacturer": "Texas Instruments", "MPN": "LM2904DR"}, unit=unit, dnp=unit == 2)
 # J1: a pin header with a shunt; Setting 1-2, 2-3 in variant b; no MPN (CK-F12)
 rt.sym("Connector_Generic", "Conn_01x03", [(p, "J1", '(variant (name "b") (field (name "Setting") (value "2-3")))')],
        "Conn_01x03", "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical", {"Setting": "1-2"})

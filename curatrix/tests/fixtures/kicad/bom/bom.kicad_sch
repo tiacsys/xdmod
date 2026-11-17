@@ -883,18 +883,18 @@
 		)
 	)
 	(symbol
-		(lib_id "Amplifier_Operational:LM2904")
-		(at 76.2 100.33 0)
+		(lib_id "Mechanical:MountingHole")
+		(at 127 100.33 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "0e7381dd-65ae-47bf-bf4d-f213e9a69939")
-		(property "Reference" "U1"
-			(at 76.2 97 0)
+		(uuid "056f1297-18cf-4cf1-b358-eafd4c602e7e")
+		(property "Reference" "H1"
+			(at 127 97 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -903,8 +903,8 @@
 				)
 			)
 		)
-		(property "Value" "LM2904"
-			(at 76.2 104 0)
+		(property "Value" "MountingHole"
+			(at 127 104 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -913,8 +913,8 @@
 				)
 			)
 		)
-		(property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
-			(at 76.2 100 0)
+		(property "Footprint" "MountingHole:MountingHole_3.2mm_M3"
+			(at 127 100 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -925,7 +925,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 76.2 100.33 0)
+			(at 127 100.33 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -935,7 +935,176 @@
 			)
 		)
 		(property "Description" ""
-			(at 76.2 100.33 0)
+			(at 127 100.33 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(instances
+			(project "bom"
+				(path "/bbbbbbbb-0000-0000-0000-000000000001"
+					(reference "H1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector_Generic:Conn_01x03")
+		(at 101.6 100.33 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "0bcdfc99-edbe-4c2c-a441-250330a25b74")
+		(property "Reference" "J1"
+			(at 101.6 97 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x03"
+			(at 101.6 104 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+			(at 101.6 100 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 101.6 100.33 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 101.6 100.33 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Setting" "1-2"
+			(at 101.6 100 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "6166a085-46d9-4f38-bbc8-d7c0c73cdddf")
+		)
+		(pin "2"
+			(uuid "46c0c684-e8a8-450c-a776-353cd0747b1f")
+		)
+		(pin "3"
+			(uuid "c5ed6fd3-23da-4052-bf47-d321c59391c2")
+		)
+		(instances
+			(project "bom"
+				(path "/bbbbbbbb-0000-0000-0000-000000000001"
+					(reference "J1")
+					(unit 1)
+					(variant
+						(name "b")
+						(field
+							(name "Setting")
+							(value "2-3")
+						)
+					)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Amplifier_Operational:LM2904")
+		(at 88.9 100.33 0)
+		(unit 2)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp yes)
+		(uuid "422d4548-914d-4ef4-b182-16906075eee3")
+		(property "Reference" "U1"
+			(at 88.9 97 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "LM2904"
+			(at 88.9 104 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+			(at 88.9 100 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 88.9 100.33 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 88.9 100.33 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -945,7 +1114,7 @@
 			)
 		)
 		(property "Manufacturer" "Texas Instruments"
-			(at 76.2 100 0)
+			(at 88.9 100 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -956,7 +1125,7 @@
 			)
 		)
 		(property "MPN" "LM2904DR"
-			(at 76.2 100 0)
+			(at 88.9 100 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -967,34 +1136,34 @@
 			)
 		)
 		(pin "8"
-			(uuid "2c5388fa-d50c-4615-adb2-afbd89d96376")
-		)
-		(pin "1"
-			(uuid "e377d3da-25c0-4c4e-ac0f-950b820385e0")
-		)
-		(pin "3"
-			(uuid "7ff527ee-6022-4b03-94a9-5da754beae24")
-		)
-		(pin "4"
-			(uuid "8eb78dc4-83b6-4cba-8af7-097204e87ac0")
-		)
-		(pin "6"
-			(uuid "62f531c7-205a-41aa-91cf-d6881d31de76")
-		)
-		(pin "7"
-			(uuid "755d4d68-4cf2-4305-a6c7-fc07da773c24")
-		)
-		(pin "5"
-			(uuid "0e358eae-d6dd-4dac-bd7d-6c7e74c8bd03")
+			(uuid "7dbc32a7-1309-4847-be3b-ab4dcdfe70c4")
 		)
 		(pin "2"
-			(uuid "84d6947a-084f-4df3-af17-82b78b563477")
+			(uuid "d8866915-bec8-4550-9988-862bb0927425")
+		)
+		(pin "7"
+			(uuid "1f10e8e5-b9e2-4ca4-93d2-6ccd7a6f6933")
+		)
+		(pin "4"
+			(uuid "98ffbe57-de8e-456b-bbe0-746b8821caa1")
+		)
+		(pin "5"
+			(uuid "79588d58-ac41-44d3-8278-140b6e32ed3e")
+		)
+		(pin "1"
+			(uuid "d17f3193-86a4-4919-b468-445c2874416c")
+		)
+		(pin "6"
+			(uuid "7435dcbf-b7b6-4775-8b7b-a08ebc24ee5f")
+		)
+		(pin "3"
+			(uuid "a0ae7194-a813-4c67-9f88-0eb77f121b08")
 		)
 		(instances
 			(project "bom"
 				(path "/bbbbbbbb-0000-0000-0000-000000000001"
 					(reference "U1")
-					(unit 1)
+					(unit 2)
 				)
 			)
 		)
@@ -1009,7 +1178,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp yes)
-		(uuid "1ee79258-1ca3-4bae-ae5d-ba9cfb4b341d")
+		(uuid "63ae3170-cc3c-4981-b574-13a50dee85b5")
 		(property "Reference" "JP1"
 			(at 114.3 97 0)
 			(show_name no)
@@ -1072,11 +1241,11 @@
 				)
 			)
 		)
-		(pin "1"
-			(uuid "f25dc2fd-625a-4bda-bc3e-89a2d670ace9")
-		)
 		(pin "2"
-			(uuid "4171955f-07af-4d2b-bb17-f537ddbf4b97")
+			(uuid "3fa48400-10f4-4abb-910e-b45d7017cab7")
+		)
+		(pin "1"
+			(uuid "50775d9c-eb9d-4828-82e1-f8bcd90e92ab")
 		)
 		(instances
 			(project "bom"
@@ -1101,7 +1270,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "63e7afdc-2a64-47ec-94a6-5d39be0ff24b")
+		(uuid "938194e9-ed19-48aa-afdb-2410f5a4cea4")
 		(property "Reference" "R1"
 			(at 63.5 97 0)
 			(show_name no)
@@ -1176,10 +1345,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "904da73e-4a41-43ff-a789-71abb9afced0")
+			(uuid "ef41af6e-edc1-4f10-84b1-d86a25ee70fa")
 		)
 		(pin "1"
-			(uuid "b35bd046-e043-43e1-8bf8-1bc0360f646d")
+			(uuid "824c75cd-b298-42a8-aec1-6479b65ff05a")
 		)
 		(instances
 			(project "bom"
@@ -1188,6 +1357,10 @@
 					(unit 1)
 					(variant
 						(name "a")
+						(field
+							(name "MPN")
+							(value "RC0603FR-074K7L")
+						)
 						(field
 							(name "Value")
 							(value "4k7")
@@ -1198,8 +1371,8 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector_Generic:Conn_01x03")
-		(at 101.6 100.33 0)
+		(lib_id "Amplifier_Operational:LM2904")
+		(at 76.2 100.33 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -1207,107 +1380,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "860e6e52-59a2-42be-996b-6edec1979acf")
-		(property "Reference" "J1"
-			(at 101.6 97 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "Conn_01x03"
-			(at 101.6 104 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
-			(at 101.6 100 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 101.6 100.33 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 101.6 100.33 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Setting" "1-2"
-			(at 101.6 100 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "3"
-			(uuid "b702f4c6-827c-4d43-ad7b-2e6d219aab45")
-		)
-		(pin "1"
-			(uuid "1422d9f9-c0f3-40ce-be95-5c5b7494cce0")
-		)
-		(pin "2"
-			(uuid "d9fd59bf-ca15-46f1-9711-aa29f34537e5")
-		)
-		(instances
-			(project "bom"
-				(path "/bbbbbbbb-0000-0000-0000-000000000001"
-					(reference "J1")
-					(unit 1)
-					(variant
-						(name "b")
-						(field
-							(name "Setting")
-							(value "2-3")
-						)
-					)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Amplifier_Operational:LM2904")
-		(at 88.9 100.33 0)
-		(unit 2)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "ecd843ad-b3b5-44cd-bdc6-be813bb8a996")
+		(uuid "a47c3725-ed90-4144-9be0-f97df5d5df75")
 		(property "Reference" "U1"
-			(at 88.9 97 0)
+			(at 76.2 97 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1317,7 +1392,7 @@
 			)
 		)
 		(property "Value" "LM2904"
-			(at 88.9 104 0)
+			(at 76.2 104 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1327,7 +1402,7 @@
 			)
 		)
 		(property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
-			(at 88.9 100 0)
+			(at 76.2 100 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1338,7 +1413,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 88.9 100.33 0)
+			(at 76.2 100.33 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1348,7 +1423,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 88.9 100.33 0)
+			(at 76.2 100.33 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1358,7 +1433,7 @@
 			)
 		)
 		(property "Manufacturer" "Texas Instruments"
-			(at 88.9 100 0)
+			(at 76.2 100 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1369,7 +1444,7 @@
 			)
 		)
 		(property "MPN" "LM2904DR"
-			(at 88.9 100 0)
+			(at 76.2 100 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1379,105 +1454,34 @@
 				)
 			)
 		)
-		(pin "3"
-			(uuid "01cf0956-ad49-4003-b9f8-d7654ea31ad4")
-		)
-		(pin "6"
-			(uuid "bf56cc54-9328-4bac-af79-d53743d3e214")
+		(pin "2"
+			(uuid "9b046357-7948-456f-a29c-3681977a40fc")
 		)
 		(pin "4"
-			(uuid "b1c48cf1-7a6e-4d4d-9916-511565c21e65")
+			(uuid "783a734d-c18b-4d77-81cd-5533f7aaad00")
 		)
 		(pin "5"
-			(uuid "104ee903-4a11-4d9d-8f7d-a05533e319ab")
-		)
-		(pin "7"
-			(uuid "6b441442-2769-4397-b25c-11f785c81b9c")
+			(uuid "e69467d6-bc02-4f23-befd-58599ae78926")
 		)
 		(pin "8"
-			(uuid "2b3cd948-9632-41b7-bd22-6dffa5658f19")
+			(uuid "6f10d4a7-f87b-4bdc-9ca5-822d314465ee")
+		)
+		(pin "7"
+			(uuid "31d66b8d-0d69-40bf-b58e-ec7cc3ab437e")
+		)
+		(pin "3"
+			(uuid "1dbaf89e-b73e-45a8-98cc-3be11df81d33")
 		)
 		(pin "1"
-			(uuid "8885f001-8a68-4139-882c-83d7b2ef4259")
+			(uuid "0d12cce0-76ce-4e14-b8a2-cf7afb45948e")
 		)
-		(pin "2"
-			(uuid "d6b19f27-5c68-4d1e-8ce0-78f6f0351743")
+		(pin "6"
+			(uuid "4bf4f8b2-1eb0-428b-b84e-b7ff0237c383")
 		)
 		(instances
 			(project "bom"
 				(path "/bbbbbbbb-0000-0000-0000-000000000001"
 					(reference "U1")
-					(unit 2)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 127 100.33 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "ef8f8da8-47ea-47eb-be56-739c83e1d9f9")
-		(property "Reference" "H1"
-			(at 127 97 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "MountingHole"
-			(at 127 104 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_3.2mm_M3"
-			(at 127 100 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 127 100.33 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 127 100.33 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(instances
-			(project "bom"
-				(path "/bbbbbbbb-0000-0000-0000-000000000001"
-					(reference "H1")
 					(unit 1)
 				)
 			)

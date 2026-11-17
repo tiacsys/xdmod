@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import copy
 import datetime as dt
+import hashlib
 import json
 import re
 import shutil
@@ -353,20 +354,32 @@ def _csv(path: Path, cols, rows) -> None:
 
 
 # ------------------------------------------------------------------ the output of the current commit
+def tree_state(repo: Path, folder: Path) -> str:
+    """A hash of the uncommitted state of a project folder: ``git status`` of the folder and the
+    content of every changed or untracked file ("" for a clean folder). A file that is reverted or
+    deleted later changes it too (task 5.21)."""
+    rel = str(folder.resolve().relative_to(repo.resolve()))
+    status = _git(repo, "status", "--porcelain", "--untracked-files=all", "--", rel).stdout
+    if not status.strip():
+        return ""
+    h = hashlib.sha256(status.encode())
+    for ln in sorted(status.splitlines()):
+        f = repo / ln[3:].split(" -> ")[-1].strip('"')
+        h.update(f"\0{ln}\0".encode())
+        h.update(f.read_bytes() if f.is_file() else b"<missing>")
+    return h.hexdigest()
+
+
 def current(cam_dir: Path, project: str, repo: Path, folder: Path) -> tuple[dict | None, Path | None, str]:
     """(cam.json record, its version folder, why there is none) of the ``curatrix cam`` run the
-    board document may show: one of the commit ``repo`` is at; with uncommitted changes in the
-    project folder, one from such a tree that is newer than every file of the folder; without
-    changes, one from a clean tree. Anything else is stale and never shown (task 5.21)."""
+    board document may show: one of the commit ``repo`` is at, from a project folder in exactly
+    the uncommitted state it is in now (``tree_state``). Anything else is stale and never shown
+    (task 5.21)."""
     head = _git(repo, "rev-parse", "HEAD").stdout.strip()
     try:
-        rel = str(folder.resolve().relative_to(repo.resolve()))
+        state = tree_state(repo, folder)
     except ValueError:
         return None, None, f"{folder} is not in {repo}"
-    changed = [repo / ln[3:].split(" -> ")[-1].strip('"') for ln in
-               _git(repo, "status", "--porcelain", "--untracked-files=all", "--", rel).stdout.splitlines() if ln]
-    dirty = bool(changed)
-    newest = max((f.stat().st_mtime for f in changed if f.is_file()), default=0.0)
     none = f"no `curatrix cam` output for commit {head[:12]}"
     best, why = None, none
     for f in sorted((cam_dir / project).glob("*/cam.json")):
@@ -376,13 +389,9 @@ def current(cam_dir: Path, project: str, repo: Path, folder: Path) -> tuple[dict
             continue
         if rec.get("kind", "board") != "board" or rec.get("commit") != head:
             continue
-        if ("-dirty" in rec.get("version", "")) != dirty:
-            why = why if why != none else (
-                "the `curatrix cam` output of this commit is from a tree with uncommitted changes" if not dirty
-                else "uncommitted changes in the project folder since the `curatrix cam` run")
-            continue
-        if dirty and f.stat().st_mtime < newest:
-            why = "a project file changed after the `curatrix cam` run"
+        if rec.get("tree_state", "") != state:
+            why = ("the project folder has uncommitted changes that differ from those of the `curatrix cam` run"
+                   if state else "the `curatrix cam` output of this commit is from a tree with uncommitted changes")
             continue
         if best is None or f.stat().st_mtime > best[0]:
             best = (f.stat().st_mtime, rec, f.parent)
@@ -418,6 +427,7 @@ def run_project(ws, repo, cfg, pr, log=print) -> dict:
     for t in version_findings(pr):
         log(f"  warn CK-F11 {pr.name}: {t}")
     ver, release = version(repo.path, pr.name, pr.folder)
+    state = tree_state(repo.path, pr.folder)        # the state that is copied, before KiCad runs
     short = ver.split("/", 1)[1] if "/" in ver else ver
     top = ws.build(cfg.area) / "cam" / pr.name / short
     if top.exists():
@@ -471,6 +481,7 @@ def run_project(ws, repo, cfg, pr, log=print) -> dict:
     files = sorted(str(f.relative_to(top)) for f in out.rglob("*") if f.is_file())
     head = _git(repo.path, "rev-parse", "HEAD").stdout.strip()
     rec = {"kind": "board", "project": pr.name, "version": ver, "release": release, "commit": head,
+           "tree_state": state,
            "date": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
            "jobs": n_jobs, "single_exports": singles, "variants": variants, "stackup": source,
            "warnings": [t for _, t in found] + version_findings(pr), "files": files}

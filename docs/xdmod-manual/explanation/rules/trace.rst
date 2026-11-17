@@ -216,7 +216,7 @@ The principles of the trace model and the rules on the trace graph.
    :status: valid
    :decided_by: XD-ADR-0129
 
-   Every part in a board's bill of materials, in the base schematic or in any variant, has the fields ``Manufacturer`` and ``MPN``. A standard part carries a field ``Standard`` with its standard designation instead. A missing field is a warning (owner, EE-8).
+   Every part in a board's bill of materials, in the base schematic or in any variant, has the fields ``Manufacturer`` and ``MPN``. A standard part carries a field ``Standard`` with its standard designation instead. A variant that changes a part's value or footprint names its own MPN. A missing field is a warning (owner, EE-8).
 
 .. xd-rule:: The board document's BOM is KiCad's BOM
    :id: XD-RULE-0059
@@ -232,4 +232,4 @@ The principles of the trace model and the rules on the trace graph.
    :status: valid
    :decided_by: XD-ADR-0129
 
-   Renderings, schematic and ERC/DRC findings of a board come from the local ``curatrix cam`` output of the commit the repo is at; with uncommitted changes in the project folder, from a run on such a tree that is newer than every changed file. Older output is never shown: the section prints a fixed sentence instead, as in CI. Missing output is a local warning, and an error at the baseline once the check ran on the canary.
+   Renderings, schematic and ERC/DRC findings of a board come from the local ``curatrix cam`` output of the commit the repo is at; with uncommitted changes in the project folder, from a run on exactly that uncommitted state (a hash of ``git status`` and the changed files, kept in ``cam.json``). Older output is never shown: the section prints a fixed sentence instead, as in CI. Missing output is a local warning, and an error at the baseline once the check ran on the canary.

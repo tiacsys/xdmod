@@ -4,4 +4,4 @@
 "R1","10k","Resistor_SMD:R_0603_1608Metric","","Yageo","RC0603FR-0710KL",""
 "R2","1k","Resistor_SMD:R_0603_1608Metric","","Yageo","RC0603FR-071KL",""
 "R3","1k","Resistor_SMD:R_0603_1608Metric","DNP","Yageo","RC0603FR-071KL",""
-"U1","LM2904","Package_SO:SOIC-8_3.9x4.9mm_P1.27mm","","Texas Instruments","LM2904DR",""
+"U1","LM2904","Package_SO:SOIC-8_3.9x4.9mm_P1.27mm","DNP","Texas Instruments","LM2904DR",""

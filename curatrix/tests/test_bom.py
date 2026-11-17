@@ -5,7 +5,6 @@ import os
 import shutil
 import subprocess
 import sys
-import time
 
 import pytest
 
@@ -61,24 +60,33 @@ def test_table_variants_and_findings():
     assert head[-2:] == ["Variant a", "Variant b"]
     by = {r[0]: r for r in rows}
     assert by["R2, R3"][-2:] == ["2", "1, R3 DNP"]
-    assert by["R1"][-2:] == ["1, value 4k7", "1"]
+    assert by["R1"][-2:] == ["1, value 4k7, MPN RC0603FR-074K7L", "1"]     # the variant's own part
+    assert by["U1"][-2:] == ["DNP", "DNP"]                                     # DNP on unit 2 only
     assert by["JP1"][3] == "Standard: solder bridge" and by["JP1"][-2:] == ["DNP", "1"]
     assert by["J1"][-2:] == ["1, 1-2", "1, 2-3"] and "H1" not in by
     assert bom.collapse(["R1", "R2", "R3", "R4", "R7", "R9", "R10"]) == "R1-R4, R7, R9, R10"
     vt = bom.variants_table(parts, [{"name": "a"}, {"name": "b", "description": "B"}], {"bom": ["b"]}, "bom")
-    assert vt == [["a", "", "R1 value 4k7", "J1 1-2", "none"], ["b", "B", "JP1 fitted, R3 DNP", "J1 2-3", "bom/b"]]
+    assert vt == [["a", "", "R1 MPN RC0603FR-074K7L, R1 value 4k7", "J1 1-2", "none"], ["b", "B", "JP1 fitted, R3 DNP", "J1 2-3", "bom/b"]]
     assert bom.variants_table(parts, [{"name": "a"}], None, "bom")[0][4] == "—"
 
 
 def test_f12_bom_fields(tmp_path):
     """CK-F12 planted: J1 has neither Manufacturer nor MPN; JP1 has a Standard designation instead;
-    H1 is not in the BOM."""
+    H1 is not in the BOM; per variant: a variant that clears the MPN, one that changes the value
+    but keeps the base's MPN."""
     root, repo = _repo(tmp_path)
     f = _run(root, repo, "CK-F12", "c_bom_fields")
     assert len(f) == 1 and "J1 (Conn_01x03) has no Manufacturer and no MPN" in f[0], f
     sch = repo / "pcba" / "bom" / "bom.kicad_sch"
-    sch.write_text(sch.read_text().replace('(property "Setting" "1-2"', '(property "Standard" "DIN 1-2"'))
+    text = sch.read_text().replace('(property "Setting" "1-2"', '(property "Standard" "DIN 1-2"')
+    sch.write_text(text)
     assert _run(root, repo, "CK-F12", "c_bom_fields") == []
+    sch.write_text(text.replace('(value "RC0603FR-074K7L")', '(value "")'))      # variant a clears the MPN
+    f = _run(root, repo, "CK-F12", "c_bom_fields")
+    assert len(f) == 1 and "R1 (4k7) (variant a) has no MPN" in f[0], f
+    sch.write_text(text.replace('(value "RC0603FR-074K7L")', '(value "RC0603FR-0710KL")'))   # the base's MPN
+    f = _run(root, repo, "CK-F12", "c_bom_fields")
+    assert len(f) == 1 and "R1 (variant a) is 4k7" in f[0] and "keeps the MPN RC0603FR-0710KL" in f[0], f
 
 
 @pytest.mark.tools
@@ -102,18 +110,21 @@ def test_d9_against_kicad_cli(tmp_path, monkeypatch):
 
 
 def _cam(root, repo, version, commit=None):
+    """A cam.json as `curatrix cam` writes it, for the folder's state now."""
     top = root / "build" / "r" / "cam" / "bom" / version
     (top / "bom").mkdir(parents=True, exist_ok=True)
     head = commit or subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True,
                                     text=True).stdout.strip()
-    (top / "cam.json").write_text(json.dumps({"kind": "board", "project": "bom", "version": f"bom/{version}", "release": False,
-                                              "commit": head, "date": "2026-11-17T00:00:00+00:00"}))
+    (top / "cam.json").write_text(json.dumps({
+        "kind": "board", "project": "bom", "version": f"bom/{version}", "release": False, "commit": head,
+        "tree_state": cam.tree_state(repo, repo / "pcba" / "bom"), "date": "2026-11-17T00:00:00+00:00"}))
     return top
 
 
 def test_d10_cam_output_of_the_current_commit(tmp_path):
     """CK-D10 planted: no output; output of another commit; a clean run, then an uncommitted change
-    (stale); a run on the dirty tree, then a newer change (stale again)."""
+    (stale); a run on the dirty tree, then another edit, a deleted file and a reverted file (stale
+    each time, also when the file's time is older than the run)."""
     root, repo = _repo(tmp_path)
     f = _run(root, repo, "CK-D10", "c_cam_output")
     assert len(f) == 1 and "no `curatrix cam` output for commit" in f[0] and "curatrix cam r bom" in f[0], f
@@ -121,16 +132,29 @@ def test_d10_cam_output_of_the_current_commit(tmp_path):
     assert _run(root, repo, "CK-D10", "c_cam_output")
     _cam(root, repo, "v0.0.0-1-gabc-preview")
     assert _run(root, repo, "CK-D10", "c_cam_output") == []
-    sch = repo / "pcba" / "bom" / "bom.kicad_sch"
+    d = repo / "pcba" / "bom"
+    sch, ch = d / "bom.kicad_sch", d / "bom_ch.kicad_sch"
     sch.write_text(sch.read_text() + "\n")
-    f = _run(root, repo, "CK-D10", "c_cam_output")
-    assert any("uncommitted changes in the project folder since" in x for x in f), f
+    (d / "probe.txt").write_text("x\n")
+    stale = "uncommitted changes that differ from those of the `curatrix cam` run"
+    assert any(stale in x for x in _run(root, repo, "CK-D10", "c_cam_output"))
     _cam(root, repo, "v0.0.0-1-gabc-dirty-preview")
     assert _run(root, repo, "CK-D10", "c_cam_output") == []
-    time.sleep(0.05)
-    os.utime(sch, (time.time() + 5, time.time() + 5))
-    f = _run(root, repo, "CK-D10", "c_cam_output")
-    assert any("a project file changed after the `curatrix cam` run" in x for x in f), f
+    t = sch.stat().st_mtime
+    sch.write_text(sch.read_text() + "\n")
+    os.utime(sch, (t - 100, t - 100))                       # an edit with an old file time
+    assert any(stale in x for x in _run(root, repo, "CK-D10", "c_cam_output"))
+    _cam(root, repo, "v0.0.0-1-gabc-dirty-preview")
+    (d / "probe.txt").unlink()                              # a file deleted after the run
+    assert any(stale in x for x in _run(root, repo, "CK-D10", "c_cam_output"))
+    _cam(root, repo, "v0.0.0-1-gabc-dirty-preview")
+    ch.write_text(ch.read_text() + "\n")
+    _cam(root, repo, "v0.0.0-1-gabc-dirty-preview")
+    subprocess.run(["git", "-C", str(repo), "checkout", "--", "pcba/bom/bom_ch.kicad_sch"], check=True)  # reverted
+    assert any(stale in x for x in _run(root, repo, "CK-D10", "c_cam_output"))
+    subprocess.run(["git", "-C", str(repo), "checkout", "--", "pcba/bom/bom.kicad_sch"], check=True)
+    f = _run(root, repo, "CK-D10", "c_cam_output")          # clean again: only the clean run counts
+    assert f == [], f
 
 
 def test_findings_rows_carry_the_acceptance_state():
@@ -173,9 +197,9 @@ def test_board_document(tmp_path):
 
     local = "Made locally with KiCad (curatrix cam) for the current commit; not part of this build."
     html = build(tmp_path / "o1")
-    assert html.count(local) == 3                                   # renderings, schematic, findings
+    assert html.count(local) == 4                                   # overview, renderings, schematic, findings
     for text in ("R1 value 4k7", "JP1 fitted, R3 DNP", "Variant b", "1, R3 DNP", "Pin_1",
-                 "No data yet.", "is not part of this build"):   # no board file: no stackup
+                 "No data yet."):   # no board file: no stackup
         assert text in html, text
     top = _cam(root, repo, "v0.0.0-1-gabc-preview")
     out = top / "bom"
@@ -188,11 +212,12 @@ def test_board_document(tmp_path):
          "description": "Missing connection", "note": "routing (accepted.yaml entry 1; not committed)"}]}))
     html = build(tmp_path / "o2")
     assert local not in html
-    for text in ("bom/v0.0.0-1-gabc-preview", "data:image/png;base64,", "the same renderings as variant a",
+    assert "data:image" not in html and html.count("<img") == 1          # six equal PNGs: one image file
+    for text in ("bom/v0.0.0-1-gabc-preview", "_images/render-top-a.png", "bottom: same as variant a top",
                  'id="root-sheet"', "proposed, not accepted", "0 open, 1 proposed, 0 accepted"):
         assert text in html, text
     _cam(root, repo, "v0.0.0-1-gabc-preview", commit="1" * 40)       # the output of another commit: never shown
-    assert build(tmp_path / "o3").count(local) == 3
+    assert build(tmp_path / "o3").count(local) == 4
 
 
 def test_harness_links_use_the_zdocs_intersphinx_name(tmp_path):
