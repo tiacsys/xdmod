@@ -316,6 +316,109 @@ def launch_env(ws: Workspace, tool: str) -> dict[str, str]:
     return env
 
 
+# ------------------------------------------------------------------ tool shims
+# A bare `kicad-cli --version` rewrites ~/.config/kicad/10.0/kicad_common.json (owner decision
+# 2026-11-17, after two agent runs did it). So bootstrap/update write shims with these names into
+# .venv/bin, which `curatrix env` puts first on PATH: each sets the workspace-local config that
+# `curatrix run` sets (limits.tool_env) and execs the real binary by its absolute path.
+SHIM_TOOLS = ("kicad-cli", "kicad", "eeschema", "pcbnew", "FreeCAD", "FreeCADCmd", "freecad")
+SHIM_MARK = "# curatrix tool shim"
+
+
+def shim_dir(ws: Workspace) -> Path:
+    return ws.venv / "bin"
+
+
+def is_shim(p: Path) -> bool:
+    try:
+        with open(p, "rb") as f:
+            return SHIM_MARK.encode() in f.read(512)
+    except OSError:
+        return False
+
+
+def real_tool(ws: Workspace, name: str, path: str | None = None) -> Path | None:
+    """The first `name` on PATH that is neither in .venv/bin nor a shim (of any workspace), so a
+    shim never execs itself or another shim."""
+    skip = shim_dir(ws).resolve()
+    for d in (path if path is not None else os.environ.get("PATH", "")).split(os.pathsep):
+        if not d:
+            continue
+        try:
+            if Path(d).resolve() == skip:
+                continue
+        except OSError:
+            continue
+        p = Path(d) / name
+        if p.is_file() and os.access(p, os.X_OK) and not is_shim(p):
+            return p.absolute()
+    return None
+
+
+def shim_env(ws: Workspace, name: str) -> dict[str, str]:
+    """Only the variables `curatrix run -- <name>` adds for this tool (KICAD*, LC_ALL, XDG_*)."""
+    return dict(sorted(limits.tool_env(ws, "script", {}, [name]).items()))
+
+
+def shim_text(ws: Workspace, name: str, real: Path) -> str:
+    import shlex
+    lines = ["#!/bin/sh",
+             f"{SHIM_MARK} (written by `curatrix bootstrap` / `update`; do not edit)",
+             f"# workspace: {ws.root}",
+             f"# Runs {real} with the workspace-local config, never ~/.config, ~/.cache or ~/.local.",
+             "# It sets no limits: run tools through `curatrix run` (rule 2)."]
+    lines += [f"export {k}={shlex.quote(v)}" for k, v in shim_env(ws, name).items()]
+    lines.append(f'exec {shlex.quote(str(real))} "$@"')
+    return "\n".join(lines) + "\n"
+
+
+def write_shims(ws: Workspace, path: str | None = None) -> list[str]:
+    """Write a shim for each tool in SHIM_TOOLS found on PATH; remove our shims of tools that are
+    gone. Touches only <ws>/.venv/bin. Returns the names with a shim."""
+    d = shim_dir(ws)
+    d.mkdir(parents=True, exist_ok=True)
+    made = []
+    for name in SHIM_TOOLS:
+        p = d / name
+        if os.path.lexists(p) and not is_shim(p):
+            say(f"  {p} exists and is not a curatrix shim: left alone")
+            continue
+        real = real_tool(ws, name, path)
+        if real is None:
+            if p.exists():
+                p.unlink()
+            continue
+        text = shim_text(ws, name, real)
+        if not p.exists() or p.read_text() != text:
+            p.write_text(text)
+        p.chmod(0o755)
+        made.append(name)
+    return made
+
+
+def shim_rows(ws: Workspace, path: str | None = None) -> list[tuple[str, str, str]]:
+    """Doctor rows: a KiCad/FreeCAD name found first on PATH that is not this workspace's shim
+    would write ~/.config when called bare."""
+    rows = []
+    path = path if path is not None else os.environ.get("PATH", "")
+    mine = shim_dir(ws).resolve()
+    seen = False
+    for name in SHIM_TOOLS:
+        found = shutil.which(name, path=path)
+        if not found:
+            continue
+        seen = True
+        fp = Path(found)
+        if fp.parent.resolve() == mine and is_shim(fp):
+            continue
+        fix = 'eval "$(curatrix env)"' if is_shim(shim_dir(ws) / name) else "curatrix update"
+        rows.append(("warn", f"{name} on PATH is {found}, not the workspace shim",
+                     f"a bare call writes ~/.config; {fix}"))
+    if seen and not rows:
+        rows.append(("ok", "KiCad/FreeCAD shims first on PATH", ".venv/bin"))
+    return rows
+
+
 def launch(ws: Workspace, tool: str, args: list[str]) -> int:
     """GUI tools: memory limit only, no timeout (D117). Runs from the workspace root (D67)."""
     exe = {"kicad": "kicad", "freecad": "FreeCAD", "drawio": "drawio", "claude": "claude"}[tool]
@@ -326,6 +429,10 @@ def launch(ws: Workspace, tool: str, args: list[str]) -> int:
         args = [f"--user-data-dir={ws.state / 'drawio'}", *args]
     if not shutil.which(exe):
         raise SetupError(f"{exe} not found on PATH")
+    if tool in ("kicad", "freecad"):
+        # the real binary, not the shim: launch_env is already the workspace config, and the
+        # shim's batch LC_ALL would switch the GUI's language
+        exe = str(real_tool(ws, exe) or exe)
     env = launch_env(ws, tool)
     use = "claude" if tool == "claude" else "gui"
     lim = limits.resolve(use, ws)
@@ -385,6 +492,8 @@ def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
     row = kicad_models_row(ws, role, ci)
     if row:
         add(*row)
+    for row in shim_rows(ws):
+        add(*row)
     lim_backend = limits.backend()
     add("ok" if lim_backend == "systemd" else "warn", f"limits backend: {lim_backend}",
         "" if lim_backend == "systemd" else "no systemd user session: timeout + ulimit -v fallback")
@@ -430,6 +539,8 @@ def refresh(ws: Workspace, adopt: bool = False, force_pip: bool = False) -> None
     say(f"  installed in: {', '.join(install_hooks(ws)) or '(no repos)'}")
     say("== workspace state (.xdmod/)")
     create_state(ws)
+    say("== KiCad/FreeCAD shims in .venv/bin (workspace-local config)")
+    say(f"  shims: {', '.join(write_shims(ws)) or '(no KiCad or FreeCAD found)'}")
 
 
 def bootstrap(ws: Workspace, role: str, adopt: bool = False, skip_west: bool = False, run_doctor: bool = True) -> int:

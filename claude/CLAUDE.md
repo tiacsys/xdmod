@@ -95,9 +95,16 @@ Old curatrix rejects an unknown key; new curatrix may require it. So:
 
 ## Pitfalls
 
-- **KiCad and FreeCAD only through curatrix** (`curatrix launch kicad|freecad`, or `curatrix run
-  --use kicad-cli|freecad`), which set the workspace-local config. A bare `pcbnew` or `FreeCADCmd`
-  call writes to `~/.config` (rule 4; the canary C0 incident). Never touch `~/.config`.
+- **Hard rule: never run KiCad or FreeCAD outside curatrix or its shims, not even `--version`**
+  (owner decision 2026-11-17, `XD-ADR-0145`). Use `curatrix launch
+  kicad|freecad` or `curatrix run --use kicad-cli|freecad`. Any bare call of `kicad-cli`,
+  `kicad`, `eeschema`, `pcbnew`, `FreeCAD`, `FreeCADCmd` or `freecad` (by `/usr/bin/...` path,
+  or without `eval "$(curatrix env)"`) writes `~/.config/kicad` or `~/.config/FreeCAD`: even
+  `kicad-cli --version` rewrites `kicad_common.json` (the canary C0 incident, twice more on
+  2026-11-17). Never touch `~/.config`. The shims in `.venv/bin` (written by `curatrix
+  bootstrap` / `update`, `setup.write_shims`) are a safety net, not a licence: they set the
+  config but no limits. `curatrix doctor` warns when a KiCad/FreeCAD name on PATH is not the shim.
+  To try a KiCad call by hand, use a fake workspace and `HOME` under `build/`.
 - A test that runs `git` in a temp repo must not see the caller's environment by accident:
   `XD_BASE_REF` and `GITHUB_BASE_REF` change the base of CK-H4 and CK-H7.
 - CK-H4 detects agent commits by "Claude Code" or anthropic.com in the message. A planted message
