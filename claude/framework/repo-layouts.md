@@ -67,7 +67,7 @@ model/                   ME domain model (*.sysml): assembly and sub-assembly de
 parts/<part>.FCStd       shared parts (compression 0, D63)
 assemblies/<name>/       one folder per top-level assembly: <name>.FCStd (top document, TraceID = its ME-ASM),
                          skeleton.FCStd (spreadsheet Params with the variant table, master sketch; parts refer only
-                         to it, XD-ADR-0137, proposed), parts/ (own parts), accepted.yaml (accepted findings, XD-ADR-0126)
+                         to it, XD-ADR-0137), parts/ (own parts), accepted.yaml (accepted findings, XD-ADR-0126)
 lib/                     project-local parts not in FreeCAD-library (D88)
 templates/               TechDraw templates with git fields (freecad-storage.md §4)
 print/                   print-settings profiles (D30)

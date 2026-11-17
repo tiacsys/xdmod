@@ -145,7 +145,7 @@ What is in iteration 1 and what moved to iteration 2.
    :status: valid
    :refines: XD-ADR-0143
 
-   Proposed by the agent of task 5.30, for the owner to accept or change. The spike
+   Proposed by the agent of task 5.30, accepted by the owner on 2026-11-17. The spike
    (``claude/notes/me-renderings-spike.md``) found that neither the Render workbench (an addon that
    needs an external renderer) nor a Coin3D snapshot (``saveImage`` in the GUI binary offscreen gives a
    blank image; ``SoOffscreenRenderer`` finds no GL context) works headless. The owner first ruled out
@@ -175,7 +175,7 @@ What is in iteration 1 and what moved to iteration 2.
    :status: valid
    :refines: XD-ADR-0147
 
-   Proposed by the agent of the Blender follow-up to task 5.30, for the owner to accept or change.
+   Proposed by the agent of the Blender follow-up to task 5.30, accepted by the owner on 2026-11-17.
    The owner reversed "no Blender" on 2026-11-17: the Blender package of the machine may render,
    through its executable only (no ``bpy`` wheel, no new system package).
 

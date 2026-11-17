@@ -99,7 +99,7 @@ ME repo
 
 FreeCAD files are stored uncompressed, with a git textconv for readable diffs (:need:`XD-ADR-0056`,
 :need:`XD-RULE-0039`). Parts refer only to the skeleton, never to the top document
-(:need:`XD-ADR-0137`, proposed). Board models come at fixed versions from a board library repo
+(:need:`XD-ADR-0137`). Board models come at fixed versions from a board library repo
 (:need:`XD-ADR-0139`). Boards, harnesses and assemblies have their own tags
 ``<name>/vX.Y.Z``, made by the owner only (:need:`XD-ADR-0140`).
 

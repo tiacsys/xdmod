@@ -268,7 +268,7 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    :status: valid
    :refines: XD-ADR-0137
 
-   Proposed by the agent of tasks 5.23 and 5.24, for the owner to accept or change; it states what
+   Proposed by the agent of tasks 5.23 and 5.24, accepted by the owner on 2026-11-17; it states what
    the code of these tasks does where it differs from :need:`XD-ADR-0137`.
 
    - **The skeleton is** ``assemblies/<name>/<name>-skeleton.FCStd``, not ``skeleton.FCStd``.
@@ -302,8 +302,8 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    opens the PR that adds a board version. At most 5 MB per file to start (board body, connectors and
    tall parts, no tracks). An ME assembly links one fixed board version; a newer version gives a note
    or an issue on the ME repo, and moving to it is an ME change. Creating the repo is an admin action
-   that needs the owner's approval (:need:`XD-ADR-0112`). Proposed until task 5.29 has shown the
-   headless STEP import (the FreeCAD spike did not test it).
+   that needs the owner's approval (:need:`XD-ADR-0112`). Task 5.29 showed the headless STEP
+   import (the FreeCAD spike had not tested it); accepted by the owner on 2026-11-17.
 
    Task 5.29 showed the headless STEP import (``FreeCADCmd``, ``Part.Shape.read``, canary board:
    about 0.04 MB per variant without component models) and settled the details: one file per tagged
