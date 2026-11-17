@@ -7,7 +7,7 @@
 checks:
   CK-A6:
     need: XD-CHECK-0001
-    enforces: [XD-RULE-0034, XD-RULE-0002]
+    enforces: [XD-RULE-0034, XD-RULE-0002, XD-RULE-0010, XD-RULE-0012]
     description: "Builds every document of the repo's registry with zdocs in strict mode. The sphinx-needs schema in the shared needs configuration checks each need: link side, link targets, required links, field values and ID pattern."
   CK-A1:
     need: XD-CHECK-0002

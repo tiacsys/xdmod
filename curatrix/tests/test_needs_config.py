@@ -101,6 +101,20 @@ BAD = {
    :status: valid
    :layer: functional
 """,
+    "orphan-product-el": """
+.. sys-el:: Bad
+   :id: SYS-EL-0091
+   :status: valid
+   :layer: product
+""",
+    "hil-with-hash-but-no-shas": """
+.. tr:: Bad
+   :id: TR-INT-STC-0001-bbbbbbbb
+   :status: valid
+   :result_of: INT-STC-0001
+   :method: hil
+   :firmware_sha256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+""",
     "hil-without-sha": """
 .. tr:: Bad
    :id: TR-INT-STC-0001-aaaaaaaa

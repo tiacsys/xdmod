@@ -77,3 +77,13 @@ def directive_of(kind: str) -> str | None:
 def req_types() -> tuple[str, ...]:
     """Requirement need types: directives named ``<domain>-req`` (id-scheme.md: kind REQ)."""
     return tuple(t["directive"] for t in types() if t["directive"].endswith("-req"))
+
+
+def field_enum(name: str) -> tuple[str, ...]:
+    """The allowed values of a need field (its schema enum), e.g. ``status``, ``layer``."""
+    return tuple((config()["fields"][name].get("schema") or {}).get("enum") or ())
+
+
+def kinds_of(*kind_parts: str) -> set[str]:
+    """Need kinds whose KIND part is one of `kind_parts` (``kinds_of("TC", "ITC")``)."""
+    return {k for k in need_kinds() if k.split("-", 1)[1] in kind_parts}

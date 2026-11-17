@@ -62,10 +62,10 @@ Beyond the shape of each need, XDMOD checks the graph:
 
 - every system requirement is refined or satisfied (:need:`XD-RULE-0008`, :need:`XD-CHECK-0006`);
 - every requirement is verified, per configuration (:need:`XD-RULE-0009`, :need:`XD-CHECK-0007`);
-- no orphan design elements (:need:`XD-RULE-0010`, :need:`XD-CHECK-0004`);
+- no orphan design elements (:need:`XD-RULE-0010`, a schema rule of the strict build, :need:`XD-CHECK-0001`);
 - links to retired needs are reported, with a grace period until the next baseline
   (:need:`XD-RULE-0011`, :need:`XD-CHECK-0008`);
-- HIL results carry the firmware hash and the pinned SHAs (:need:`XD-RULE-0012`, :need:`XD-CHECK-0005`), and only
+- HIL results carry the firmware hash and the pinned SHAs (:need:`XD-RULE-0012`, a schema rule of the strict build, :need:`XD-CHECK-0001`), and only
   results that match the current pins count (:need:`XD-RULE-0013`, :need:`XD-CHECK-0011`);
 - suspect links are found and must be confirmed before a baseline (:need:`XD-RULE-0014`, :need:`XD-CHECK-0024`).
 

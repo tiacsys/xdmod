@@ -20,6 +20,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from curatrix import ids as idmod
+from curatrix import tracemodel
 
 # Payload keys kept for non-library elements (what our readers use).
 KEEP = {
@@ -47,8 +48,8 @@ LINK_BY_KINDS = {
     ("SYS-EL", "SYS-REQ"): "satisfies",
     ("SYS-CFG", "SYS-EL"): "configures",
 }
-LAYERS = ("context", "functional", "logical", "product")
-STATUSES = ("draft", "valid", "retired")
+LAYERS = tracemodel.field_enum("layer")          # from needs_config.toml (task 5.2)
+STATUSES = tracemodel.field_enum("status")
 
 
 def _ref(r):
@@ -323,7 +324,7 @@ def to_needs(m: Model, project: str = "model", source_of: dict[str, str] | None 
             continue
         kind = idmod.kind_of(sid)
         if kind is None:
-            if re.match(r"^(SYS|SW|EE|ME|INT)-[A-Z]+-", sid):
+            if re.match(rf"^(?:{'|'.join(idmod.DOMAINS)})-[A-Z]+-", sid):
                 findings.append(f"{m.qn(p)}: short name {sid!r} is not a valid ID")
             continue
         if kind in idmod.RESERVED_KINDS:

@@ -50,7 +50,7 @@ Checks
 
 - :need:`XD-CHECK-0016`: the Pilot parses the model with 0 errors (:need:`XD-RULE-0035`).
 - :need:`XD-CHECK-0017`: the committed model files match the model (:need:`XD-RULE-0033`).
-- :need:`XD-CHECK-0004`: a product-layer element realizes or satisfies something (:need:`XD-RULE-0010`).
+- :need:`XD-CHECK-0001`: the strict docs build; its needs schema fails a product-layer element that realizes or satisfies nothing (:need:`XD-RULE-0010`).
 - :need:`XD-CHECK-0018`: views that show the element are up to date (see :doc:`add-a-view`).
 
 Pitfalls
