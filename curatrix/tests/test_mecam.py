@@ -135,17 +135,22 @@ def _cam_repo(tmp_path, configs=""):
     return root, repo
 
 
-def _fake_script(edges=1, touch=None):
-    """A stand-in for cam-asm.py: writes the views, reports the edges, optionally changes a file."""
+def _fake_script(edges=1, touch=None, painted=1):
+    """A stand-in for cam-asm.py: writes the views and renderings, reports the edges and the painted
+    facets, optionally changes a file."""
     def run_script(ws, script, env, result):
         dest = __import__("pathlib").Path(env["XD_OUT"])
         (dest / "views").mkdir(parents=True, exist_ok=True)
         for v in mecam.VIEWS:
             (dest / "views" / f"{v}.svg").write_text('<path d="M 0 0 L 10 0 L 10 5 Z"/>')
         (dest / "exploded.svg").write_text('<path d="M 0 0 L 10 0"/>')
+        (dest / "renderings").mkdir(parents=True, exist_ok=True)
+        for v in mecam.VIEWS:
+            (dest / "renderings" / f"{v}.png").write_bytes(b"\x89PNG")
         if touch is not None:
             touch.write_bytes(touch.read_bytes() + b"\n")
-        return {"edges": {**{v: 4 for v in mecam.VIEWS}, "right": edges, "exploded": 4}, "bom": []}
+        return {"edges": {**{v: 4 for v in mecam.VIEWS}, "right": edges, "exploded": 4}, "bom": [],
+                "painted": {**{v: 100 for v in mecam.VIEWS}, "iso": painted}}
     return run_script
 
 
@@ -163,7 +168,7 @@ def test_cam_variants_base(tmp_path, monkeypatch):
 
 def test_cam_md5_guard_and_empty_view(tmp_path, monkeypatch):
     """Planted: a run that changes a source document fails (md5 before and after); a view without a
-    visible edge fails the run."""
+    visible edge and a rendering without a painted facet fail the run."""
     import curatrix.newasm as newasm
     root, repo = _cam_repo(tmp_path)
     ws, cfg = Workspace(root), checkcfg.load(repo / "checks.yaml", root)
@@ -174,8 +179,14 @@ def test_cam_md5_guard_and_empty_view(tmp_path, monkeypatch):
     monkeypatch.setattr(newasm, "run_script", _fake_script(edges=0))
     with pytest.raises(cam.CamError, match=r"no visible edge in the view\(s\) right"):
         mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)
+    monkeypatch.setattr(newasm, "run_script", _fake_script(painted=0))
+    with pytest.raises(cam.CamError, match=r"no painted facet in the rendering\(s\) iso"):
+        mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)
     monkeypatch.setattr(newasm, "run_script", _fake_script())
-    assert mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)[0]["sources_unchanged"]
+    rec = mecam.run(ws, Repo("r", repo, "r"), cfg, "fx", log=lambda *_: None)[0]
+    assert rec["sources_unchanged"] and rec["renderings"]["marking"] == "PREVIEW"
+    assert rec["per_variant"]["all"]["renderings"]["iso"] == "fx/all/renderings/iso.png"
+    assert "fx/all/renderings/front.png" in rec["files"]
 
 
 # ------------------------------------------------------------------ with FreeCAD
@@ -211,12 +222,18 @@ def test_me_cam_run(tmp_path):
     top = ws.build("r") / "cam" / "fx" / rec["version"].split("/", 1)[1]
     files = set(rec["files"])
     for f in ("fx.step", "parts/box-a.stl", "parts/box-a.3mf", "print/pla.ini", "drawing.svg", "drawing.pdf",
-              "exploded.svg", "bom.csv", "views/front.svg", "views/iso.svg"):
+              "exploded.svg", "bom.csv", "views/front.svg", "views/iso.svg", "renderings/front.png",
+              "renderings/top.png", "renderings/right.png", "renderings/iso.png"):
         assert f"fx/SYS-CFG-0002/{f}" in files, f
     e = rec["per_variant"]["SYS-CFG-0002"]["embossed"]["box-a"]
     assert e["solids"] == 1 and e["valid"] and e["volume_after"] > e["volume_before"]
     assert rec["per_variant"]["SYS-CFG-0002"]["moves"]["B"] == [0, 0, 20]
     assert "PREVIEW" in (top / "fx" / "SYS-CFG-0002" / "drawing.svg").read_text()
+    # renderings: real PNGs of the 1600 x 1200 px canvas, painted, more facets with box-b (D) present
+    png = (top / "fx" / "SYS-CFG-0002" / "renderings" / "iso.png").read_bytes()
+    assert png[:8] == b"\x89PNG\r\n\x1a\n" and int.from_bytes(png[16:20], "big") == 1600
+    pv = {v: rec["per_variant"][v]["painted"] for v in rec["variants"]}
+    assert all(n > 0 for p in pv.values() for n in p.values()) and pv["SYS-CFG-0002"]["iso"] > pv["base"]["iso"], pv
     for v, n in (("SYS-CFG-0002", "3"), ("base", "2")):        # D (box-b) only in SYS-CFG-0002
         bom = list(csv.DictReader(open(top / "fx" / v / "bom.csv")))
         assert {(r["id"], r["qty"]) for r in bom if r["item"] != "total"} >= {("ME-PART-0001", "2"), ("ME-PART-0002", n)}
