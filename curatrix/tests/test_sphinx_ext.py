@@ -135,8 +135,21 @@ def test_harness_document_directives(tmp_path):
     (v / "servo-cable").mkdir(parents=True)
     (v / "servo-cable" / "servo-cable.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" id="wv"><rect/></svg>')
     (v / "cam.json").write_text(json.dumps({"kind": "harness", "version": "servo-cable/v0.1.0", "release": True}))
-    shutil.rmtree(tmp_path / "src")
-    rc, log, out = build(tmp_path, text, env=env)
-    assert rc == 0, log
+    # a second build into the same output shows it
+    r = subprocess.run([sys.executable, "-m", "sphinx", "-W", "--keep-going", "-q", "-b", "html",
+                        str(tmp_path / "src"), str(out)], capture_output=True, text=True, timeout=300, env=env)
+    assert r.returncode == 0, r.stdout + r.stderr
     html = (out / "index.html").read_text()
     assert 'id="wv"' in html and "servo-cable/v0.1.0" in html
+
+
+def test_harness_diagram_documents_are_always_outdated():
+    """A document with xd-harness-diagram is re-read on every build, so a later `curatrix cam`
+    run shows up without a clean build (the plain test build above re-reads anyway)."""
+    import types
+    sys.path.insert(0, str(FIXTURES.parents[2] / "sphinx"))
+    from xdmod_sphinx import harness as hd
+    env = types.SimpleNamespace(xd_harness_docs={"harness", "gone"}, found_docs={"harness", "index"})
+    assert hd._outdated(None, env, set(), set(), set()) == ["harness"]
+    hd._purge(None, env, "harness")
+    assert env.xd_harness_docs == {"gone"}

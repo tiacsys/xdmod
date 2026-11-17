@@ -379,9 +379,9 @@ id_regex = '^EE-HAR-[0-9]{4,}$'
 color = "#F8CBAD"
 style = "component"
 [needs.types.links.connects]
-description = "The ports the harness ends mate with (both ends, also ports of external parts). The harness is built to fit them, so it holds the link."
+description = "The ports the harness ends mate with (both ends, also ports of external parts). The harness is built to fit them, so it holds the link. A cable with the same port def at both ends (an extension cable) has one target; CK-F1 counts the ends (at least two)."
 target_types = ["ee-port"]
-schema = { minItems = 2 }
+schema = { minItems = 1 }
 outgoing = "connects"
 incoming = "connected by"
 [needs.types.links.realizes]

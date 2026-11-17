@@ -123,6 +123,11 @@ class HarnessDiagram(Directive):
         from xdmod_sphinx import inline_svg, notice
         env = self.state.document.settings.env
         name = self.arguments[0]
+        # the cam output lives outside the source tree and appears or changes between builds:
+        # re-read this document on every build (env-get-outdated below)
+        if not hasattr(env, "xd_harness_docs"):
+            env.xd_harness_docs = set()
+        env.xd_harness_docs.add(env.docname)
         cam = Path(env.config.xd_cam_dir) / name
         best = None
         for f in cam.glob("*/cam.json"):
@@ -166,8 +171,24 @@ class HarnessBom(Directive):
         return _rst_table(self, ["Designators", "Description", "Qty", "Unit", "Manufacturer", "MPN"], rows)
 
 
+def _outdated(app, env, added, changed, removed):
+    return sorted(d for d in getattr(env, "xd_harness_docs", set()) if d in env.found_docs)
+
+
+def _purge(app, env, docname):
+    getattr(env, "xd_harness_docs", set()).discard(docname)
+
+
+def _merge(app, env, docnames, other):
+    env.xd_harness_docs = getattr(env, "xd_harness_docs", set()) | \
+        (getattr(other, "xd_harness_docs", set()) & set(docnames))
+
+
 def setup(app):
     app.add_config_value("xd_cam_dir", "", "env")
+    app.connect("env-get-outdated", _outdated)
+    app.connect("env-purge-doc", _purge)
+    app.connect("env-merge-info", _merge)
     app.add_directive("xd-harness-ends", HarnessEnds)
     app.add_directive("xd-harness-diagram", HarnessDiagram)
     app.add_directive("xd-harness-wires", HarnessWires)

@@ -73,8 +73,10 @@ files refer to them (:need:`XD-ADR-0128`): a KiCad project by its ``TraceID`` te
 WireViz harness by ``metadata: {TraceID: EE-HAR-....}``, and each of its connectors by a line
 ``Port: EE-PORT-....`` in its ``notes`` (the port it mates with, on a board or an external part;
 WireViz shows the notes in the diagram). The connector's ``pins`` and ``pinlabels`` are the pin
-numbers and net names of that port's pin map. The cable def has one port per end, typed by the
-(conjugated) port def it mates with; ``EE-HAR connects EE-PORT`` comes from these ports. The jobset is a copy of the xdmod template
+numbers and net names of that port's pin map; the pin maps at both ends use the same net names
+(the pin map of a bought part names its pins with our nets, not the vendor's). The cable def has one port per end, typed by the
+(conjugated) port def it mates with; ``EE-HAR connects EE-PORT`` comes from these ports (one target
+for a cable with the same port def at both ends; CK-F1 counts the ends). The jobset is a copy of the xdmod template
 (:need:`XD-ADR-0142`); ``accepted.yaml`` holds the accepted ERC and DRC findings (:need:`XD-ADR-0126`).
 There is one document per board, prototype project and harness (:need:`XD-ADR-0129`,
 :need:`XD-ADR-0127`).

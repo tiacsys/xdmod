@@ -183,12 +183,24 @@ def wiring(h: Harness) -> Wiring:
             x = parent[x]
         return x
 
-    def resolve(des: str, v: str) -> str:
+    def resolve(des: str, v: str, i: int) -> str | None:
+        """A pin number for a connector (pin labels map to pins); a wire number for a cable (wire
+        labels and unique colors map to wires, like WireViz); None if it cannot be read."""
         if des in conns:
             pins, labels = pins_of(conns[des])
             if v not in pins and v in labels:
                 return pins[labels.index(v)]
-        return v
+            return v
+        c = cabs[des] or {}
+        if v.isdigit() or v.lower() == "s":
+            return v.lower()
+        for key in ("wirelabels", "colors"):
+            vals = [str(x) for x in c.get(key) or []]
+            if vals.count(v) == 1:
+                return str(vals.index(v) + 1)
+        unsupported.append(f"connection set {i}: {des} wire {v!r} is no wire number, unique wire label or unique "
+                           f"color of the cable (color codes are not read)")
+        return None
 
     for i, cs in enumerate(h.data.get("connections") or [], 1):
         if not isinstance(cs, list):
@@ -204,7 +216,11 @@ def wiring(h: Harness) -> Wiring:
                                        f"(templates and auto-generated designators are not read)")
                     entries = None
                     break
-                entries.append((des, [resolve(des, x) for x in _expand(v)] or ["1"]))
+                vals = [resolve(des, x, i) for x in _expand(v)] or ["1"]
+                if None in vals:
+                    entries = None
+                    break
+                entries.append((des, vals))
             else:
                 unsupported.append(f"connection set {i}: entry {e!r} (mates, arrows and bare designators are not read)")
                 entries = None
@@ -220,6 +236,15 @@ def wiring(h: Harness) -> Wiring:
             for a, b in zip(row, row[1:]):
                 parent[find(a)] = find(b)
             rows.append(row)
+    # loops: a wire between two pins of one connector (WireViz `loops`), part of the conductors
+    for des, c in conns.items():
+        for lp in (c or {}).get("loops") or []:
+            ps = [str(x) for x in (lp if isinstance(lp, list) else [lp])]
+            if len(ps) != 2:
+                unsupported.append(f"connector {des}: loop {lp!r} is not a pair of pins")
+                continue
+            a, b = ((des, x) for x in ps)
+            parent[find(a)] = find(b)
     groups: dict = {}
     for x in list(parent):
         groups.setdefault(find(x), []).append(x)
@@ -301,9 +326,16 @@ def conformance(h: Harness, m, where: str) -> list[str]:
         findings.append(f"{where}: TraceID {h.trace_id or '(none)'} names no cable def of the EE model (see CK-F7)")
         return findings
     want: dict[str, list[str]] = {}
-    for pname, pid in cable_ports(m, cable):
+    ends = cable_ports(m, cable)
+    for pname, pid in ends:
         if pid:
             want.setdefault(pid, []).append(pname)
+        else:
+            findings.append(f"{where}: the end {pname} of the cable def {m.qn(cable)} is typed by no connector port "
+                            f"def with an EE-PORT ID")
+    if len(ends) < 2:
+        findings.append(f"{where}: the cable def {m.qn(cable)} has {len(ends)} end(s); a cable has at least two "
+                        f"(one port per end)")
     have: dict[str, list[str]] = {}
     for des, port in ports.items():
         have.setdefault(port, []).append(des)
@@ -388,6 +420,8 @@ def bom(h: Harness) -> list[tuple[str, ...]]:
     rows: dict[tuple, list] = {}
 
     def s(v):
+        if isinstance(v, list):             # per-wire part data of a bundle
+            return "; ".join(sorted({str(x) for x in v if x is not None}))
         return "" if v is None else str(v)
 
     for des, c in sorted(h.connectors().items()):
@@ -483,7 +517,8 @@ def run_one(ws, repo, cfg, h: Harness, log=print) -> dict:
     tweak = dict(data.get("tweak") or {})
     app = tweak.get("append") or []
     app = [app] if isinstance(app, str) else list(app)
-    tweak["append"] = app + [f'\tlabel="{h.title} {ver}"\n', "\tlabelloc=b\n"]
+    label = f"{h.title} {ver}".replace("\\", "\\\\").replace('"', '\\"')
+    tweak["append"] = app + [f'\tlabel="{label}"\n', "\tlabelloc=b\n"]
     data["tweak"] = tweak
     yml = src / h.yml.name
     yml.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
