@@ -79,7 +79,7 @@ BUILTIN = [
     ("CK-D4", "cad-needs.json matches the CAD files", _lv({"local": "error", "pr": "error", "baseline": "error"}), "cad", False, "c_cadneeds"),
     ("CK-D5", "generated files record the pinned tool versions (provenance.json)",
      _lv({"local": "warning", "pr": "warning", "full": "warning", "baseline": "error"}), "provenance", False, "c_provenance"),
-    ("CK-E2", "requirement values agree with the sentence", _lv({"local": "error", "pr": "error", "baseline": "error"}), "requirements", False, "c_ears"),
+    ("CK-E2", "requirement values agree with the sentence", _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "requirements", False, "c_ears"),
     ("CK-E3", "EARS pattern matches the sentence", _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "requirements", False, "c_ears"),
     ("CK-G1", "needs-diff against the base (change impact)", _lv({"pr": "report", "full": "report"}), "docs", False, "c_diff"),
     ("CK-G2", "suspect links against the last baseline (R7)", _lv({"full": "report", "baseline": "error"}), "docs", False, "c_diff"),
@@ -264,6 +264,63 @@ EARS_START = {"ubiquitous": r"^(the|a|an|each|every)\b", "event": r"^when\b", "s
               "optional": r"^where\b", "unwanted": r"^if\b"}
 
 
+# CK-E2: numbers in a sentence. Thousands separators (1,000 / 1 000 / 1'000), decimals, a sign,
+# and "a ± b". Compared as numbers, so 2000000 matches "2,000,000 Hz" and 2e+06.
+_NUM = r"[-+−]?(?:\d{1,3}(?:[,' \u202f]\d{3})+(?![\d])|\d+)(?:\.\d+)?"
+NUMBER = re.compile(r"(?<![\w.])" + _NUM + r"(?![\d])")
+PLUSMINUS = re.compile(r"(?<![\w.])(" + _NUM + r")\s*(?:°|[A-Za-zµ%]+)?\s*(?:±|\+/-)\s*(" + _NUM + r")")
+# unit symbol -> names that may stand in the sentence instead (singular stems; plurals match too)
+UNIT_NAMES = {"ms": ["millisecond"], "s": ["second"], "us": ["microsecond"], "µs": ["microsecond"],
+              "min": ["minute"], "h": ["hour"], "Hz": ["hertz"], "kHz": ["kilohertz"], "MHz": ["megahertz"],
+              "g": ["gram"], "kg": ["kilogram"], "mm": ["millimetre", "millimeter"], "cm": ["centimetre", "centimeter"],
+              "m": ["metre", "meter"], "°": ["degree", "deg"], "deg": ["degree", "°"], "V": ["volt"], "mV": ["millivolt"],
+              "A": ["ampere", "amp"], "mA": ["milliampere", "milliamp"], "W": ["watt"], "N": ["newton"],
+              "Nm": ["newton metre", "newton meter", "N·m", "N m"], "N·m": ["newton metre", "newton meter", "Nm"],
+              "%": ["percent", "per cent"], "rpm": ["revolutions per minute"], "bit": ["bit"], "B": ["byte"]}
+
+
+def numbers_in(text: str) -> list[float]:
+    """Every number in a sentence, plus a+b and a-b for each "a ± b"."""
+    out = [float(m.group(0).replace("−", "-").replace(",", "").replace("'", "").replace(" ", "").replace("\u202f", ""))
+           for m in NUMBER.finditer(text)]
+    for m in PLUSMINUS.finditer(text):
+        a, b = (float(re.sub(r"[,' \u202f]", "", x).replace("−", "-")) for x in (m.group(1), m.group(2)))
+        out += [a + b, a - b]
+    return out
+
+
+def unit_in(unit: str, text: str) -> bool:
+    for u in [unit, *UNIT_NAMES.get(unit, [])]:
+        if u in ("°", "%"):
+            if u in text:
+                return True
+        elif re.search(r"(?<![A-Za-z])" + re.escape(u) + r"(?:e?s)?(?![A-Za-z])", text, re.I if len(u) > 3 else 0):
+            return True
+    return False
+
+
+def ears_value_findings(nid: str, n: dict, text: str) -> list[str]:
+    """CK-E2 for one requirement: each of min/max/nominal occurs as a number in the sentence (any
+    order, any format), and the unit occurs once, as symbol or name."""
+    out = []
+    nums = numbers_in(text)
+    unit = n.get("unit")
+    for f in ("min", "max", "nominal"):
+        v = n.get(f)
+        if v in (None, ""):
+            continue
+        try:
+            x = float(v)
+        except (TypeError, ValueError):
+            out.append(f"{nid}: {f} = {v!r} is not a number")
+            continue
+        if not any(abs(x - y) <= 1e-9 * max(1.0, abs(x)) for y in nums):
+            out.append(f"{nid}: {f} = {x:g} does not appear as a number in the sentence")
+    if unit and any(n.get(f) not in (None, "") for f in ("min", "max", "nominal")) and not unit_in(unit, text):
+        out.append(f"{nid}: unit {unit!r} does not appear in the sentence (as symbol or name)")
+    return out
+
+
 def c_ears(ctx: Ctx, r: Result):
     _graph(ctx)
     for nid, n in sorted((ctx.graph.needs if ctx.graph else {}).items()):
@@ -271,15 +328,7 @@ def c_ears(ctx: Ctx, r: Result):
             continue
         text = re.sub(r"\s+", " ", (n.get("content") or "")).strip()
         if r.id == "CK-E2":
-            unit = n.get("unit")
-            for f in ("min", "max", "nominal"):
-                v = n.get(f)
-                if v in (None, ""):
-                    continue
-                num = f"{float(v):g}"
-                pat = re.escape(num) + (r"\s*" + re.escape(unit) if unit else "")
-                if not re.search(r"(?<![\d.])" + pat + r"(?![\w])", text):
-                    r.findings.append(f"{nid}: {f} = {num}{' ' + unit if unit else ''} does not appear in the sentence")
+            r.findings += ears_value_findings(nid, n, text)
         else:
             e = n.get("ears")
             if not e:

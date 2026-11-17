@@ -157,7 +157,7 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-D3 | views: content, uncompressed, geometry sane, picture fresh | `views` | local, pr, baseline | yes (kinds `interconnection`, `decomposition`) |
 | CK-D4 | `cad-needs.json` matches KiCad/FreeCAD files (plain Python, so also in PR CI) | `cad` | local, pr, baseline | yes |
 | CK-D5 | generated files record the pinned tool versions (`generated/provenance.json`, 4.4b) | `model` or `cad.freecad_json` | local/pr/full warning, baseline error | yes |
-| CK-E2 | value fields appear in the sentence (number + unit) | `requirements` | local, pr, baseline | first version |
+| CK-E2 | value fields appear in the sentence as numbers (any format, `a ± b`), the unit once as symbol or name | `requirements` | local, pr, baseline (warning until it ran on real requirements) | yes |
 | CK-E3 | EARS pattern vs. sentence start, "shall" | `requirements` | local, pr, baseline (warning) | first version |
 | CK-G1 | needs-diff against `--base` (report, `build/<area>/checks/needs-diff.md`) | `docs` | pr, full | yes (skipped without `--base`) |
 | CK-G2 | suspect links against the last baseline's needs (R7) | `docs` | full (report), baseline (error) | yes, needs `--base` |
