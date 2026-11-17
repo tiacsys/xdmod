@@ -1,3 +1,4 @@
+import pytest
 """Tool provenance of generated files (4.4b): record on generation, CK-D5 against the pins."""
 import json
 
@@ -78,3 +79,32 @@ def test_stale_records_are_reported(tmp_path, monkeypatch):
     assert any("views/old.drawio.svg" in f for f in provenance.stale(cfg))
     provenance.record(ws, cfg, [], "views", drop=[gone])
     assert not any("views/old.drawio.svg" in f for f in provenance.stale(cfg))
+
+
+def test_leading_version_and_merge_of_minimums(tmp_path):
+    from curatrix import tools
+    assert not tools.version_ok(">=2.43.5", "2.43 (20190901.0435)")
+    assert tools.version_ok(">=4.5.0", "4.5.0-rc1") and tools.version_ok(">=22", "v22.23.4")
+    assert tools._stricter(">=2.43", "2.56.1") == "2.56.1" and tools._stricter(">=3", ">=2") == ">=3"
+    assert tools._stricter(">=3", "2.9") is None and tools._stricter("1.0", "1.1") is None
+    assert tools._stricter(">=10.0", "10.0.*") == "10.0.*"
+    a, b = tmp_path / "a.yaml", tmp_path / "b.yaml"
+    a.write_text("system: [{name: git, version: '>=2.43'}]\n")
+    b.write_text("system: [{name: git, version: '2.56.1'}]\n")
+    assert tools.merge([tools.parse(a), tools.parse(b)]).system["git"].version == "2.56.1"
+    b.write_text("system: [{name: git, version: '2.40.0'}]\n")
+    with pytest.raises(tools.ToolsError):
+        tools.merge([tools.parse(a), tools.parse(b)])
+    b.write_text("system: [{name: git, version: '>=abc'}]\n")
+    with pytest.raises(tools.ToolsError, match="minimum"):
+        tools.parse(b)
+
+
+def test_pinned_ignores_the_role(tmp_path, monkeypatch):
+    """CI with a role that does not install a tool still compares its records (xdmod#23)."""
+    ws, cfg = setup_ws(tmp_path, monkeypatch)
+    from curatrix import tools
+    full = tools.load_all(ws)
+    monkeypatch.setattr(type(ws), "role", property(lambda self: "nobody-has-this-role"))
+    assert provenance.pinned(ws, "model") == {n: full.tools[n].version if n in full.tools else full.system[n].version
+                                              for n in provenance.KINDS["model"][1] if n in full.tools or n in full.system}
