@@ -15,10 +15,10 @@ def test_roles_match_repo_topology():
     assert "+ee" in setup.ROLES["me"] and "+ee" in setup.ROLES["sw"]   # task 5.14: KiCad files, pin maps
 
 
-def test_update_reapplies_the_role(monkeypatch):
+def test_update_reapplies_the_role(monkeypatch, tmp_path):
     from types import SimpleNamespace
     calls = []
-    ws = SimpleNamespace(has_west=True, role="sw")
+    ws = SimpleNamespace(has_west=True, role="sw", root=tmp_path)
     monkeypatch.setattr(setup, "set_role", lambda w, r: calls.append(("role", r)))
     monkeypatch.setattr(setup, "west", lambda w, *a, **k: calls.append(("west", a)) or 0)
     monkeypatch.setattr(setup, "refresh", lambda w, adopt=False: None)
@@ -108,10 +108,11 @@ def test_sync_manifest_without_a_manifest_repo_does_nothing(tmp_path, monkeypatc
     assert setup.sync_manifest(ws) == "skipped"
 
 
-def _update_ws(monkeypatch, heads, calls):
+def _update_ws(monkeypatch, heads, calls, xdmod=None, root=None):
     from pathlib import Path
     from types import SimpleNamespace
-    ws = SimpleNamespace(has_west=True, role=None, xdmod=Path(setup.__file__).resolve().parents[3])
+    ws = SimpleNamespace(has_west=True, role=None, root=root or Path("/nonexistent-ws"),
+                         xdmod=xdmod or Path(setup.__file__).resolve().parents[3])
     it = iter(heads)
     monkeypatch.setattr(setup, "sync_manifest", lambda w: "current")
     monkeypatch.setattr(setup, "xdmod_head", lambda w: next(it))
@@ -493,3 +494,38 @@ def test_run_blender_takes_the_blender_limits(tmp_path, monkeypatch):
     to = [a[a.index("--kill-after=10s") + 1] for a in seen]
     assert to == ["10m", "5m", "5m"], seen
     assert "--factory-startup" in seen[0]
+
+
+def test_update_does_not_reexec_when_curatrix_is_not_from_this_xdmod(monkeypatch, tmp_path):
+    calls = []
+    ws, _ = _update_ws(monkeypatch, ["old", "new"], calls, xdmod=tmp_path)   # e.g. a pip install in CI
+    assert setup.update(ws) == 0
+    assert calls == [("west", ("update", "-k")), ("refresh", False)]
+
+
+def test_update_refuses_inside_a_worktree_set(monkeypatch, tmp_path):
+    import pytest
+    from curatrix.work import MARKER
+    calls = []
+    ws, _ = _update_ws(monkeypatch, ["a", "a"], calls, root=tmp_path)
+    (tmp_path / MARKER).write_text("{}")
+    with pytest.raises(setup.SetupError, match="worktree set"):
+        setup.update(ws)
+    assert calls == []                                                   # nothing ran
+
+
+def test_sync_manifest_detached_head_behind_warns(tmp_path, monkeypatch, capsys):
+    ws, man, other = _manifest_ws(tmp_path, monkeypatch)
+    _bump(other)
+    start = _head(man)
+    _run("checkout", "-q", "--detach", cwd=man)
+    assert setup.sync_manifest(ws) == "warned"
+    assert _head(man) == start and "detached HEAD" in capsys.readouterr().out
+
+
+def test_sync_manifest_fetch_failure_warns(tmp_path, monkeypatch, capsys):
+    ws, man, other = _manifest_ws(tmp_path, monkeypatch)
+    start = _head(man)
+    _run("remote", "set-url", "origin", str(tmp_path / "missing.git"), cwd=man)
+    assert setup.sync_manifest(ws) == "warned"
+    assert _head(man) == start and "git fetch origin failed" in capsys.readouterr().out
