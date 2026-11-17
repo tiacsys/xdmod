@@ -193,3 +193,14 @@ def test_board_document(tmp_path):
         assert text in html, text
     _cam(root, repo, "v0.0.0-1-gabc-preview", commit="1" * 40)       # the output of another commit: never shown
     assert build(tmp_path / "o3").count(local) == 3
+
+
+def test_harness_links_use_the_zdocs_intersphinx_name(tmp_path):
+    """zdocs names a peer's inventory by its registry prefix, else its ID with `_` (pcba_canary_board)."""
+    sys.path.insert(0, str(FIXTURES.parents[2] / "sphinx"))
+    from xdmod_sphinx import harness
+    repo = tmp_path / "r"
+    (repo / "docs").mkdir(parents=True)
+    (repo / "checks.yaml").write_text("version: 1\ndocs: {registry: docs/documents.yaml}\n")
+    (repo / "docs" / "documents.yaml").write_text("documents:\n  pcba-a-b: {title: A}\n  c: {title: C, prefix: cc}\n")
+    assert harness._registry_docs(repo) == {"pcba-a-b": "pcba_a_b", "c": "cc"}
