@@ -139,7 +139,7 @@ What is in iteration 1 and what moved to iteration 2.
    only locally. Based on the FreeCAD spike (§5, §6).
 
 .. xd-adr:: ME renderings without OpenGL and without Blender
-   :id: XD-ADR-NEW-a
+   :id: XD-ADR-0147
    :date: 2026-11-17
    :decision_status: proposed
    :status: valid
