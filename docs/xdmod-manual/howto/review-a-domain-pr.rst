@@ -40,7 +40,8 @@ set's ``build`` link.
    .venv/bin/curatrix check robarm-me --stage local
 
 This is the run of every check that needs a CAD tool (EE: CK-D8, CK-D9, CK-F4a, CK-F4b; ME: CK-F4c,
-CK-F16, CK-F17, CK-F18; both: CK-D10). Compare it with the table the agent reviewer posted. A warning
+CK-F16, CK-F17, CK-F18). CK-D10 needs no CAD tool but runs only locally: it looks for the ``cam``
+output of the commit. Compare it with the table the agent reviewer posted. A warning
 of CK-D10 here only means that the design output of this commit is not made yet (next step).
 
 3. Make the design output and build the documents
@@ -59,8 +60,8 @@ inside the set's build area); ``--open`` opens it. The pages to read are ``pcba-
 output is a preview (red ``PREVIEW`` marking): a PR branch is never a release
 (:ref:`howto-design-output`).
 
-To compare with what is merged, build the same documents in the main checkouts (from the workspace
-root, ``curatrix cam ...`` and ``curatrix docs ...``) and open both side by side; they go to
+To compare with what is merged, build the same documents in the main checkouts (they are at the
+merged state after the bump PR and ``curatrix update``; from the workspace root, ``curatrix cam ...`` and ``curatrix docs ...``) and open both side by side; they go to
 ``build/robarm-ee/`` and ``build/robarm-me/``.
 
 4. What to look at
@@ -101,9 +102,13 @@ follow the review split of :ref:`howto-co-design-change`.
 
 - **Proposed acceptances.** An agent PR may add entries to ``pcba/<name>/accepted.yaml`` or
   ``assemblies/<name>/accepted.yaml``; they stay proposals. To accept one, make your own commit on
-  the branch that changes only that entry (for example its ``reason``) and carries
-  ``Accepted-by: <your name>`` and no agent trailer (:need:`XD-ADR-0126`). Run the check again: the
-  finding now shows as accepted.
+  the PR branch that changes only that entry (for example its ``reason``) and carries
+  ``Accepted-by: <your name>`` and no agent trailer (:need:`XD-ADR-0126`). **Not in the review set**:
+  its checkout is detached and is thrown away by ``work done``. Commit in a checkout of your own on
+  the PR's head branch, for example in the review set after
+  ``git -C robarm-ee switch -c feat/move-hole --track origin/feat/move-hole``, then push the branch
+  before ``work done``; or edit the file on GitHub in the PR with the trailer in the commit message.
+  Run the check again: the finding now shows as accepted.
 - **Comments** go into the PR. Ask for a fix rather than fixing it in the review set; the set is
   detached and is thrown away.
 - **Merge** upstream first (syseng, then ME, then EE for a co-design change), then the bump PR in the
@@ -113,7 +118,7 @@ follow the review split of :ref:`howto-co-design-change`.
   .. code-block:: sh
 
      cd <workspace root>
-     .venv/bin/curatrix work done review/robarm-ee-15
+     .venv/bin/curatrix work done review/robarm-ee-15 --force --delete-branch
 
 Pitfalls
 --------

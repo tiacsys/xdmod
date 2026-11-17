@@ -128,8 +128,8 @@ The renderings come from one of two renderers. ``cam.json`` names the one used
      - shaded with light and materials
      - flat shading by BOM kind, sharp edges
    * - Time (canary)
-     - about 35 s for the four views
-     - about 6 s
+     - about 35 s for the whole ``cam`` run
+     - about 6 s for the whole ``cam`` run
 
 Both write the same files at the same scales (front, top and right at one scale, iso at its own),
 with assembly, variant, version and view on each image. Blender is optional and not pinnable, so its

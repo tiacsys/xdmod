@@ -46,7 +46,8 @@ From the set root (the set links `.venv`):
 
 - For **robarm-ee and robarm-me** run it **with CAD content** (no `--no-cad`, P5-11). PR CI has no
   KiCad or FreeCAD, so this is the second run of every check that needs one: EE CK-D8, CK-D9,
-  CK-F4a, CK-F4b; ME CK-F4c, CK-F16, CK-F17, CK-F18; both CK-D10. Name them in the table with the
+  CK-F4a, CK-F4b; ME CK-F4c, CK-F16, CK-F17, CK-F18 (CK-D10 needs no CAD tool, only the local `cam`
+  output). Name them in the table with the
   KiCad / FreeCAD versions. Run `curatrix cam` before the check when CK-D10 should see the design
   output, and build the documents as in the manual's how-to "Review an EE or ME pull request from a
   local docs build" when the PR changes what they show.

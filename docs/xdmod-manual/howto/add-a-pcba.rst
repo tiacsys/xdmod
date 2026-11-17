@@ -19,6 +19,10 @@ Work on a branch in a worktree set (:ref:`howto-cross-repo-change`):
    .venv/bin/curatrix work start feat/my-board robarm-ee
    cd .worktrees/feat/my-board
 
+In the set, call curatrix as ``.venv/bin/curatrix`` (it runs the set's xdmod), or run
+``eval "$(.venv/bin/curatrix env)"`` once, which puts ``.venv/bin`` first on ``PATH``; the commands
+below are written as ``curatrix ...``.
+
 Steps
 -----
 
@@ -172,7 +176,8 @@ Checks
 - :need:`XD-CHECK-0001`: the strict docs build; its needs schema fails an element that realizes or
   satisfies nothing (:need:`XD-RULE-0010`).
 
-CK-D8, CK-D9, CK-D10, CK-F4a and CK-F4b need KiCad and run only locally; PR CI runs the rest.
+CK-D8, CK-D9, CK-F4a and CK-F4b need KiCad and run only locally; CK-D10 needs no CAD tool but runs
+only locally (it looks for the ``cam`` output). PR CI runs the rest.
 
 Pitfalls
 --------
