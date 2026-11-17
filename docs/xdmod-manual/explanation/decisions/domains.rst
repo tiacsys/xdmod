@@ -134,7 +134,7 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
 .. xd-adr:: ME writes board geometry into KiCad in a co-design change
    :id: XD-ADR-0134
    :date: 2026-11-17
-   :decision_status: proposed
+   :decision_status: accepted
    :status: valid
    :revises: XD-ADR-0030
    :refines: XD-ADR-0137
@@ -264,7 +264,7 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
 .. xd-adr:: FreeCAD assemblies: skeleton file name, parameter aliases, open order
    :id: XD-ADR-0146
    :date: 2026-11-17
-   :decision_status: proposed
+   :decision_status: accepted
    :status: valid
    :refines: XD-ADR-0137
 
@@ -289,7 +289,7 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
 .. xd-adr:: A board library repo for ME
    :id: XD-ADR-0139
    :date: 2026-11-17
-   :decision_status: proposed
+   :decision_status: accepted
    :status: valid
    :refines: XD-ADR-0128, XD-ADR-0141
 

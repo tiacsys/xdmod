@@ -77,7 +77,7 @@ docs/me-design/  docs/asm-<name>/  docs/me-test-spec/  docs/me-test-report/
 ```
 Only assemblies are tagged (`<name>/vX.Y.Z`, owner only, XD-ADR-0140). Design output (`curatrix cam`, XD-ADR-0143) goes to `build/robarm-me/cam/<name>/<version>/`. Board models come at fixed versions from robarm-freecad-pcba.
 
-### robarm-freecad-pcba (board library, XD-ADR-0139, proposed; created in task 5.29 after the owner's approval)
+### robarm-freecad-pcba (board library, XD-ADR-0139; created in task 5.29 after the owner's approval)
 ```
 boards/<board>/<board>-<vX.Y.Z>[-<variant>].FCStd   one file per tagged board version and variant: board body and
                                   components, no tracks; App::Part `Board` with TraceID (EE-PCBA), Version, Variant,

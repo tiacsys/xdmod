@@ -27,6 +27,9 @@ adds the bypass back for a moment.
 The agents wrote these as `proposed` (`decision_status`); accepting is the owner's (a commit that sets
 `decision_status: accepted`). All are on `main` of xdmod, `docs/xdmod-manual/explanation/decisions/`.
 
+**Done 2026-11-17:** the owner accepted all five in the session of the night shift (decision Q18 in
+tiacsys/xdmod#69); the status change is the PR that quotes that decision.
+
 | ADR | Title | File | Context |
 |---|---|---|---|
 | XD-ADR-0134 | ME writes board geometry into KiCad in a co-design change | `domains.rst` | 5.28: the StepUp push works; "try it" approved the spike, not the text |
@@ -61,7 +64,7 @@ No other ADR on `main` is `proposed` (checked 2026-11-17).
 | Accept the unrouted-net DRC errors | `robarm-ee/pcba/canary-board/accepted.yaml`, entry `check: CK-F4b, rule: unconnected_items, items: all` | an own commit that touches only that entry, with `Accepted-by: <name>` and no agent trailer (XD-ADR-0126) |
 | Tag `canary-assembly/v0.1.0` | robarm-me, on `main` | `git -C robarm-me tag -a canary-assembly/v0.1.0 -m ... && git push origin canary-assembly/v0.1.0`; then `curatrix cam robarm-me canary-assembly` shows the release marking (exit criterion 3, "from a tag") |
 | Tag `canary-cable/v0.1.0` | robarm-ee, on `main` | the same for the harness |
-| A tag for the canary board (`canary-board/v0.1.0`), if wanted | robarm-ee | lets `cam --library` write the first board-library file (XD-ADR-0139) |
+| A tag for the canary board (`canary-board/v0.1.0`), if wanted | robarm-ee | **done 2026-11-17** (owner-authorized, on 4078b4c); lets `cam --library` write the first board-library file (XD-ADR-0139) |
 | **Tag ruleset** | all robarm repos | a tag ruleset so that only the owner can create `*/v*` tags (XD-ADR-0140 says tags are owner-only; today nothing enforces it). Needs approval as an admin action (D123): `gh api -X POST repos/tiacsys/<repo>/rulesets -f target=tag ...` with the owner as the only bypass actor |
 | The HIL result of the canary | robarm-integration | the owner records it from `main` (D60); agents have no hardware |
 
