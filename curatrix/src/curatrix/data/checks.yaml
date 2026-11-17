@@ -43,6 +43,10 @@ checks:
     need: XD-CHECK-0009
     enforces: [XD-RULE-0021, XD-RULE-0022, XD-RULE-0023, XD-RULE-0024, XD-RULE-0025, XD-RULE-0026, XD-RULE-0027]
     description: "Runs the variant rules on the model JSON (feature model, product models and bindings)."
+  CK-B8:
+    need: XD-CHECK-0034
+    enforces: [XD-RULE-0048]
+    description: "Variants across levels, against the published system model: exactly one domain variant per configuration and usage; the variant names only configurations and usages of what its board or assembly realizes; it exists in the KiCad project or FreeCAD configuration table; Zephyr board variants map to board variants by name; at most two variants per board or assembly. The computed table \"configuration -> variant per usage\" is in the check's log."
   CK-B5:
     need: XD-CHECK-0010
     enforces: [XD-RULE-0016]

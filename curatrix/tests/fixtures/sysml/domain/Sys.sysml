@@ -23,6 +23,15 @@ package Sys {
     // a configuration that configures Controller only
     part def <'SYS-CFG-0001'> Basic;
     dependency from Basic to Controller;
+    // a second configuration that configures Controller, and the usages the variants serve
+    // (c_variants.sysml, CK-B8)
+    part def <'SYS-CFG-0002'> Full;
+    dependency from Full to Controller;
+    part def Arm {
+        part ctrlA : Controller;
+        part ctrlB : Controller;
+        part servo1 : Servo;
+    }
     // a nested package: not a top package (top_packages counts brace depth)
     package Detail {
         part def <'SYS-EL-0003'> Sensor {

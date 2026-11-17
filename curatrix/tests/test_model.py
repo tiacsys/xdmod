@@ -102,7 +102,7 @@ def test_conformance_planted_errors():
 def test_configs_from_the_upstream_configuration():
     d, u = domain()
     n = model.add_configs(model.to_needs(d, "ee")[0], [u])["versions"][""]["needs"]
-    assert n["EE-PCBA-0001"]["configs"] == ["SYS-CFG-0001"]      # Basic configures Controller
+    assert n["EE-PCBA-0001"]["configs"] == ["SYS-CFG-0001", "SYS-CFG-0002"]   # Basic and Full configure Controller
     assert "configs" not in n["EE-PCBA-0004"]                   # also realizes Driver: in every configuration
     assert "configs" not in n["EE-PORT-0001"]
 

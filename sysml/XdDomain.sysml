@@ -28,6 +28,19 @@ library package XdDomain {
         attribute net : String;
     }
 
+    // ------------------------------------------------------------------ variants (XD-ADR-0136)
+    // A board or assembly variant: a def that specializes the board or assembly def and
+    // DomainVariant. `variantName` is the variant's name in KiCad (`.kicad_pro`
+    // schematic.variants) or FreeCAD (a row of the configuration table). A dependency from the
+    // variant names the configurations (SYS-CFG) and the usages of the system model it serves;
+    // curatrix computes the table "configuration -> variant per usage" from them (CK-B8):
+    //   part def JointBoardAlt :> JointBoard, DomainVariant { :>> variantName = "alt"; }
+    //   dependency from JointBoardAlt to MyConfigs::proto, MyProduct::Arm::joint1;
+    // A variant has no ID of its own in iteration 1. At most two variants per board or assembly.
+    part def DomainVariant {
+        attribute variantName : String;
+    }
+
     // ------------------------------------------------------------------ ME (XD-ADR-0130, XD-ADR-0137)
     // An assembly or sub-assembly: exactly one FreeCAD document (ME-ASM).
     part def Assembly;

@@ -70,12 +70,19 @@ Steps
    Make the exports locally with ``curatrix gen cad-exports robarm-ee``. In CI the directives show
    a "built locally" notice (:need:`XD-ADR-0049`).
 
+5. If the board has variants (at most two, :need:`XD-ADR-0136`): add them in KiCad as assembly
+   variants (Board Setup or the schematic's variant list; DNP and fields per variant), write one
+   def per variant in the EE model (``part def MyBoardAlt :> MyBoard, XdDomain::DomainVariant
+   { :>> variantName = "alt"; }``) with a dependency to the configurations and usages it serves, and
+   add ``variants: true`` to ``checks.yaml``.
+
 Checks
 ------
 
 - :need:`XD-CHECK-0019`: ``cad-needs.json`` matches the KiCad files (plain Python, no KiCad needed).
 - :need:`XD-CHECK-0016`, :need:`XD-CHECK-0017`: the EE model parses and its generated files are fresh.
 - :need:`XD-CHECK-0033`: the board def redefines every inherited port with a fitting port def.
+- :need:`XD-CHECK-0034`: exactly one variant per configuration and usage, and each variant is in the ``.kicad_pro``.
 - :need:`XD-CHECK-0001`: the strict docs build; its needs schema fails an element that realizes or satisfies nothing (:need:`XD-RULE-0010`).
 - Domain checks such as the netlist against the interface pin maps, and ERC, are commands in the
   repo's ``checks.yaml``.

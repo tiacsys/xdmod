@@ -35,6 +35,15 @@
      "@id": "Sys/8/0"
     },
     {
+     "@id": "Sys::Full"
+    },
+    {
+     "@id": "Sys/10/0"
+    },
+    {
+     "@id": "Sys::Arm"
+    },
+    {
      "@id": "Sys::Detail"
     }
    ],
@@ -68,6 +77,15 @@
     },
     {
      "@id": "Sys/9"
+    },
+    {
+     "@id": "Sys/10"
+    },
+    {
+     "@id": "Sys/11"
+    },
+    {
+     "@id": "Sys/12"
     }
    ],
    "qualifiedName": "Sys"
@@ -140,6 +158,172 @@
    "target": [
     {
      "@id": "Sys::ElSignal"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys/10"
+  },
+  "payload": {
+   "@id": "Sys/10",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys/10/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Sys"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys/10/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys"
+    },
+    {
+     "@id": "Sys/10/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys/10/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys/10/0"
+  },
+  "payload": {
+   "@id": "Sys/10/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "Sys::Full"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Sys"
+   },
+   "owningNamespace": {
+    "@id": "Sys"
+   },
+   "owningRelationship": {
+    "@id": "Sys/10"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Full"
+    },
+    {
+     "@id": "Sys::Controller"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Full"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "Sys::Controller"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Controller"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys/11"
+  },
+  "payload": {
+   "@id": "Sys/11",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Arm"
+   },
+   "memberName": "Arm",
+   "membershipOwningNamespace": {
+    "@id": "Sys"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Arm"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys"
+    },
+    {
+     "@id": "Sys::Arm"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Arm"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys/12"
+  },
+  "payload": {
+   "@id": "Sys/12",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Detail"
+   },
+   "memberName": "Detail",
+   "membershipOwningNamespace": {
+    "@id": "Sys"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Detail"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys"
+    },
+    {
+     "@id": "Sys::Detail"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Detail"
     }
    ]
   }
@@ -479,15 +663,15 @@
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
-    "@id": "Sys::Detail"
+    "@id": "Sys::Full"
    },
-   "memberName": "Detail",
+   "memberName": "Full",
    "membershipOwningNamespace": {
     "@id": "Sys"
    },
    "ownedRelatedElement": [
     {
-     "@id": "Sys::Detail"
+     "@id": "Sys::Full"
     }
    ],
    "relatedElement": [
@@ -495,7 +679,7 @@
      "@id": "Sys"
     },
     {
-     "@id": "Sys::Detail"
+     "@id": "Sys::Full"
     }
    ],
    "source": [
@@ -505,9 +689,716 @@
    ],
    "target": [
     {
-     "@id": "Sys::Detail"
+     "@id": "Sys::Full"
     }
    ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm"
+  },
+  "payload": {
+   "@id": "Sys::Arm",
+   "@type": "PartDefinition",
+   "declaredName": "Arm",
+   "feature": [
+    {
+     "@id": "Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "Sys::Arm::ctrlB"
+    },
+    {
+     "@id": "Sys::Arm::servo1"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "Arm",
+   "ownedFeature": [
+    {
+     "@id": "Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "Sys::Arm::ctrlB"
+    },
+    {
+     "@id": "Sys::Arm::servo1"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "Sys::Arm::ctrlB"
+    },
+    {
+     "@id": "Sys::Arm::servo1"
+    }
+   ],
+   "ownedPart": [
+    {
+     "@id": "Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "Sys::Arm::ctrlB"
+    },
+    {
+     "@id": "Sys::Arm::servo1"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Sys::Arm/0"
+    },
+    {
+     "@id": "Sys::Arm/1"
+    },
+    {
+     "@id": "Sys::Arm/2"
+    }
+   ],
+   "owner": {
+    "@id": "Sys"
+   },
+   "owningNamespace": {
+    "@id": "Sys"
+   },
+   "owningRelationship": {
+    "@id": "Sys/11"
+   },
+   "qualifiedName": "Sys::Arm"
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm/0"
+  },
+  "payload": {
+   "@id": "Sys::Arm/0",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Arm::ctrlA"
+   },
+   "memberName": "ctrlA",
+   "membershipOwningNamespace": {
+    "@id": "Sys::Arm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Arm::ctrlA"
+    }
+   ],
+   "owningType": {
+    "@id": "Sys::Arm"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm"
+    },
+    {
+     "@id": "Sys::Arm::ctrlA"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Arm::ctrlA"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm/1"
+  },
+  "payload": {
+   "@id": "Sys::Arm/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Arm::ctrlB"
+   },
+   "memberName": "ctrlB",
+   "membershipOwningNamespace": {
+    "@id": "Sys::Arm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Arm::ctrlB"
+    }
+   ],
+   "owningType": {
+    "@id": "Sys::Arm"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm"
+    },
+    {
+     "@id": "Sys::Arm::ctrlB"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Arm::ctrlB"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm/2"
+  },
+  "payload": {
+   "@id": "Sys::Arm/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Arm::servo1"
+   },
+   "memberName": "servo1",
+   "membershipOwningNamespace": {
+    "@id": "Sys::Arm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Arm::servo1"
+    }
+   ],
+   "owningType": {
+    "@id": "Sys::Arm"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm"
+    },
+    {
+     "@id": "Sys::Arm::servo1"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Arm::servo1"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::ctrlA"
+  },
+  "payload": {
+   "@id": "Sys::Arm::ctrlA",
+   "@type": "PartUsage",
+   "declaredName": "ctrlA",
+   "definition": [
+    {
+     "@id": "Sys::Controller"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Sys::Controller::servoOut"
+    },
+    {
+     "@id": "Sys::Controller::bus"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "name": "ctrlA",
+   "ownedMember": [
+    {
+     "@id": "Sys::Arm::ctrlA/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Sys::Arm::ctrlA/0"
+    },
+    {
+     "@id": "Sys::Arm::ctrlA/1"
+    }
+   ],
+   "owner": {
+    "@id": "Sys::Arm"
+   },
+   "owningNamespace": {
+    "@id": "Sys::Arm"
+   },
+   "owningRelationship": {
+    "@id": "Sys::Arm/0"
+   },
+   "owningType": {
+    "@id": "Sys::Arm"
+   },
+   "qualifiedName": "Sys::Arm::ctrlA",
+   "type": [
+    {
+     "@id": "Sys::Controller"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::ctrlA/0"
+  },
+  "payload": {
+   "@id": "Sys::Arm::ctrlA/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Sys::Controller"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Sys::Arm::ctrlA"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "Sys::Controller"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm::ctrlA"
+    }
+   ],
+   "specific": {
+    "@id": "Sys::Arm::ctrlA"
+   },
+   "target": [
+    {
+     "@id": "Sys::Controller"
+    }
+   ],
+   "type": {
+    "@id": "Sys::Controller"
+   },
+   "typedFeature": {
+    "@id": "Sys::Arm::ctrlA"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::ctrlA/1"
+  },
+  "payload": {
+   "@id": "Sys::Arm::ctrlA/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Arm::ctrlA/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Sys::Arm::ctrlA"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Arm::ctrlA/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "Sys::Arm::ctrlA/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm::ctrlA"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Arm::ctrlA/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::ctrlA/1/0"
+  },
+  "payload": {
+   "@id": "Sys::Arm::ctrlA/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Sys::Arm::ctrlA"
+   },
+   "owningNamespace": {
+    "@id": "Sys::Arm::ctrlA"
+   },
+   "owningRelationship": {
+    "@id": "Sys::Arm::ctrlA/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::ctrlB"
+  },
+  "payload": {
+   "@id": "Sys::Arm::ctrlB",
+   "@type": "PartUsage",
+   "declaredName": "ctrlB",
+   "definition": [
+    {
+     "@id": "Sys::Controller"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Sys::Controller::servoOut"
+    },
+    {
+     "@id": "Sys::Controller::bus"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "name": "ctrlB",
+   "ownedMember": [
+    {
+     "@id": "Sys::Arm::ctrlB/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Sys::Arm::ctrlB/0"
+    },
+    {
+     "@id": "Sys::Arm::ctrlB/1"
+    }
+   ],
+   "owner": {
+    "@id": "Sys::Arm"
+   },
+   "owningNamespace": {
+    "@id": "Sys::Arm"
+   },
+   "owningRelationship": {
+    "@id": "Sys::Arm/1"
+   },
+   "owningType": {
+    "@id": "Sys::Arm"
+   },
+   "qualifiedName": "Sys::Arm::ctrlB",
+   "type": [
+    {
+     "@id": "Sys::Controller"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::ctrlB/0"
+  },
+  "payload": {
+   "@id": "Sys::Arm::ctrlB/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Sys::Controller"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Sys::Arm::ctrlB"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm::ctrlB"
+    },
+    {
+     "@id": "Sys::Controller"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm::ctrlB"
+    }
+   ],
+   "specific": {
+    "@id": "Sys::Arm::ctrlB"
+   },
+   "target": [
+    {
+     "@id": "Sys::Controller"
+    }
+   ],
+   "type": {
+    "@id": "Sys::Controller"
+   },
+   "typedFeature": {
+    "@id": "Sys::Arm::ctrlB"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::ctrlB/1"
+  },
+  "payload": {
+   "@id": "Sys::Arm::ctrlB/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Arm::ctrlB/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Sys::Arm::ctrlB"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Arm::ctrlB/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm::ctrlB"
+    },
+    {
+     "@id": "Sys::Arm::ctrlB/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm::ctrlB"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Arm::ctrlB/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::ctrlB/1/0"
+  },
+  "payload": {
+   "@id": "Sys::Arm::ctrlB/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Sys::Arm::ctrlB"
+   },
+   "owningNamespace": {
+    "@id": "Sys::Arm::ctrlB"
+   },
+   "owningRelationship": {
+    "@id": "Sys::Arm::ctrlB/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::servo1"
+  },
+  "payload": {
+   "@id": "Sys::Arm::servo1",
+   "@type": "PartUsage",
+   "declaredName": "servo1",
+   "definition": [
+    {
+     "@id": "Sys::Servo"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Sys::Servo::servoIn"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "name": "servo1",
+   "ownedMember": [
+    {
+     "@id": "Sys::Arm::servo1/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Sys::Arm::servo1/0"
+    },
+    {
+     "@id": "Sys::Arm::servo1/1"
+    }
+   ],
+   "owner": {
+    "@id": "Sys::Arm"
+   },
+   "owningNamespace": {
+    "@id": "Sys::Arm"
+   },
+   "owningRelationship": {
+    "@id": "Sys::Arm/2"
+   },
+   "owningType": {
+    "@id": "Sys::Arm"
+   },
+   "qualifiedName": "Sys::Arm::servo1",
+   "type": [
+    {
+     "@id": "Sys::Servo"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::servo1/0"
+  },
+  "payload": {
+   "@id": "Sys::Arm::servo1/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Sys::Servo"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Sys::Arm::servo1"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm::servo1"
+    },
+    {
+     "@id": "Sys::Servo"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm::servo1"
+    }
+   ],
+   "specific": {
+    "@id": "Sys::Arm::servo1"
+   },
+   "target": [
+    {
+     "@id": "Sys::Servo"
+    }
+   ],
+   "type": {
+    "@id": "Sys::Servo"
+   },
+   "typedFeature": {
+    "@id": "Sys::Arm::servo1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::servo1/1"
+  },
+  "payload": {
+   "@id": "Sys::Arm::servo1/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Arm::servo1/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Sys::Arm::servo1"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Arm::servo1/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm::servo1"
+    },
+    {
+     "@id": "Sys::Arm::servo1/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm::servo1"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Arm::servo1/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::servo1/1/0"
+  },
+  "payload": {
+   "@id": "Sys::Arm::servo1/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Sys::Arm::servo1"
+   },
+   "owningNamespace": {
+    "@id": "Sys::Arm::servo1"
+   },
+   "owningRelationship": {
+    "@id": "Sys::Arm::servo1/1"
+   }
   }
  },
  {
@@ -1408,7 +2299,7 @@
     "@id": "Sys"
    },
    "owningRelationship": {
-    "@id": "Sys/9"
+    "@id": "Sys/12"
    },
    "qualifiedName": "Sys::Detail"
   }
@@ -2111,6 +3002,33 @@
      "@id": "Sys::ElSignal"
     }
    ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Full"
+  },
+  "payload": {
+   "@id": "Sys::Full",
+   "@type": "PartDefinition",
+   "declaredName": "Full",
+   "declaredShortName": "SYS-CFG-0002",
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "Full",
+   "owner": {
+    "@id": "Sys"
+   },
+   "owningNamespace": {
+    "@id": "Sys"
+   },
+   "owningRelationship": {
+    "@id": "Sys/9"
+   },
+   "qualifiedName": "Sys::Full",
+   "shortName": "SYS-CFG-0002"
   }
  },
  {
