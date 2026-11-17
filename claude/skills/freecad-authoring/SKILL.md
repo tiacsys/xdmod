@@ -37,8 +37,28 @@ The canary part `robarm-me/parts/canary-part.FCStd` on main is the smallest comp
 FreeCAD with a real `TraceID`, uncompressed, its semantic JSON and `generated/cad-needs.json`
 committed. It belongs to the configuration `canary` (`Configs` property).
 
-## To be added after the spike
+## Assemblies and model-driven parameters (tasks 5.23, 5.24; XD-ADR-0137)
 
-Assemblies and `curatrix new asm`; the master sketch and `curatrix gen freecad-params`; LCS with a
-`Port` property; part presence by `Configs`; recompute, solid and collision checks with
-`accepted.yaml` (only humans write `Accepted-by:`); StepUp; CAM output; the MCP server.
+1. Add the assembly def to `model/` (`part def <'ME-ASM-NEW-a'> X :> <system block>, Assembly`),
+   its part usages (`part p : P;`; a CAD-owned part is `part def <'ME-PART-0001'> P;`, a
+   reference) and port usages with values (`port mount : M { :>> x = 10 [mm]; }`).
+   `curatrix ids fix`, `curatrix gen model`.
+2. `curatrix new asm X --repo robarm-me`: FreeCAD writes `assemblies/x/x.FCStd` and
+   `x-skeleton.FCStd`. Link each part once per usage into the top document (CK-F15).
+3. `curatrix gen freecad-params robarm-me`: the model values into `Params` (aliases
+   `<usage>_<attribute>`, at most ten). Drive the master sketch's named constraints and the LCS
+   placements from `Params` by expressions; parts take dimensions from
+   `x_skeleton#MasterSketch.Constraints.<name>` (the document name of `x-skeleton.FCStd`), never
+   from the top document (CK-F14); such parts sit in `assemblies/x/parts/`.
+4. Each interface is an LCS in the skeleton with the property `Port` (group `Trace`) = its
+   `ME-PORT` (CK-F3 compares its placement).
+
+Scripts: inputs by environment variables (FreeCADCmd opens extra arguments as files); judge
+success by a result file the script writes (FreeCADCmd exits 0 when a script raises, and runs a
+raising script twice); open the skeleton before the top document (through the top it loads only
+partially); save a document before a cross-document link or expression points from it.
+
+## To be added
+
+Part presence by `Configs` and variant rows in `Params`; recompute, solid and collision checks
+with `accepted.yaml` (only humans write `Accepted-by:`); StepUp; CAM output; the MCP server.

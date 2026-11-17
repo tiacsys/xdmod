@@ -323,6 +323,20 @@ def cmd_gen(a):
                 if cfg.section("code") is None and a.what == "all":
                     continue
                 outs.append(gen.code_needs(ws, cfg))
+            elif what == "freecad-params":
+                from curatrix import meparams
+                ms = cfg.section("model") or {}
+                mj = cfg.resolve(ms.get("json", "generated/model.json"))
+                if not mj.exists():
+                    raise gen.GenError(f"{ws.rel(mj)} missing; run `curatrix gen model {repo.name}`")
+                from curatrix import model as modelmod
+                errs = meparams.write(ws, cfg, modelmod.Model.load(mj))
+                for e in errs:
+                    print(f"  error: {e}", file=sys.stderr)
+                if errs:
+                    rc = 1
+                else:
+                    print(f"  next: `curatrix gen all {repo.name}` (semantic JSON), `curatrix check {repo.name} --only CK-F3`")
             elif what == "freecad-json":
                 fj = gen.freecad_json(ws, cfg, shapes=a.shape)
                 outs += fj
@@ -595,8 +609,10 @@ def parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_check)
 
     s = sub.add_parser("gen", help="generated files: stubs, model, cad-needs, code-needs, freecad-json, tombstones, all; "
+                                   "freecad-params (model values into the skeletons' Params, FreeCAD); "
                                    "cad-exports (build/<area>/cad, not committed)")
-    s.add_argument("what", choices=["stubs", "model", "cad-needs", "connectors", "code-needs", "freecad-json", "tombstones", "cad-exports", "all"])
+    s.add_argument("what", choices=["stubs", "model", "cad-needs", "connectors", "code-needs", "freecad-json", "freecad-params",
+                                    "tombstones", "cad-exports", "all"])
     s.add_argument("repo", nargs="?")
     s.add_argument("--check", action="store_true", help="only compare with the committed files")
     s.add_argument("--needs", nargs="+", help="stubs: needs.json files instead of the last docs build")

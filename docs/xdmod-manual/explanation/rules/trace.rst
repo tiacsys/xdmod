@@ -163,6 +163,14 @@ The principles of the trace model and the rules on the trace graph.
 
    In the document of an assembly def, the number of FreeCAD links to a part or sub-assembly (named by the ``TraceID`` of the link target) equals its usages: the usages the ME model owns (internal parts and sub-assemblies, with multiplicity) plus the usages of the system model inside the system blocks the assembly realizes, counted for the ME def that realizes each used block. A link with ``Configs`` counts only for those configurations. Every other link target has a ``TraceID``; the link to the skeleton is not counted.
 
+.. xd-rule:: The ME model drives the FreeCAD parameters
+   :id: XD-RULE-0057
+   :tags: trace, cad
+   :status: valid
+   :decided_by: XD-ADR-0137, XD-ADR-0146
+
+   Every attribute with a value of a part or port usage of a top-level assembly def, or of the usage's def, is a parameter with the alias ``<usage>_<attribute>`` in the spreadsheet ``Params`` of the assembly's ``<name>-skeleton.FCStd``; at most ten per assembly. ``curatrix gen freecad-params`` writes the values; the master sketch and the parts take their dimensions from ``Params``. Each port with a placement (``x``, ``y``, ``z``, ``yaw``, ``pitch``, ``roll`` of ``XdDomain::MechanicalPort``) has one LCS with the property ``Port`` = its ``ME-PORT``, at that placement in the assembly. Values agree within the default tolerance of their kind (lengths 0.001 mm, angles 0.001 deg) or the one of ``@XdDomain::ModelMatchTolerance`` on the attribute, in the attribute's own unit: the agreement of the number in the CAD file with the model, not a manufacturing tolerance. ``Params`` holds no alias the model does not know.
+
 .. xd-rule:: Connectors name their port and follow its pin map
    :id: XD-RULE-0050
    :tags: trace, cad
