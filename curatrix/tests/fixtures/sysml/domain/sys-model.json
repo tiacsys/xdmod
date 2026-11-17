@@ -44,6 +44,9 @@
      "@id": "Sys::Arm"
     },
     {
+     "@id": "Sys/12/0"
+    },
+    {
      "@id": "Sys::Detail"
     }
    ],
@@ -86,6 +89,9 @@
     },
     {
      "@id": "Sys/12"
+    },
+    {
+     "@id": "Sys/13"
     }
    ],
    "qualifiedName": "Sys"
@@ -294,6 +300,92 @@
   },
   "payload": {
    "@id": "Sys/12",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys/12/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Sys"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys/12/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys"
+    },
+    {
+     "@id": "Sys/12/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys/12/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys/12/0"
+  },
+  "payload": {
+   "@id": "Sys/12/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "Sys::Basic"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Sys"
+   },
+   "owningNamespace": {
+    "@id": "Sys"
+   },
+   "owningRelationship": {
+    "@id": "Sys/12"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Basic"
+    },
+    {
+     "@id": "Sys::Driver"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Basic"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "Sys::Driver"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Driver"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys/13"
+  },
+  "payload": {
+   "@id": "Sys/13",
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
@@ -711,6 +803,9 @@
     },
     {
      "@id": "Sys::Arm::servo1"
+    },
+    {
+     "@id": "Sys::Arm::drv1"
     }
    ],
    "isAbstract": false,
@@ -727,6 +822,9 @@
     },
     {
      "@id": "Sys::Arm::servo1"
+    },
+    {
+     "@id": "Sys::Arm::drv1"
     }
    ],
    "ownedMember": [
@@ -738,6 +836,9 @@
     },
     {
      "@id": "Sys::Arm::servo1"
+    },
+    {
+     "@id": "Sys::Arm::drv1"
     }
    ],
    "ownedPart": [
@@ -749,6 +850,9 @@
     },
     {
      "@id": "Sys::Arm::servo1"
+    },
+    {
+     "@id": "Sys::Arm::drv1"
     }
    ],
    "ownedRelationship": [
@@ -760,6 +864,9 @@
     },
     {
      "@id": "Sys::Arm/2"
+    },
+    {
+     "@id": "Sys::Arm/3"
     }
    ],
    "owner": {
@@ -899,6 +1006,49 @@
    "target": [
     {
      "@id": "Sys::Arm::servo1"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm/3"
+  },
+  "payload": {
+   "@id": "Sys::Arm/3",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Arm::drv1"
+   },
+   "memberName": "drv1",
+   "membershipOwningNamespace": {
+    "@id": "Sys::Arm"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Arm::drv1"
+    }
+   ],
+   "owningType": {
+    "@id": "Sys::Arm"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm"
+    },
+    {
+     "@id": "Sys::Arm::drv1"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Arm::drv1"
     }
    ]
   }
@@ -1234,6 +1384,170 @@
    },
    "owningRelationship": {
     "@id": "Sys::Arm::ctrlB/1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::drv1"
+  },
+  "payload": {
+   "@id": "Sys::Arm::drv1",
+   "@type": "PartUsage",
+   "declaredName": "drv1",
+   "definition": [
+    {
+     "@id": "Sys::Driver"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "Sys::Driver::servoOut"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": true,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": false,
+   "isVariation": false,
+   "name": "drv1",
+   "ownedMember": [
+    {
+     "@id": "Sys::Arm::drv1/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "Sys::Arm::drv1/0"
+    },
+    {
+     "@id": "Sys::Arm::drv1/1"
+    }
+   ],
+   "owner": {
+    "@id": "Sys::Arm"
+   },
+   "owningNamespace": {
+    "@id": "Sys::Arm"
+   },
+   "owningRelationship": {
+    "@id": "Sys::Arm/3"
+   },
+   "owningType": {
+    "@id": "Sys::Arm"
+   },
+   "qualifiedName": "Sys::Arm::drv1",
+   "type": [
+    {
+     "@id": "Sys::Driver"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::drv1/0"
+  },
+  "payload": {
+   "@id": "Sys::Arm::drv1/0",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "Sys::Driver"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "Sys::Arm::drv1"
+   },
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm::drv1"
+    },
+    {
+     "@id": "Sys::Driver"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm::drv1"
+    }
+   ],
+   "specific": {
+    "@id": "Sys::Arm::drv1"
+   },
+   "target": [
+    {
+     "@id": "Sys::Driver"
+    }
+   ],
+   "type": {
+    "@id": "Sys::Driver"
+   },
+   "typedFeature": {
+    "@id": "Sys::Arm::drv1"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::drv1/1"
+  },
+  "payload": {
+   "@id": "Sys::Arm::drv1/1",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "Sys::Arm::drv1/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "Sys::Arm::drv1"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "Sys::Arm::drv1/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "Sys::Arm::drv1"
+    },
+    {
+     "@id": "Sys::Arm::drv1/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "Sys::Arm::drv1"
+    }
+   ],
+   "target": [
+    {
+     "@id": "Sys::Arm::drv1/1/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "Sys::Arm::drv1/1/0"
+  },
+  "payload": {
+   "@id": "Sys::Arm::drv1/1/0",
+   "@type": "Multiplicity",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "Sys::Arm::drv1"
+   },
+   "owningNamespace": {
+    "@id": "Sys::Arm::drv1"
+   },
+   "owningRelationship": {
+    "@id": "Sys::Arm::drv1/1"
    }
   }
  },
@@ -2299,7 +2613,7 @@
     "@id": "Sys"
    },
    "owningRelationship": {
-    "@id": "Sys/12"
+    "@id": "Sys/13"
    },
    "qualifiedName": "Sys::Detail"
   }

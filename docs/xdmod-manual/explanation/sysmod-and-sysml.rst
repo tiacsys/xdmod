@@ -109,11 +109,15 @@ configurations and the system usages it serves (:need:`XD-ADR-0136`):
    dependency from JointBoardAlt to MyConfigs::proto, MyProduct::Arm::joint1, MyProduct::Arm::joint2;
 
 Each dependency serves every pair of its configurations and usages; write one dependency per
-group. Nobody writes the table "configuration → variant per usage": :need:`XD-CHECK-0034` computes it
+group, and name at least one of each in every dependency. The pairs a board must serve are built
+per system def it realizes: the usages of that def times the configurations that configure it (all
+configurations if none does). Nobody writes the table "configuration → variant per usage": :need:`XD-CHECK-0034` computes it
 against the system repo's committed model (``model.upstream``), writes it into its log
 (``build/<area>/checks/variants-across-levels.md``) and checks :need:`XD-RULE-0048`: exactly one
-variant per configuration and usage, the variant in the KiCad project or FreeCAD configuration
-table, and Zephyr board variants by name. The domain repo switches it on with a ``variants:``
+variant per configuration and usage, every named variant in the KiCad project or FreeCAD
+configuration table, and Zephyr board variants by name (the Zephyr board name is the KiCad project
+name in lower case with ``-`` as ``_``; ``outer/inner`` counts as ``inner``; a Zephyr board without
+such a project is ignored). The domain repo switches it on with a ``variants:``
 section in ``checks.yaml``. At most two variants per board or assembly; a variant that names no
 configuration is not checked in iteration 1.
 

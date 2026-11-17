@@ -13,6 +13,12 @@ package EeVariants {
     part def CtrlFast :> ControllerBoard, DomainVariant { :>> variantName = "fast"; }
     dependency from CtrlFast to Full, Arm::ctrlB;
 
+    // good: ComboBoard2 (EE-PCBA-0005) realizes Controller (Basic, Full) and Driver (Basic only):
+    // drv1 needs a variant in Basic only, not in Full
+    part def ComboX :> ComboBoard2, DomainVariant { :>> variantName = "x"; }
+    dependency from ComboX to Basic, Full, Arm::ctrlA, Arm::ctrlB;
+    dependency from ComboX to Basic, Arm::drv1;
+
     // planted: two variants for (Basic, servo1), none for (Full, servo1)
     part def ServoA :> ServoBoard, DomainVariant { :>> variantName = "a"; }
     dependency from ServoA to Basic, Arm::servo1;
@@ -21,4 +27,6 @@ package EeVariants {
     // planted: a third variant, a usage of another def, and no variantName
     part def ServoC :> ServoBoard, DomainVariant;
     dependency from ServoC to Basic, Arm::ctrlA;
+    // planted: a dependency with a usage but no configuration
+    dependency from ServoA to Arm::servo1;
 }

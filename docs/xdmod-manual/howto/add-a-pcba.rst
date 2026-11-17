@@ -74,7 +74,8 @@ Steps
    variants (Board Setup or the schematic's variant list; DNP and fields per variant), write one
    def per variant in the EE model (``part def MyBoardAlt :> MyBoard, XdDomain::DomainVariant
    { :>> variantName = "alt"; }``) with a dependency to the configurations and usages it serves, and
-   add ``variants: true`` to ``checks.yaml``.
+   add ``variants: true`` to ``checks.yaml`` (the check also needs ``model.upstream``, the system
+   repo's committed ``generated/model.json``).
 
 Checks
 ------

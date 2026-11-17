@@ -103,7 +103,8 @@ def test_configs_from_the_upstream_configuration():
     d, u = domain()
     n = model.add_configs(model.to_needs(d, "ee")[0], [u])["versions"][""]["needs"]
     assert n["EE-PCBA-0001"]["configs"] == ["SYS-CFG-0001", "SYS-CFG-0002"]   # Basic and Full configure Controller
-    assert "configs" not in n["EE-PCBA-0004"]                   # also realizes Driver: in every configuration
+    assert n["EE-PCBA-0004"]["configs"] == ["SYS-CFG-0001", "SYS-CFG-0002"]   # Controller or Driver
+    assert "configs" not in n["EE-PCBA-0006"]                   # realizes Servo, configured by none: in every one
     assert "configs" not in n["EE-PORT-0001"]
 
 

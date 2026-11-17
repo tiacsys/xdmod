@@ -12,15 +12,19 @@ From these, ``table()`` computes "configuration -> variant per usage" (nobody wr
 ``check()`` compares it with the published system model (the upstream ``model.json``):
 
 * every pair (configuration, usage) of a board or assembly that has variants gets exactly one
-  variant; the pairs are the usages of the system defs the board realizes, times the
-  configurations that configure those defs (all configurations if none does, as in ``configs``);
-* a variant names only such configurations and usages, and both kinds;
+  variant. The pairs are built per system def the board realizes: the usages of that def times
+  the configurations that configure it (all configurations if none does, as in ``configs``), and
+  the union over the defs;
+* a variant serves only such pairs, and every dependency names both kinds;
 * at most two variants per board or assembly (iteration 1); every variant has a unique name;
-* the variant exists in the board's KiCad project or the assembly's FreeCAD documents;
+* every variant (also one that serves no pair yet) exists in the board's KiCad project or the
+  assembly's FreeCAD documents;
 * Zephyr board variants (``board.yml`` under the board roots in ``variants.zephyr``) map to
-  board variants by name; the Zephyr board name is the KiCad project name with ``-`` as ``_``.
+  board variants by name; the Zephyr board name is the KiCad project name, lower case, with ``-``
+  as ``_``; a nested variant counts by its last part; a Zephyr board without such a project is
+  ignored.
 
-A variant that names no configuration is not checked (iteration 2). Plain Python, no CAD tools.
+A variant that serves no pair is not reported as unused (iteration 2). Plain Python, no CAD tools.
 """
 from __future__ import annotations
 
@@ -51,6 +55,7 @@ class Variant:
     pairs: set = field(default_factory=set)                # (SYS-CFG, usage): per dependency
     other: list[str] = field(default_factory=list)         # named elements that are neither
     no_usage: bool = False                                 # a dependency with configurations only
+    no_config: bool = False                                # a dependency with usages only
 
 
 @dataclass
@@ -111,11 +116,14 @@ def variants(m: modelmod.Model) -> tuple[list[Variant], list[str]]:
             v.usages += [u for u in uses if u not in v.usages]
             v.pairs |= {(c, u) for c in cfgs for u in uses}
             v.no_usage |= bool(cfgs and not uses)
+            v.no_config |= bool(uses and not cfgs)
     return sorted(out, key=lambda v: (v.owner, v.qn)), findings
 
 
-def _required(m: modelmod.Model, upstream: list[modelmod.Model]) -> dict[str, tuple[set[str], set[str]]]:
-    """Board or assembly ID -> (configurations, usages) it must serve, from the upstream model."""
+def _required(m: modelmod.Model, upstream: list[modelmod.Model]) -> tuple[dict[str, set], set[str]]:
+    """(board or assembly ID -> the (configuration, usage) pairs it must serve, all configurations
+    of the upstream model). Pairs per realized system def, then the union (not a cross product
+    over the defs)."""
     configures: dict[str, set[str]] = {}
     all_cfgs: set[str] = set()
     usages_of: dict[str, set[str]] = {}
@@ -131,24 +139,22 @@ def _required(m: modelmod.Model, upstream: list[modelmod.Model]) -> dict[str, tu
                     tid = modelmod.element_id(um, t)
                     if tid:
                         usages_of.setdefault(tid, set()).add(u["qualifiedName"])
-    out: dict[str, tuple[set[str], set[str]]] = {}
+    out: dict[str, set] = {}
     for _p, sid, _sup, tid in modelmod.specializations(m):
         if idmod.kind_of(sid) not in OWNER_KINDS:
             continue
-        cfgs, uses = out.setdefault(sid, (set(), set()))
-        cfgs |= configures.get(tid) or all_cfgs
-        uses |= usages_of.get(tid, set())
-    return out
+        out.setdefault(sid, set()).update((c, u) for c in (configures.get(tid) or all_cfgs)
+                                          for u in usages_of.get(tid, set()))
+    return out, all_cfgs
 
 
-def table(vs: list[Variant], required: dict[str, tuple[set[str], set[str]]]) -> list[Row]:
+def table(vs: list[Variant], required: dict[str, set]) -> list[Row]:
     """The computed table "configuration -> variant per usage", for every board or assembly that
     has variants: one row per (configuration, usage), with the variants that serve it."""
     rows = []
     for owner in sorted({v.owner for v in vs}):
         mine = [v for v in vs if v.owner == owner]
-        cfgs, uses = required.get(owner, (set(), set()))
-        for c, u in sorted((c, u) for c in cfgs for u in uses):
+        for c, u in sorted(required.get(owner, set())):
             rows.append(Row(c, u, owner, sorted(v.name or v.qn for v in mine if (c, u) in v.pairs)))
     return rows
 
@@ -169,15 +175,15 @@ def kicad_variants(pro: Path) -> list[str]:
     return [v.get("name") for v in ((d.get("schematic") or {}).get("variants") or []) if v.get("name")]
 
 
-def kicad_projects(roots: list[Path]) -> dict[str, Path]:
-    """TraceID (the EE-PCBA a project names) -> .kicad_pro, from root schematics."""
-    out = {}
+def kicad_projects(roots: list[Path]) -> dict[str, list[Path]]:
+    """TraceID (the EE-PCBA a project names) -> its .kicad_pro files, from root schematics."""
+    out: dict[str, Path] = {}
     for sch in roots:
         pro = sch.with_suffix(".kicad_pro")
         if pro.is_file():
             tid = (json.loads(pro.read_text(encoding="utf-8")).get("text_variables") or {}).get("TraceID")
             if tid:
-                out[tid] = pro
+                out.setdefault(tid, []).append(pro)
     return out
 
 
@@ -247,11 +253,14 @@ def check(m: modelmod.Model, upstream: list[modelmod.Model], kicad_roots: list[P
           freecad_files: list[Path] = (), zephyr_roots: list[Path] = ()) -> tuple[list[str], list[Row]]:
     """CK-B8 findings and the computed table."""
     vs, findings = variants(m)
-    required = _required(m, upstream)
+    required, all_cfgs = _required(m, upstream)
     rows = table(vs, required)
     projects = kicad_projects(list(kicad_roots))
     fc_docs = freecad_documents(list(freecad_files)) if freecad_files else {}
     zboards = zephyr_boards(list(zephyr_roots))
+    if vs and not all_cfgs:
+        findings.append("the upstream model has no configuration (SYS-CFG), so no variant can be checked "
+                        "against one; give the system model its configurations")
 
     for owner in sorted({v.owner for v in vs}):
         mine = [v for v in vs if v.owner == owner]
@@ -263,37 +272,47 @@ def check(m: modelmod.Model, upstream: list[modelmod.Model], kicad_roots: list[P
             if v.name and v.name in seen:
                 findings.append(f"{v.qn}: variant name {v.name!r} is also used by {seen[v.name]}")
             seen.setdefault(v.name or "", v.qn)
-        cfgs, uses = required.get(owner, (set(), set()))
-        used = [v for v in mine if v.configs]                      # unused variants: iteration 2
-        for v in used:
+        pairs = required.get(owner, set())
+        cfgs, uses = {c for c, _ in pairs}, {u for _, u in pairs}
+        pros = projects.get(owner, [])
+        if len(pros) > 1:
+            findings.append(f"{oqn}: more than one KiCad project names {owner}: {', '.join(p.name for p in pros)}")
+        for v in mine:
             for o in v.other:
                 findings.append(f"{v.qn}: names {o}, which is neither a configuration (SYS-CFG) nor a usage")
             if v.no_usage:
                 findings.append(f"{v.qn}: a dependency names configurations but no usage of the system model")
+            if v.no_config:
+                findings.append(f"{v.qn}: a dependency names usages but no configuration (SYS-CFG)")
             for c in v.configs:
                 if c not in cfgs:
                     findings.append(f"{v.qn}: configuration {c} does not configure what {owner} realizes")
             for u in v.usages:
                 if u not in uses:
                     findings.append(f"{v.qn}: {u} is not a usage of a system def that {owner} realizes")
-            # the variant exists in CAD
-            kind = idmod.kind_of(owner)
+            for c, u in sorted(v.pairs):
+                if c in cfgs and u in uses and (c, u) not in pairs:
+                    findings.append(f"{v.qn}: serves {u} in {c}, but that configuration does not configure "
+                                    f"the system def of that usage")
+            # every named variant exists in CAD, also one that serves no pair yet
             if not v.name:
                 continue
+            kind = idmod.kind_of(owner)
             if kind == "EE-PCBA":
-                pro = projects.get(owner)
-                if pro is None:
+                if not pros:
                     findings.append(f"{v.qn}: no KiCad project names {owner} (TraceID), so variant {v.name!r} is not there")
-                elif v.name and v.name not in kicad_variants(pro):
-                    findings.append(f"{v.qn}: variant {v.name!r} is not in {pro.name} schematic.variants "
-                                    f"({', '.join(kicad_variants(pro)) or 'none'})")
+                else:
+                    have = kicad_variants(pros[0])
+                    if v.name not in have:
+                        findings.append(f"{v.qn}: variant {v.name!r} is not in {pros[0].name} schematic.variants "
+                                        f"({', '.join(have) or 'none'})")
             elif kind == "ME-ASM":
                 docs = fc_docs.get(owner)
                 if not docs:
                     findings.append(f"{v.qn}: no FreeCAD document names {owner} (TraceID), so variant {v.name!r} is not there")
                 else:
                     have = [n for d in docs for n in freecad_variants(d)]
-                    if v.name and v.name not in have:
+                    if v.name not in have:
                         findings.append(f"{v.qn}: variant {v.name!r} is not a row of a configuration table in "
                                         f"{', '.join(d.name for d in docs)} ({', '.join(have) or 'none'})")
         for r in rows:
@@ -301,9 +320,8 @@ def check(m: modelmod.Model, upstream: list[modelmod.Model], kicad_roots: list[P
                 what = "no variant" if not r.variants else f"{len(r.variants)} variants ({', '.join(r.variants)})"
                 findings.append(f"{oqn}: {what} for usage {r.usage} in configuration {r.config}; exactly one expected")
         # Zephyr board variants map to board variants by name
-        pro = projects.get(owner)
-        if pro is not None:
-            zname = pro.stem.replace("-", "_").lower()
+        if pros:
+            zname = pros[0].stem.replace("-", "_").lower()
             names = {v.name for v in mine if v.name}
             for zv in zboards.get(zname, []):
                 if zv.split("/")[-1] not in names:
