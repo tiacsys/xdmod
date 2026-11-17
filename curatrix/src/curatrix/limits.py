@@ -160,6 +160,9 @@ def tool_env(ws: Workspace, use: str, env: dict | None, cmd: list[str] | None = 
     out = dict(env if env is not None else ws.run_env())
     kicad = setup.launch_env(ws, "kicad")
     out.update({k: v for k, v in kicad.items() if k.startswith("KICAD")})
+    exe0 = Path(cmd[0]).name if cmd else ""
+    if use == "kicad-cli" or exe0.startswith(("kicad", "eeschema", "pcbnew")):
+        out["LC_ALL"] = "C.UTF-8"           # KiCad writes numbers with the locale's decimal comma otherwise
     exe = Path(cmd[0]).name if cmd else ""
     if use == "freecad" or exe.startswith(FREECAD_NAMES):
         fc = setup.launch_env(ws, "freecad")
