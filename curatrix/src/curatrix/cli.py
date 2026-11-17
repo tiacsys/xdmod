@@ -233,6 +233,29 @@ def cmd_check(a):
     return 0 if ok else 1
 
 
+def cmd_trace(a):
+    """A minimal trace report per SYS-REQ from the needs.json of the last docs build (task 5.10)."""
+    from curatrix import trace
+    ws = _ws()
+    if a.target == "full":
+        area = "full"
+    else:
+        repo = _repo(ws, a.target)
+        area = _cfg(ws, repo).area
+    files = sorted((ws.build(area) / "docs" / "deploy" / "html").glob("*/needs.json"))
+    if not files:
+        print(f"curatrix trace: no needs.json in {ws.rel(ws.build(area) / 'docs')}; run `curatrix docs {a.target}` first",
+              file=sys.stderr)
+        return 1
+    out = Path(a.out) if a.out else ws.build(area) / "trace"
+    s = trace.write(files, out, a.target, a.canary)
+    c = s["coverage"]
+    print(f"  {c['requirements']} SYS-REQ (canary excluded: {len(s['canary'])}): {c['refined_or_satisfied']} refined or "
+          f"satisfied, {c['with_test_case']} with a test case, {c['passed']} passed")
+    print(f"  wrote {ws.rel(out / 'trace.md')}, {ws.rel(out / 'trace.html')}")
+    return 0
+
+
 # ------------------------------------------------------------------ gen
 def cmd_gen(a):
     from curatrix import gen
@@ -503,6 +526,13 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--textconv", metavar="FCSTD", help="freecad-json: print the trace JSON of one file (git textconv)")
     s.add_argument("--shape", action="store_true", help="freecad-json: add the shape part (needs FreeCAD)")
     s.set_defaults(func=cmd_gen)
+
+    s = sub.add_parser("trace", help="trace report per SYS-REQ (refined, satisfied, verified, latest result, gaps) "
+                                     "from the last docs build; the canary configuration in its own section")
+    s.add_argument("target", help="a repo or `full`")
+    s.add_argument("--canary", action="append", help="SYS-CFG ID of the canary configuration (default: the SYS-CFG titled canary)")
+    s.add_argument("-o", "--out", help="output folder (default build/<area>/trace)")
+    s.set_defaults(func=cmd_trace)
 
     s = sub.add_parser("ids", help="issue IDs from the ledger, replace placeholders")
     ss = s.add_subparsers(dest="action", required=True)
