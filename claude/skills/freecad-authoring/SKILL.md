@@ -79,7 +79,22 @@ partially); save a document before a cross-document link or expression points fr
 `curatrix variants list robarm-me` lists the assembly variants: the model def, the configuration
 table row with its parameters, the links with `Configs`, and what each variant serves.
 
+## Driving the FreeCAD GUI through the MCP server
+
+- The owner (or you, with decision Q2) starts `curatrix launch freecad --mcp`: the addon FreeCADMCP
+  opens 127.0.0.1:9875 with the workspace token for that session only, `HOME=.xdmod/stepup/home`.
+  Claude Code reaches it through the `freecad` server of `<ws>/.mcp.json` (written by
+  `curatrix update`; start Claude with `curatrix launch claude` so `XD_FREECAD_MCP_TOKEN` is set).
+- Check `get_rpc_status` first. Give long calls an explicit `timeout`. A call that opens a modal box
+  blocks the GUI thread until a human closes it (`still_running`, then `GUI_DISPATCH_STUCK`); so
+  in `execute_code` replace `QMessageBox` statics and `QMessageBox`/`QDialog` `exec`/`exec_` by
+  logging before you call an addon that may ask something.
+- StepUp board load (`XD_STEPUP` on `sys.path`): set `Mod/kicadStepUpGui` `prefix3d_1` to
+  `libs/kicad/packages3D` and `pcb_placement` to 2 (or a board grid origin), then
+  `kicadStepUptools.onLoadBoard(file_name=<copy under build/>)`. Gives one coloured object per
+  component (`claude/notes/codesign-spike.md`, addendum 2026-11-18). Never on a repo file.
+
 ## To be added
 
 Part presence by `Configs` and variant rows in `Params`; recompute, solid and collision checks
-with `accepted.yaml` (only humans write `Accepted-by:`); StepUp; CAM output; the MCP server.
+with `accepted.yaml` (only humans write `Accepted-by:`); the StepUp push through the MCP server; CAM output.

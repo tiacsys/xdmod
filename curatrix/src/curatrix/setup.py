@@ -517,7 +517,13 @@ def shim_rows(ws: Workspace, path: str | None = None) -> list[tuple[str, str, st
 
 
 def launch(ws: Workspace, tool: str, args: list[str]) -> int:
-    """GUI tools: memory limit only, no timeout (D117). Runs from the workspace root (D67)."""
+    """GUI tools: memory limit only, no timeout (D117). Runs from the workspace root (D67).
+    `freecad --mcp`: the FreeCAD MCP addon starts its RPC server (loopback, token) for this run only,
+    with HOME = .xdmod/stepup/home (freecadmcp.launch_env)."""
+    from curatrix import freecadmcp
+    mcp = tool == "freecad" and "--mcp" in args
+    if mcp:
+        args = [a for a in args if a != "--mcp"]
     exe = {"kicad": "kicad", "freecad": "FreeCAD", "blender": "blender", "drawio": "drawio", "claude": "claude"}[tool]
     if tool == "kicad" and args and args[0].endswith(".kicad_sch"):
         exe = "eeschema"
@@ -533,10 +539,16 @@ def launch(ws: Workspace, tool: str, args: list[str]) -> int:
         # shim's batch LC_ALL would switch the GUI's language
         exe = str(real_tool(ws, exe) or exe)
     env = launch_env(ws, tool)
+    if tool == "freecad":
+        env = freecadmcp.launch_env(ws, env, mcp)
     use = "claude" if tool == "claude" else "gui"
     lim = limits.resolve(use, ws)
-    say(f"curatrix launch {tool}: {limits.describe(lim)}")
-    return limits.norm_rc(subprocess.run(limits.wrap([exe, *args], lim), cwd=ws.root, env=env).returncode)
+    say(f"curatrix launch {tool}: {limits.describe(lim)}"
+        + (f"; MCP RPC server on 127.0.0.1:9875 with token, HOME={ws.rel(Path(env['HOME']))}" if mcp else ""))
+    try:
+        return limits.norm_rc(subprocess.run(limits.wrap([exe, *args], lim), cwd=ws.root, env=env).returncode)
+    finally:
+        freecadmcp.after_launch(ws, mcp)
 
 
 # ------------------------------------------------------------------ doctor (§5, 4.4b)
@@ -609,6 +621,9 @@ def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
     row = kicad_models_row(ws, role, ci)
     if row:
         add(*row)
+    from curatrix import freecadmcp
+    for row in freecadmcp.doctor_rows(ws, role):
+        add(*row)
     for row in shim_rows(ws):
         add(*row)
     lim_backend = limits.backend()
@@ -656,6 +671,9 @@ def refresh(ws: Workspace, adopt: bool = False, force_pip: bool = False) -> None
     say(f"  installed in: {', '.join(install_hooks(ws)) or '(no repos)'}")
     say("== workspace state (.xdmod/)")
     create_state(ws)
+    say("== FreeCAD MCP server (token, addon settings, .mcp.json)")
+    from curatrix import freecadmcp
+    freecadmcp.ensure(ws, ws.role, say)
     say("== KiCad/FreeCAD/Blender shims in .venv/bin (workspace-local config)")
     say(f"  shims: {', '.join(write_shims(ws)) or '(no KiCad, FreeCAD or Blender found)'}")
 

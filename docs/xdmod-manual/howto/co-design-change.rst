@@ -163,7 +163,9 @@ Pitfalls
   KiCad outside curatrix or its shims.
 - The push needs the FreeCAD GUI binary (StepUp imports ``FreeCADGui``); offscreen it must not open
   a dialog, so the script replaces them by log lines. StepUp's board load (KiCad to FreeCAD) stalls
-  offscreen: use the STEP path.
+  offscreen: use the STEP path. In a GUI session (``curatrix launch freecad --mcp``) an agent can
+  load a board copy through the FreeCAD MCP server, with StepUp's message boxes replaced by log
+  lines (the freecad-authoring skill); a box nobody closes blocks the session.
 - ``kicad-cli pcb upgrade`` needs ``--force`` (StepUp keeps the version header) and may add a few
   default values (text thickness) to footprints on the first re-save.
 - Every push gives all ``Edge.Cuts`` items new UUIDs, so a KiCad DRC exclusion on one of them is
