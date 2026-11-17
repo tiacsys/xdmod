@@ -90,6 +90,7 @@ def model(ws, cfg: ChecksConfig) -> tuple[Output, Output, pilot.PilotResult]:
     mjson = Output(cfg.resolve(s.get("json", "generated/model.json")), modelmod.dumps(compact), log=res.log)
     m = modelmod.Model(compact)
     doc, findings = modelmod.to_needs(m, f"{cfg.repo.name}-model", modelmod.source_map(files, cfg.repo))
+    modelmod.add_configs(doc, upstream_models(cfg)[0])
     nout = Output(cfg.resolve(s.get("needs", "generated/model-needs.json")), needsmod.dumps(doc), findings)
     return mjson, nout, res
 
@@ -101,6 +102,7 @@ def model_needs_from_json(cfg: ChecksConfig) -> Output:
     m = modelmod.Model.load(mj)
     files = cfg.globs(s.get("files") or [])
     doc, findings = modelmod.to_needs(m, f"{cfg.repo.name}-model", modelmod.source_map(files, cfg.repo))
+    modelmod.add_configs(doc, upstream_models(cfg)[0])
     return Output(cfg.resolve(s.get("needs", "generated/model-needs.json")), needsmod.dumps(doc), findings)
 
 
@@ -135,10 +137,20 @@ def cad_needs(ws, cfg: ChecksConfig) -> Output:
                 continue
             needs[nid] = n
 
+    refs: list[tuple[str, str]] = []
     for sch in cfg.globs(s.get("kicad") or []):
-        add(*cad.kicad_needs(cad.kicad_items(sch, cfg.repo)))
+        add(*cad.kicad_needs(cad.kicad_items(sch, cfg.repo), refs))
     for fc in cfg.globs(s.get("freecad") or []):
-        add(*cad.freecad_needs(fc, str(fc.resolve().relative_to(cfg.repo.resolve()))))
+        add(*cad.freecad_needs(fc, str(fc.resolve().relative_to(cfg.repo.resolve())), refs))
+    # a model-owned ID in a CAD file must be a need of the repo's model (XD-ADR-0128)
+    ms = cfg.section("model")
+    mp = cfg.resolve((ms or {}).get("needs", "generated/model-needs.json")) if ms is not None else None
+    owned = needsmod.load(mp) if mp is not None and mp.exists() else {}
+    for rid, src in refs:
+        if rid not in owned:
+            findings.append(f"{src}: TraceID {rid} is not a need of the model"
+                            + ("" if ms is not None else " (the repo has no model section)")
+                            + f"; add the def to the model and run `curatrix gen model {cfg.repo.name}`")
     return Output(cfg.resolve(s.get("needs", "generated/cad-needs.json")),
                   needsmod.dumps(needsmod.doc(needs, f"{cfg.repo.name}-cad")), findings)
 
@@ -212,7 +224,10 @@ def retired_path(cfg: ChecksConfig) -> Path:
 def tombstones(cfg: ChecksConfig, generated: list[Output], baseline_date: str | None = None) -> tuple[Output, list[str]]:
     """Compare old and new generated needs files; keep tombstones for deleted, unretired needs.
     A need that moved to another generated file of the repo (EE-PCBA from cad-needs.json to
-    model-needs.json, XD-ADR-0128) is not deleted."""
+    model-needs.json, XD-ADR-0128) is not deleted. The other files are read from disk, so the
+    order of `gen cad-needs` and `gen model` does not matter: a tombstone written while
+    model-needs.json was stale is removed by the next `gen model` (the need is back), and
+    `gen all` makes both in one run."""
     rp = retired_path(cfg)
     current = needsmod.load(rp) if rp.exists() else {}
     msgs: list[str] = []

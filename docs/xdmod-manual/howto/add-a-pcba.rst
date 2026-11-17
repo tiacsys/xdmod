@@ -28,7 +28,10 @@ Steps
       curatrix launch kicad robarm-ee/pcba/<name>/<name>.kicad_sch
 
 2. For the PCBA itself, set the text variable ``TraceID`` in ``<name>.kicad_pro`` to the board
-   def's ``EE-PCBA`` ID: a reference, the need comes from the model. For circuit blocks and
+   def's ``EE-PCBA`` ID: a reference, the need comes from the model. Nothing else goes there:
+   ``Realizes``, ``Configs`` or other link fields next to it are reported, because links and
+   ``configs`` come from the model (``configs`` from the ``SYS-CFG`` that configures the realized
+   ``SYS-EL``). A ``TraceID`` that is not a need of the model is reported too. For circuit blocks and
    components, add **hidden** symbol or sheet fields:
 
    .. list-table::

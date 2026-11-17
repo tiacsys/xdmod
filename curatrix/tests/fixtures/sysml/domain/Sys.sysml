@@ -17,6 +17,12 @@ package Sys {
     part def <'SYS-EL-0002'> Driver {
         port servoOut : ServoIf;
     }
+    part def <'SYS-EL-0004'> Servo {
+        port servoIn : ~ServoIf;
+    }
+    // a configuration that configures Controller only
+    part def <'SYS-CFG-0001'> Basic;
+    dependency from Basic to Controller;
     // a nested package: not a top package (top_packages counts brace depth)
     package Detail {
         part def <'SYS-EL-0003'> Sensor {

@@ -203,7 +203,8 @@ def to_elk(g: dict) -> dict:
         if not outer["children"]:
             # a def with only its own ports (a board with its connectors): a box that, with the
             # legend below it, keeps the drawing between 16:9 and 9:16
-            n = max(len(g["nodes"][0]["ports"]), 1)
+            ps = g["nodes"][0]["ports"]
+            n = max([sum(p["side"] == side for p in ps) for side in ("EAST", "WEST")] + [1])   # per side
             outer["layoutOptions"].update({"elk.nodeSize.constraints": "MINIMUM_SIZE",
                                            "elk.nodeSize.minimum": f"(520,{max(240, 40 * n + 80)})"})
         return {"id": "root", "children": [outer],

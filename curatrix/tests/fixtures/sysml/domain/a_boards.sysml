@@ -12,6 +12,18 @@ package EeBoards {
     }
     // good: a variant does not repeat its parent's redefinitions
     part def ControllerBoardB :> ControllerBoard;
+    // planted: a variant widens a redefined port back to the system type (the pin map is lost)
+    part def ControllerBoardW :> ControllerBoard {
+        port :>> servoOut : ServoIf;
+    }
+    // good: a conjugated system port, redefined by the conjugated connector
+    part def <'EE-PCBA-0006'> ServoBoard :> Servo, Pcba {
+        port :>> servoIn : ~ServoHeader;
+    }
+    // planted: the conjugation is lost
+    part def <'EE-PCBA-0007'> FlatServoBoard :> Servo, Pcba {
+        port :>> servoIn : ServoHeader;
+    }
     // planted: `bus` is not redefined
     part def <'EE-PCBA-0002'> SensorBoard :> Sys::Detail::Sensor, Pcba;
     // planted: `servoOut` redefined with a port def that does not specialize ServoIf

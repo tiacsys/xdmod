@@ -13,6 +13,9 @@ def ws(tmp_path, monkeypatch):
     root = make_ws(tmp_path, monkeypatch)
     repo = git_init(root / "robarm-ee")
     shutil.copytree(FIXTURES / "kicad", repo / "pcba" / "board")
+    # the project's EE-PCBA reference needs a model (test_cad_reference_needs_the_model)
+    pro = repo / "pcba" / "board" / "board.kicad_pro"
+    pro.write_text(json.dumps({**json.loads(pro.read_text()), "text_variables": {}}, indent=2) + "\n")
     (repo / "ids.yaml").write_text("EE-CMP:\n  - 1\n  - 2\n  - 3\nEE-PCBA:\n  - 1\nEE-REQ:\n  - 1\n  - 2\n")
     (repo / "checks.yaml").write_text(
         "version: 1\nids: {ledger: ids.yaml}\n"
@@ -65,6 +68,37 @@ def test_need_moved_to_another_generated_file_is_no_tombstone(ws):
     cfg = checkcfg.load(repo / "checks.yaml", ws)
     tomb, msgs = gen.tombstones(cfg, [gen.cad_needs(None, cfg)])
     assert needsmod.needs_of(json.loads(tomb.text)) == {} and msgs == []
+
+
+def test_cad_reference_needs_the_model(ws):
+    """A model-owned TraceID in a CAD file must be a need of the repo's model (XD-ADR-0128)."""
+    from curatrix import checkcfg, gen, needs as needsmod
+    repo = ws / "robarm-ee"
+    shutil.copy(FIXTURES / "kicad" / "board.kicad_pro", repo / "pcba" / "board" / "board.kicad_pro")
+    cfg = checkcfg.load(repo / "checks.yaml", ws)
+    f = gen.cad_needs(None, cfg).findings
+    assert any("TraceID EE-PCBA-0001 is not a need of the model (the repo has no model section)" in x for x in f), f
+    (repo / "checks.yaml").write_text((repo / "checks.yaml").read_text() + "model: {files: [model/a.sysml]}\n")
+    needsmod.write(repo / "generated/model-needs.json", {"EE-PCBA-0001": {"id": "EE-PCBA-0001", "type": "ee-pcba"}}, "x")
+    f = gen.cad_needs(None, checkcfg.load(repo / "checks.yaml", ws)).findings
+    assert not [x for x in f if "not a need of the model" in x] and any("Realizes, Satisfies" in x for x in f), f
+
+
+def test_tombstone_order_of_gen_does_not_matter(ws):
+    """gen cad-needs while model-needs.json is stale leaves a tombstone; the next gen model,
+    which writes the moved need, removes it again (the need is back)."""
+    from curatrix import checkcfg, gen, needs as needsmod
+    repo = ws / "robarm-ee"
+    pcba = {"EE-PCBA-0001": {"id": "EE-PCBA-0001", "type": "ee-pcba", "title": "b", "status": "valid"}}
+    needsmod.write(repo / "generated/cad-needs.json", pcba, "x")
+    (repo / "checks.yaml").write_text((repo / "checks.yaml").read_text() + "model: {files: [model/a.sysml]}\n")
+    cfg = checkcfg.load(repo / "checks.yaml", ws)
+    tomb, _ = gen.tombstones(cfg, [gen.cad_needs(None, cfg)])           # model-needs.json not there yet
+    assert list(needsmod.needs_of(json.loads(tomb.text))) == ["EE-PCBA-0001"]
+    tomb.write()
+    mneeds = gen.Output(repo / "generated/model-needs.json", needsmod.dumps(needsmod.doc(pcba, "x")))
+    tomb, msgs = gen.tombstones(cfg, [mneeds])                          # then gen model
+    assert needsmod.needs_of(json.loads(tomb.text)) == {} and any("back" in m for m in msgs)
 
 
 def test_ids_and_placeholders(ws, capsys):

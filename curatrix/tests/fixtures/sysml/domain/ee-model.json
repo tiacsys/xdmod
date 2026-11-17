@@ -28,6 +28,15 @@
      "@id": "EeBoards::ControllerBoardB"
     },
     {
+     "@id": "EeBoards::ControllerBoardW"
+    },
+    {
+     "@id": "EeBoards::ServoBoard"
+    },
+    {
+     "@id": "EeBoards::FlatServoBoard"
+    },
+    {
      "@id": "EeBoards::SensorBoard"
     },
     {
@@ -79,6 +88,15 @@
     },
     {
      "@id": "EeBoards/10"
+    },
+    {
+     "@id": "EeBoards/11"
+    },
+    {
+     "@id": "EeBoards/12"
+    },
+    {
+     "@id": "EeBoards/13"
     }
    ],
    "qualifiedName": "EeBoards"
@@ -152,6 +170,126 @@
   },
   "payload": {
    "@id": "EeBoards/10",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeBoards::ComboBoard"
+   },
+   "memberName": "ComboBoard",
+   "membershipOwningNamespace": {
+    "@id": "EeBoards"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeBoards::ComboBoard"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeBoards"
+    },
+    {
+     "@id": "EeBoards::ComboBoard"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeBoards::ComboBoard"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards/11"
+  },
+  "payload": {
+   "@id": "EeBoards/11",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeBoards::ComboBoard2"
+   },
+   "memberName": "ComboBoard2",
+   "membershipOwningNamespace": {
+    "@id": "EeBoards"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeBoards::ComboBoard2"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeBoards"
+    },
+    {
+     "@id": "EeBoards::ComboBoard2"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeBoards::ComboBoard2"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards/12"
+  },
+  "payload": {
+   "@id": "EeBoards/12",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeBoards::OddBoard"
+   },
+   "memberName": "OddBoard",
+   "membershipOwningNamespace": {
+    "@id": "EeBoards"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeBoards::OddBoard"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeBoards"
+    },
+    {
+     "@id": "EeBoards::OddBoard"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeBoards::OddBoard"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards/13"
+  },
+  "payload": {
+   "@id": "EeBoards/13",
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
@@ -306,6 +444,126 @@
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
+    "@id": "EeBoards::ControllerBoardW"
+   },
+   "memberName": "ControllerBoardW",
+   "membershipOwningNamespace": {
+    "@id": "EeBoards"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeBoards::ControllerBoardW"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeBoards"
+    },
+    {
+     "@id": "EeBoards::ControllerBoardW"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeBoards::ControllerBoardW"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards/6"
+  },
+  "payload": {
+   "@id": "EeBoards/6",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "memberName": "ServoBoard",
+   "membershipOwningNamespace": {
+    "@id": "EeBoards"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeBoards"
+    },
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards/7"
+  },
+  "payload": {
+   "@id": "EeBoards/7",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "memberName": "FlatServoBoard",
+   "membershipOwningNamespace": {
+    "@id": "EeBoards"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeBoards::FlatServoBoard"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeBoards"
+    },
+    {
+     "@id": "EeBoards::FlatServoBoard"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeBoards::FlatServoBoard"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards/8"
+  },
+  "payload": {
+   "@id": "EeBoards/8",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
     "@id": "EeBoards::SensorBoard"
    },
    "memberName": "SensorBoard",
@@ -339,10 +597,10 @@
  },
  {
   "identity": {
-   "@id": "EeBoards/6"
+   "@id": "EeBoards/9"
   },
   "payload": {
-   "@id": "EeBoards/6",
+   "@id": "EeBoards/9",
    "@type": "OwningMembership",
    "isLibraryElement": false,
    "memberElement": {
@@ -373,126 +631,6 @@
    "target": [
     {
      "@id": "EeBoards::WrongBoard"
-    }
-   ]
-  }
- },
- {
-  "identity": {
-   "@id": "EeBoards/7"
-  },
-  "payload": {
-   "@id": "EeBoards/7",
-   "@type": "OwningMembership",
-   "isLibraryElement": false,
-   "memberElement": {
-    "@id": "EeBoards::ComboBoard"
-   },
-   "memberName": "ComboBoard",
-   "membershipOwningNamespace": {
-    "@id": "EeBoards"
-   },
-   "ownedRelatedElement": [
-    {
-     "@id": "EeBoards::ComboBoard"
-    }
-   ],
-   "relatedElement": [
-    {
-     "@id": "EeBoards"
-    },
-    {
-     "@id": "EeBoards::ComboBoard"
-    }
-   ],
-   "source": [
-    {
-     "@id": "EeBoards"
-    }
-   ],
-   "target": [
-    {
-     "@id": "EeBoards::ComboBoard"
-    }
-   ]
-  }
- },
- {
-  "identity": {
-   "@id": "EeBoards/8"
-  },
-  "payload": {
-   "@id": "EeBoards/8",
-   "@type": "OwningMembership",
-   "isLibraryElement": false,
-   "memberElement": {
-    "@id": "EeBoards::ComboBoard2"
-   },
-   "memberName": "ComboBoard2",
-   "membershipOwningNamespace": {
-    "@id": "EeBoards"
-   },
-   "ownedRelatedElement": [
-    {
-     "@id": "EeBoards::ComboBoard2"
-    }
-   ],
-   "relatedElement": [
-    {
-     "@id": "EeBoards"
-    },
-    {
-     "@id": "EeBoards::ComboBoard2"
-    }
-   ],
-   "source": [
-    {
-     "@id": "EeBoards"
-    }
-   ],
-   "target": [
-    {
-     "@id": "EeBoards::ComboBoard2"
-    }
-   ]
-  }
- },
- {
-  "identity": {
-   "@id": "EeBoards/9"
-  },
-  "payload": {
-   "@id": "EeBoards/9",
-   "@type": "OwningMembership",
-   "isLibraryElement": false,
-   "memberElement": {
-    "@id": "EeBoards::OddBoard"
-   },
-   "memberName": "OddBoard",
-   "membershipOwningNamespace": {
-    "@id": "EeBoards"
-   },
-   "ownedRelatedElement": [
-    {
-     "@id": "EeBoards::OddBoard"
-    }
-   ],
-   "relatedElement": [
-    {
-     "@id": "EeBoards"
-    },
-    {
-     "@id": "EeBoards::OddBoard"
-    }
-   ],
-   "source": [
-    {
-     "@id": "EeBoards"
-    }
-   ],
-   "target": [
-    {
-     "@id": "EeBoards::OddBoard"
     }
    ]
   }
@@ -562,7 +700,7 @@
     "@id": "EeBoards"
    },
    "owningRelationship": {
-    "@id": "EeBoards/7"
+    "@id": "EeBoards/10"
    },
    "qualifiedName": "EeBoards::ComboBoard",
    "shortName": "EE-PCBA-0004"
@@ -845,7 +983,7 @@
     "@id": "EeBoards"
    },
    "owningRelationship": {
-    "@id": "EeBoards/8"
+    "@id": "EeBoards/11"
    },
    "qualifiedName": "EeBoards::ComboBoard2",
    "shortName": "EE-PCBA-0005"
@@ -2293,6 +2431,621 @@
  },
  {
   "identity": {
+   "@id": "EeBoards::ControllerBoardW"
+  },
+  "payload": {
+   "@id": "EeBoards::ControllerBoardW",
+   "@type": "PartDefinition",
+   "declaredName": "ControllerBoardW",
+   "feature": [
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut"
+    },
+    {
+     "@id": "EeBoards::ControllerBoard::bus"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "ControllerBoardW",
+   "ownedFeature": [
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeBoards::ControllerBoardW/0"
+    },
+    {
+     "@id": "EeBoards::ControllerBoardW/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeBoards"
+   },
+   "owningNamespace": {
+    "@id": "EeBoards"
+   },
+   "owningRelationship": {
+    "@id": "EeBoards/5"
+   },
+   "qualifiedName": "EeBoards::ControllerBoardW"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ControllerBoardW/0"
+  },
+  "payload": {
+   "@id": "EeBoards::ControllerBoardW/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "EeBoards::ControllerBoard"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::ControllerBoardW"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::ControllerBoardW"
+    },
+    {
+     "@id": "EeBoards::ControllerBoard"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::ControllerBoardW"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::ControllerBoardW"
+   },
+   "subclassifier": {
+    "@id": "EeBoards::ControllerBoardW"
+   },
+   "superclassifier": {
+    "@id": "EeBoards::ControllerBoard"
+   },
+   "target": [
+    {
+     "@id": "EeBoards::ControllerBoard"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ControllerBoardW/1"
+  },
+  "payload": {
+   "@id": "EeBoards::ControllerBoardW/1",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeBoards::ControllerBoardW::servoOut"
+   },
+   "memberName": "servoOut",
+   "membershipOwningNamespace": {
+    "@id": "EeBoards::ControllerBoardW"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut"
+    }
+   ],
+   "owningType": {
+    "@id": "EeBoards::ControllerBoardW"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::ControllerBoardW"
+    },
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::ControllerBoardW"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ControllerBoardW::servoOut"
+  },
+  "payload": {
+   "@id": "EeBoards::ControllerBoardW::servoOut",
+   "@type": "PortUsage",
+   "definition": [
+    {
+     "@id": "EePorts::ServoHeader"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "EePorts::ServoHeader::connector"
+    },
+    {
+     "@id": "EePorts::ServoHeader::pwm"
+    },
+    {
+     "@id": "EePorts::ServoHeader::gnd"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "servoOut",
+   "ownedRelationship": [
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut/0"
+    },
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeBoards::ControllerBoardW"
+   },
+   "owningNamespace": {
+    "@id": "EeBoards::ControllerBoardW"
+   },
+   "owningRelationship": {
+    "@id": "EeBoards::ControllerBoardW/1"
+   },
+   "owningType": {
+    "@id": "EeBoards::ControllerBoardW"
+   },
+   "qualifiedName": "EeBoards::ControllerBoardW::servoOut",
+   "type": [
+    {
+     "@id": "EePorts::ServoHeader"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ControllerBoardW::servoOut/0"
+  },
+  "payload": {
+   "@id": "EeBoards::ControllerBoardW::servoOut/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "EeBoards::ControllerBoard::servoOut"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::ControllerBoardW::servoOut"
+   },
+   "redefinedFeature": {
+    "@id": "EeBoards::ControllerBoard::servoOut"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut"
+    },
+    {
+     "@id": "EeBoards::ControllerBoard::servoOut"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::ControllerBoardW::servoOut"
+   },
+   "subsettedFeature": {
+    "@id": "EeBoards::ControllerBoard::servoOut"
+   },
+   "target": [
+    {
+     "@id": "EeBoards::ControllerBoard::servoOut"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ControllerBoardW::servoOut/1"
+  },
+  "payload": {
+   "@id": "EeBoards::ControllerBoardW::servoOut/1",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "lib:Sys::ServoIf"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::ControllerBoardW::servoOut"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut"
+    },
+    {
+     "@id": "lib:Sys::ServoIf"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::ControllerBoardW::servoOut"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::ControllerBoardW::servoOut"
+   },
+   "target": [
+    {
+     "@id": "lib:Sys::ServoIf"
+    }
+   ],
+   "type": {
+    "@id": "lib:Sys::ServoIf"
+   },
+   "typedFeature": {
+    "@id": "EeBoards::ControllerBoardW::servoOut"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::FlatServoBoard"
+  },
+  "payload": {
+   "@id": "EeBoards::FlatServoBoard",
+   "@type": "PartDefinition",
+   "declaredName": "FlatServoBoard",
+   "declaredShortName": "EE-PCBA-0007",
+   "feature": [
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "FlatServoBoard",
+   "ownedFeature": [
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeBoards::FlatServoBoard/0"
+    },
+    {
+     "@id": "EeBoards::FlatServoBoard/1"
+    },
+    {
+     "@id": "EeBoards::FlatServoBoard/2"
+    }
+   ],
+   "owner": {
+    "@id": "EeBoards"
+   },
+   "owningNamespace": {
+    "@id": "EeBoards"
+   },
+   "owningRelationship": {
+    "@id": "EeBoards/7"
+   },
+   "qualifiedName": "EeBoards::FlatServoBoard",
+   "shortName": "EE-PCBA-0007"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::FlatServoBoard/0"
+  },
+  "payload": {
+   "@id": "EeBoards::FlatServoBoard/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:Sys::Servo"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::FlatServoBoard"
+    },
+    {
+     "@id": "lib:Sys::Servo"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::FlatServoBoard"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "subclassifier": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "superclassifier": {
+    "@id": "lib:Sys::Servo"
+   },
+   "target": [
+    {
+     "@id": "lib:Sys::Servo"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::FlatServoBoard/1"
+  },
+  "payload": {
+   "@id": "EeBoards::FlatServoBoard/1",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::Pcba"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::FlatServoBoard"
+    },
+    {
+     "@id": "lib:XdDomain::Pcba"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::FlatServoBoard"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "subclassifier": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::Pcba"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::Pcba"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::FlatServoBoard/2"
+  },
+  "payload": {
+   "@id": "EeBoards::FlatServoBoard/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeBoards::FlatServoBoard::servoIn"
+   },
+   "memberName": "servoIn",
+   "membershipOwningNamespace": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn"
+    }
+   ],
+   "owningType": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::FlatServoBoard"
+    },
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::FlatServoBoard"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::FlatServoBoard::servoIn"
+  },
+  "payload": {
+   "@id": "EeBoards::FlatServoBoard::servoIn",
+   "@type": "PortUsage",
+   "definition": [
+    {
+     "@id": "EePorts::ServoHeader"
+    },
+    {
+     "@id": "lib:Sys::ServoIf::'~ServoIf'"
+    }
+   ],
+   "feature": [
+    {
+     "@id": "EePorts::ServoHeader::connector"
+    },
+    {
+     "@id": "EePorts::ServoHeader::pwm"
+    },
+    {
+     "@id": "EePorts::ServoHeader::gnd"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "servoIn",
+   "ownedRelationship": [
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn/0"
+    },
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "owningNamespace": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "owningRelationship": {
+    "@id": "EeBoards::FlatServoBoard/2"
+   },
+   "owningType": {
+    "@id": "EeBoards::FlatServoBoard"
+   },
+   "qualifiedName": "EeBoards::FlatServoBoard::servoIn",
+   "type": [
+    {
+     "@id": "EePorts::ServoHeader"
+    },
+    {
+     "@id": "lib:Sys::ServoIf::'~ServoIf'"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::FlatServoBoard::servoIn/0"
+  },
+  "payload": {
+   "@id": "EeBoards::FlatServoBoard::servoIn/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:Sys::Servo::servoIn"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::FlatServoBoard::servoIn"
+   },
+   "redefinedFeature": {
+    "@id": "lib:Sys::Servo::servoIn"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn"
+    },
+    {
+     "@id": "lib:Sys::Servo::servoIn"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::FlatServoBoard::servoIn"
+   },
+   "subsettedFeature": {
+    "@id": "lib:Sys::Servo::servoIn"
+   },
+   "target": [
+    {
+     "@id": "lib:Sys::Servo::servoIn"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::FlatServoBoard::servoIn/1"
+  },
+  "payload": {
+   "@id": "EeBoards::FlatServoBoard::servoIn/1",
+   "@type": "FeatureTyping",
+   "general": {
+    "@id": "EePorts::ServoHeader"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::FlatServoBoard::servoIn"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn"
+    },
+    {
+     "@id": "EePorts::ServoHeader"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::FlatServoBoard::servoIn"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::FlatServoBoard::servoIn"
+   },
+   "target": [
+    {
+     "@id": "EePorts::ServoHeader"
+    }
+   ],
+   "type": {
+    "@id": "EePorts::ServoHeader"
+   },
+   "typedFeature": {
+    "@id": "EeBoards::FlatServoBoard::servoIn"
+   }
+  }
+ },
+ {
+  "identity": {
    "@id": "EeBoards::NoIdBoard"
   },
   "payload": {
@@ -2334,7 +3087,7 @@
     "@id": "EeBoards"
    },
    "owningRelationship": {
-    "@id": "EeBoards/10"
+    "@id": "EeBoards/13"
    },
    "qualifiedName": "EeBoards::NoIdBoard"
   }
@@ -2614,7 +3367,7 @@
     "@id": "EeBoards"
    },
    "owningRelationship": {
-    "@id": "EeBoards/9"
+    "@id": "EeBoards/12"
    },
    "qualifiedName": "EeBoards::OddBoard",
    "shortName": "EE-PORT-0009"
@@ -2885,7 +3638,7 @@
     "@id": "EeBoards"
    },
    "owningRelationship": {
-    "@id": "EeBoards/5"
+    "@id": "EeBoards/8"
    },
    "qualifiedName": "EeBoards::SensorBoard",
    "shortName": "EE-PCBA-0002"
@@ -2979,6 +3732,331 @@
  },
  {
   "identity": {
+   "@id": "EeBoards::ServoBoard"
+  },
+  "payload": {
+   "@id": "EeBoards::ServoBoard",
+   "@type": "PartDefinition",
+   "declaredName": "ServoBoard",
+   "declaredShortName": "EE-PCBA-0006",
+   "feature": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "ServoBoard",
+   "ownedFeature": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeBoards::ServoBoard/0"
+    },
+    {
+     "@id": "EeBoards::ServoBoard/1"
+    },
+    {
+     "@id": "EeBoards::ServoBoard/2"
+    }
+   ],
+   "owner": {
+    "@id": "EeBoards"
+   },
+   "owningNamespace": {
+    "@id": "EeBoards"
+   },
+   "owningRelationship": {
+    "@id": "EeBoards/6"
+   },
+   "qualifiedName": "EeBoards::ServoBoard",
+   "shortName": "EE-PCBA-0006"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ServoBoard/0"
+  },
+  "payload": {
+   "@id": "EeBoards::ServoBoard/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:Sys::Servo"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    },
+    {
+     "@id": "lib:Sys::Servo"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "subclassifier": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "superclassifier": {
+    "@id": "lib:Sys::Servo"
+   },
+   "target": [
+    {
+     "@id": "lib:Sys::Servo"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ServoBoard/1"
+  },
+  "payload": {
+   "@id": "EeBoards::ServoBoard/1",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::Pcba"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    },
+    {
+     "@id": "lib:XdDomain::Pcba"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "subclassifier": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::Pcba"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::Pcba"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ServoBoard/2"
+  },
+  "payload": {
+   "@id": "EeBoards::ServoBoard/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeBoards::ServoBoard::servoIn"
+   },
+   "memberName": "servoIn",
+   "membershipOwningNamespace": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    }
+   ],
+   "owningType": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    },
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ServoBoard::servoIn"
+  },
+  "payload": {
+   "@id": "EeBoards::ServoBoard::servoIn",
+   "@type": "PortUsage",
+   "definition": [
+    {
+     "@id": "EePorts::ServoHeader::'~ServoHeader'"
+    },
+    {
+     "@id": "lib:Sys::ServoIf::'~ServoIf'"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "servoIn",
+   "ownedRelationship": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn/0"
+    },
+    {
+     "@id": "EeBoards::ServoBoard::servoIn/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "owningNamespace": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "owningRelationship": {
+    "@id": "EeBoards::ServoBoard/2"
+   },
+   "owningType": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "qualifiedName": "EeBoards::ServoBoard::servoIn",
+   "type": [
+    {
+     "@id": "EePorts::ServoHeader::'~ServoHeader'"
+    },
+    {
+     "@id": "lib:Sys::ServoIf::'~ServoIf'"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ServoBoard::servoIn/0"
+  },
+  "payload": {
+   "@id": "EeBoards::ServoBoard::servoIn/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:Sys::Servo::servoIn"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::ServoBoard::servoIn"
+   },
+   "redefinedFeature": {
+    "@id": "lib:Sys::Servo::servoIn"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    },
+    {
+     "@id": "lib:Sys::Servo::servoIn"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::ServoBoard::servoIn"
+   },
+   "subsettedFeature": {
+    "@id": "lib:Sys::Servo::servoIn"
+   },
+   "target": [
+    {
+     "@id": "lib:Sys::Servo::servoIn"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeBoards::ServoBoard::servoIn/1"
+  },
+  "payload": {
+   "@id": "EeBoards::ServoBoard::servoIn/1",
+   "@type": "ConjugatedPortTyping",
+   "conjugatedPortDefinition": {
+    "@id": "EePorts::ServoHeader::'~ServoHeader'"
+   },
+   "general": {
+    "@id": "EePorts::ServoHeader::'~ServoHeader'"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeBoards::ServoBoard::servoIn"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    },
+    {
+     "@id": "EePorts::ServoHeader::'~ServoHeader'"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    }
+   ],
+   "specific": {
+    "@id": "EeBoards::ServoBoard::servoIn"
+   },
+   "target": [
+    {
+     "@id": "EePorts::ServoHeader::'~ServoHeader'"
+    }
+   ],
+   "type": {
+    "@id": "EePorts::ServoHeader::'~ServoHeader'"
+   },
+   "typedFeature": {
+    "@id": "EeBoards::ServoBoard::servoIn"
+   }
+  }
+ },
+ {
+  "identity": {
    "@id": "EeBoards::WrongBoard"
   },
   "payload": {
@@ -3036,7 +4114,7 @@
     "@id": "EeBoards"
    },
    "owningRelationship": {
-    "@id": "EeBoards/6"
+    "@id": "EeBoards/9"
    },
    "qualifiedName": "EeBoards::WrongBoard",
    "shortName": "EE-PCBA-0003"
@@ -6981,6 +8059,33 @@
  },
  {
   "identity": {
+   "@id": "lib:Sys::Servo"
+  },
+  "payload": {
+   "@id": "lib:Sys::Servo",
+   "@type": "PartDefinition",
+   "declaredName": "Servo",
+   "declaredShortName": "SYS-EL-0004",
+   "isLibraryElement": true,
+   "name": "Servo",
+   "qualifiedName": "Sys::Servo"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:Sys::Servo::servoIn"
+  },
+  "payload": {
+   "@id": "lib:Sys::Servo::servoIn",
+   "@type": "PortUsage",
+   "declaredName": "servoIn",
+   "isLibraryElement": true,
+   "name": "servoIn",
+   "qualifiedName": "Sys::Servo::servoIn"
+  }
+ },
+ {
+  "identity": {
    "@id": "lib:Sys::ServoIf"
   },
   "payload": {
@@ -6991,6 +8096,18 @@
    "isLibraryElement": true,
    "name": "ServoIf",
    "qualifiedName": "Sys::ServoIf"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:Sys::ServoIf::'~ServoIf'"
+  },
+  "payload": {
+   "@id": "lib:Sys::ServoIf::'~ServoIf'",
+   "@type": "ConjugatedPortDefinition",
+   "isLibraryElement": true,
+   "name": "~ServoIf",
+   "qualifiedName": "Sys::ServoIf::'~ServoIf'"
   }
  },
  {

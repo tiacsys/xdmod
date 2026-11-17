@@ -167,6 +167,23 @@ class Model:
     def types_of(self, p: dict) -> list[dict]:
         return [t for t in (self.get(x) for x in p.get("type", []) or []) if t]
 
+    def declared_types(self, f: dict) -> list[dict]:
+        """The types f declares (`: T`), else its derived types (the Pilot's derived `type` keeps
+        only the most specific of declared and inherited types)."""
+        own = [x for x in (self.get(r.get("type")) for r in self.rels(f, "FeatureTyping")) if x]
+        return own or self.types_of(f)
+
+    def port_def(self, t: dict | None) -> tuple[dict | None, bool]:
+        """(the port def, conjugated?) of a port's type: `~X` (a ConjugatedPortDefinition owned by
+        X) stands for X, conjugated."""
+        if t and t.get("@type") == "ConjugatedPortDefinition":
+            o = self.get(t.get("originalPortDefinition"))
+            if o is None and "::" in (t.get("qualifiedName") or ""):
+                q = t["qualifiedName"].rsplit("::", 1)[0]
+                o = next((x for x in self.e.values() if x.get("qualifiedName") == q), None)
+            return o or t, True
+        return t, False
+
     def rels(self, p: dict, typ: str):
         """p's owned relationships of @type `typ`."""
         for r in p.get("ownedRelationship", []) or []:
@@ -450,8 +467,8 @@ def to_needs(m: Model, project: str = "model", source_of: dict[str, str] | None 
         if not oid or oid not in needs or p.get("@type") not in ("PartDefinition", "PortDefinition"):
             continue
         for f in owned_ports(m, p):
-            for t in m.types_of(f):
-                tid = element_id(m, t)
+            for t in m.declared_types(f):
+                tid = element_id(m, m.port_def(t)[0])          # `~X` counts as X
                 if tid in needs and idmod.kind_of(oid) in PART_OF_KINDS.get(idmod.kind_of(tid), ()):
                     add_link([tid], "part_of", [oid], m.qn(f))
 
@@ -484,6 +501,26 @@ def specializations(m: Model):
             tid = element_id(m, sup)
             if sup.get("isLibraryElement") and tid:
                 yield p, sid, sup, tid
+
+
+def add_configs(doc: dict, upstream: list[Model]) -> dict:
+    """`configs` of the domain needs from the upstream model: a need that realizes system elements
+    gets the SYS-CFGs that `configure` them (D103). If one of them is configured by no SYS-CFG it
+    is in every configuration, and so is the need (no `configs`)."""
+    by_el: dict[str, set[str]] = defaultdict(set)
+    for um in upstream:
+        for nid, n in needs_doc_needs(to_needs(um)[0]).items():
+            for el in n.get("configures", []):
+                by_el[el].add(nid)
+    for n in needs_doc_needs(doc).values():
+        els = n.get("realizes") or []
+        if els and all(by_el.get(e) for e in els):
+            n["configs"] = sorted(set().union(*(by_el[e] for e in els)))
+    return doc
+
+
+def needs_doc_needs(doc: dict) -> dict[str, dict]:
+    return doc["versions"][""]["needs"]
 
 
 # ------------------------------------------------------------------ conformance (CK-E4, XD-ADR-0132)
@@ -551,17 +588,26 @@ class Joined:
         return out
 
     def type_of(self, f: dict) -> dict | None:
+        """The type f declares (a variant's `: ServoIf` under a parent's `: ServoHeader` would
+        show as ServoHeader in the derived type)."""
         m, g = self.full(f)
-        t = next(iter(m.types_of(g)), None)
+        t = next(iter(m.declared_types(g)), None)
         return self.full(t)[1] if t else None
+
+    def port_def(self, t: dict) -> tuple[dict, bool]:
+        m, full = self.full(t)
+        o, conj = m.port_def(full)
+        return (self.full(o)[1] or o) if o else t, conj
 
 
 def conformance(domain: Model, upstream: list[Model]) -> list[str]:
     """CK-E4 (XD-ADR-0132). For every own part or port def that specializes an upstream def:
 
     * every port it inherits from an upstream def is redefined somewhere in the chain between
-      the two, and the most specific redefinition's def specializes the inherited port's def
-      (inside port defs the same holds for the signal ports);
+      the two, and every redefinition's def specializes the def of each port it redefines (the
+      upstream port's and a parent def's, so a variant cannot widen it again); a conjugated port
+      ``~X`` needs a conjugated ``~Y`` with Y :> X (inside port defs the same holds for the
+      signal ports);
     * a port name inherited from more than one upstream port is redefined by one port that
       redefines all of them;
     * a specialization between two IDs has a link type (LINK_BY_KINDS);
@@ -601,23 +647,44 @@ def conformance(domain: Model, upstream: list[Model]) -> list[str]:
             return seen
 
         closures = [(f, closure(f)) for _, f in ports]
+
+        def name(t, conj):
+            return ("~" if conj else "") + (t.get("qualifiedName") or "?")
+
+        # every redefinition in the domain part of the chain: its def specializes the def of each
+        # port it redefines (the system port's and a parent board's, so a variant cannot widen the
+        # type again); `~X` against `~Y` compares X with Y, and both sides must be conjugated or not
+        seen: set[str] = set()
+        for o, f in ports:
+            if j.upstream(o):
+                continue
+            for gq in sorted(closure(f)):
+                g = j.by_qn(gq)
+                want, got = (j.type_of(g) if g else None), j.type_of(f)
+                if not (want and got):
+                    continue
+                (w, wc), (t, tc) = j.port_def(want), j.port_def(got)
+                if wc == tc and j.specializes(t, w):
+                    continue
+                msg = (f"{dq}: port {g.get('name')} (from {gq.rsplit('::', 1)[0]}) is redefined by "
+                       f"{f.get('qualifiedName')} with {name(t, tc)}, which does not "
+                       + (f"specialize {name(w, wc)}" if wc == tc else f"match the conjugation of {name(w, wc)}"))
+                if msg not in seen:
+                    seen.add(msg)
+                    findings.append(msg)
         names: dict[str, list[tuple[str, str | None]]] = defaultdict(list)
         for o, p in ports:
             if not j.upstream(o):
                 continue
             q = p.get("qualifiedName")
-            where = f"{dq}: port {p.get('name')} (from {o.get('qualifiedName')})"
             r = next((f for f, c in closures if q in c), None)
             names[p.get("name")].append((q, r and r.get("qualifiedName")))
             if r is None:
-                findings.append(f"{where} is not redefined")
-                continue
-            want, got = j.type_of(p), j.type_of(r)
-            if want and got and not j.specializes(got, want):
-                findings.append(f"{where} is redefined by {r.get('qualifiedName')} with {got.get('qualifiedName')}, "
-                                f"which does not specialize {want.get('qualifiedName')}")
+                findings.append(f"{dq}: port {p.get('name')} (from {o.get('qualifiedName')}) is not redefined")
         for n, qs in sorted(names.items()):
-            if len(qs) > 1 and (None in [r for _, r in qs] or len({r for _, r in qs}) != 1):
+            rs = [r for _, r in qs]
+            # a clash is solved by one port that redefines all; none redefined is reported above
+            if len(qs) > 1 and any(rs) and len(set(rs)) != 1:
                 findings.append(f"{dq}: inherits port name {n!r} more than once ({', '.join(q for q, _ in qs)}); "
                                 f"redefine all of them in one port (port :>> A::{n}, B::{n} : X;)")
     return findings

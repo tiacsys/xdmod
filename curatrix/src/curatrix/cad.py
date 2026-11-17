@@ -39,8 +39,11 @@ def _list(v: str | None) -> list[str]:
     return [x.strip() for x in re.split(r"[,\s]+", v or "") if x.strip()]
 
 
-def trace_need(fields: dict[str, str], title: str, content: str, source: str) -> tuple[dict | None, list[str]]:
-    """A need from trace fields, or (None, findings) if there is no (valid) TraceID."""
+def trace_need(fields: dict[str, str], title: str, content: str, source: str,
+               refs: list | None = None) -> tuple[dict | None, list[str]]:
+    """A need from trace fields, or (None, findings) if there is no (valid) TraceID. A TraceID of a
+    model-owned kind is a reference: no need; it goes into `refs` as (ID, source), and link fields
+    next to it are findings, since nothing reads them (XD-ADR-0128)."""
     tid = (fields.get("TraceID") or "").strip()
     if not tid:
         return None, []
@@ -48,7 +51,12 @@ def trace_need(fields: dict[str, str], title: str, content: str, source: str) ->
     if kind is None:
         return None, [f"{source}: TraceID {tid!r} is not a valid ID"]
     if kind in MODEL_OWNED:
-        return None, []          # a reference to the domain model's need (XD-ADR-0128)
+        if refs is not None:
+            refs.append((tid, source))
+        unread = [f for f in (*LINK_FIELDS, "Status", "Configs") if (fields.get(f) or "").strip()]
+        return None, [f"{source}: {tid} is owned by the domain model; {', '.join(unread)} next to it "
+                      f"{'is' if len(unread) == 1 else 'are'} not read (links come from the model): remove "
+                      f"{'it' if len(unread) == 1 else 'them'}"] if unread else []
     n = {"id": tid, "type": idmod.directive_of(kind), "title": title, "content": content,
          "status": (fields.get("Status") or "valid").strip() or "valid", "source_file": source}
     findings = []
@@ -170,7 +178,7 @@ def kicad_netlist_items(netlist: Path, source: str) -> list[KicadItem]:
     return out
 
 
-def kicad_needs(items: list[KicadItem]) -> tuple[dict[str, dict], list[str]]:
+def kicad_needs(items: list[KicadItem], refs: list | None = None) -> tuple[dict[str, dict], list[str]]:
     needs: dict[str, dict] = {}
     findings: list[str] = []
     for it in items:
@@ -182,7 +190,7 @@ def kicad_needs(items: list[KicadItem]) -> tuple[dict[str, dict], list[str]]:
             title = it.value or it.ref
             content = (f"KiCad symbol ``{it.ref}`` ({it.value}, footprint ``{it.footprint or '-'}``) "
                        f"in ``{it.file}``.")
-        n, f = trace_need(it.fields, title, content, it.file)
+        n, f = trace_need(it.fields, title, content, it.file, refs)
         findings += f
         if n is None:
             continue
@@ -288,13 +296,13 @@ def freecad_trace(fcstd: Path, source: str) -> dict:
             "spreadsheets": dict(sorted(sheets.items()))}
 
 
-def freecad_needs(fcstd: Path, source: str) -> tuple[dict[str, dict], list[str]]:
+def freecad_needs(fcstd: Path, source: str, refs: list | None = None) -> tuple[dict[str, dict], list[str]]:
     sem = freecad_trace(fcstd, source)
     needs, findings = {}, []
     for name, o in sem["objects"].items():
         tr = o.get("trace") or {}
         n, f = trace_need({k: str(v) for k, v in tr.items()}, o.get("label") or name,
-                          f"FreeCAD object ``{name}`` ({o.get('type')}) in ``{source}``.", source)
+                          f"FreeCAD object ``{name}`` ({o.get('type')}) in ``{source}``.", source, refs)
         findings += f
         if n is None:
             continue
