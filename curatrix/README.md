@@ -61,8 +61,10 @@ Roles (`--role`, repo-topology.md §4): `syseng` (manifest default, D93), `ee` (
 
 ## checks.yaml
 
-`<repo>/checks.yaml` says what `curatrix check <repo>` runs. Every key is optional; an absent section
-switches its checks off. Paths are relative to the repo unless they start with `{ws}/`. Globs (`*`,
+`<repo>/checks.yaml` says what `curatrix check <repo>` runs. A missing file is an error. Every key is
+optional; an absent section switches its checks off, and `curatrix check` prints which checks are off
+and why. `expect:` lists the checks the repo runs, so that a lost section fails CK-H6. A run that plans
+no check fails, and an error-level check skipped at the baseline stage fails. Paths are relative to the repo unless they start with `{ws}/`. Globs (`*`,
 `**`) are expanded in the order given. Unknown keys are errors.
 
 ```yaml
@@ -101,6 +103,8 @@ cad:                                # CK-D4 (plain Python: runs without CAD tool
 
 requirements: true                  # CK-E2 / CK-E3 on the repo's own requirement needs
 bootstrap_template: scripts/bootstrap.sh   # CK-H5 (robarm-manifest): copy must equal xdmod/templates/bootstrap.sh
+pr_size: {lines: 600, files: 15}    # CK-H7: PR size warning (the defaults)
+expect: [CK-A6, CK-A1, CK-C1, CK-H2]   # CK-H6: exactly the checks this repo runs (built-in + commands)
 
 commands:                           # repo-specific checks (CK-F*, tests, ...)
   - id: CK-F1                       # required, unique
@@ -162,6 +166,8 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-H3 | unpinned `requirements.txt` lines; broken `tools.yaml` | — | local, pr (warning) | yes |
 | CK-H4 | commits since `origin/main` without `Co-Authored-By` | — | pr (warning) | yes |
 | CK-H5 | `scripts/bootstrap.sh` drifted from `xdmod/templates/bootstrap.sh` (D118) | `bootstrap_template` | all (warning) | yes |
+| CK-H6 | `expect:` differs from the checks the repo runs (a lost section, a new one not listed) | — | all | yes |
+| CK-H7 | PR changes more hand-written lines / files than `pr_size` against its base (`GITHUB_BASE_REF`, `XD_BASE_REF` or `main`); generated files excluded | — | local, pr (warning) | yes |
 | CK-F* | domain checks (pin maps, devicetree, firmware, ERC, …) | `commands` | per command | via `commands` only |
 
 ## limits.yaml

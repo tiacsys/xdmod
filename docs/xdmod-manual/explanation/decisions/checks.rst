@@ -232,3 +232,11 @@ Where checks run, CI, tool limits, generated files and test evidence.
    :refines: XD-ADR-0052
 
    **Suspect links before affirmatrix:** "last confirmed" = the last baseline's ``needs.json`` (for PRs: ``main``'s). Hashed fields: title, content, status, value fields, links.
+
+.. xd-adr:: Checks that bite
+   :id: XD-ADR-0125
+   :date: 2026-11-17
+   :decision_status: accepted
+   :status: valid
+
+   **A check run passes only if it checked something** (Phase 4 review P4-4, P4-14; plan Phase 5, task 5.1). A missing ``checks.yaml`` and an empty plan fail. Each repo lists the checks it runs in ``expect:``, so a lost section is an error (CK-H6); ``curatrix check`` prints the checks that are off and why. An error-level check that is skipped at the baseline stage fails. Failures of git and west are reported, never treated as "nothing found". A pull request gets a warning when it changes more than 600 hand-written lines or 15 files against its base (CK-H7): one SYSMOD step or one tool feature per PR.

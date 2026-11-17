@@ -120,3 +120,11 @@ checks:
     need: XD-CHECK-0029
     enforces: [XD-RULE-0043]
     description: "The repo's copy of scripts/bootstrap.sh equals xdmod/templates/bootstrap.sh."
+  CK-H6:
+    need: XD-CHECK-0030
+    enforces: [XD-RULE-0045]
+    description: "The repo's checks.yaml lists in `expect:` exactly the checks it runs (built-in and commands); an expected check that is off, or a running check that is not listed, is an error."
+  CK-H7:
+    need: XD-CHECK-0031
+    enforces: [XD-RULE-0046]
+    description: "Counts the hand-written lines and files a PR changes against its base (generated files excluded) and warns above the repo's `pr_size` limits (default 600 lines, 15 files)."

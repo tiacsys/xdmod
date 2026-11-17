@@ -16,6 +16,7 @@ import configparser
 import functools
 import os
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -150,8 +151,10 @@ class Workspace:
                     repos.append(Repo(name, self.root / path, path, sha if sha != "N/A" else "",
                                       [g for g in groups.split(",") if g]))
                 return repos
-            except (subprocess.SubprocessError, OSError):
-                pass
+            except (subprocess.SubprocessError, OSError) as e:
+                # not silent (P4-4): the folder scan below has no SHAs, which CK-B6 then reports
+                print(f"curatrix: warning: `west list` failed ({e}); using a folder scan without pinned SHAs",
+                      file=sys.stderr)
         repos = []
         for d in sorted(self.root.iterdir()):
             if d.is_dir() and not d.name.startswith(".") and ((d / "checks.yaml").is_file() or d.name == "xdmod"):

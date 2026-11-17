@@ -71,9 +71,17 @@ def test_bootstrap_template_check_runs(tmp_path):
     assert cfg.bootstrap_copy.read_text().endswith("drift\n")
 
 
-def test_defaults_without_file(tmp_path):
+def test_missing_file_is_an_error(tmp_path):
+    """A renamed or deleted checks.yaml must not turn a repo's checks green (P4-4)."""
+    with pytest.raises(checkcfg.ConfigError, match="missing"):
+        checkcfg.load(tmp_path / "checks.yaml", tmp_path)
+
+
+def test_defaults_of_an_empty_file(tmp_path):
+    (tmp_path / "checks.yaml").write_text("version: 1\n")
     cfg = checkcfg.load(tmp_path / "checks.yaml", tmp_path)
     assert cfg.area == tmp_path.name and cfg.section("docs") is None and cfg.commands == []
+    assert cfg.expect is None and cfg.pr_size == (600, 15)
 
 
 @pytest.mark.parametrize("bad,msg", [
@@ -88,6 +96,9 @@ def test_defaults_without_file(tmp_path):
     ({"commands": [{"id": "X", "name": "x", "run": ["a"], "level": "fatal"}]}, "level"),
     ({"bootstrap_template": ["a"]}, "bootstrap_template must be a path"),
     ({"requirements": "yes"}, "requirements must be true or false"),
+    ({"expect": "CK-A6"}, "expect must be a list"),
+    ({"pr_size": {"lines": 0}}, "pr_size must be"),
+    ({"pr_size": {"words": 3}}, "pr_size must be"),
 ])
 def test_invalid(tmp_path, bad, msg):
     p = tmp_path / "checks.yaml"

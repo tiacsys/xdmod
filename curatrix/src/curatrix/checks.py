@@ -90,7 +90,14 @@ BUILTIN = [
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
     ("CK-H4", "commit trailers on agent commits", _lv({"pr": "warning"}), None, False, "c_trailers"),
     ("CK-H5", "scripts/bootstrap.sh matches the xdmod template", _lv({s: "warning" for s in ALL}), "bootstrap_template", False, "c_bootstrap"),
+    ("CK-H6", "checks.yaml lists exactly the checks the repo runs (expect:)", _lv({s: "error" for s in ALL}), None, False, "c_expect"),
+    ("CK-H7", "PR size: hand-written lines and files against the base", _lv({"local": "warning", "pr": "warning"}), None, False, "c_pr_size"),
 ]
+
+# Why a built-in check is off for a repo: the checks.yaml key it needs.
+NEED_TEXT = {"model.variants": "model.variants: true", "generated": "a model or cad section",
+             "requirements": "requirements: true and a docs section", "provenance": "a model section or cad.freecad_json",
+             "views": "views and model sections"}
 
 
 def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
@@ -136,6 +143,10 @@ def c_graph(ctx: Ctx, r: Result):
 def c_stale(ctx: Ctx, r: Result):
     _graph(ctx)
     pins = {x.name: x.sha for x in ctx.ws.repos if x.sha}
+    if not pins:
+        r.findings = ["no pinned SHAs: `west list` gave none (no west workspace, or it failed); "
+                      "stale evidence cannot be judged"]
+        return
     r.findings = [str(f) for f in graph.stale_evidence(ctx.graph, pins)]
 
 
@@ -319,10 +330,15 @@ BUILD_PATTERNS = re.compile(r"(^|/)(build|_build|__pycache__|\.pytest_cache)/|\.
 
 def c_hygiene_build(ctx: Ctx, r: Result):
     try:
-        out = subprocess.run(["git", "-C", str(ctx.repo.path), "ls-files", "-co", "--exclude-standard"],
-                             capture_output=True, text=True, timeout=60).stdout.splitlines()
-    except (OSError, subprocess.SubprocessError):
-        out = []
+        p = subprocess.run(["git", "-C", str(ctx.repo.path), "ls-files", "-co", "--exclude-standard"],
+                           capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError) as e:
+        r.findings = [f"git ls-files failed: {e}"]
+        return
+    if p.returncode:
+        r.findings = [f"git ls-files failed (exit {p.returncode}): {p.stderr.strip()[:200]}"]
+        return
+    out = p.stdout.splitlines()
     r.findings = [f"{f}: build output inside the repo (outputs go to build/<area>/, D46)" for f in out if BUILD_PATTERNS.search(f)]
 
 
@@ -347,7 +363,8 @@ def c_trailers(ctx: Ctx, r: Result):
     try:
         out = subprocess.run(["git", "-C", str(ctx.repo.path), "log", "--format=%H%x00%B%x01", f"{base}..HEAD"],
                              capture_output=True, text=True, timeout=60)
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError) as e:
+        r.findings = [f"git log failed: {e}"]
         return
     if out.returncode:
         r.status = "skip"
@@ -368,6 +385,86 @@ def c_bootstrap(ctx: Ctx, r: Result):
         r.findings = [f"{ctx.ws.rel(copy)} missing (copy {ctx.ws.rel(tmpl)})"]
     elif copy.read_text() != tmpl.read_text():
         r.findings = [f"{ctx.ws.rel(copy)} differs from {ctx.ws.rel(tmpl)} (D118); copy the template again"]
+
+
+def builtin_ids(cfg: checkcfg.ChecksConfig) -> list[str]:
+    """The built-in checks a repo's checks.yaml switches on, in any stage."""
+    return [cid for cid, _, _, need, _, _ in BUILTIN if enabled(cfg, need)]
+
+
+def off_checks(cfg: checkcfg.ChecksConfig) -> list[tuple[str, str]]:
+    """(check id, why it is off) for every built-in check this checks.yaml switches off."""
+    return [(cid, f"needs {NEED_TEXT.get(need, f'a {need} section')}") for cid, _, _, need, _, _ in BUILTIN
+            if not enabled(cfg, need)]
+
+
+def c_expect(ctx: Ctx, r: Result):
+    want = ctx.cfg.expect
+    have = set(builtin_ids(ctx.cfg)) | {c.id for c in ctx.cfg.commands}
+    if want is None:
+        r.findings = ["checks.yaml has no `expect:` list; add the IDs this repo runs: " + ", ".join(sorted(have))]
+        return
+    known = {b[0] for b in BUILTIN} | {c.id for c in ctx.cfg.commands}
+    for cid in sorted(set(want) - known):
+        r.findings.append(f"{cid}: expected, but no such check (built-in or in `commands`)")
+    off = dict(off_checks(ctx.cfg))
+    for cid in sorted((set(want) & known) - have):
+        r.findings.append(f"{cid}: expected, but off: it {off.get(cid, 'is not configured')} in checks.yaml")
+    for cid in sorted(have - set(want)):
+        r.findings.append(f"{cid}: runs, but is not in `expect:` (add it, so that losing it later is an error)")
+
+
+GENERATED = ("generated/", "model/generated/", "views/")
+
+
+def _base_ref(path: Path) -> str | None:
+    """The ref a PR is measured against: the PR's base branch in CI (GITHUB_BASE_REF), else main,
+    on the first remote that has it."""
+    import os
+    branch = os.environ.get("XD_BASE_REF") or os.environ.get("GITHUB_BASE_REF") or "main"
+    remotes = subprocess.run(["git", "-C", str(path), "remote"], capture_output=True, text=True,
+                             timeout=30).stdout.split()
+    for ref in [f"{rm}/{branch}" for rm in ["origin", *remotes]] + [branch]:
+        if subprocess.run(["git", "-C", str(path), "rev-parse", "-q", "--verify", f"{ref}^{{commit}}"],
+                          capture_output=True, timeout=30).returncode == 0:
+            return ref
+    return None
+
+
+def is_generated(rel: str, cfg: checkcfg.ChecksConfig) -> bool:
+    """A committed generated file (written by `curatrix gen` / `views build`), not counted as hand-written."""
+    if rel.startswith(GENERATED) or rel.endswith(".drawio.svg") or "/fixtures/" in f"/{rel}":
+        return True
+    outs = []
+    for sec, keys in (("model", ("json", "needs")), ("stubs", ("out",)), ("cad", ("needs", "freecad_json")),
+                      ("views", ("dir",))):
+        v = cfg.section(sec) or {}
+        outs += [str(v[k]).rstrip("/") for k in keys if v.get(k)]
+    return any(rel == o or rel.startswith(o + "/") for o in outs)
+
+
+def c_pr_size(ctx: Ctx, r: Result):
+    base = _base_ref(ctx.repo.path)
+    if base is None:
+        r.status = "skip"
+        r.findings = ["no base branch to compare with (set XD_BASE_REF)"]
+        return
+    p = subprocess.run(["git", "-C", str(ctx.repo.path), "diff", "--numstat", f"{base}...HEAD"],
+                       capture_output=True, text=True, timeout=60)
+    if p.returncode:
+        r.findings = [f"git diff against {base} failed: {p.stderr.strip()[:200]}"]
+        return
+    lines = files = 0
+    for ln in p.stdout.splitlines():
+        add, rm, rel = (ln.split("\t") + ["", "", ""])[:3]
+        if " => " in rel or is_generated(rel, ctx.cfg) or add == "-":
+            continue
+        files += 1
+        lines += int(add) + int(rm)
+    max_lines, max_files = ctx.cfg.pr_size
+    if lines > max_lines or files > max_files:
+        r.findings = [f"{lines} hand-written lines in {files} files against {base} (limits {max_lines} / {max_files}): "
+                      f"one SYSMOD step or one tool feature per PR; consider a stack of smaller PRs"]
 
 
 def c_command(ctx: Ctx, r: Result, cmd: checkcfg.Command):
@@ -422,7 +519,13 @@ def run(ws, repo, stage: str = "local", no_cad: bool = False, only: list[str] | 
             and not gen.docs_needs_json(ws, cfg):
         items.insert(0, next((cid, n, lv.get(stage, "error"), c, fn, None)
                              for cid, n, lv, need, c, fn in BUILTIN if cid == "CK-A6"))
+    if not items:
+        raise checkcfg.ConfigError(f"{repo.name}: no check runs at stage {stage}"
+                                   f"{' with --only ' + ','.join(only) if only else ''}; an empty plan never passes")
+    off = off_checks(cfg)
     log(f"curatrix check {repo.name} --stage {stage}{' --no-cad' if no_cad else ''}: {len(items)} check(s)")
+    if off and not only:
+        log("  off for this repo: " + "; ".join(f"{cid} ({why})" for cid, why in off))
     for cid, name, level, is_cad, fn, cmd in items:
         r = Result(cid, name, level=level, repro=ctx.repro(cid))
         t0 = time.time()
@@ -440,6 +543,9 @@ def run(ws, repo, stage: str = "local", no_cad: bool = False, only: list[str] | 
                 r.level = "error"
             if r.status != "skip":
                 r.status = "pass" if not r.findings else {"error": "fail", "warning": "warn", "report": "report"}[r.level]
+        if r.status == "skip" and stage == "baseline" and r.level == "error":
+            r.status = "fail"              # a baseline must not pass on a check that did not run
+            r.findings.append("skipped at the baseline stage: an error-level check must run here")
         r.seconds = round(time.time() - t0, 1)
         results.append(r)
         mark = {"pass": "ok  ", "fail": "FAIL", "warn": "warn", "report": "info", "skip": "skip"}[r.status]
@@ -452,7 +558,7 @@ def run(ws, repo, stage: str = "local", no_cad: bool = False, only: list[str] | 
             log(f"         reproduce: {r.repro}" + (f"   log: {r.log}" if r.log else ""))
     ok = not any(r.status == "fail" for r in results)
     summary = {"repo": repo.name, "area": cfg.area, "stage": stage, "no_cad": no_cad, "ok": ok,
-               "checks": [asdict(r) for r in results]}
+               "checks": [asdict(r) for r in results], "off": [{"id": c, "why": w} for c, w in off]}
     (out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     log(f"{'CHECK PASSED' if ok else 'CHECK FAILED'} ({repo.name}, stage {stage}); summary: {ws.rel(out / 'summary.json')}")
     return ok, summary

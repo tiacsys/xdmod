@@ -31,6 +31,8 @@ with ``{ws}/`` (the workspace root).
       freecad_json: generated/freecad
     requirements: true               # CK-E2, CK-E3 on the repo's own requirements
     bootstrap_template: scripts/bootstrap.sh   # CK-H5 (robarm-manifest)
+    pr_size: {lines: 600, files: 15}  # CK-H7 PR size warning (these are the defaults)
+    expect: [CK-A6, CK-A1, CK-C1]    # CK-H6: exactly the checks this repo runs (built-in + commands)
     commands:                        # repo-specific checks
       - id: CK-F1
         name: KiCad netlist vs. interface pin maps
@@ -51,7 +53,7 @@ import yaml
 STAGES = ("local", "pr", "full", "baseline")
 LEVELS = ("error", "warning", "report")
 TOP_KEYS = {"version", "area", "docs", "ids", "model", "stubs", "views", "cad", "requirements",
-            "bootstrap_template", "commands"}
+            "bootstrap_template", "commands", "expect", "pr_size"}
 SECTION_KEYS = {
     "docs": {"registry"},
     "ids": {"ledger", "exclude"},
@@ -121,6 +123,18 @@ class ChecksConfig:
         return self.resolve(v if isinstance(v, str) else "scripts/bootstrap.sh")
 
     @property
+    def expect(self) -> list[str] | None:
+        """CK-H6: the check IDs the repo expects to run, None if the key is missing."""
+        v = self.raw.get("expect")
+        return list(v) if v is not None else None
+
+    @property
+    def pr_size(self) -> tuple[int, int]:
+        """CK-H7: (lines, files) above which a PR gets a size warning."""
+        v = self.raw.get("pr_size") or {}
+        return int(v.get("lines", 600)), int(v.get("files", 15))
+
+    @property
     def area(self) -> str:
         return self.raw.get("area") or self.repo.name
 
@@ -172,6 +186,14 @@ def validate(raw: dict, path: Path) -> list[str]:
     bt = raw.get("bootstrap_template")
     if bt is not None and not isinstance(bt, (bool, str)):
         errs.append(f"{path}: bootstrap_template must be a path (string) or true/false")
+    ex = raw.get("expect")
+    if ex is not None and not (isinstance(ex, list) and all(isinstance(x, str) for x in ex)):
+        errs.append(f"{path}: expect must be a list of check IDs")
+    ps = raw.get("pr_size")
+    if ps is not None:
+        if not isinstance(ps, dict) or set(ps) - {"lines", "files"} or \
+                not all(isinstance(v, int) and v > 0 for v in ps.values()):
+            errs.append(f"{path}: pr_size must be a mapping with positive integers `lines` and `files`")
     if "model" in raw and isinstance(raw["model"], dict) and not raw["model"].get("files"):
         errs.append(f"{path}: model.files is required")
     if "stubs" in raw and isinstance(raw["stubs"], dict) and not raw["stubs"].get("docs"):
@@ -202,8 +224,12 @@ def validate(raw: dict, path: Path) -> list[str]:
 
 
 def load(path: Path, ws_root: Path) -> ChecksConfig:
-    raw = yaml.safe_load(path.read_text()) if path.is_file() else {}
-    raw = raw or {}
+    """Read and validate a checks.yaml. A missing file is an error: a renamed or deleted
+    checks.yaml must not turn a repo's checks green (P4-4)."""
+    if not path.is_file():
+        raise ConfigError(f"{path}: missing. Every repo that `curatrix check` runs on needs a checks.yaml "
+                          f"(format: xdmod/curatrix/README.md, \"checks.yaml\")")
+    raw = yaml.safe_load(path.read_text()) or {}
     errs = validate(raw, path)
     if errs:
         raise ConfigError("\n".join(errs))
