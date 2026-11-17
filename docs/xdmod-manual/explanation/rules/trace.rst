@@ -257,3 +257,19 @@ The principles of the trace model and the rules on the trace graph.
    :decided_by: XD-ADR-0129
 
    Renderings, schematic and ERC/DRC findings of a board come from the local ``curatrix cam`` output of the commit the repo is at; with uncommitted changes in the project folder, from a run on exactly that uncommitted state (a hash of ``git status`` and the changed files, kept in ``cam.json``). Older output is never shown: the section prints a fixed sentence instead, as in CI. Missing output is a local warning, and an error at the baseline once the check ran on the canary.
+
+.. xd-rule:: The board library holds only tagged board versions
+   :id: XD-RULE-0061
+   :tags: checks, cad
+   :status: valid
+   :decided_by: XD-ADR-0139, XD-ADR-0140
+
+   Every file of the board library is the FreeCAD model of a board version that the owner tagged (``<board>/vX.Y.Z`` in the EE repo), written by ``curatrix cam <ee repo> <board> --library``: its name gives board, version and variant, its ``Board`` object carries the board's ``EE-PCBA`` ID, the version, the variant and the tag's commit, and it is at most 5 MB. A file is never replaced; a new version is a new file.
+
+.. xd-rule:: An assembly that links an older board version gets a note
+   :id: XD-RULE-0062
+   :tags: checks, cad
+   :status: valid
+   :decided_by: XD-ADR-0139
+
+   An ME document links one fixed board version of the board library. When the library has a newer version of that board and variant, the ME repo's check reports it as a warning; moving the assembly to the new version is an ME change, never a bot's.

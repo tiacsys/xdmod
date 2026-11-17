@@ -430,6 +430,8 @@ def cmd_cam(a):
                                f"cad.harnesses)")
         if a.update_jobset and (a.name in harnesses or not boards):
             raise cam.CamError("--update-jobset applies to pcba/ projects only")
+        if a.board_model or a.library:
+            return _cam_board_model(ws, repo, cfg, a)
         if boards and (a.name is None or a.name in boards):
             cam.run(ws, repo, cfg, a.name, update=a.update_jobset)
         if harnesses and not a.update_jobset and (a.name is None or a.name in harnesses):
@@ -438,6 +440,30 @@ def cmd_cam(a):
             raise cam.CamError(f"{repo.name} has no pcba/ project and no harness (checks.yaml cad.projects, "
                                f"cad.harnesses)")
     except (cam.CamError, harness.HarnessError) as e:
+        print(f"curatrix cam: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _cam_board_model(ws, repo, cfg, a) -> int:
+    """`cam --board-model` / `--library`: FreeCAD board models (task 5.29, XD-ADR-0139)."""
+    from curatrix import boardlib, cam, eeprojects
+    if a.update_jobset:
+        raise cam.CamError("--update-jobset cannot be combined with --board-model or --library")
+    prs = [p for p in eeprojects.discover(cfg) if p.kind == "pcba"]
+    if not a.name or a.name not in {p.name for p in prs}:
+        raise cam.CamError(f"--board-model and --library need one pcba/ project of {repo.name} (known: "
+                           f"{', '.join(sorted(p.name for p in prs)) or 'none'})")
+    pr = next(p for p in prs if p.name == a.name)
+    try:
+        if a.library:
+            boardlib.add_to_library(ws, repo, cfg, pr, Path(a.into).resolve() if a.into else None)
+        else:
+            rec = boardlib.export(ws, repo, cfg, pr)
+            print(f"  {pr.name} {rec['version']}: {len(rec['files'])} file(s) in {rec['folder']} "
+                  f"({'release' if rec['release'] else 'preview: not for the library'})")
+            return 1 if rec["findings"] else 0
+    except boardlib.BoardLibError as e:
         print(f"curatrix cam: {e}", file=sys.stderr)
         return 1
     return 0
@@ -654,6 +680,14 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("name", nargs="?", help="one pcba/ project, harness or assembly (default: all)")
     s.add_argument("--update-jobset", action="store_true",
                    help="write the project's jobset from the shared template and its variants, then stop")
+    s.add_argument("--board-model", action="store_true",
+                   help="the board's FreeCAD model (STEP export, headless FreeCAD import with the EE-PCBA ID and "
+                        "version) into build/<area>/board-model/<name>/<version>/, any version (XD-ADR-0139)")
+    s.add_argument("--library", action="store_true",
+                   help="the same for a tagged board version only, then copy the files into the board library "
+                        "checkout (a branch in a worktree set) for its pull request; refuses without a tag")
+    s.add_argument("--into", metavar="DIR", help="with --library: the board library checkout (default: the repo "
+                                                 "with a board_library section in this workspace)")
     s.set_defaults(func=cmd_cam)
 
     s = sub.add_parser("trace", help="trace report per SYS-REQ (refined, satisfied, verified, latest result, gaps) "

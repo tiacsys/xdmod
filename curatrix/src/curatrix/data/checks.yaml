@@ -203,6 +203,14 @@ checks:
     need: XD-CHECK-0024
     enforces: [XD-RULE-0014]
     description: "Suspect links against the needs of the last baseline: a report in the full set, an error at the baseline gate."
+  CK-F20:
+    need: XD-CHECK-0052
+    enforces: [XD-RULE-0061]
+    description: "Every file of the board library sits at boards/<board>/<board>-vX.Y.Z[-<variant>].FCStd, carries the board's EE-PCBA ID, version and variant as properties, names an existing board tag of the EE repo (same EE-PCBA in the project at the tag, the tag's commit), and is at most 5 MB."
+  CK-F21:
+    need: XD-CHECK-0053
+    enforces: [XD-RULE-0062]
+    description: "An ME FreeCAD file that links a board version of the board library gets a note when the library has a newer version of that board and variant, or when the linked file is not in the library."
   CK-H1:
     need: XD-CHECK-0025
     enforces: [XD-RULE-0039]

@@ -66,16 +66,17 @@ import yaml
 STAGES = ("local", "pr", "full", "baseline")
 LEVELS = ("error", "warning", "report")
 TOP_KEYS = {"version", "area", "docs", "ids", "model", "stubs", "views", "cad", "code", "requirements", "variants",
-            "bootstrap_template", "commands", "expect", "pr_size"}
+            "bootstrap_template", "commands", "expect", "pr_size", "board_library"}
 SECTION_KEYS = {
     "docs": {"registry"},
     "ids": {"ledger", "exclude"},
     "model": {"libraries", "files", "export", "json", "needs", "variants", "upstream"},
     "stubs": {"out", "docs", "package"},
     "views": {"dir", "model"},
-    "cad": {"kicad", "freecad", "needs", "freecad_json", "projects", "connectors", "harnesses"},
+    "cad": {"kicad", "freecad", "needs", "freecad_json", "projects", "connectors", "harnesses", "board_library"},
     "code": {"sources", "tests", "needs"},
     "variants": {"zephyr"},
+    "board_library": {"source", "max_mb"},
 }
 COMMAND_KEYS = {"id", "name", "run", "use", "stages", "cad", "level", "cwd", "before_docs"}
 
@@ -208,6 +209,19 @@ def validate(raw: dict, path: Path) -> list[str]:
         errs.append(f"{path}: expect must be a list of check IDs")
     elif ex is not None and len(set(ex)) != len(ex):
         errs.append(f"{path}: expect lists a check twice")
+    bl = raw.get("board_library")
+    if isinstance(bl, dict):
+        if not isinstance(bl.get("source"), str):
+            errs.append(f"{path}: board_library.source (the EE repo with the board tags, e.g. \"{{ws}}/<ee repo>\") "
+                        f"is required")
+        mx = bl.get("max_mb")
+        if mx is not None and (isinstance(mx, bool) or not isinstance(mx, (int, float)) or mx <= 0):
+            errs.append(f"{path}: board_library.max_mb must be a positive number")
+    elif bl is not None:
+        errs.append(f"{path}: board_library must be a mapping with `source`")
+    cbl = (raw.get("cad") or {}).get("board_library") if isinstance(raw.get("cad"), dict) else None
+    if cbl is not None and not isinstance(cbl, str):
+        errs.append(f"{path}: cad.board_library must be a path (the board library checkout)")
     ps = raw.get("pr_size")
     if ps is not None:
         if not isinstance(ps, dict) or set(ps) - {"lines", "files"} or \

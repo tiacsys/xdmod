@@ -133,6 +133,10 @@ BUILTIN = [
      _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_space_budget"),
     ("CK-F19", "every printed part (PrintProfile) has a version mark (LCS with Role = version-emboss)",
      _lv({"local": "warning", "pr": "warning"}), "cad.freecad", False, "c_version_face"),
+    ("CK-F20", "board library: every file names an existing board tag and its EE-PCBA; at most 5 MB per file",
+     _lv({"local": "warning", "pr": "warning", "full": "warning"}), "board_library", False, "c_board_library"),
+    ("CK-F21", "board versions: links into the board library that have a newer version there",
+     _lv({"local": "warning", "pr": "warning", "full": "warning"}), "cad.board_library", False, "c_board_versions"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
     ("CK-H2", "no build output inside the repo", _lv({"local": "error", "pr": "error"}), None, False, "c_hygiene_build"),
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
@@ -151,7 +155,9 @@ NEED_TEXT = {"model.variants": "model.variants: true", "model.upstream": "model.
              "cad.connectors": "cad.projects and cad.connectors",
              "cad.connectors+model": "cad.projects, cad.connectors and a model section",
              "cad.freecad+model": "cad.freecad and a model section", "cad.freecad": "cad.freecad",
-             "cad.acceptance": "cad.projects or cad.freecad"}
+             "cad.acceptance": "cad.projects or cad.freecad",
+             "board_library": "a board_library section (the board library repo)",
+             "cad.board_library": "cad.board_library (an ME repo that links board models)"}
 
 
 def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
@@ -182,6 +188,8 @@ def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
         return bool(c.get("projects") or c.get("freecad"))
     if need == "cad.freecad+model":
         return bool((cfg.section("cad") or {}).get("freecad")) and cfg.section("model") is not None
+    if need == "cad.board_library":
+        return bool((cfg.section("cad") or {}).get("board_library"))
     if need == "cad.projects+model":
         return bool((cfg.section("cad") or {}).get("projects")) and cfg.section("model") is not None
     return cfg.section(need) is not None
@@ -427,6 +435,18 @@ def c_freecad_params(ctx: Ctx, r: Result):
     m = _model_or_finding(ctx, r)
     if m is not None:
         r.findings = meparams.check(ctx.cfg, m)
+
+
+def c_board_library(ctx: Ctx, r: Result):
+    """CK-F20 (XD-ADR-0139): board library files against the board tags of the EE repo."""
+    from curatrix import boardlib
+    r.findings = boardlib.library_findings(ctx.ws, ctx.cfg)
+
+
+def c_board_versions(ctx: Ctx, r: Result):
+    """CK-F21 (XD-ADR-0139): an ME file links an older board version than the newest in the library."""
+    from curatrix import boardlib
+    r.findings = boardlib.newer_findings(ctx.ws, ctx.cfg)
 
 
 def c_connectors_fresh(ctx: Ctx, r: Result):
