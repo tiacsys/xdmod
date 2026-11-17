@@ -26,15 +26,14 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from curatrix import limits, tracemodel
+from curatrix import limits
+# test case kinds from needs_config.toml (task 5.2) and the ZTEST variants: one reader with
+# `curatrix gen code-needs` (code.py)
+from curatrix.code import TC_RE, ZTEST_RE, mask
 from curatrix.ws import Workspace, is_framework_path
 
 SCHEMA_FILE = Path(__file__).resolve().parent / "data" / "run-record.schema.json"
 SCHEMA_ID = "xdmod-run-record/1"
-# test case kinds from needs_config.toml (task 5.2): SW-TC, EE-TC, ME-TC, INT-ITC, INT-STC
-TC_RE = re.compile(r"\b(?:" + "|".join(sorted(tracemodel.kinds_of("TC", "ITC", "STC"))) + r")-[0-9]{4,}\b")
-ZTEST_RE = re.compile(
-    r"/\*(?P<c>(?:(?!\*/).)*)\*/\s*ZTEST(?:_F|_USER|_USER_F)?\(\s*(?P<suite>\w+)\s*,\s*(?P<name>\w+)\s*\)", re.S)
 REPORTS = ("twister.json", "twister_report.xml")
 VERDICT = {"passed": "passed", "failed": "failed", "skipped": "skipped", "error": "error",
            "blocked": "error", "filtered": "skipped", "not run": "skipped"}
@@ -68,7 +67,7 @@ def test_case_map(src_dirs: list[Path]) -> dict[str, str]:
     out = {}
     for d in src_dirs:
         for f in sorted(Path(d).rglob("*.c")):
-            for m in ZTEST_RE.finditer(f.read_text(errors="replace")):
+            for m in ZTEST_RE.finditer(mask(f.read_text(errors="replace"))):
                 ids = TC_RE.findall(m.group("c").split("/*")[-1])
                 if ids:
                     name = m.group("name")
