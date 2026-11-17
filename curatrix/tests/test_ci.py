@@ -7,6 +7,14 @@ import pytest
 from curatrix import ci
 
 
+@pytest.fixture(autouse=True)
+def _no_ci_base(monkeypatch):
+    """The CI run of a stacked PR sets GITHUB_BASE_REF to the parent branch, which the fake
+    upstreams here do not have; a test that wants a base sets it itself."""
+    monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
+    monkeypatch.delenv("XD_BASE_REF", raising=False)
+
+
 def git(cwd, *args):
     return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
 
