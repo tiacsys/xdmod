@@ -47,9 +47,16 @@ commands:
     stages: [local, baseline]
     cad: true
 
+model:                                  # CK-E1, CK-D2, CK-D5: the XDMOD self-model (model/*.sysml)
+  files: ["model/*.sysml"]
+  json: generated/model.json
+  needs: generated/model-needs.json
+views:                                  # CK-D3: views/<view>.drawio.svg (the manual's diagrams)
+  dir: views
+
 # CK-H6: exactly the checks this repo runs (built-in and commands). A section that goes
 # missing turns an expected check off, and CK-H6 fails.
 expect: [
-  CK-A1, CK-A3, CK-A6, CK-B1, CK-B2, CK-B3, CK-B5, CK-B6, CK-C1, CK-C2, CK-G1,
-  CK-G2, CK-H1, CK-H2, CK-H3, CK-H4, CK-H6, CK-H7, XD-T1, XD-T2
+  CK-A1, CK-A3, CK-A6, CK-B1, CK-B2, CK-B3, CK-B5, CK-B6, CK-B7, CK-C1, CK-C2, CK-D2, CK-D3, CK-D5, CK-E1,
+  CK-G1, CK-G2, CK-H1, CK-H2, CK-H3, CK-H4, CK-H6, CK-H7, XD-T1, XD-T2
 ]

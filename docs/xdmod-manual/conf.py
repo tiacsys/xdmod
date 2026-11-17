@@ -6,9 +6,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(os.environ["ZDOCS_WEST_TOPDIR"]) / "xdmod" / "sphinx"))
-from xdmod_conf import configure  # noqa: E402
+from xdmod_conf import configure, repo_root  # noqa: E402
 
-configure(globals(), __file__, "XDMOD Manual")
+# The diagrams are views of the XDMOD self-model (xdmod/model), rendered by `curatrix views build xdmod`.
+configure(globals(), __file__, "XDMOD Manual", generated=[(repo_root(__file__), "views/*.drawio.svg")])
 
 # Agent-readable output (D122): sphinx-llm writes a Markdown copy of every page and llms.txt /
 # llms-full.txt into the HTML output. No page summaries (they would call an LLM service).
