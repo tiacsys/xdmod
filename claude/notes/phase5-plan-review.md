@@ -1,12 +1,16 @@
 # Review of the Phase 5 plan (domain structure, interaction and tooling)
 
+> Moved from `build/review-phase5-plan/` into the repo on 2026-11-17, before `build/` was emptied. The logs and
+> experiments it refers to under `build/review-phase5-plan/` are in the owner's local archive of `build/`
+> (2026-11-17), not in the repo.
+
 Reviewer: Fable agent, 2026-11-17. Read-only review; nothing was changed in any repo.
 
 Short names used below:
 
 - **plan** = `.worktrees/docs/plan-phase5-domains/xdmod/claude/plan.md`
 - **exp** = `.worktrees/docs/plan-phase5-domains/xdmod/claude/notes/phase5-expectations.md`
-- **help** = `build/review-phase5-plan/kicad-cli-help.txt` (the `--help` text of kicad-cli 10.0.8 on
+- **help** = `claude/notes/evidence/kicad-cli-10.0.8-help.txt` (the `--help` text of kicad-cli 10.0.8 on
   this machine, captured for this review)
 
 ## Verdict
@@ -52,7 +56,7 @@ What I verified, and how:
 
 ### P5-1 The canary is last; it should be the spine of the phase — blocking
 
-Evidence: plan:190-191 (5.27 under "Proof", after all tooling); `build/review-phase4/response.md`
+Evidence: plan:190-191 (5.27 under "Proof", after all tooling); `claude/notes/phase4-review-response.md`
 "Proposed Phase 5.0" item 1 (the canary was 5.0a, first); plan:150-152 ("By the end of this phase
 the checks bite"; D140 ends with 5.1–5.8, which now contain no canary).
 
