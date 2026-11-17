@@ -19,6 +19,8 @@ with ``{ws}/`` (the workspace root).
       needs: generated/model-needs.json
       variants: true
       upstream: ["{ws}/myproj-syseng/generated/model.json"]   # CK-E4 conformance (domain models)
+    variants:                        # CK-B8 variants across levels (domain repos; needs model.upstream)
+      zephyr: ["{ws}/myproj-sw/boards"]   # optional: Zephyr board roots; board variants by name
     stubs:                           # CK-D1
       out: model/generated/NeedStubs.sysml
       docs: [se-req]
@@ -61,7 +63,7 @@ import yaml
 
 STAGES = ("local", "pr", "full", "baseline")
 LEVELS = ("error", "warning", "report")
-TOP_KEYS = {"version", "area", "docs", "ids", "model", "stubs", "views", "cad", "code", "requirements",
+TOP_KEYS = {"version", "area", "docs", "ids", "model", "stubs", "views", "cad", "code", "requirements", "variants",
             "bootstrap_template", "commands", "expect", "pr_size"}
 SECTION_KEYS = {
     "docs": {"registry"},
@@ -71,6 +73,7 @@ SECTION_KEYS = {
     "views": {"dir", "model"},
     "cad": {"kicad", "freecad", "needs", "freecad_json"},
     "code": {"sources", "tests", "needs"},
+    "variants": {"zephyr"},
 }
 COMMAND_KEYS = {"id", "name", "run", "use", "stages", "cad", "level", "cwd", "before_docs"}
 
@@ -188,7 +191,7 @@ def validate(raw: dict, path: Path) -> list[str]:
         for k in v:
             if k not in keys:
                 errs.append(f"{path}: {sec}: unknown key {k!r} (known: {', '.join(sorted(keys))})")
-        for k in ("files", "libraries", "export", "docs", "kicad", "freecad", "exclude", "sources", "tests"):
+        for k in ("files", "libraries", "export", "docs", "kicad", "freecad", "exclude", "sources", "tests", "zephyr"):
             if k in v and not (isinstance(v[k], list) and all(isinstance(x, str) for x in v[k])):
                 errs.append(f"{path}: {sec}.{k} must be a list of strings")
     for k in ("requirements",):

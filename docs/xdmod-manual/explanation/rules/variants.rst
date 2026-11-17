@@ -103,3 +103,11 @@ Rules for the feature model (F), the product models (V) and the traces of varian
    :decided_by: XD-ADR-0094, XD-ADR-0095
 
    A ``TR`` counts for a requirement in a configuration only under the coverage rule: with ``verification_scope: logical`` a result from any configuration counts; with ``verification_scope: config`` a result is needed for each configuration that the requirement's ``where`` selects.
+
+.. xd-rule:: One domain variant per configuration and usage
+   :id: XD-RULE-0048
+   :tags: variants
+   :status: valid
+   :decided_by: XD-ADR-0136
+
+   A board or assembly variant is a def in the domain model that specializes the board or assembly def and ``XdDomain::DomainVariant``, with its name in ``variantName``. A dependency from the variant names the configurations (``SYS-CFG``) and the system usages it serves. For each board or assembly with variants, every usage of a system def it realizes gets exactly one variant in every configuration that configures that def (in every configuration if none does). The variant exists by the same name in the KiCad project (``schematic.variants``) or in a FreeCAD configuration table, and each Zephyr board variant of the board is one of its variants. At most two variants per board or assembly in iteration 1; a variant that names no configuration is not checked in iteration 1.

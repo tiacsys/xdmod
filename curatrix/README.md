@@ -88,7 +88,10 @@ model:                              # CK-E1, CK-D2 (needs the Pilot), CK-B4 (var
   json: generated/model.json        # compact model JSON (default)
   needs: generated/model-needs.json # model-derived needs (default)
   variants: true                    # run CK-B4 on the model JSON
-  upstream: ["{ws}/myproj-syseng/generated/model.json"]   # domain models: the upstream's committed model JSON (CK-E4)
+  upstream: ["{ws}/myproj-syseng/generated/model.json"]   # domain models: the upstream's committed model JSON (CK-E4, CK-B8)
+
+variants:                           # CK-B8 variants across levels (domain repos; needs model.upstream, reads cad.kicad / cad.freecad)
+  zephyr: ["{ws}/myproj-sw/boards"] # optional: Zephyr board roots; their board.yml variants map to board variants by name
 
 stubs:                              # CK-D1
   out: model/generated/NeedStubs.sysml   # default
@@ -160,6 +163,7 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-B2 | R2 every requirement verified | `docs` | full, baseline (warning, D99) | yes, **not per configuration** yet |
 | CK-B3 | R4 links to retired needs | `docs` | local/pr/full warning, baseline error (D75) | yes |
 | CK-B4 | variant rules F1, F2, V1–V5 | `model.variants` | all | yes (V6, T1–T3: later, D135) |
+| CK-B8 | variants across levels: exactly one domain variant per configuration and usage, the variant in KiCad `schematic.variants` / a FreeCAD configuration table, Zephyr board variants by name, at most two per board; the computed table "configuration → variant per usage" is in the log `variants-across-levels.md` | `variants` | local, pr, full (warning) | yes (unused variants: iteration 2) |
 | CK-B5 | duplicate IDs across documents | `docs` | full, baseline | yes |
 | CK-B6 | R5a stale evidence: `TR.shas` vs. current pins (`west list`) | `docs` | full, baseline (report) | first version |
 | CK-B7 | tombstones in `generated/retired-needs.json` | `model`, `cad` or `code` | local, pr (warning) | yes |

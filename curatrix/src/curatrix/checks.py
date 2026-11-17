@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from curatrix import cad, checkcfg, docs as docsmod, gen, graph, ids as idmod, limits, model as modelmod
-from curatrix import needs as needsmod, variants as varmod, views as viewsmod
+from curatrix import domvariants, needs as needsmod, variants as varmod, views as viewsmod
 
 ALL = ("local", "pr", "full", "baseline")
 
@@ -68,6 +68,8 @@ BUILTIN = [
     ("CK-B3", "no links to retired needs (R4, grace until baseline)",
      _lv({"local": "warning", "pr": "warning", "full": "warning", "baseline": "error"}), "docs", False, "c_graph"),
     ("CK-B4", "variant rules F1, F2, V1-V5", _lv({s: "error" for s in ALL}), "model.variants", False, "c_variants"),
+    ("CK-B8", "variants across levels: one variant per configuration and usage, in the model and in CAD",
+     _lv({"local": "warning", "pr": "warning", "full": "warning"}), "variants", False, "c_domain_variants"),
     ("CK-B5", "no duplicate IDs across documents", _lv({"full": "error", "baseline": "error"}), "docs", False, "c_graph"),
     ("CK-B6", "stale evidence (R5a)", _lv({"full": "report", "baseline": "report"}), "docs", False, "c_stale"),
     ("CK-B7", "tombstones of deleted generated needs", _lv({"local": "warning", "pr": "warning"}), "generated", False, "c_tombstones"),
@@ -99,7 +101,8 @@ BUILTIN = [
 # Why a built-in check is off for a repo: the checks.yaml key it needs.
 NEED_TEXT = {"model.variants": "model.variants: true", "model.upstream": "model.upstream", "generated": "a model, cad or code section",
              "requirements": "requirements: true and a docs section", "provenance": "a model section or cad.freecad_json",
-             "views": "views and model sections"}
+             "views": "views and model sections",
+             "variants": "a variants section (domain repos, with model.upstream)"}
 
 
 def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
@@ -232,6 +235,33 @@ def c_conformance(ctx: Ctx, r: Result):
     ups, r.findings = gen.upstream_models(ctx.cfg)
     if not r.findings:
         r.findings = modelmod.conformance(modelmod.Model.load(mj), ups)
+
+
+def c_domain_variants(ctx: Ctx, r: Result):
+    """CK-B8 (XD-ADR-0136): the domain variants against the upstream model and the CAD files,
+    plain Python. The computed table "configuration -> variant per usage" goes into the log."""
+    s = ctx.cfg.section("model") or {}
+    mj = ctx.cfg.resolve(s.get("json", "generated/model.json"))
+    if not mj.exists():
+        r.findings = [f"{ctx.ws.rel(mj)} missing; run `curatrix gen model {ctx.repo.name}`"]
+        return
+    if not s.get("upstream"):
+        r.findings = ["CK-B8 needs model.upstream: the published system model the variants serve"]
+        return
+    ups, r.findings = gen.upstream_models(ctx.cfg)
+    if r.findings:
+        return
+    c = ctx.cfg.section("cad") or {}
+    v = ctx.cfg.section("variants") or {}
+    z = v.get("zephyr") or []
+    kicad = ctx.cfg.globs(c.get("kicad") or [])
+    freecad = ctx.cfg.globs(c.get("freecad") or [])
+    r.findings, rows = domvariants.check(modelmod.Model.load(mj), ups, kicad, freecad,
+                                         ctx.cfg.globs([z] if isinstance(z, str) else z))
+    log = ctx.out / "variants-across-levels.md"
+    log.write_text("# Configuration -> variant per usage (computed, CK-B8)\n\n" + domvariants.table_markdown(rows)
+                   + ("\n## Findings\n\n" + "\n".join(f"- {f}" for f in r.findings) + "\n" if r.findings else ""))
+    r.log = ctx.ws.rel(log)
 
 
 def c_views(ctx: Ctx, r: Result):

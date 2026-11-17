@@ -97,9 +97,25 @@ port def to the board or assembly that has a port of it (:need:`XD-ADR-0132`, :n
 redefined by a conjugated ``~Y`` with ``Y :> X``. A domain need gets the ``configs`` of the
 ``SYS-CFG`` s that configure the system elements it realizes.
 
-A variant of a board or assembly (``part def BoardB :> Board``) has no ID of its own for now: a
-specialization between two domain defs makes no trace link, so a variant with an ID would realize
-nothing. Variants across levels come with task 5.16 (:need:`XD-ADR-0136`).
+A variant of a board or assembly specializes the board or assembly def and
+``XdDomain::DomainVariant``; ``variantName`` is its name in KiCad (an assembly variant in the
+``.kicad_pro``) or FreeCAD (a row of the configuration table). It has no ID of its own: a
+specialization between two domain defs makes no trace link. A dependency from the variant names the
+configurations and the system usages it serves (:need:`XD-ADR-0136`):
+
+.. code-block:: text
+
+   part def JointBoardAlt :> JointBoard, XdDomain::DomainVariant { :>> variantName = "alt"; }
+   dependency from JointBoardAlt to MyConfigs::proto, MyProduct::Arm::joint1, MyProduct::Arm::joint2;
+
+Each dependency serves every pair of its configurations and usages; write one dependency per
+group. Nobody writes the table "configuration → variant per usage": :need:`XD-CHECK-0034` computes it
+against the system repo's committed model (``model.upstream``), writes it into its log
+(``build/<area>/checks/variants-across-levels.md``) and checks :need:`XD-RULE-0048`: exactly one
+variant per configuration and usage, the variant in the KiCad project or FreeCAD configuration
+table, and Zephyr board variants by name. The domain repo switches it on with a ``variants:``
+section in ``checks.yaml``. At most two variants per board or assembly; a variant that names no
+configuration is not checked in iteration 1.
 
 Views of the model are SysML ``view`` definitions with an ``@XdView`` annotation (:need:`XD-ADR-0085`).
 curatrix renders them as editable ``.drawio.svg`` files (:need:`XD-ADR-0087`).

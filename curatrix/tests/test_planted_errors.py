@@ -40,6 +40,7 @@ PLANTED = {
     "CK-D6": f"{HERE}::test_d6_code_changed_after_gen",
     "CK-D5": "curatrix/tests/test_provenance.py::test_made_with_another_version_is_reported",
     "CK-E4": f"{HERE}::test_e4_conformance",
+    "CK-B8": f"{HERE}::test_b8_variants_across_levels",
     "CK-E2": f"{HERE}::test_e2_value_not_in_sentence",
     "CK-E3": f"{HERE}::test_e3_wrong_ears_pattern",
     "CK-G1": f"{HERE}::test_g1_g2_changed_need_makes_links_suspect",
@@ -234,6 +235,30 @@ def test_e4_conformance(tmp_path):
     assert any("EeBoards::SensorBoard: port bus" in x and "is not redefined" in x for x in f), f
     (ctx.repo.path / "up/model.json").unlink()
     assert any("model.upstream up/model.json" in x for x in _run(ctx, "CK-E4", checks.c_conformance))
+
+
+def test_b8_variants_across_levels(tmp_path):
+    """CK-B8 through c_domain_variants (plain Python): two variants serve one usage in one
+    configuration, another usage has none, and a variant is missing in the KiCad project."""
+    import json as _json
+    from helpers import FIXTURES
+    d = FIXTURES / "sysml" / "domain"
+    ctx = _ctx(tmp_path, yaml_text="version: 1\nmodel: {files: [model/a.sysml], upstream: up/model.json}\n"
+                                   "cad: {kicad: [\"pcba/*/*.kicad_sch\"]}\nvariants: true\n")
+    for src, dst in (("ee-model.json", "generated/model.json"), ("sys-model.json", "up/model.json")):
+        (ctx.repo.path / dst).parent.mkdir(parents=True, exist_ok=True)
+        (ctx.repo.path / dst).write_text((d / src).read_text())
+    pro = ctx.repo.path / "pcba" / "ctrl" / "ctrl.kicad_pro"
+    pro.parent.mkdir(parents=True)
+    (pro.parent / "ctrl.kicad_sch").write_text("(kicad_sch (version 20260306))\n")
+    pro.write_text(_json.dumps({"text_variables": {"TraceID": "EE-PCBA-0001"},
+                                "schematic": {"variants": [{"name": "std"}]}}))
+    f = _run(ctx, "CK-B8", checks.c_domain_variants, "warning")
+    assert any("2 variants (a, b) for usage Sys::Arm::servo1 in configuration SYS-CFG-0001" in x for x in f), f
+    assert any("no variant for usage Sys::Arm::servo1 in configuration SYS-CFG-0002" in x for x in f), f
+    assert any("CtrlFast: variant 'fast' is not in ctrl.kicad_pro" in x for x in f), f
+    assert not any("CtrlStd" in x for x in f), f
+    assert "| SYS-CFG-0002 | Sys::Arm::ctrlB | EE-PCBA-0001 | fast |" in (ctx.out / "variants-across-levels.md").read_text()
 
 
 # ------------------------------------------------------------------ requirements

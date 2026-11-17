@@ -7898,6 +7898,2530 @@
  },
  {
   "identity": {
+   "@id": "EeVariants"
+  },
+  "payload": {
+   "@id": "EeVariants",
+   "@type": "Package",
+   "declaredName": "EeVariants",
+   "importedMembership": [
+    {
+     "@id": "EeBoards/3"
+    },
+    {
+     "@id": "EeBoards/4"
+    },
+    {
+     "@id": "EeBoards/5"
+    },
+    {
+     "@id": "EeBoards/6"
+    },
+    {
+     "@id": "EeBoards/7"
+    },
+    {
+     "@id": "EeBoards/8"
+    },
+    {
+     "@id": "EeBoards/9"
+    },
+    {
+     "@id": "EeBoards/10"
+    },
+    {
+     "@id": "EeBoards/11"
+    },
+    {
+     "@id": "EeBoards/12"
+    },
+    {
+     "@id": "EeBoards/13"
+    }
+   ],
+   "isLibraryElement": false,
+   "name": "EeVariants",
+   "ownedMember": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    },
+    {
+     "@id": "EeVariants/4/0"
+    },
+    {
+     "@id": "EeVariants/5/0"
+    },
+    {
+     "@id": "EeVariants::CtrlFast"
+    },
+    {
+     "@id": "EeVariants/7/0"
+    },
+    {
+     "@id": "EeVariants::ServoA"
+    },
+    {
+     "@id": "EeVariants/9/0"
+    },
+    {
+     "@id": "EeVariants::ServoB"
+    },
+    {
+     "@id": "EeVariants/11/0"
+    },
+    {
+     "@id": "EeVariants::ServoC"
+    },
+    {
+     "@id": "EeVariants/13/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants/0"
+    },
+    {
+     "@id": "EeVariants/1"
+    },
+    {
+     "@id": "EeVariants/2"
+    },
+    {
+     "@id": "EeVariants/3"
+    },
+    {
+     "@id": "EeVariants/4"
+    },
+    {
+     "@id": "EeVariants/5"
+    },
+    {
+     "@id": "EeVariants/6"
+    },
+    {
+     "@id": "EeVariants/7"
+    },
+    {
+     "@id": "EeVariants/8"
+    },
+    {
+     "@id": "EeVariants/9"
+    },
+    {
+     "@id": "EeVariants/10"
+    },
+    {
+     "@id": "EeVariants/11"
+    },
+    {
+     "@id": "EeVariants/12"
+    },
+    {
+     "@id": "EeVariants/13"
+    }
+   ],
+   "qualifiedName": "EeVariants"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/0"
+  },
+  "payload": {
+   "@id": "EeVariants/0",
+   "@type": "NamespaceImport",
+   "importedNamespace": {
+    "@id": "lib:XdDomain"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "lib:XdDomain"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:XdDomain"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/1"
+  },
+  "payload": {
+   "@id": "EeVariants/1",
+   "@type": "NamespaceImport",
+   "importedNamespace": {
+    "@id": "lib:Sys"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "lib:Sys"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:Sys"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/10"
+  },
+  "payload": {
+   "@id": "EeVariants/10",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::ServoB"
+   },
+   "memberName": "ServoB",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::ServoB"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants::ServoB"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::ServoB"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/11"
+  },
+  "payload": {
+   "@id": "EeVariants/11",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants/11/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants/11/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants/11/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants/11/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/11/0"
+  },
+  "payload": {
+   "@id": "EeVariants/11/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "EeVariants::ServoB"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/11"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoB"
+    },
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoB"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/12"
+  },
+  "payload": {
+   "@id": "EeVariants/12",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::ServoC"
+   },
+   "memberName": "ServoC",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::ServoC"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants::ServoC"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::ServoC"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/13"
+  },
+  "payload": {
+   "@id": "EeVariants/13",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants/13/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants/13/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants/13/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants/13/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/13/0"
+  },
+  "payload": {
+   "@id": "EeVariants/13/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "EeVariants::ServoC"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/13"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoC"
+    },
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoC"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/2"
+  },
+  "payload": {
+   "@id": "EeVariants/2",
+   "@type": "NamespaceImport",
+   "importedNamespace": {
+    "@id": "EeBoards"
+   },
+   "isLibraryElement": false,
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeBoards"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeBoards"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/3"
+  },
+  "payload": {
+   "@id": "EeVariants/3",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "memberName": "CtrlStd",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants::CtrlStd"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/4"
+  },
+  "payload": {
+   "@id": "EeVariants/4",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants/4/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants/4/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants/4/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants/4/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/4/0"
+  },
+  "payload": {
+   "@id": "EeVariants/4/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/4"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    },
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlB"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlB"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlB"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/5"
+  },
+  "payload": {
+   "@id": "EeVariants/5",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants/5/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants/5/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants/5/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants/5/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/5/0"
+  },
+  "payload": {
+   "@id": "EeVariants/5/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/5"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    },
+    {
+     "@id": "lib:Sys::Full"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "lib:Sys::Full"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:Sys::Full"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlA"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/6"
+  },
+  "payload": {
+   "@id": "EeVariants/6",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "memberName": "CtrlFast",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants::CtrlFast"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/7"
+  },
+  "payload": {
+   "@id": "EeVariants/7",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants/7/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants/7/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants/7/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants/7/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/7/0"
+  },
+  "payload": {
+   "@id": "EeVariants/7/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/7"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    },
+    {
+     "@id": "lib:Sys::Full"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlB"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "lib:Sys::Full"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlB"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:Sys::Full"
+    },
+    {
+     "@id": "lib:Sys::Arm::ctrlB"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/8"
+  },
+  "payload": {
+   "@id": "EeVariants/8",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::ServoA"
+   },
+   "memberName": "ServoA",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/9"
+  },
+  "payload": {
+   "@id": "EeVariants/9",
+   "@type": "OwningMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants/9/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants/9/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants"
+    },
+    {
+     "@id": "EeVariants/9/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants/9/0"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants/9/0"
+  },
+  "payload": {
+   "@id": "EeVariants/9/0",
+   "@type": "Dependency",
+   "client": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/9"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoA"
+    },
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "supplier": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ],
+   "target": [
+    {
+     "@id": "lib:Sys::Basic"
+    },
+    {
+     "@id": "lib:Sys::Arm::servo1"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlFast"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlFast",
+   "@type": "PartDefinition",
+   "declaredName": "CtrlFast",
+   "feature": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName"
+    },
+    {
+     "@id": "EeBoards::ControllerBoard::servoOut"
+    },
+    {
+     "@id": "EeBoards::ControllerBoard::bus"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "CtrlFast",
+   "ownedFeature": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::CtrlFast/0"
+    },
+    {
+     "@id": "EeVariants::CtrlFast/1"
+    },
+    {
+     "@id": "EeVariants::CtrlFast/2"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/6"
+   },
+   "qualifiedName": "EeVariants::CtrlFast"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlFast/0"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlFast/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "EeBoards::ControllerBoard"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    },
+    {
+     "@id": "EeBoards::ControllerBoard"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "superclassifier": {
+    "@id": "EeBoards::ControllerBoard"
+   },
+   "target": [
+    {
+     "@id": "EeBoards::ControllerBoard"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlFast/1"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlFast/1",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlFast/2"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlFast/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::CtrlFast::variantName"
+   },
+   "memberName": "variantName",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName"
+    }
+   ],
+   "owningType": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    },
+    {
+     "@id": "EeVariants::CtrlFast::variantName"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlFast"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlFast::variantName"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlFast::variantName",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "variantName",
+   "ownedMember": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName/0"
+    },
+    {
+     "@id": "EeVariants::CtrlFast::variantName/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants::CtrlFast/2"
+   },
+   "owningType": {
+    "@id": "EeVariants::CtrlFast"
+   },
+   "qualifiedName": "EeVariants::CtrlFast::variantName",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlFast::variantName/0"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlFast::variantName/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::CtrlFast::variantName"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::CtrlFast::variantName"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlFast::variantName/1"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlFast::variantName/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "EeVariants::CtrlFast::variantName"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::CtrlFast::variantName/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants::CtrlFast::variantName"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName"
+    },
+    {
+     "@id": "EeVariants::CtrlFast::variantName/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::CtrlFast::variantName/1/0"
+    }
+   ],
+   "value": {
+    "@id": "EeVariants::CtrlFast::variantName/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlFast::variantName/1/0"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlFast::variantName/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants::CtrlFast::variantName"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants::CtrlFast::variantName"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants::CtrlFast::variantName/1"
+   },
+   "value": "fast"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlStd"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlStd",
+   "@type": "PartDefinition",
+   "declaredName": "CtrlStd",
+   "feature": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName"
+    },
+    {
+     "@id": "EeBoards::ControllerBoard::servoOut"
+    },
+    {
+     "@id": "EeBoards::ControllerBoard::bus"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "CtrlStd",
+   "ownedFeature": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::CtrlStd/0"
+    },
+    {
+     "@id": "EeVariants::CtrlStd/1"
+    },
+    {
+     "@id": "EeVariants::CtrlStd/2"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/3"
+   },
+   "qualifiedName": "EeVariants::CtrlStd"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlStd/0"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlStd/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "EeBoards::ControllerBoard"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    },
+    {
+     "@id": "EeBoards::ControllerBoard"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "superclassifier": {
+    "@id": "EeBoards::ControllerBoard"
+   },
+   "target": [
+    {
+     "@id": "EeBoards::ControllerBoard"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlStd/1"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlStd/1",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlStd/2"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlStd/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::CtrlStd::variantName"
+   },
+   "memberName": "variantName",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName"
+    }
+   ],
+   "owningType": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    },
+    {
+     "@id": "EeVariants::CtrlStd::variantName"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlStd"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlStd::variantName"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlStd::variantName",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "variantName",
+   "ownedMember": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName/0"
+    },
+    {
+     "@id": "EeVariants::CtrlStd::variantName/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants::CtrlStd/2"
+   },
+   "owningType": {
+    "@id": "EeVariants::CtrlStd"
+   },
+   "qualifiedName": "EeVariants::CtrlStd::variantName",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlStd::variantName/0"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlStd::variantName/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::CtrlStd::variantName"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::CtrlStd::variantName"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlStd::variantName/1"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlStd::variantName/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "EeVariants::CtrlStd::variantName"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::CtrlStd::variantName/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants::CtrlStd::variantName"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName"
+    },
+    {
+     "@id": "EeVariants::CtrlStd::variantName/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::CtrlStd::variantName/1/0"
+    }
+   ],
+   "value": {
+    "@id": "EeVariants::CtrlStd::variantName/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::CtrlStd::variantName/1/0"
+  },
+  "payload": {
+   "@id": "EeVariants::CtrlStd::variantName/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants::CtrlStd::variantName"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants::CtrlStd::variantName"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants::CtrlStd::variantName/1"
+   },
+   "value": "std"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoA"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoA",
+   "@type": "PartDefinition",
+   "declaredName": "ServoA",
+   "feature": [
+    {
+     "@id": "EeVariants::ServoA::variantName"
+    },
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "ServoA",
+   "ownedFeature": [
+    {
+     "@id": "EeVariants::ServoA::variantName"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeVariants::ServoA::variantName"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::ServoA/0"
+    },
+    {
+     "@id": "EeVariants::ServoA/1"
+    },
+    {
+     "@id": "EeVariants::ServoA/2"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/8"
+   },
+   "qualifiedName": "EeVariants::ServoA"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoA/0"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoA/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ServoA"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoA"
+    },
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ServoA"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::ServoA"
+   },
+   "superclassifier": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "target": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoA/1"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoA/1",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ServoA"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoA"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ServoA"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::ServoA"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoA/2"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoA/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::ServoA::variantName"
+   },
+   "memberName": "variantName",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants::ServoA"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::ServoA::variantName"
+    }
+   ],
+   "owningType": {
+    "@id": "EeVariants::ServoA"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoA"
+    },
+    {
+     "@id": "EeVariants::ServoA::variantName"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoA"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::ServoA::variantName"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoA::variantName"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoA::variantName",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "variantName",
+   "ownedMember": [
+    {
+     "@id": "EeVariants::ServoA::variantName/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::ServoA::variantName/0"
+    },
+    {
+     "@id": "EeVariants::ServoA::variantName/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants::ServoA"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants::ServoA"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants::ServoA/2"
+   },
+   "owningType": {
+    "@id": "EeVariants::ServoA"
+   },
+   "qualifiedName": "EeVariants::ServoA::variantName",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoA::variantName/0"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoA::variantName/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ServoA::variantName"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoA::variantName"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoA::variantName"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ServoA::variantName"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoA::variantName/1"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoA::variantName/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "EeVariants::ServoA::variantName"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::ServoA::variantName/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants::ServoA::variantName"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::ServoA::variantName/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoA::variantName"
+    },
+    {
+     "@id": "EeVariants::ServoA::variantName/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoA::variantName"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::ServoA::variantName/1/0"
+    }
+   ],
+   "value": {
+    "@id": "EeVariants::ServoA::variantName/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoA::variantName/1/0"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoA::variantName/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants::ServoA::variantName"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants::ServoA::variantName"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants::ServoA::variantName/1"
+   },
+   "value": "a"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoB"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoB",
+   "@type": "PartDefinition",
+   "declaredName": "ServoB",
+   "feature": [
+    {
+     "@id": "EeVariants::ServoB::variantName"
+    },
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "ServoB",
+   "ownedFeature": [
+    {
+     "@id": "EeVariants::ServoB::variantName"
+    }
+   ],
+   "ownedMember": [
+    {
+     "@id": "EeVariants::ServoB::variantName"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::ServoB/0"
+    },
+    {
+     "@id": "EeVariants::ServoB/1"
+    },
+    {
+     "@id": "EeVariants::ServoB/2"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/10"
+   },
+   "qualifiedName": "EeVariants::ServoB"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoB/0"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoB/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ServoB"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoB"
+    },
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoB"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ServoB"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::ServoB"
+   },
+   "superclassifier": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "target": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoB/1"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoB/1",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ServoB"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoB"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoB"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ServoB"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::ServoB"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoB/2"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoB/2",
+   "@type": "FeatureMembership",
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::ServoB::variantName"
+   },
+   "memberName": "variantName",
+   "membershipOwningNamespace": {
+    "@id": "EeVariants::ServoB"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::ServoB::variantName"
+    }
+   ],
+   "owningType": {
+    "@id": "EeVariants::ServoB"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoB"
+    },
+    {
+     "@id": "EeVariants::ServoB::variantName"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoB"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::ServoB::variantName"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoB::variantName"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoB::variantName",
+   "@type": "ReferenceUsage",
+   "definition": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ],
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "isReference": true,
+   "isVariation": false,
+   "name": "variantName",
+   "ownedMember": [
+    {
+     "@id": "EeVariants::ServoB::variantName/1/0"
+    }
+   ],
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::ServoB::variantName/0"
+    },
+    {
+     "@id": "EeVariants::ServoB::variantName/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants::ServoB"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants::ServoB"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants::ServoB/2"
+   },
+   "owningType": {
+    "@id": "EeVariants::ServoB"
+   },
+   "qualifiedName": "EeVariants::ServoB::variantName",
+   "type": [
+    {
+     "@id": "lib:ScalarValues::String"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoB::variantName/0"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoB::variantName/0",
+   "@type": "Redefinition",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ServoB::variantName"
+   },
+   "redefinedFeature": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoB::variantName"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoB::variantName"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ServoB::variantName"
+   },
+   "subsettedFeature": {
+    "@id": "lib:XdDomain::DomainVariant::variantName"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoB::variantName/1"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoB::variantName/1",
+   "@type": "FeatureValue",
+   "featureWithValue": {
+    "@id": "EeVariants::ServoB::variantName"
+   },
+   "isLibraryElement": false,
+   "memberElement": {
+    "@id": "EeVariants::ServoB::variantName/1/0"
+   },
+   "membershipOwningNamespace": {
+    "@id": "EeVariants::ServoB::variantName"
+   },
+   "ownedRelatedElement": [
+    {
+     "@id": "EeVariants::ServoB::variantName/1/0"
+    }
+   ],
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoB::variantName"
+    },
+    {
+     "@id": "EeVariants::ServoB::variantName/1/0"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoB::variantName"
+    }
+   ],
+   "target": [
+    {
+     "@id": "EeVariants::ServoB::variantName/1/0"
+    }
+   ],
+   "value": {
+    "@id": "EeVariants::ServoB::variantName/1/0"
+   }
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoB::variantName/1/0"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoB::variantName/1/0",
+   "@type": "LiteralString",
+   "isAbstract": false,
+   "isComposite": false,
+   "isConjugated": false,
+   "isEnd": false,
+   "isLibraryElement": false,
+   "owner": {
+    "@id": "EeVariants::ServoB::variantName"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants::ServoB::variantName"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants::ServoB::variantName/1"
+   },
+   "value": "b"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoC"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoC",
+   "@type": "PartDefinition",
+   "declaredName": "ServoC",
+   "feature": [
+    {
+     "@id": "EeBoards::ServoBoard::servoIn"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant::variantName"
+    }
+   ],
+   "isAbstract": false,
+   "isConjugated": false,
+   "isLibraryElement": false,
+   "isVariation": false,
+   "name": "ServoC",
+   "ownedRelationship": [
+    {
+     "@id": "EeVariants::ServoC/0"
+    },
+    {
+     "@id": "EeVariants::ServoC/1"
+    }
+   ],
+   "owner": {
+    "@id": "EeVariants"
+   },
+   "owningNamespace": {
+    "@id": "EeVariants"
+   },
+   "owningRelationship": {
+    "@id": "EeVariants/12"
+   },
+   "qualifiedName": "EeVariants::ServoC"
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoC/0"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoC/0",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ServoC"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoC"
+    },
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoC"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ServoC"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::ServoC"
+   },
+   "superclassifier": {
+    "@id": "EeBoards::ServoBoard"
+   },
+   "target": [
+    {
+     "@id": "EeBoards::ServoBoard"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
+   "@id": "EeVariants::ServoC/1"
+  },
+  "payload": {
+   "@id": "EeVariants::ServoC/1",
+   "@type": "Subclassification",
+   "general": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "isLibraryElement": false,
+   "owningType": {
+    "@id": "EeVariants::ServoC"
+   },
+   "relatedElement": [
+    {
+     "@id": "EeVariants::ServoC"
+    },
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ],
+   "source": [
+    {
+     "@id": "EeVariants::ServoC"
+    }
+   ],
+   "specific": {
+    "@id": "EeVariants::ServoC"
+   },
+   "subclassifier": {
+    "@id": "EeVariants::ServoC"
+   },
+   "superclassifier": {
+    "@id": "lib:XdDomain::DomainVariant"
+   },
+   "target": [
+    {
+     "@id": "lib:XdDomain::DomainVariant"
+    }
+   ]
+  }
+ },
+ {
+  "identity": {
    "@id": "lib:ScalarValues::String"
   },
   "payload": {
@@ -7920,6 +10444,59 @@
    "isLibraryElement": true,
    "name": "Sys",
    "qualifiedName": "Sys"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:Sys::Arm::ctrlA"
+  },
+  "payload": {
+   "@id": "lib:Sys::Arm::ctrlA",
+   "@type": "PartUsage",
+   "declaredName": "ctrlA",
+   "isLibraryElement": true,
+   "name": "ctrlA",
+   "qualifiedName": "Sys::Arm::ctrlA"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:Sys::Arm::ctrlB"
+  },
+  "payload": {
+   "@id": "lib:Sys::Arm::ctrlB",
+   "@type": "PartUsage",
+   "declaredName": "ctrlB",
+   "isLibraryElement": true,
+   "name": "ctrlB",
+   "qualifiedName": "Sys::Arm::ctrlB"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:Sys::Arm::servo1"
+  },
+  "payload": {
+   "@id": "lib:Sys::Arm::servo1",
+   "@type": "PartUsage",
+   "declaredName": "servo1",
+   "isLibraryElement": true,
+   "name": "servo1",
+   "qualifiedName": "Sys::Arm::servo1"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:Sys::Basic"
+  },
+  "payload": {
+   "@id": "lib:Sys::Basic",
+   "@type": "PartDefinition",
+   "declaredName": "Basic",
+   "declaredShortName": "SYS-CFG-0001",
+   "isLibraryElement": true,
+   "name": "Basic",
+   "qualifiedName": "Sys::Basic"
   }
  },
  {
@@ -8059,6 +10636,20 @@
  },
  {
   "identity": {
+   "@id": "lib:Sys::Full"
+  },
+  "payload": {
+   "@id": "lib:Sys::Full",
+   "@type": "PartDefinition",
+   "declaredName": "Full",
+   "declaredShortName": "SYS-CFG-0002",
+   "isLibraryElement": true,
+   "name": "Full",
+   "qualifiedName": "Sys::Full"
+  }
+ },
+ {
+  "identity": {
    "@id": "lib:Sys::Servo"
   },
   "payload": {
@@ -8173,6 +10764,32 @@
    "isLibraryElement": true,
    "name": "connector",
    "qualifiedName": "XdDomain::ConnectorPort::connector"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdDomain::DomainVariant"
+  },
+  "payload": {
+   "@id": "lib:XdDomain::DomainVariant",
+   "@type": "PartDefinition",
+   "declaredName": "DomainVariant",
+   "isLibraryElement": true,
+   "name": "DomainVariant",
+   "qualifiedName": "XdDomain::DomainVariant"
+  }
+ },
+ {
+  "identity": {
+   "@id": "lib:XdDomain::DomainVariant::variantName"
+  },
+  "payload": {
+   "@id": "lib:XdDomain::DomainVariant::variantName",
+   "@type": "AttributeUsage",
+   "declaredName": "variantName",
+   "isLibraryElement": true,
+   "name": "variantName",
+   "qualifiedName": "XdDomain::DomainVariant::variantName"
   }
  },
  {
