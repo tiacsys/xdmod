@@ -186,7 +186,7 @@ checks:
   CK-F11:
     need: XD-CHECK-0045
     enforces: [XD-RULE-0054]
-    description: "XD_VERSION in a title-block comment line of every sheet and of the board, in a silkscreen text, not in the Rev field; the committed value is unversioned."
+    description: "The title block of every sheet and of the board has the title ${XD_BOARD} and the Rev ${XD_VERSION}; the board has two silkscreen lines, ${XD_BOARD} and ${XD_VERSION}, and the version line, filled with a long preview version, stays inside the board outline and off its holes (estimated from the font size); the committed values are XD_VERSION = unversioned and XD_BOARD = the project name."
   CK-F12:
     need: XD-CHECK-0049
     enforces: [XD-RULE-0058]

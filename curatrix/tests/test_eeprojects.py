@@ -173,11 +173,15 @@ def test_new_pcba(tmp_path):
         "fp-lib-table", "joint-controller.kicad_jobset", "joint-controller.kicad_pcb", "joint-controller.kicad_pro",
         "joint-controller.kicad_sch", "sym-lib-table"]
     pro = json.loads((folder / "joint-controller.kicad_pro").read_text())
-    assert pro["text_variables"] == {"TraceID": "EE-PCBA-0002", "XD_VERSION": "unversioned"}
+    assert pro["text_variables"] == {"TraceID": "EE-PCBA-0002", "XD_BOARD": "joint-controller", "XD_VERSION": "unversioned"}
     assert pro["erc"]["rule_severities"] and pro["board"]["design_settings"]["rule_severities"]
     sch = (folder / "joint-controller.kicad_sch").read_text()
     root_uuid = pro["sheets"][0][0]
-    assert f'(uuid "{root_uuid}")' in sch and "Version ${XD_VERSION}" in sch and "__" not in sch
+    assert f'(uuid "{root_uuid}")' in sch and '(rev "${XD_VERSION}")' in sch and "__" not in sch
+    assert '(title "${XD_BOARD}")' in sch and "__" not in (folder / "joint-controller.kicad_pcb").read_text()
+    from curatrix import cam, eeprojects
+    pr = next(p for p in eeprojects.discover(cfg) if p.name == "joint-controller")
+    assert cam.version_findings(pr) == []
     for t in ("sym-lib-table", "fp-lib-table"):
         uris = [u for u in (folder / t).read_text().split('(uri "')[1:]]
         assert uris and all(u.startswith("${XD_KICAD_") for u in uris)
@@ -204,8 +208,9 @@ def test_new_pcba_saved_by_kicad(tmp_path):
     folder = newpcba.new_pcba(ws, Repo("r", repo, "r"), checkcfg.load(repo / "checks.yaml", root), "CanaryBoard",
                               log=lambda *_: None)
     sch = (folder / "canary-board.kicad_sch").read_text()
-    assert '(generator "eeschema")' in sch and "Version ${XD_VERSION}" in sch
-    assert "${XD_VERSION}" in (folder / "canary-board.kicad_pcb").read_text()
+    assert '(generator "eeschema")' in sch and '(rev "${XD_VERSION}")' in sch
+    pcb = (folder / "canary-board.kicad_pcb").read_text()
+    assert '(gr_text "${XD_VERSION}"' in pcb and '(gr_text "${XD_BOARD}"' in pcb
     assert subprocess.run(["git", "-C", str(repo), "status", "--porcelain"], capture_output=True, text=True).stdout
 
 

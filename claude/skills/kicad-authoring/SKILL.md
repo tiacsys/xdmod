@@ -38,6 +38,10 @@ Read first: `robarm-ee/claude/CLAUDE.md`, `robarm-ee/pcba/README.md`, `xdmod/cur
   the model, CK-F22 warns on designator-like port names and connectors without `X`. A WireViz
   harness end names the end port of its cable def the same way, on `portName:` / `portType:` /
   `portTypeID:` lines of its `notes`.
+- **Version and board name** (owner decision Q13, CK-F11): title block title `${XD_BOARD}`, Rev
+  `${XD_VERSION}`; two silkscreen lines `${XD_BOARD}` and `${XD_VERSION}` that fit inside the
+  outline and off holes for a long preview version. Committed values: `XD_BOARD` = the project
+  name, `XD_VERSION = unversioned`; `curatrix cam` writes the real values into its copy.
 - After every change: `curatrix gen cad-needs robarm-ee`, commit `generated/cad-needs.json`
   (CK-D4; PR CI sees KiCad content only through this file).
 - Never commit `*.lck`, `*-backups/`, `fp-info-cache`.

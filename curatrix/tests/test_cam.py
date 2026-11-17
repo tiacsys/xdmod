@@ -126,27 +126,44 @@ def test_f10_jobset(tmp_path):
 
 # ------------------------------------------------------------------ CK-F11
 def test_f11_version_variable(tmp_path):
-    """CK-F11 planted: no comment line with ${XD_VERSION} in the schematic, the variable in the Rev
-    field, no silkscreen text on the board, a committed version other than `unversioned`."""
+    """CK-F11 planted: a version line that would run off the board or through a hole with a long
+    version, the schematic's title is not ${XD_BOARD} and its Rev not ${XD_VERSION}, the board's
+    silkscreen has no ${XD_VERSION} line and puts both on one line, committed values other than
+    `unversioned` and the project name."""
     root, repo = _repo(tmp_path)
     d = repo / "pcba" / "drc"
-    sch = d / "drc.kicad_sch"
-    sch.write_text(sch.read_text().replace('(comment 1 "Canary trace chain', '(comment 2 "Version ${XD_VERSION}")\n'
-                                           '\t\t(comment 1 "Canary trace chain', 1))
     assert _run(root, repo, "CK-F11", "c_version_variable") == []
-    sch.write_text(sch.read_text().replace('(comment 2 "Version ${XD_VERSION}")', '(rev "${XD_VERSION}")'))
     pcb = d / "drc.kicad_pcb"
-    pcb.write_text(pcb.read_text().replace('(gr_text "${XD_VERSION}"', '(gr_text "v"'))
+    good = pcb.read_text()
+    pcb.write_text(good.replace("(at 95.5 108.4 0)", "(at 110 108.4 0)"))      # the version line runs off
+    f = _run(root, repo, "CK-F11", "c_version_variable")
+    assert len(f) == 1 and "would run past the board outline (x 88 to 118 mm)" in f[0], f
+    hole = '(gr_circle (center 100 108.4) (end 101.6 108.4) (stroke (width 0.05) (type default)) (fill no) (layer "Edge.Cuts"))\n'
+    pcb.write_text(good.replace("(embedded_fonts no)", hole + "\t(embedded_fonts no)"))
+    f = _run(root, repo, "CK-F11", "c_version_variable")
+    assert len(f) == 1 and "would cross the hole at (100, 108.4)" in f[0], f
+    pcb.write_text(good)
+    sch = d / "drc.kicad_sch"
+    sch.write_text(sch.read_text().replace('(title "${XD_BOARD}")', '(title "Canary board")')
+                   .replace('(rev "${XD_VERSION}")', '(rev "1")'))
+    pcb.write_text(pcb.read_text().replace('(gr_text "${XD_VERSION}"', '(gr_text "v"')
+                   .replace('(gr_text "${XD_BOARD}"', '(gr_text "${XD_BOARD} ${XD_VERSION}"'))
     pro = d / "drc.kicad_pro"
     pd = json.loads(pro.read_text())
     pd["text_variables"]["XD_VERSION"] = "drc/v1.0.0"
+    pd["text_variables"]["XD_BOARD"] = "other"
     pro.write_text(json.dumps(pd))
     f = "\n".join(_run(root, repo, "CK-F11", "c_version_variable"))
-    for want in ("drc.kicad_sch: no title-block comment line with ${XD_VERSION}",
-                 "drc.kicad_sch: ${XD_VERSION} in the title-block Rev field",
-                 "drc.kicad_pcb: no silkscreen text (F.SilkS or B.SilkS) with ${XD_VERSION}",
-                 "text variable XD_VERSION is 'drc/v1.0.0'"):
+    for want in ("drc.kicad_sch: the title-block title is 'Canary board'; it is ${XD_BOARD}",
+                 "drc.kicad_sch: the title-block Rev is '1'; it is ${XD_VERSION}",
+                 "drc.kicad_pcb: ${XD_BOARD} and ${XD_VERSION} on one silkscreen line",
+                 "text variable XD_VERSION is 'drc/v1.0.0'",
+                 "text variable XD_BOARD is 'other'; it is the board name 'drc'"):
         assert want in f, (want, f)
+    pcb.write_text(pcb.read_text().replace('(gr_text "${XD_BOARD} ${XD_VERSION}"', '(gr_text "x"'))
+    f = "\n".join(_run(root, repo, "CK-F11", "c_version_variable"))
+    assert "drc.kicad_pcb: no silkscreen text (F.SilkS or B.SilkS) with ${XD_BOARD}" in f
+    assert "drc.kicad_pcb: no silkscreen text (F.SilkS or B.SilkS) with ${XD_VERSION}" in f
 
 
 # ------------------------------------------------------------------ version, stackup, design rules
@@ -223,8 +240,12 @@ def test_cam_run(tmp_path):
     boms = {v: (out / f"bom-{v}.csv").read_text() for v in ("default", "alt")}
     r1 = {v: next(ln for ln in b.splitlines() if ln.startswith('"R1"')) for v, b in boms.items()}
     assert '"DNP"' not in r1["default"] and '"DNP"' in r1["alt"]
-    assert rec["version"] in (out / "netlist.xml").read_text()          # the project variable reached KiCad
-    assert json.loads((top / "project" / "drc.kicad_pro").read_text())["text_variables"]["XD_VERSION"] == rec["version"]
+    short = rec["version"].split("/", 1)[1]
+    net = (out / "netlist.xml").read_text()
+    assert f'<textvar name="XD_VERSION">{short}</textvar>' in net    # the project variable reached KiCad
+    assert '<textvar name="XD_BOARD">drc</textvar>' in net
+    tv = json.loads((top / "project" / "drc.kicad_pro").read_text())["text_variables"]
+    assert tv["XD_VERSION"] == short and tv["XD_BOARD"] == "drc"
     assert json.loads((repo / "pcba/drc/drc.kicad_pro").read_text())["text_variables"]["XD_VERSION"] == "unversioned"
     assert list(csv.DictReader(open(out / "stackup.csv")))[2]["layer"] == "F.Cu"
     assert not (ws.build("r") / "cam" / "tmp").exists()

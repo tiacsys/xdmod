@@ -98,6 +98,12 @@ What is in iteration 1 and what moved to iteration 2.
      it is ``<project>/v0.0.0-<n>-g<sha>-preview``. The full version goes into a title-block comment
      line and a silkscreen text; the ``Rev`` field cuts long strings off, so it holds only the short
      version or nothing.
+     *Corrected 2026-11-18 (owner decision Q13 of tiacsys/xdmod#69):* ``XD_VERSION`` holds the
+     version without the ``<project>/`` tag prefix (``v0.1.0``, ``v0.1.0-3-gabc1234-preview``), as
+     the output folder already did, and a new text variable ``XD_BOARD`` the board name. The title
+     block of every sheet and of the board has title ``${XD_BOARD}`` and Rev ``${XD_VERSION}``; the
+     silkscreen has two lines, name and version, in a size that fits inside the board outline
+     (CK-F11 checks both variables).
    - **Jobset:** one shared template in xdmod, copied by ``curatrix new pcba``. A job can name a
      variant (KiCad 10.0.8, KiCad spike §2.2), so the jobset holds one job per variant-dependent output
      and variant, copied from its base job except for the variant and file name; the variant names in

@@ -4,7 +4,8 @@
 and for any version (previews too):
 
 1. copy the project into ``build/<area>/board-model/<board>/<version>/project/`` and write the
-   version into the copy's ``XD_VERSION`` (as ``curatrix cam`` does, XD-ADR-0142);
+   version into the copy's ``XD_VERSION`` and the board name into ``XD_BOARD`` (as ``curatrix cam``
+   does, XD-ADR-0142);
 2. ``kicad-cli pcb export step --no-dnp --subst-models [--variant V]`` per variant of the project
    (board body and components, no tracks, pads or zones);
 3. the FreeCAD GUI binary on Qt's offscreen platform (no window) runs
@@ -176,7 +177,7 @@ def _is_release_tag(tag: str, board: str) -> bool:
 
 def export(ws, repo, cfg, pr, release_only: bool = False, log=print) -> dict:
     """Export one pcba/ project as FreeCAD board models into build/; returns the record."""
-    from curatrix import domvariants, limits, newasm, newpcba
+    from curatrix import cam, domvariants, limits, newasm, newpcba
     ver, release = release_version(repo.path, pr)
     if release_only and not release:
         raise BoardLibError(
@@ -193,9 +194,7 @@ def export(ws, repo, cfg, pr, release_only: bool = False, log=print) -> dict:
     copy_dir = top / "project"
     shutil.copytree(pr.folder, copy_dir, ignore=SKIP_COPY)
     pro = copy_dir / pr.pro.name
-    d = json.loads(pro.read_text(encoding="utf-8"))
-    d.setdefault("text_variables", {})["XD_VERSION"] = ver
-    pro.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
+    cam.set_variables(pro, short, pr.name)
     pcb = copy_dir / f"{pr.name}.kicad_pcb"
     if not pcb.is_file():
         raise BoardLibError(f"{pr.name}: no {pcb.name}; a board model needs the layout")

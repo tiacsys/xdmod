@@ -2,7 +2,8 @@
 the plain-Python jobset and version-variable rules (CK-F10, CK-F11).
 
 ``cam`` copies a ``pcba/`` project into ``build/<area>/cam/<project>/<version>/project/``, writes the
-version into the copy's ``.kicad_pro`` text variable ``XD_VERSION`` and runs the project's jobset
+version into the copy's ``.kicad_pro`` text variable ``XD_VERSION`` (the version only, without the
+``<project>/`` tag prefix) and the board name into ``XD_BOARD``, and runs the project's jobset
 there (``kicad-cli jobset run``) with ``XD_CAM_OUT`` = the version folder, so the outputs land in
 ``build/<area>/cam/<project>/<version>/<project>/``. Then:
 
@@ -26,8 +27,13 @@ Version (XD-ADR-0142): ``git describe --tags --match '<project>/*'``; without a 
 ``<project>/v0.0.0-<n>-g<sha>``. Only an exact tag on a commit of ``main``, with a clean project
 folder, is a release; anything else gets ``-dirty`` (uncommitted changes in the project folder) and
 ``-preview``. ``-dirty`` looks only at the project folder: the libraries and 3D models come from
-other repos (``libs/``) and can change the STEP model and the renderings without a mark. The full version goes into a title-block comment line and a silkscreen text; the
-title-block ``Rev`` field stays empty, because KiCad cuts long values off there (KiCad spike §2.1).
+other repos (``libs/``) and can change the STEP model and the renderings without a mark.
+
+Frames and silkscreen (CK-F11; owner decision Q13 of tiacsys/xdmod#69, correcting XD-ADR-0142): the
+title block of every sheet and of the board has title ``${XD_BOARD}`` and rev ``${XD_VERSION}``; the
+board has the two silkscreen lines ``${XD_BOARD}`` and ``${XD_VERSION}``. ``XD_VERSION`` holds the
+version without the tag prefix (``v0.1.0``, ``v0.1.0-3-gabc1234-preview``), so it fits the Rev
+field; the committed values are ``unversioned`` and the project name.
 
 Jobset template (``xdmod/templates/kicad-pcba/pcba.kicad_jobset``): the jobs without a variant come
 first, then the variant-dependent ones. A project with variants has, instead of each
@@ -63,6 +69,7 @@ HARD = ("special_execute", "special_copyfiles", "output", "jobfile", "parse", "o
 BOM_DELIMITERS = ("field_delimiter", "string_delimiter", "ref_delimiter", "ref_range_delimiter")
 TEMPLATE = Path("templates") / "kicad-pcba" / "pcba.kicad_jobset"
 VAR = "${XD_VERSION}"
+BOARD_VAR = "${XD_BOARD}"
 
 
 # ------------------------------------------------------------------ jobset
@@ -198,14 +205,13 @@ def _kids(node, name):
     return [c for c in node[1:] if isinstance(c, list) and c and c[0] == name]
 
 
-def _title_block(root) -> tuple[list[str], str]:
-    """(comment texts, rev) of a title block."""
+def _title_block(root) -> tuple[str, str]:
+    """(title, rev) of a title block."""
     tb = next(iter(_kids(root, "title_block")), None)
     if tb is None:
-        return [], ""
-    comments = [c[2] for c in _kids(tb, "comment") if len(c) > 2 and isinstance(c[2], str)]
-    rev = next((c[1] for c in _kids(tb, "rev") if len(c) > 1 and isinstance(c[1], str)), "")
-    return comments, rev
+        return "", ""
+    first = lambda k: next((c[1] for c in _kids(tb, k) if len(c) > 1 and isinstance(c[1], str)), "")  # noqa: E731
+    return first("title"), first("rev")
 
 
 def _silk_texts(root) -> list[str]:
@@ -217,23 +223,104 @@ def _silk_texts(root) -> list[str]:
     return out
 
 
+# a long preview version, to test that the silkscreen version line fits (CK-F11); KiCad's stroke
+# font is about 0.87 x the character width per character (measured with KiCad 10.0.8)
+LONG_VERSION = "v0.1.0-12-gabc1234-dirty-preview"
+CHAR_ADVANCE = 0.87
+
+
+def _outline_box(root) -> tuple[float, float, float, float] | None:
+    """(xmin, ymin, xmax, ymax) of the Edge.Cuts drawings of a board (circles are holes, left out)."""
+    pts = []
+    for kind in ("gr_line", "gr_rect", "gr_arc", "gr_poly"):
+        for g in _kids(root, kind):
+            if next((c[1] for c in _kids(g, "layer") if len(c) > 1), "") != "Edge.Cuts":
+                continue
+            for k in ("start", "end", "mid"):
+                pts += [(float(c[1]), float(c[2])) for c in _kids(g, k) if len(c) > 2]
+            for pl in _kids(g, "pts"):
+                pts += [(float(c[1]), float(c[2])) for c in _kids(pl, "xy") if len(c) > 2]
+    if not pts:
+        return None
+    return min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts)
+
+
+def _version_line_fits(root) -> str | None:
+    """A finding if the silkscreen line with ${XD_VERSION}, filled with LONG_VERSION, would run past
+    the board outline (estimated from the font size; horizontal texts only)."""
+    box = _outline_box(root)
+    if box is None:
+        return None
+    for t in _kids(root, "gr_text"):
+        layer = next((c[1] for c in _kids(t, "layer") if len(c) > 1), "")
+        if not (isinstance(t[1], str) and VAR in t[1] and str(layer).endswith("SilkS")):
+            continue
+        at = next(iter(_kids(t, "at")), None)
+        eff = next(iter(_kids(t, "effects")), [])
+        font = next(iter(_kids(eff, "font")), []) if eff else []
+        size = next(iter(_kids(font, "size")), None) if font else None
+        if at is None or size is None or len(at) < 3 or len(size) < 3:
+            continue
+        rot = float(at[3]) % 180 if len(at) > 3 else 0.0
+        if rot:
+            continue
+        line = next(ln for ln in t[1].split("\n") if VAR in ln).replace(VAR, LONG_VERSION)
+        width = CHAR_ADVANCE * float(size[2]) * len(line)
+        just = [x for j in (_kids(eff, "justify") if eff else []) for x in j[1:]]
+        if str(layer).startswith("B."):
+            just = ["right" if x == "left" else "left" if x == "right" else x for x in just]
+        x = float(at[1])
+        x0 = x if "left" in just else x - width if "right" in just else x - width / 2
+        if x0 < box[0] or x0 + width > box[2]:
+            return (f"the silkscreen line with {VAR} would run past the board outline (x {box[0]:g} to {box[2]:g} mm) "
+                    f"for a long version like {LONG_VERSION} (about {width:.1f} mm from x {x0:.1f} mm); move it or "
+                    f"make its characters narrower")
+        half = float(size[1]) / 2 + 0.15
+        y = float(at[2])
+        for c in _kids(root, "gr_circle"):
+            if next((k[1] for k in _kids(c, "layer") if len(k) > 1), "") != "Edge.Cuts":
+                continue
+            ctr, end = next(iter(_kids(c, "center")), None), next(iter(_kids(c, "end")), None)
+            if not ctr or not end:
+                continue
+            cx, cy = float(ctr[1]), float(ctr[2])
+            r = ((float(end[1]) - cx) ** 2 + (float(end[2]) - cy) ** 2) ** 0.5
+            if x0 < cx + r and x0 + width > cx - r and y - half < cy + r and y + half > cy - r:
+                return (f"the silkscreen line with {VAR} would cross the hole at ({cx:g}, {cy:g}) for a long version "
+                        f"like {LONG_VERSION} (about {width:.1f} mm from x {x0:.1f} mm); move it")
+    return None
+
+
 def version_findings(pr) -> list[str]:
-    """CK-F11: XD_VERSION in a title-block comment of every sheet and of the board, in a silkscreen
-    text, not in the Rev field; the committed value is `unversioned`."""
+    """CK-F11: title ``${XD_BOARD}`` and rev ``${XD_VERSION}`` in the title block of every sheet
+    and of the board; the board's silkscreen shows both, each on its own line; the committed values
+    are ``unversioned`` and the project name."""
     out = []
-    val = pr.variables().get("XD_VERSION")
-    if val != "unversioned":
-        out.append(f"{pr.pro.name}: text variable XD_VERSION is {val!r}; the committed value is 'unversioned' "
-                   f"(curatrix cam writes the version into its copy)")
+    vs = pr.variables()
+    if vs.get("XD_VERSION") != "unversioned":
+        out.append(f"{pr.pro.name}: text variable XD_VERSION is {vs.get('XD_VERSION')!r}; the committed value is "
+                   f"'unversioned' (curatrix cam writes the version into its copy)")
+    if vs.get("XD_BOARD") != pr.name:
+        out.append(f"{pr.pro.name}: text variable XD_BOARD is {vs.get('XD_BOARD')!r}; it is the board name {pr.name!r} "
+                   f"(the project name)")
     for f in sorted(pr.folder.glob("*.kicad_sch")) + sorted(pr.folder.glob("*.kicad_pcb")):
         root = cad.sexpr(f.read_text(encoding="utf-8"))
-        comments, rev = _title_block(root)
-        if not any(VAR in c for c in comments):
-            out.append(f"{f.name}: no title-block comment line with {VAR} (for example comment 2 \"Version {VAR}\")")
-        if VAR in rev:
-            out.append(f"{f.name}: {VAR} in the title-block Rev field, which cuts long versions off; use a comment line")
-        if f.suffix == ".kicad_pcb" and not any(VAR in t for t in _silk_texts(root)):
-            out.append(f"{f.name}: no silkscreen text (F.SilkS or B.SilkS) with {VAR}")
+        title, rev = _title_block(root)
+        if BOARD_VAR not in title:
+            out.append(f"{f.name}: the title-block title is {title!r}; it is {BOARD_VAR}")
+        if VAR not in rev:
+            out.append(f"{f.name}: the title-block Rev is {rev!r}; it is {VAR}")
+        if f.suffix == ".kicad_pcb":
+            lines = [ln for t in _silk_texts(root) for ln in t.split("\n")]
+            for var in (BOARD_VAR, VAR):
+                if not any(var in ln for ln in lines):
+                    out.append(f"{f.name}: no silkscreen text (F.SilkS or B.SilkS) with {var}")
+            fit = _version_line_fits(root)
+            if fit:
+                out.append(f"{f.name}: {fit}")
+            if any(BOARD_VAR in ln and VAR in ln for ln in lines):
+                out.append(f"{f.name}: {BOARD_VAR} and {VAR} on one silkscreen line; put them on two lines (name, "
+                           f"then version), sized to fit inside the board outline")
     return out
 
 
@@ -404,6 +491,14 @@ class CamError(Exception):
     pass
 
 
+def set_variables(pro: Path, version: str, board: str) -> None:
+    """Write XD_VERSION (the version without the ``<board>/`` tag prefix) and XD_BOARD into the
+    text variables of a project COPY (never the committed file)."""
+    d = json.loads(pro.read_text(encoding="utf-8"))
+    d.setdefault("text_variables", {}).update(XD_VERSION=version, XD_BOARD=board)
+    pro.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
+
+
 SKIP_COPY = shutil.ignore_patterns("*.kicad_prl", "*-backups", "fp-info-cache", "_autosave-*", "*.lck")
 JOBS_RE = re.compile(r"(\d+) jobs? succeeded, (\d+) jobs? failed")
 
@@ -436,9 +531,7 @@ def run_project(ws, repo, cfg, pr, log=print) -> dict:
     copy_dir = top / "project"
     shutil.copytree(pr.folder, copy_dir, ignore=SKIP_COPY)
     pro = copy_dir / pr.pro.name
-    d = json.loads(pro.read_text(encoding="utf-8"))
-    d.setdefault("text_variables", {})["XD_VERSION"] = ver
-    pro.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
+    set_variables(pro, short, pr.name)
     tmp = ws.build(cfg.area) / "cam" / "tmp"
     shutil.rmtree(tmp, ignore_errors=True)
     tmp.mkdir(parents=True)
