@@ -23,12 +23,140 @@ def test_update_reapplies_the_role(monkeypatch):
     monkeypatch.setattr(setup, "west", lambda w, *a, **k: calls.append(("west", a)) or 0)
     monkeypatch.setattr(setup, "refresh", lambda w, adopt=False: None)
     monkeypatch.setattr(setup, "doctor", lambda w, quiet=False: 0)
+    monkeypatch.setattr(setup, "sync_manifest", lambda w: calls.append(("manifest",)) or "current")
+    monkeypatch.setattr(setup, "xdmod_head", lambda w: "same")
     assert setup.update(ws) == 0
-    assert calls == [("role", "sw"), ("west", ("update", "-k"))]   # filter first, then the update
+    # manifest first (its pins), then the filter, then the update
+    assert calls == [("manifest",), ("role", "sw"), ("west", ("update", "-k"))]
     calls.clear()
     ws.role = None                                                    # no role: filter untouched
     setup.update(ws)
-    assert calls == [("west", ("update", "-k"))]
+    assert calls == [("manifest",), ("west", ("update", "-k"))]
+
+
+# --- curatrix update: manifest fast-forward and re-exec (bugs of 2026-11-17)
+
+def _run(*a, cwd):
+    subprocess.run(["git", *a], cwd=cwd, check=True, capture_output=True)
+
+
+def _manifest_ws(tmp_path, monkeypatch):
+    """A workspace whose manifest repo `manifest` is a clone of a bare `origin`, plus a second clone
+    `other` that stands for GitHub (merged bump PRs)."""
+    root = make_ws(tmp_path, monkeypatch)
+    origin = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(origin)], check=True)
+    seed = git_init(tmp_path / "seed")
+    _run("checkout", "-q", "-b", "main", cwd=seed)
+    (seed / "west.yml").write_text("pin: 1\n")
+    _run("add", ".", cwd=seed)
+    _run("commit", "-q", "-m", "seed", cwd=seed)
+    _run("push", "-q", str(origin), "main", cwd=seed)
+    for name in ("manifest", "other"):
+        dst = root / name if name == "manifest" else tmp_path / name
+        subprocess.run(["git", "clone", "-q", str(origin), str(dst)], check=True)
+        _run("config", "user.email", "t@example.com", cwd=dst)
+        _run("config", "user.name", "T", cwd=dst)
+    (root / ".west").mkdir()
+    (root / ".west" / "config").write_text("[manifest]\npath = manifest\nfile = west.yml\n")
+    return Workspace(root), root / "manifest", tmp_path / "other"
+
+
+def _bump(other, n=1):
+    for i in range(n):
+        (other / "west.yml").write_text(f"pin: {i + 2}\n")
+        _run("commit", "-q", "-am", f"bump {i}", cwd=other)
+    _run("push", "-q", "origin", "main", cwd=other)
+
+
+def _head(repo, ref="HEAD"):
+    return subprocess.run(["git", "rev-parse", ref], cwd=repo, check=True, capture_output=True, text=True).stdout.strip()
+
+
+def test_sync_manifest_fast_forwards_a_clean_default_branch(tmp_path, monkeypatch):
+    ws, man, other = _manifest_ws(tmp_path, monkeypatch)
+    assert setup.sync_manifest(ws) == "current"
+    _bump(other, 3)
+    assert setup.sync_manifest(ws) == "moved"
+    assert _head(man) == _head(other)
+    assert (man / "west.yml").read_text() == "pin: 4\n"
+    assert setup.sync_manifest(ws) == "current"
+
+
+def test_sync_manifest_warns_and_leaves_the_repo_alone(tmp_path, monkeypatch, capsys):
+    ws, man, other = _manifest_ws(tmp_path, monkeypatch)
+    _bump(other)
+    start = _head(man)
+    (man / "west.yml").write_text("pin: local\n")                         # dirty
+    assert setup.sync_manifest(ws) == "warned"
+    assert _head(man) == start and "uncommitted changes" in capsys.readouterr().out
+    _run("checkout", "-q", "west.yml", cwd=man)
+    _run("checkout", "-q", "-b", "feat/x", cwd=man)                        # not on the default branch
+    assert setup.sync_manifest(ws) == "warned"
+    assert _head(man) == start and "not main" in capsys.readouterr().out
+    _run("checkout", "-q", "main", cwd=man)
+    (man / "local.txt").write_text("x")
+    _run("add", "local.txt", cwd=man)
+    _run("commit", "-q", "-m", "local", cwd=man)                          # diverged
+    local = _head(man)
+    assert setup.sync_manifest(ws) == "warned"
+    assert _head(man) == local and "diverged" in capsys.readouterr().out
+
+
+def test_sync_manifest_without_a_manifest_repo_does_nothing(tmp_path, monkeypatch):
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    assert setup.sync_manifest(ws) == "skipped"
+
+
+def _update_ws(monkeypatch, heads, calls):
+    from pathlib import Path
+    from types import SimpleNamespace
+    ws = SimpleNamespace(has_west=True, role=None, xdmod=Path(setup.__file__).resolve().parents[3])
+    it = iter(heads)
+    monkeypatch.setattr(setup, "sync_manifest", lambda w: "current")
+    monkeypatch.setattr(setup, "xdmod_head", lambda w: next(it))
+    monkeypatch.setattr(setup, "west", lambda w, *a, **k: calls.append(("west", a)) or 0)
+    monkeypatch.setattr(setup, "refresh", lambda w, adopt=False: calls.append(("refresh", adopt)))
+    monkeypatch.setattr(setup, "doctor", lambda w, quiet=False: 0)
+
+    class Reexec(Exception):
+        pass
+
+    def reexec(adopt):
+        calls.append(("reexec", adopt))
+        raise Reexec
+    monkeypatch.setattr(setup, "reexec_update", reexec)
+    return ws, Reexec
+
+
+def test_update_reexecs_when_west_moved_xdmod(monkeypatch):
+    import pytest
+    calls = []
+    ws, Reexec = _update_ws(monkeypatch, ["old", "new"], calls)
+    with pytest.raises(Reexec):
+        setup.update(ws, adopt=True)
+    assert calls == [("west", ("update", "-k")), ("reexec", True)]     # nothing refreshed by the old code
+    calls.clear()
+    assert setup.update(ws, adopt=True, after_west=True) == 0           # the new process
+    assert calls == [("refresh", True)]
+
+
+def test_update_does_not_reexec_when_xdmod_stayed(monkeypatch):
+    calls = []
+    ws, _ = _update_ws(monkeypatch, ["same", "same"], calls)
+    assert setup.update(ws) == 0
+    assert calls == [("west", ("update", "-k")), ("refresh", False)]
+
+
+def test_reexec_update_runs_update_after_west(monkeypatch):
+    import sys
+    seen = []
+    monkeypatch.setattr(setup.os, "execv", lambda exe, args: seen.append((exe, args)))
+    setup.reexec_update(adopt=True)
+    assert seen == [(sys.executable, [sys.executable, "-m", "curatrix", "update", "--after-west", "--adopt"])]
+    from curatrix import cli
+    a = cli.parser().parse_args(["update", "--after-west", "--adopt"])
+    assert a.after_west and a.adopt
 
 
 def test_doctor_warns_on_missing_kicad_models_only_for_3d_roles(tmp_path):

@@ -101,6 +101,13 @@ That command:
 On branches, use ``curatrix update`` (it runs ``west update -k``). Plain ``west update`` moves
 every project back to its pin, as a detached HEAD.
 
+Before the west step, ``curatrix update`` fetches the manifest repo and fast-forwards it to its
+remote default branch (``git fetch`` and ``git merge --ff-only``, never ``git pull``), so the pins
+merged on GitHub by bump PRs are the ones west checks out. It does so only when the manifest repo
+is on that branch, has no uncommitted changes and no local commits; otherwise it warns and west
+uses the pins of the local checkout. When the west step moved ``xdmod``, ``curatrix update``
+starts itself again, so the rest of the update runs the new curatrix code.
+
 Environment
 -----------
 
@@ -150,7 +157,7 @@ and options is in the curatrix reference. The most used:
    * - ``curatrix doctor``
      - checks tools, versions, paths, hooks and the west state
    * - ``curatrix update``
-     - ``west update -k``, refresh ``.venv``, tools, ``.claude/`` links and hooks
+     - fast-forward the manifest repo, ``west update -k``, refresh ``.venv``, tools, ``.claude/`` links and hooks
    * - ``curatrix check <repo> --stage local``
      - the repo's checks (:doc:`checks`)
    * - ``curatrix docs <repo>`` / ``docs full``

@@ -102,7 +102,7 @@ def cmd_bootstrap(a):
 
 def cmd_update(a):
     from curatrix import setup
-    return setup.update(_ws(), adopt=a.adopt)
+    return setup.update(_ws(), adopt=a.adopt, after_west=a.after_west)
 
 
 def cmd_launch(a):
@@ -628,8 +628,9 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--no-doctor", action="store_true", help="skip the final doctor run (CI runners have other system tool versions)")
     s.set_defaults(func=cmd_bootstrap)
 
-    s = sub.add_parser("update", help="west update -k, then refresh venv, tools, links, hooks")
+    s = sub.add_parser("update", help="fast-forward the manifest repo, west update -k, then refresh venv, tools, links, hooks")
     s.add_argument("--adopt", action="store_true")
+    s.add_argument("--after-west", action="store_true", help=argparse.SUPPRESS)   # re-exec after west moved xdmod
     s.set_defaults(func=cmd_update)
 
     s = sub.add_parser("launch", help="start a GUI tool / Claude Code with workspace-local config")
