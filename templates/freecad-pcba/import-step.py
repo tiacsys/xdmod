@@ -14,12 +14,17 @@
 #   App::Part "Board"     the board model to link from an assembly; properties
 #                         TraceID (group Trace) = the board's EE-PCBA ID,
 #                         Version, Variant, Board, Commit, Source (group Board)
-#   Part::Feature per component inside it, named and labelled by the reference designator (R1, J1),
-#                         Label2 = the STEP product (the 3D model's name); "PCB" is the board body.
-#                         Shape in board coordinates, ShapeAppearance = the STEP colours per face.
-# The STEP is imported with instance names (Import parameter UseBaseName off, link groups), then
-# flattened: one feature per top-level instance of the STEP (Part.getShape in board coordinates), its
-# face colours collected from the solids below it in shape order.
+#   App::Link per component inside it, named and labelled by the reference designator (R1, J1;
+#                         "PCB" is the board body), Label2 = the STEP product (the 3D model's name),
+#                         placed in board coordinates, pointing to its model
+#   group "Models"        (hidden) one Part::Feature per 3D model, stored once however many components
+#                         use it, ShapeAppearance = the STEP colours per face
+# A component whose placement cannot be recovered becomes a Part::Feature copy in board coordinates
+# inside Board instead of a link (not seen on KiCad STEPs; counted as "copies" in the result).
+# The STEP is imported with instance names (UseBaseName off, link groups, import mode 0: every setting
+# the flattening relies on is pinned here and restored, so a changed workspace preference, e.g.
+# ImportMode 2, which stalls offscreen, cannot break it), then flattened: one object per top-level
+# instance of the STEP, its face colours collected from the solids below it in shape order.
 import json
 import os
 import re
@@ -27,7 +32,32 @@ import traceback
 
 res = os.environ.get("XD_RESULT", "")
 out = {"ok": False}
-grp = had = old = None
+saved = []                                  # (group, kind, name, had, old): restored in finally
+# the import settings this script relies on (FreeCAD 1.1: Mod/Import, STEP reader in Mod/Import/hSTEP)
+PINNED = {"User parameter:BaseApp/Preferences/Mod/Import": {
+              "UseBaseName": False, "UseLinkGroup": True, "ExpandCompound": False, "ExpandShapeContent": False,
+              "ReduceObjects": False, "ImportHiddenObject": True, "ShowProgress": False,
+              "ReadShapeCompoundMode": False, "ReadShowDialogImport": False, "ImportMode": 0},
+          "User parameter:BaseApp/Preferences/Mod/Import/hSTEP": {
+              "ReadShapeCompoundMode": False, "ReadShowDialogImport": False}}
+
+
+def pin(App):
+    for path, values in PINNED.items():
+        g = App.ParamGet(path)
+        for name, value in values.items():
+            kind = "Bool" if isinstance(value, bool) else "Int"
+            had = name in getattr(g, f"Get{kind}s")()
+            saved.append((g, kind, name, had, getattr(g, f"Get{kind}")(name)))
+            getattr(g, f"Set{kind}")(name, value)
+
+
+def unpin():
+    for g, kind, name, had, old in reversed(saved):
+        if had:
+            getattr(g, f"Set{kind}")(name, old)
+        else:
+            getattr(g, f"Rem{kind}")(name)
 try:
     import FreeCAD as App
     import Part
@@ -40,13 +70,9 @@ try:
         App.closeDocument(d.Name)
     if os.path.exists(dest):
         os.remove(dest)
-    # instance names (R1, J1) instead of product names; restored below (os._exit saves no config anyway)
-    grp = App.ParamGet("User parameter:BaseApp/Preferences/Mod/Import")
-    had = "UseBaseName" in grp.GetBools()
-    old = grp.GetBool("UseBaseName", True)
-    grp.SetBool("UseBaseName", False)
+    pin(App)                            # restored below (os._exit saves no config anyway)
     src = App.newDocument("step")
-    ImportGui.insert(step, src.Name, merge=False, useLinkGroup=True)
+    ImportGui.insert(step, src.Name, importHidden=True, merge=False, useLinkGroup=True, mode=0)
     src.recompute()
     roots = [o for o in src.Objects if not o.InList and o.TypeId in ("App::LinkGroup", "App::Part", "Part::Feature")]
     if len(roots) != 1:
@@ -90,9 +116,9 @@ try:
     part.Variant = os.environ.get("XD_VARIANT", "")
     part.Board = os.environ["XD_BOARD"]
     part.Commit = os.environ.get("XD_COMMIT", "")
-    part.Source = ("kicad-cli pcb export step, FreeCAD ImportGui.insert (offscreen), one feature per "
-                   "component with the STEP colours")
-    comps, shapes, models, group, linked = [], [], {}, None, 0
+    part.Source = ("kicad-cli pcb export step, FreeCAD ImportGui.insert (offscreen); one link per component "
+                   "to its 3D model in Models, with the STEP colours")
+    comps, shapes, models, group, linked, copies = [], [], {}, None, 0, 0
     for sub in root.getSubObjects():
         child = root.getSubObject(sub, retType=1)
         leaves = solids(child)
@@ -142,6 +168,7 @@ try:
             feat.Visibility = True
             linked += 1
         else:                                                     # placement not recoverable: a copy
+            copies += 1
             feat = doc.addObject("Part::Feature", name)
             feat.Label = ref
             feat.Label2 = model
@@ -164,6 +191,7 @@ try:
            "solids": len(whole.Solids), "shells": len(whole.Shells),
            "bbox_mm": [round(v, 3) for v in (bb.XLength, bb.YLength, bb.ZLength)] if shapes else None,
            "coloured": sum(1 for c in comps if c["colours"]), "models": len(models), "links": linked,
+           "copies": copies, "uncoloured_faces": [c["label"] for c in comps if not c["face_colours"]],
            "invalid": invalid}
     if not comps:
         out["error"] = "the STEP import gave no component"
@@ -172,11 +200,22 @@ except Exception:
     out["error"] = traceback.format_exc()
 finally:
     try:
-        if grp is not None:
-            if had:
-                grp.SetBool("UseBaseName", old)
-            else:
-                grp.RemBool("UseBaseName")
+        unpin()
+    except Exception:
+        pass
+    try:
+        # os._exit skips FreeCAD's cleanup, which would remove its session lock file in the cache. Remove
+        # every FreeCAD_<n>.lock that no running FreeCAD holds (fcntl locks never conflict within one
+        # process, so ours counts as free; another live session's lock is busy and stays).
+        import fcntl
+        import glob
+        for lock in glob.glob(os.path.join(App.getUserCachePath(), "FreeCAD_*.lock")):
+            with open(lock, "a") as fh:
+                try:
+                    fcntl.lockf(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except OSError:
+                    continue
+            os.remove(lock)
     except Exception:
         pass
     if res:

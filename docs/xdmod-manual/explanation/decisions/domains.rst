@@ -324,12 +324,15 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    options (``merge``, ``useLinkGroup``, ``mode``, the ``UseBaseName`` and ``ReduceObjects``
    parameters) and ``FreeCADGui.setupWithoutGUI()`` change nothing, and FreeCAD 1.1.4 offers no
    legacy-importer switch from Python. The FreeCAD GUI binary on Qt's offscreen platform runs
-   ``ImportGui.insert`` with the colours per face. With ``UseBaseName`` off and link groups the
+   ``ImportGui.insert`` with the colours per face. The script pins every import setting it relies on
+   (``mode=0``; ``ImportMode`` 2 in the workspace preferences stalled the offscreen run until the time
+   limit) and restores them. With ``UseBaseName`` off and link groups the
    objects carry the reference designators (``R1``, ``J1``). The import script flattens that tree:
    ``Board`` holds one ``App::Link`` per component, named by its designator (``PCB`` for the board
    body), to its 3D model, which is stored once per model in the hidden group ``Models``. So a file
    holds one BREP per model, not per part (KiCad demo board with 68 parts: 2.5 MB, one feature per
-   part 7.1 MB, the old compound 1.8 MB). The geometry is the same as before (same volume and
-   bounding box on the canary board and the demo). The trace properties on ``Board``, CK-F20 and
+   part 7.1 MB, the old compound 1.8 MB; the ``pic_programmer`` demo with 55 parts: 4.2 MB, the old
+   compound 3.6 MB, so the link layout is about 20 % larger and closer to the 5 MB limit). The
+   geometry is the same as before (same volume and bounding box on the canary board and the demo). The trace properties on ``Board``, CK-F20 and
    CK-F21 are unchanged. StepUp's board load in a GUI session over an MCP server (finding 18)
    stays an option; it is not needed for the colours.

@@ -101,6 +101,7 @@ def board_props(fcstd: Path) -> dict:
 # specular, emissive) and 2 floats (shininess, transparency), 24 bytes; after all of them 12 more bytes
 # per material (image and name data, not read here)
 MATERIAL_BYTES = 24
+MATERIAL_VERSION = "3"
 
 
 def _rgb(packed: int) -> tuple[float, float, float]:
@@ -112,7 +113,7 @@ def board_colours(fcstd: Path) -> dict[str, list[tuple[float, float, float]]]:
     """Plain Python: object name -> the distinct diffuse colours of its faces (``ShapeAppearance`` of the
     view provider in ``GuiDocument.xml``, a binary material list per object). Objects without a
     ``ShapeAppearance`` (groups, links, parts) are left out; a file without ``GuiDocument.xml`` (saved by
-    ``FreeCADCmd``) gives ``{}``. Only ``Part::Feature`` objects count (not the datum axes and planes)."""
+    ``FreeCADCmd``) gives ``{}``. Another material list version than 3 raises ``ValueError``. Only ``Part::Feature`` objects count (not the datum axes and planes)."""
     out: dict = {}
     with zipfile.ZipFile(fcstd) as z:
         names = set(z.namelist())
@@ -129,6 +130,9 @@ def board_colours(fcstd: Path) -> dict[str, list[tuple[float, float, float]]]:
             f = ml.get("file") if ml is not None else None
             if not f or f not in names:
                 continue
+            if ml.get("version") != MATERIAL_VERSION:
+                raise ValueError(f"{fcstd.name}: {vp.get('name')}: material list version {ml.get('version')!r}, "
+                                 f"only {MATERIAL_VERSION} is known (FreeCAD 1.1); update board_colours")
             data = z.read(f)
             if len(data) < 4:
                 continue
@@ -224,9 +228,16 @@ def export(ws, repo, cfg, pr, release_only: bool = False, log=print) -> dict:
             bak.unlink()
         mb = fc.stat().st_size / 1e6
         f = file_findings(fc, max_mb)
-        if not board_colours(fc):                    # export only: CK-F20 does not ask for colours
+        try:                                         # export only: CK-F20 does not ask for colours
+            colours = board_colours(fc)
+        except (ValueError, zipfile.BadZipFile, ET.ParseError) as e:
+            colours, f = {"?": []}, f + [f"colours not readable: {e}"]
+        if not colours:
             f.append("no colours (no ShapeAppearance in GuiDocument.xml): not imported by the FreeCAD GUI binary "
                      "(import-step.py, offscreen)")
+        if res.get("uncoloured_faces"):
+            f.append(f"one colour only for {', '.join(res['uncoloured_faces'])}: the STEP colours did not match the "
+                     f"faces (import-step.py)")
         findings += [f"{fc.name}: {x}" for x in f]
         comps = res.get("components") or []
         files.append({"file": fc.name, "variant": variant, "step": step.name, "mb": round(mb, 3),
