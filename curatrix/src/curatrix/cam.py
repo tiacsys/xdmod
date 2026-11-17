@@ -10,7 +10,12 @@ there (``kicad-cli jobset run``) with ``XD_CAM_OUT`` = the version folder, so th
   files after the sheets, so variant jobs would overwrite each other);
 * plain Python: ``stackup.csv`` from the ``.kicad_pcb`` and ``design-rules.csv`` from the
   ``.kicad_pro`` and ``.kicad_dru`` (KiCad exports neither);
+* ERC and DRC (``kicad-cli``, as CK-F4a/b) into ``erc-drc/`` and ``findings.json``: every finding
+  with its acceptance state, for the board document (task 5.21; the checks do not read it);
 * ``cam.json`` in the version folder: version, commit, jobs, files.
+
+``current(cam_dir, project, repo, folder)`` finds the output the board document may show: the run
+of the commit the repo is at, never an older one (task 5.21).
 
 Guards: the jobset must pass the hard rules of CK-F10 (no Execute Command job, no Copy Files,
 output folder or job file name outside ``${XD_CAM_OUT}``, it parses, no job without a variant after
@@ -347,6 +352,43 @@ def _csv(path: Path, cols, rows) -> None:
             w.writerow(r)
 
 
+# ------------------------------------------------------------------ the output of the current commit
+def current(cam_dir: Path, project: str, repo: Path, folder: Path) -> tuple[dict | None, Path | None, str]:
+    """(cam.json record, its version folder, why there is none) of the ``curatrix cam`` run the
+    board document may show: one of the commit ``repo`` is at; with uncommitted changes in the
+    project folder, one from such a tree that is newer than every file of the folder; without
+    changes, one from a clean tree. Anything else is stale and never shown (task 5.21)."""
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    try:
+        rel = str(folder.resolve().relative_to(repo.resolve()))
+    except ValueError:
+        return None, None, f"{folder} is not in {repo}"
+    changed = [repo / ln[3:].split(" -> ")[-1].strip('"') for ln in
+               _git(repo, "status", "--porcelain", "--untracked-files=all", "--", rel).stdout.splitlines() if ln]
+    dirty = bool(changed)
+    newest = max((f.stat().st_mtime for f in changed if f.is_file()), default=0.0)
+    none = f"no `curatrix cam` output for commit {head[:12]}"
+    best, why = None, none
+    for f in sorted((cam_dir / project).glob("*/cam.json")):
+        try:
+            rec = json.loads(f.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if rec.get("kind", "board") != "board" or rec.get("commit") != head:
+            continue
+        if ("-dirty" in rec.get("version", "")) != dirty:
+            why = why if why != none else (
+                "the `curatrix cam` output of this commit is from a tree with uncommitted changes" if not dirty
+                else "uncommitted changes in the project folder since the `curatrix cam` run")
+            continue
+        if dirty and f.stat().st_mtime < newest:
+            why = "a project file changed after the `curatrix cam` run"
+            continue
+        if best is None or f.stat().st_mtime > best[0]:
+            best = (f.stat().st_mtime, rec, f.parent)
+    return (best[1], best[2], "") if best else (None, None, why)
+
+
 # ------------------------------------------------------------------ the run
 class CamError(Exception):
     pass
@@ -418,6 +460,13 @@ def run_project(ws, repo, cfg, pr, log=print) -> dict:
     rows, source = stackup(pcb) if pcb.is_file() else ([], "no board")
     _csv(out / "stackup.csv", STACKUP_COLS, rows)
     _csv(out / "design-rules.csv", ("scope", "rule", "value", "unit"), design_rules(pro))
+    from curatrix import ercdrc
+    try:                                 # ERC/DRC findings with their acceptance, for the board document
+        found_rows = ercdrc.document_rows(ws, cfg, pr, out / "erc-drc", ercdrc.Acceptors(repo.path))
+    except RuntimeError as e:
+        raise CamError(str(e)) from None
+    (out / "findings.json").write_text(json.dumps(found_rows, indent=2) + "\n", encoding="utf-8")
+    singles += ["sch erc", "pcb drc"][:len(found_rows)]
     shutil.rmtree(tmp, ignore_errors=True)
     files = sorted(str(f.relative_to(top)) for f in out.rglob("*") if f.is_file())
     head = _git(repo.path, "rev-parse", "HEAD").stdout.strip()

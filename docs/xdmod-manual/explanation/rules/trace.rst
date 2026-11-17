@@ -210,3 +210,26 @@ The principles of the trace model and the rules on the trace graph.
 
    Every sheet and the board have a title-block comment line with ``${XD_VERSION}``, and the board has a silkscreen text with it. The ``Rev`` field stays empty, because KiCad cuts long values off there. The committed value of ``XD_VERSION`` is ``unversioned``; ``curatrix cam`` writes the version into its copy.
 
+.. xd-rule:: Every BOM part names its manufacturer part
+   :id: XD-RULE-0058
+   :tags: checks, cad
+   :status: valid
+   :decided_by: XD-ADR-0129
+
+   Every part in a board's bill of materials, in the base schematic or in any variant, has the fields ``Manufacturer`` and ``MPN``. A standard part carries a field ``Standard`` with its standard designation instead. A missing field is a warning (owner, EE-8).
+
+.. xd-rule:: The board document's BOM is KiCad's BOM
+   :id: XD-RULE-0059
+   :tags: checks, cad
+   :status: valid
+   :decided_by: XD-ADR-0129, XD-ADR-0136
+
+   The board document reads the BOM in plain Python, so CI shows it without KiCad. For every board, without a variant and for each variant, the reader gives the same parts, values, footprints, DNP marks, ``Manufacturer``, ``MPN`` and ``Setting`` as ``kicad-cli sch export bom --variant`` (P5-15).
+
+.. xd-rule:: A board document shows only the output of its own commit
+   :id: XD-RULE-0060
+   :tags: checks, cad
+   :status: valid
+   :decided_by: XD-ADR-0129
+
+   Renderings, schematic and ERC/DRC findings of a board come from the local ``curatrix cam`` output of the commit the repo is at; with uncommitted changes in the project folder, from a run on such a tree that is newer than every changed file. Older output is never shown: the section prints a fixed sentence instead, as in CI. Missing output is a local warning, and an error at the baseline once the check ran on the canary.

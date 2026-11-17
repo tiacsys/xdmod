@@ -117,6 +117,12 @@ BUILTIN = [
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.freecad+model", False, "c_link_counts"),
     ("CK-F3", "FreeCAD Params aliases and LCS placements equal the ME model (tolerance per kind)",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.freecad+model", False, "c_freecad_params"),
+    ("CK-F12", "every BOM part has Manufacturer and MPN, or a Standard designation",
+     _lv({"local": "warning", "pr": "warning"}), "cad.projects", False, "c_bom_fields"),
+    ("CK-D9", "the plain-Python BOM equals kicad-cli sch export bom, every board and variant",
+     _lv({"local": "warning", "baseline": "warning"}), "cad.projects", True, "c_bom_kicad"),
+    ("CK-D10", "the local curatrix cam output of the current commit exists for every board",
+     _lv({"local": "warning", "baseline": "warning"}), "cad.projects", True, "c_cam_output"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
     ("CK-H2", "no build output inside the repo", _lv({"local": "error", "pr": "error"}), None, False, "c_hygiene_build"),
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
@@ -542,6 +548,51 @@ def c_version_variable(ctx: Ctx, r: Result):
     for pr in eeprojects.discover(ctx.cfg):
         if pr.kind == "pcba":
             r.findings += [f"{pr.folder.relative_to(ctx.repo.path)}/{t}" for t in cam.version_findings(pr)]
+
+
+def _boards(ctx: Ctx):
+    from curatrix import eeprojects
+    return [pr for pr in eeprojects.discover(ctx.cfg) if pr.kind == "pcba" and pr.sch.is_file()]
+
+
+def c_bom_fields(ctx: Ctx, r: Result):
+    """CK-F12 (XD-ADR-0129): Manufacturer and MPN on every BOM part of every board (plain Python)."""
+    from curatrix import bom
+    for pr in _boards(ctx):
+        r.findings += bom.field_findings(bom.read(pr.sch), domvariants.kicad_variants(pr.pro),
+                                         str(pr.sch.relative_to(ctx.repo.path)))
+
+
+def c_bom_kicad(ctx: Ctx, r: Result):
+    """CK-D9 (P5-15): the plain-Python BOM reader against `kicad-cli sch export bom [--variant]`."""
+    from curatrix import bom
+    out = ctx.out / "bom"
+    out.mkdir(parents=True, exist_ok=True)
+    for pr in _boards(ctx):
+        parts = bom.read(pr.sch)
+        for v in [None, *domvariants.kicad_variants(pr.pro)]:
+            csv_ = out / f"{pr.name}.{v or 'base'}.csv"
+            csv_.unlink(missing_ok=True)
+            p = limits.run(bom.kicad_argv(pr.sch, csv_, v), "kicad-cli", ctx.ws, capture_output=True, text=True)
+            if p.returncode or not csv_.is_file():
+                r.level = "error"
+                r.findings.append(f"{pr.name}: kicad-cli sch export bom{' --variant ' + v if v else ''} failed (exit "
+                                  f"{p.returncode} {limits.explain_rc(p.returncode)}): {(p.stdout + p.stderr)[-300:]}")
+                continue
+            r.findings += bom.compare(bom.mine(parts, v), bom.from_kicad_csv(csv_),
+                                      f"{pr.sch.relative_to(ctx.repo.path)} ({'variant ' + v if v else 'base'})")
+    r.log = ctx.ws.rel(out)
+
+
+def c_cam_output(ctx: Ctx, r: Result):
+    """CK-D10 (XD-ADR-0129): the board document's local output (`curatrix cam`) is there for the
+    commit the repo is at; never in CI."""
+    from curatrix import cam
+    for pr in _boards(ctx):
+        rec, _, why = cam.current(ctx.ws.build(ctx.cfg.area) / "cam", pr.name, ctx.repo.path, pr.folder)
+        if rec is None:
+            r.findings.append(f"{pr.name}: {why}; the board document shows no renderings, schematic or ERC/DRC "
+                              f"findings; run `curatrix cam {ctx.repo.name} {pr.name}`")
 
 
 def c_codeneeds(ctx: Ctx, r: Result):

@@ -163,6 +163,18 @@ checks:
     need: XD-CHECK-0045
     enforces: [XD-RULE-0054]
     description: "XD_VERSION in a title-block comment line of every sheet and of the board, in a silkscreen text, not in the Rev field; the committed value is unversioned."
+  CK-F12:
+    need: XD-CHECK-0049
+    enforces: [XD-RULE-0058]
+    description: "Every part in the BOM of a pcba/ board (base or any variant) has the fields Manufacturer and MPN, or a field Standard with its standard designation instead."
+  CK-D9:
+    need: XD-CHECK-0050
+    enforces: [XD-RULE-0059]
+    description: "The plain-Python BOM reader (references, value, footprint, DNP, Manufacturer, MPN, Setting) equals kicad-cli sch export bom of every pcba/ board, without a variant and with --variant for each variant (P5-15)."
+  CK-D10:
+    need: XD-CHECK-0051
+    enforces: [XD-RULE-0060]
+    description: "The local curatrix cam output of every pcba/ board exists for the commit the repo is at (and, with uncommitted changes in the project folder, is newer than them), so the board document shows renderings, schematic and ERC/DRC findings; never in CI."
   CK-G1:
     need: XD-CHECK-0023
     enforces: [XD-RULE-0038]

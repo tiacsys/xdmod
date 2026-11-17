@@ -1,0 +1,7 @@
+"Reference","Value","Footprint","DNP","Manufacturer","MPN","Setting"
+"J1","Conn_01x03","Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical","","","","1-2"
+"JP1","SolderJumper_2_Open","Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm","DNP","","",""
+"R1","10k","Resistor_SMD:R_0603_1608Metric","","Yageo","RC0603FR-0710KL",""
+"R2","1k","Resistor_SMD:R_0603_1608Metric","","Yageo","RC0603FR-071KL",""
+"R3","1k","Resistor_SMD:R_0603_1608Metric","","Yageo","RC0603FR-071KL",""
+"U1","LM2904","Package_SO:SOIC-8_3.9x4.9mm_P1.27mm","","Texas Instruments","LM2904DR",""

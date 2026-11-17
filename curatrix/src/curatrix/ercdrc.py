@@ -303,6 +303,13 @@ def exclusion_key(f: Finding, keys: list[str]) -> str | None:
 class Outcome:
     problems: list[str] = field(default_factory=list)     # findings of the check
     listed: list[str] = field(default_factory=list)       # warnings and accepted errors (report only)
+    rows: list[dict] = field(default_factory=list)        # one per finding, for the board document
+
+    def row(self, f: Finding, state: str, note: str = "") -> None:
+        """state: open | proposal | accepted | warning | stale (an exclusion of a rule that is off)."""
+        self.rows.append({"check": f.check, "rule": f.rule, "severity": f.severity or "off", "state": state,
+                          "items": ", ".join(f.refs) or "; ".join(f.items)[:120], "description": f.description,
+                          "note": note})
 
 
 def evaluate(findings: list[Finding], entries: list[Entry], excl: dict[str, tuple[bool, str]]) -> Outcome:
@@ -316,6 +323,7 @@ def evaluate(findings: list[Finding], entries: list[Entry], excl: dict[str, tupl
         if f.excluded:
             if f.severity == "":
                 o.problems.append(f"stale KiCad exclusion of a rule that is off: {f.line()}; remove the exclusion")
+                o.row(f, "stale", "KiCad exclusion of a rule that is off")
                 continue
             if f.check == "CK-F4a" and (f.rule, tuple(sorted(f.uuids))) in open_:
                 continue                 # a phantom of a stale ERC exclusion (KiCad spike §4.4)
@@ -324,23 +332,30 @@ def evaluate(findings: list[Finding], entries: list[Entry], excl: dict[str, tupl
                 (False, "no matching exclusion in the .kicad_pro")
             if f.severity != "error":
                 o.listed.append(f"warning, excluded: {f.line()}")
+                o.row(f, "warning", f"excluded in KiCad: {f.comment}" if f.comment else "excluded in KiCad")
             elif ok:
                 o.listed.append(f"accepted (KiCad exclusion, {why}): {f.line()}")
+                o.row(f, "accepted", f"KiCad exclusion{': ' + f.comment if f.comment else ''}; {why}")
             else:
                 o.problems.append(f"excluded in KiCad, but the exclusion is a proposal ({why}): {f.line()}")
+                o.row(f, "proposal", f"KiCad exclusion{': ' + f.comment if f.comment else ''}; {why}")
             continue
         if f.severity != "error":
             o.listed.append(f"warning: {f.line()}")
+            o.row(f, "warning")
             continue
         e = next((e for e in entries if e.matches(f)), None)
         if e is None:
             o.problems.append(f"error: {f.line()}")
+            o.row(f, "open")
             continue
         e.hits += 1
         if e.status == "accepted":
             o.listed.append(f"accepted ({ACCEPTED} {e.label()}, {e.why}): {f.line()}")
+            o.row(f, "accepted", f"{e.reason.rstrip('.')} ({ACCEPTED} entry {e.index}; {e.why})")
         else:
             by_entry.setdefault(e.index, []).append(f)
+            o.row(f, "proposal", f"{e.reason.rstrip('.')} ({ACCEPTED} entry {e.index}; {e.why})")
     for e in entries:
         if e.index in by_entry:
             n = len(by_entry[e.index])
@@ -447,3 +462,18 @@ def check_project(ws, cfg, pr, kind: str, out: Path, acc: Acceptors) -> tuple[li
         if not e.hits:
             o.problems.append(f"{rel} {e.label()} matches no {kind.upper()} finding; remove it")
     return [f"{pr.name}: {p}" for p in o.problems], o.listed, ""
+
+
+def document_rows(ws, cfg, pr, out: Path, acc: Acceptors) -> dict:
+    """ERC and DRC of one project for its board document (`curatrix cam`, task 5.21): kind -> one
+    row per finding with its state (open, proposal, accepted, warning, stale). Reports go to ``out``."""
+    res = {}
+    for kind, check in (("erc", "CK-F4a"), ("drc", "CK-F4b")):
+        if kind == "drc" and (pr.kind != "pcba" or not pr.pro.with_suffix(".kicad_pcb").is_file()):
+            continue
+        rep, err = run_tool(ws, pr, kind, out)
+        if rep is None:
+            raise RuntimeError(err)
+        entries = [e for e in project_entries(cfg, pr, acc)[0] if e.check == check]
+        res[kind] = evaluate(read_report(rep, check), entries, exclusion_verdicts(cfg, pr, acc, kind)).rows
+    return res
