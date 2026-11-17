@@ -293,10 +293,11 @@ def ensure_kicad_config(ws: Workspace) -> Path:
 
 
 def create_state(ws: Workspace) -> None:
-    for d in ("kicad", "freecad", "drawio", "cache"):
+    for d in ("kicad", "freecad", "drawio", "cache", "stepup/home"):
         (ws.state / d).mkdir(parents=True, exist_ok=True)
     ensure_kicad_config(ws)
     ensure_freecad_config(ws)
+    # stepup/home: HOME of a StepUp run (StepUp writes ~/ksu-config.ini), $XD_STEPUP_HOME
     readme = ws.state / "README"
     if not readme.exists():
         readme.write_text("Workspace-local state of curatrix (command-layer.md §5): tool configs for KiCad,\n"
@@ -572,12 +573,18 @@ def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
         ts = tools.ToolSet()
     for t in ts.tools.values():
         s = tools.stamp_of(ws, t.name)
+        lic = f"; licence: {t.licence}" if t.licence else ""
+        pin = f" at {t.commit[:12]}" if t.commit else ""
         if tools.installed_ok(ws, t):
-            add("ok", f"{t.name} {t.version}", f".venv/{t.location}")
-        elif s and s.get("version") != t.version:
-            add("FAIL", f"{t.name}: installed {s.get('version')}, tools.yaml wants {t.version}", "curatrix update")
+            add("ok", f"{t.name} {t.version}{pin}", f"{t.shown()}{lic}")
+        elif s and (s.get("version") != t.version or s.get("commit", "") != t.commit):
+            have = s.get("version") + (f" at {s['commit'][:12]}" if s.get("commit") else "")
+            add("FAIL", f"{t.name}: installed {have}, tools.yaml wants {t.version}{pin}", "curatrix update")
+        elif s and t.kind == "git" and t.path(ws).exists():
+            add("FAIL", f"{t.name}: {t.shown()} is a git checkout, not at {t.commit[:12]}", "curatrix update")
         else:
-            add("FAIL", f"{t.name} {t.version} not installed", "curatrix update (or `curatrix update --adopt`)")
+            add("FAIL", f"{t.name} {t.version} not installed",
+                "curatrix update" if t.kind == "git" else "curatrix update (or `curatrix update --adopt`)")
     for st in ts.system.values():
         have = tools.system_version(st, ws)
         if have is None and not st.pinned:

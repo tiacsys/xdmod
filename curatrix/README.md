@@ -20,7 +20,7 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 
 | Command | Does |
 |---|---|
-| `curatrix env [--shell fish]` | prints the workspace env: `eval "$(curatrix env)"` (`PATH`, `ZEPHYR_BASE`, `JAVA_HOME`, `XD_KICAD_*`, `XD_CAM_OUT` (`build/cam`, the output folder of the template jobset), `XD_FREECAD_PARTS`, `env:` of tools.yaml tools such as `ZEPHYR_SDK_INSTALL_DIR`, `PYTHONDONTWRITEBYTECODE=1`) |
+| `curatrix env [--shell fish]` | prints the workspace env: `eval "$(curatrix env)"` (`PATH`, `ZEPHYR_BASE`, `JAVA_HOME`, `XD_KICAD_*`, `XD_CAM_OUT` (`build/cam`, the output folder of the template jobset), `XD_FREECAD_PARTS`, `env:` of tools.yaml tools such as `ZEPHYR_SDK_INSTALL_DIR` and `XD_STEPUP`, `PYTHONDONTWRITEBYTECODE=1`) |
 | `curatrix run [--use USE] [-m MEM] [-t TIME] [-v] -- CMD…` | any command with the workspace env and limits (default use `script`, 1G/5m; `blender` for a `blender` command). Exit 124 = timeout, 137 = killed (memory) |
 | `curatrix limits` | resolved limits table and backend (systemd / ulimit) |
 | `curatrix fixtures` | runs the planted error of every built-in check (`curatrix/tests/test_planted_errors.py`, also the tool-backed ones) under limits and records the result in `build/fixtures/planted.json` (rule, test, result, tool versions, date). Exit 1 if a check did not fail on its planted error. Run for the Phase 5 review and at every baseline |
@@ -264,18 +264,20 @@ At each repo root (xdmod's own: `xdmod/tools.yaml`). curatrix merges the files o
 the same tool with two different versions is an error.
 
 ```yaml
-tools:                        # installed into <ws>/.venv/<location>
+tools:                        # installed into <ws>/.venv/<location> (or <ws>/.xdmod/…)
   - name: jdk
     version: "21.0.13+9"
-    kind: tarball             # tarball | zip | conda | file | npm
+    kind: tarball             # tarball | zip | conda | file | npm | git
     url: https://…
-    sha256: d7f5…             # required except for npm (npm checks integrity itself)
-    location: opt/jdk         # relative to .venv
+    sha256: d7f5…             # required except for npm (npm checks integrity itself) and git
+    commit: 3db9…             # git only, instead of sha256: the full commit hash (40 hex digits)
+    location: opt/jdk         # relative to .venv; `.xdmod/…` = relative to the workspace root
     strip: 1                  # tarball: leading path components dropped (default 1)
-    subdir: share/…           # conda / zip: copy only this folder of the package
+    subdir: share/…           # tarball / zip / conda / git: copy only this folder
     package: elkjs            # npm: package name (default: name)
+    licence: "MIT"            # optional: the licence and any gap in it (doctor shows it)
     links: {gh: bin/gh}       # symlinks .venv/bin/<name> -> <location>/<path>
-    env: {JAVA_HOME: "{location}"}   # exported by `curatrix env` ({location}, {venv})
+    env: {JAVA_HOME: "{location}"}   # exported by `curatrix env` ({location}, {venv}, {state} = .xdmod)
     roles: [sw]               # optional: only for these roles
 system:                       # used from the machine (D19)
   - name: kicad-cli
@@ -289,8 +291,16 @@ system:                       # used from the machine (D19)
 ```
 
 Downloads are cached in `<ws>/.xdmod/cache/downloads/` and checked against `sha256` before use.
-Each installed tool gets a stamp `.venv/opt/.xd-stamps/<name>.json` (name, version, sha256); `doctor`
-compares stamps with tools.yaml. The Zephyr SDK belongs in robarm-sw's tools.yaml (D138), e.g.
+`kind: git` (a tool without release archives, such as KiCad StepUp) fetches exactly `commit` into a
+bare cache repo `<ws>/.xdmod/cache/git/<name>.git`, checks that it got that commit, and extracts its
+tree (or `subdir`) with `git archive` into the location: no checkout, no remote. A location that is
+already a git checkout at the pinned commit (cloned by hand before) is adopted and stamped. Each
+installed tool gets a stamp `.venv/opt/.xd-stamps/<name>.json` (name, version, sha256, commit); `doctor`
+compares stamps with tools.yaml and fails when an adopted checkout moved off its commit.
+
+Curated tools of xdmod beyond the pip packages: `stepup` (KiCad StepUp, git pin, into
+`.xdmod/stepup/kicadStepUpMod`, `XD_STEPUP` and `XD_STEPUP_HOME` (its sandbox `HOME`) from `curatrix env`;
+AGPL-3.0 claimed without a LICENSE file: called in its own FreeCAD process, never imported). The Zephyr SDK belongs in robarm-sw's tools.yaml (D138), e.g.
 `env: {ZEPHYR_SDK_INSTALL_DIR: "{location}"}`.
 
 ## ids.yaml (the ledger)
