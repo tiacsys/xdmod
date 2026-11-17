@@ -29,7 +29,7 @@ For `model/*.sysml`, `model/generated/`, `generated/model*.json`, `views/`. Back
       `package` for a top-level package.
 
 ## Variants
-- [ ] Features and configurations follow PLEML (D102); `curatrix variants <repo>` is clean (CK-B4).
+- [ ] Features and configurations follow PLEML (D102); `curatrix pleml check <repo>` is clean (CK-B4).
 - [ ] Elements that belong to only some configurations carry `configs`.
 
 ## Generated and views

@@ -41,6 +41,10 @@ The canary board `robarm-ee/pcba/canary-board/` on main is the smallest complete
 example: one sheet, one traced symbol, the project saved by KiCad, `generated/cad-needs.json`
 committed. It belongs to the configuration `canary` (`Configs` field).
 
+`curatrix variants list robarm-ee` shows the board variants on every level: the model def, the
+KiCad variant and its description, the parts DNP or fitted per variant, and the configuration
+and usage each one serves (`--json` for tools). The PLEML feature rules are `curatrix pleml check`.
+
 ## To be added after the spike
 
 Jobset template and `curatrix new pcba`; variants (`--variant`); ERC/DRC with exclusions and

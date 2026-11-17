@@ -76,6 +76,9 @@ partially); save a document before a cross-document link or expression points fr
   not even `--version`: only `curatrix run -- blender`, `curatrix launch blender` or the
   `.venv/bin/blender` shim (`--factory-startup`, user paths in `.xdmod/blender/`).
 
+`curatrix variants list robarm-me` lists the assembly variants: the model def, the configuration
+table row with its parameters, the links with `Configs`, and what each variant serves.
+
 ## To be added
 
 Part presence by `Configs` and variant rows in `Params`; recompute, solid and collision checks

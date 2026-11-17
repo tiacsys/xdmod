@@ -178,6 +178,10 @@ and options is in the curatrix reference. The most used:
      - issue IDs, replace placeholders (:doc:`id-scheme`)
    * - ``curatrix views build|check|normalize <repo>``
      - views as editable ``.drawio.svg``
+   * - ``curatrix variants list [<repo>]``
+     - every board and assembly variant: model def, KiCad or FreeCAD name, differences, what it serves
+   * - ``curatrix pleml check [<repo>]``
+     - the PLEML variant rules (:doc:`variant-rules`)
    * - ``curatrix launch kicad|freecad|drawio|claude``
      - GUI tools with workspace-local config
    * - ``curatrix work start|done``
