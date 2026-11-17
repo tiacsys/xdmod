@@ -1,0 +1,267 @@
+{
+  "files": {
+    "generated/model-needs.json": {
+      "made_by": "curatrix gen model",
+      "tools": {
+        "jdk": "21.0.13+9",
+        "sysml-pilot": "0.63.1"
+      }
+    },
+    "generated/model.json": {
+      "made_by": "curatrix gen model",
+      "tools": {
+        "jdk": "21.0.13+9",
+        "sysml-pilot": "0.63.1"
+      }
+    },
+    "views/artifactKinds.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/buildAndCheck.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/changeProcess.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/decisionStatus.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/eeNeeds.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/eeRepo.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/evidenceStatus.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/frameworkRepos.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/intNeeds.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/intRepo.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/meNeeds.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/meRepo.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/needCategories.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/needStatus.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/pinBump.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/repoLayout.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/roleKinds.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/rolesAndUseCases.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/swNeeds.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/swRepo.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/sysEe.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/sysInt.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/sysMe.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/sysNeeds.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/sysRepo.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/sysSw.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/testResults.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/traceGovernance.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/traceLinkStatus.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/workspaceNeeds.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    },
+    "views/workspacePins.drawio.svg": {
+      "made_by": "curatrix views build",
+      "tools": {
+        "drawio-viewer": "32.6.1",
+        "elkjs": "0.12.1",
+        "firefox": "160.0"
+      }
+    }
+  },
+  "version": 1
+}
