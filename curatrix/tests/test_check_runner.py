@@ -29,7 +29,7 @@ def test_missing_checks_yaml_fails(tmp_path):
 
 
 def test_empty_plan_fails(tmp_path):
-    """--stage full with no section that runs at full plans nothing: that is an error, not a pass."""
+    """A run that plans no check (here an --only that matches nothing) is an error, not a pass."""
     ws, repo = _repo(tmp_path, "version: 1\nexpect: [CK-H1, CK-H2, CK-H3, CK-H4, CK-H6, CK-H7]\n")
     with pytest.raises(checkcfg.ConfigError, match="no check runs"):
         checks.run(ws, repo, stage="baseline", only=["CK-XX"], log=lambda *_: None)
@@ -107,3 +107,43 @@ def test_is_generated_uses_the_config(tmp_path):
     assert checks.is_generated("out/cad.json", cfg) and checks.is_generated("out/fc/a.FCStd.json", cfg)
     assert checks.is_generated("model/generated/NeedStubs.sysml", cfg)
     assert not checks.is_generated("out/other.json", cfg) and not checks.is_generated("src/x.py", cfg)
+
+
+def test_pr_size_base_from_ci_fetch_and_renames(tmp_path, monkeypatch):
+    """In CI there is no `origin` (west clone): the base comes from refs/remotes/xd-ci/base, which
+    `curatrix ci siblings` fetches. An edited rename counts its lines."""
+    y = "version: 1\npr_size: {lines: 10, files: 5}\n"
+    ws, repo = _repo(tmp_path, y)
+    _commit(repo.path, "src/a.py", "".join(f"line {i}\n" for i in range(30)))
+    subprocess.run(["git", "-C", str(repo.path), "update-ref", "refs/remotes/xd-ci/base", "HEAD"], check=True)
+    monkeypatch.delenv("XD_BASE_REF", raising=False)
+    monkeypatch.setenv("GITHUB_BASE_REF", "main")
+    subprocess.run(["git", "-C", str(repo.path), "mv", "src/a.py", "src/b.py"], check=True)
+    _commit(repo.path, "src/b.py", "".join(f"line {i}\n" for i in range(5)))
+    ok, res, _, _ = _run(ws, repo, only=["CK-H7"])
+    assert res["CK-H7"]["status"] == "warn" and "xd-ci/base" in res["CK-H7"]["findings"][0]
+
+
+def test_pr_size_without_base_skips(tmp_path, monkeypatch):
+    ws, repo = _repo(tmp_path, "version: 1\n")
+    monkeypatch.setenv("XD_BASE_REF", "nope")
+    ok, res, _, _ = _run(ws, repo, only=["CK-H7"])
+    assert ok and res["CK-H7"]["status"] == "skip"
+
+
+def test_stale_evidence_without_pins_fails(tmp_path):
+    y = "version: 1\ndocs: {registry: docs/documents.yaml}\n"
+    ws, repo = _repo(tmp_path, y)
+    ctx = checks.Ctx(ws, repo, checkcfg.load(repo.path / "checks.yaml", ws.root), "baseline", False, None, tmp_path)
+    ctx.graph_findings, ctx.graph = [], checks.graph.Graph({})
+    r = checks.Result("CK-B6", "stale", level="report")
+    checks.c_stale(ctx, r)
+    assert r.level == "error" and "no pinned SHAs" in r.findings[0]
+
+
+def test_empty_plan_writes_a_failed_summary(tmp_path):
+    import json
+    ws, repo = _repo(tmp_path, "version: 1\n")
+    with pytest.raises(checkcfg.ConfigError):
+        checks.run(ws, repo, only=["CK-XX"], log=lambda *_: None)
+    assert json.loads((ws.build("r") / "checks" / "summary.json").read_text())["ok"] is False

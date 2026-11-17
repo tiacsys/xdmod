@@ -144,6 +144,7 @@ def c_stale(ctx: Ctx, r: Result):
     _graph(ctx)
     pins = {x.name: x.sha for x in ctx.ws.repos if x.sha}
     if not pins:
+        r.level = "error"             # a report would let the stage pass without judging evidence
         r.findings = ["no pinned SHAs: `west list` gave none (no west workspace, or it failed); "
                       "stale evidence cannot be judged"]
         return
@@ -418,13 +419,18 @@ GENERATED = ("generated/", "model/generated/", "views/")
 
 
 def _base_ref(path: Path) -> str | None:
-    """The ref a PR is measured against: the PR's base branch in CI (GITHUB_BASE_REF), else main,
-    on the first remote that has it."""
+    """The ref a PR is measured against: XD_BASE_REF if set; in CI the base that `curatrix ci
+    siblings` fetched (refs/remotes/xd-ci/base; west clones have no `origin`); else the PR's base
+    branch (GITHUB_BASE_REF) or main, on the first remote that has it, or locally."""
     import os
-    branch = os.environ.get("XD_BASE_REF") or os.environ.get("GITHUB_BASE_REF") or "main"
-    remotes = subprocess.run(["git", "-C", str(path), "remote"], capture_output=True, text=True,
-                             timeout=30).stdout.split()
-    for ref in [f"{rm}/{branch}" for rm in ["origin", *remotes]] + [branch]:
+    if os.environ.get("XD_BASE_REF"):
+        cands = [os.environ["XD_BASE_REF"]]
+    else:
+        branch = os.environ.get("GITHUB_BASE_REF") or "main"
+        remotes = subprocess.run(["git", "-C", str(path), "remote"], capture_output=True, text=True,
+                                 timeout=30).stdout.split()
+        cands = ["refs/remotes/xd-ci/base", *[f"{rm}/{branch}" for rm in ["origin", *remotes]], branch]
+    for ref in cands:
         if subprocess.run(["git", "-C", str(path), "rev-parse", "-q", "--verify", f"{ref}^{{commit}}"],
                           capture_output=True, timeout=30).returncode == 0:
             return ref
@@ -433,7 +439,7 @@ def _base_ref(path: Path) -> str | None:
 
 def is_generated(rel: str, cfg: checkcfg.ChecksConfig) -> bool:
     """A committed generated file (written by `curatrix gen` / `views build`), not counted as hand-written."""
-    if rel.startswith(GENERATED) or rel.endswith(".drawio.svg") or "/fixtures/" in f"/{rel}":
+    if rel.startswith(GENERATED) or rel.endswith(".drawio.svg"):
         return True
     outs = []
     for sec, keys in (("model", ("json", "needs")), ("stubs", ("out",)), ("cad", ("needs", "freecad_json")),
@@ -449,7 +455,7 @@ def c_pr_size(ctx: Ctx, r: Result):
         r.status = "skip"
         r.findings = ["no base branch to compare with (set XD_BASE_REF)"]
         return
-    p = subprocess.run(["git", "-C", str(ctx.repo.path), "diff", "--numstat", f"{base}...HEAD"],
+    p = subprocess.run(["git", "-C", str(ctx.repo.path), "diff", "--numstat", "--no-renames", f"{base}...HEAD"],
                        capture_output=True, text=True, timeout=60)
     if p.returncode:
         r.findings = [f"git diff against {base} failed: {p.stderr.strip()[:200]}"]
@@ -457,7 +463,7 @@ def c_pr_size(ctx: Ctx, r: Result):
     lines = files = 0
     for ln in p.stdout.splitlines():
         add, rm, rel = (ln.split("\t") + ["", "", ""])[:3]
-        if " => " in rel or is_generated(rel, ctx.cfg) or add == "-":
+        if is_generated(rel, ctx.cfg) or add == "-":
             continue
         files += 1
         lines += int(add) + int(rm)
@@ -520,6 +526,8 @@ def run(ws, repo, stage: str = "local", no_cad: bool = False, only: list[str] | 
         items.insert(0, next((cid, n, lv.get(stage, "error"), c, fn, None)
                              for cid, n, lv, need, c, fn in BUILTIN if cid == "CK-A6"))
     if not items:
+        (out / "summary.json").write_text(json.dumps({"repo": repo.name, "area": cfg.area, "stage": stage,
+                                                      "ok": False, "checks": [], "error": "empty plan"}, indent=2) + "\n")
         raise checkcfg.ConfigError(f"{repo.name}: no check runs at stage {stage}"
                                    f"{' with --only ' + ','.join(only) if only else ''}; an empty plan never passes")
     off = off_checks(cfg)
