@@ -61,6 +61,40 @@ def test_test_case_ids_from_ztest_comments(tmp_path):
     assert ev._tc_for("robarm.joint.joint.smoke", "robarm.joint", m) is None
 
 
+def test_preview_needs_from_a_twister_dir(tmp_path):
+    """Preview TR needs for the docs of the same check run (task 5.10): every suite and platform,
+    stable IDs, tag `preview`, untraced tests make no need."""
+    (tmp_path / "tests" / "src").mkdir(parents=True)
+    (tmp_path / "tests" / "src" / "main.c").write_text(
+        "/** Test case: SW-TC-0007. */\nZTEST(joint, test_limits)\n{\n}\nZTEST(joint, test_smoke) {}\n")
+    tw = tmp_path / "twister"
+    tw.mkdir()
+    (tw / "twister.json").write_text(json.dumps({
+        "environment": {"run_date": "2026-11-17T10:00:00"},
+        "testsuites": [
+            {"name": "robarm.joint", "platform": "native_sim/native", "status": "failed", "testcases": [
+                {"identifier": "robarm.joint.joint.limits", "status": "failed"},
+                {"identifier": "robarm.joint.joint.smoke", "status": "passed"}]},
+            {"name": "robarm.other", "platform": "native_sim/native", "status": "filtered", "testcases": []}]}))
+    doc = ev.preview_needs(tw, [tmp_path / "tests"], "SYS-CFG-0001")
+    n = doc["versions"][""]["needs"]
+    assert list(n) == ["TR-SW-TC-0007-" + ev.test_suffix("preview", "robarm.joint.joint.limits@native_sim/native")]
+    tr = next(iter(n.values()))
+    assert tr["verdict"] == "failed" and tr["result_of"] == ["SW-TC-0007"] and tr["tags"] == ["preview"]
+    assert tr["config"] == "SYS-CFG-0001" and "not evidence" in tr["content"]
+    assert ev.preview_needs(tw, [tmp_path / "tests"]) == ev.preview_needs(tw, [tmp_path / "tests"])   # stable
+
+
+def test_preview_cli_without_twister_output_removes_the_old_file(tmp_path, monkeypatch, capsys):
+    from curatrix import cli
+    root = make_ws(tmp_path, monkeypatch)
+    out = root / "build" / "x" / "tr-needs.json"
+    out.parent.mkdir(parents=True)
+    out.write_text("{}")
+    assert cli.main(["evidence", "preview", str(root / "build" / "none"), "-o", str(out)]) == 0
+    assert not out.exists() and "no preview test results" in capsys.readouterr().out
+
+
 TRID = "TR-SW-TC-0007-" + ev.test_suffix("20261115T010203Z-0123abcd", "robarm.joint.joint.limits")
 
 

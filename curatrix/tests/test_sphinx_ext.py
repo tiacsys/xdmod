@@ -59,3 +59,9 @@ def test_cad_export_is_shown_when_present(tmp_path):
     assert rc == 0, log
     html = (out / "index.html").read_text()
     assert 'id="kicad-board"' in html and "built locally" not in html
+
+
+def test_needimport_missing_prints_the_sentence(tmp_path):
+    rc, log, out = build(tmp_path, ".. xd-needimport:: /build/preview.json\n   :missing: No local test run yet.\n")
+    assert rc == 0, log
+    assert "No local test run yet." in (out / "index.html").read_text()

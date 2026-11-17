@@ -154,6 +154,21 @@ def cmd_evidence(a):
             print(f"  {e}")
         print(f"{a.target}: {'INVALID' if errs else 'valid'} ({ev.SCHEMA_ID})")
         return 1 if errs else 0
+    if a.action == "preview":
+        if not a.target or not a.out:
+            raise SystemExit("usage: curatrix evidence preview TWISTER_DIR -o FILE [--tests DIR] [--config SYS-CFG-nnnn]")
+        out = Path(a.out)
+        if not (Path(a.target) / "twister.json").is_file():
+            out.unlink(missing_ok=True)          # no old preview may pose as this run's result
+            print(f"  no Twister output in {a.target}: no preview test results")
+            return 0
+        doc = ev.preview_needs(Path(a.target), [Path(d) for d in a.tests] if a.tests else None, a.config,
+                               project=f"{Path(a.target).name}-preview")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+        n = doc["versions"][""]["needs"]
+        print(f"  {len(n)} preview TR need(s) -> {ws.rel(out)}")
+        return 0
     repo = ws.repo(a.repo or _integration_repo(ws))
     url = next((p["url"] for p in ev._west_projects(ws) if p["name"] == repo.name), "") if ws.has_west else ""
     url = url or str(repo.path)
@@ -586,13 +601,14 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--sha", default="", help="its PR head commit")
     s.set_defaults(func=cmd_ci)
 
-    s = sub.add_parser("evidence", help="test run records: record (Twister dir -> evidence branch), read (-> TR needs), validate")
-    s.add_argument("action", choices=["record", "read", "validate"])
-    s.add_argument("target", nargs="?", default="", help="record: Twister output dir; validate: record.json")
-    s.add_argument("--config", help="record: the SYS-CFG of the run (required)")
+    s = sub.add_parser("evidence", help="test run records: record (Twister dir -> evidence branch), read (-> TR needs), "
+                                        "preview (Twister dir -> preview TR needs for the docs), validate")
+    s.add_argument("action", choices=["record", "read", "preview", "validate"])
+    s.add_argument("target", nargs="?", default="", help="record, preview: Twister output dir; validate: record.json")
+    s.add_argument("--config", help="record: the SYS-CFG of the run (required); preview: optional")
     s.add_argument("--kind", choices=["sim", "hil"], default="sim", help="hil: on the HIL setup; sim: native_sim/QEMU (never HIL evidence)")
     s.add_argument("--setup", help="record --kind hil: the setup folder hil/<setup>")
-    s.add_argument("--tests", action="append", help="test source folders for the ZTEST -> test case IDs (default: Twister's testsuite roots)")
+    s.add_argument("--tests", action="append", help="record, preview: test source folders for the ZTEST -> test case IDs (default: Twister's testsuite roots)")
     s.add_argument("--map", action="append", help="TEST=ID: test case ID for a Twister test (overrides the source comments)")
     s.add_argument("--note")
     s.add_argument("--repo", help="the repo with the evidence branch (default: the framework repo named <project>-integration)")
@@ -602,7 +618,7 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--dry-run", action="store_true", help="record: print the record, write nothing")
     s.add_argument("--offline", action="store_true", help="record: don't check main/baseline at the remotes (the rule then fails)")
     s.add_argument("--ref", help="read: a git ref instead of the remote branch")
-    s.add_argument("-o", "--out", help="read: output file (default build/<repo>/evidence/tr-needs.json)")
+    s.add_argument("-o", "--out", help="read: output file (default build/<repo>/evidence/tr-needs.json); preview: output file (required)")
     s.set_defaults(func=cmd_evidence)
 
     s = sub.add_parser("hook", help=argparse.SUPPRESS)

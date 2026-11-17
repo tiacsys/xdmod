@@ -42,6 +42,7 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 | `curatrix variants [<repo>] [--model FILE] [-v]` | variant rules F1, F2, V1–V5 on a model JSON (Pilot export or compact) |
 | `curatrix needs-diff BEFORE AFTER [-o FILE]` | change impact between two sets of needs.json (files or folders): changed needs, SUSPECT (direct/transitive), DANGLING. Exit 1 if any |
 | `curatrix evidence record TWISTER_DIR --config SYS-CFG-n [--kind sim\|hil] [--setup S] [--branch B] [--create] [--dry-run]` | a run record from a Twister output dir + the workspace state, committed onto the orphan branch `evidence` of robarm-integration through a worktree in `build/evidence/` ([Evidence](#evidence-run-records)) |
+| `curatrix evidence preview TWISTER_DIR -o FILE [--tests DIR] [--config SYS-CFG-n]` | preview `TR` needs from a local Twister output dir, for the docs build of the same check run (no record, never evidence); no Twister output: removes FILE |
 | `curatrix evidence read [--repo R] [--branch B] [-o FILE]` | run records → `TR` needs (`build/<repo>/evidence/tr-needs.json`), stale ones tagged |
 | `curatrix trace <repo\|full> [--canary SYS-CFG-n] [-o DIR]` | minimal trace report from the last docs build: one row per `SYS-REQ` (refined by, satisfied by, verified by test cases, also through refining requirements, latest result: one per test case, newest by `run_id`, not per platform; gaps). Only evidence counts: a `preview` result is shown as "preview, not evidence" and a `stale` one is a gap. Requirements of the configuration `canary` (all their `configs` canary ones, or `configures` from a canary `SYS-CFG`: tag `canary` or "canary" in the title, or `--canary`) in their own section, left out of the coverage numbers (P5-16). Writes `build/<area>/trace/trace.md`, `trace.html`, `trace.json` |
 | `curatrix evidence validate FILE` | a record against the schema |
@@ -122,11 +123,13 @@ commands:                           # repo-specific checks (CK-F*, tests, ...)
     cad: true                       # needs CAD tools: skipped with --no-cad (default false)
     level: error                    # error | warning | report (default error)
     cwd: "{repo}"                   # default
+    before_docs: false              # true: runs before the docs build (CK-A6), e.g. tests whose results the docs show
 ```
 
 Placeholders in `run` and `cwd`: `{ws}` workspace root, `{repo}` repo folder, `{build}`
 `build/<area>/checks`, `{area}`, `{python}` the venv's python. A command fails when it exits non-zero;
-its output is in `build/<area>/checks/<id>.log`.
+its output is in `build/<area>/checks/<id>.log`. Commands with `before_docs: true` run first, in
+the order of the file, before CK-A6 and the other built-in checks; all other commands run last.
 
 **Summary JSON** (`build/<area>/checks/summary.json`, also `--json`):
 `{"repo", "area", "stage", "no_cad", "ok", "checks": [{"id", "name", "status", "level", "findings": [str], "log", "repro", "seconds"}]}`
@@ -344,6 +347,15 @@ of one test case keep both results) (`result_of`, `method` = `hil`/`test`, `conf
 `shas` = `repo=sha` for all projects, `verdict`). A record whose SHAs differ from the current pins
 (`west list`) gets the tag `stale` and a note in its content; CK-B6 reports the same from `shas`.
 A test report imports the file with `.. xd-needimport:: /…/tr-needs.json` and `:optional:`.
+
+**Previews of the local run (task 5.10).** `curatrix evidence preview` turns a Twister output dir
+straight into `TR` needs with the tag `preview` (all suites and platforms, no firmware hash, no
+workspace state, IDs `TR-<test case>-<8 hex of "preview" and the test>`). A repo runs its Twister
+command and the preview command with `before_docs: true`, so the test report of the same
+`curatrix check` run shows them; the report imports the file with
+`.. xd-needimport:: /…/tr-needs.json` and `:missing: <sentence>` (printed when there is no run, e.g.
+in CI without Twister). Previews never go onto the evidence branch; published results stay
+`evidence read`.
 
 ## SysML model conventions
 

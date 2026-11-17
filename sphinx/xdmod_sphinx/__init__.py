@@ -12,7 +12,9 @@ Directives
 ``xd-needimport``
     ``.. xd-needimport:: /generated/retired-needs.json`` with ``:optional:`` -- like ``needimport``
     (all other options are passed on), but an optional file that does not exist is skipped
-    silently (e.g. ``retired-needs.json`` before the first tombstone).
+    silently (e.g. ``retired-needs.json`` before the first tombstone). ``:missing: <sentence>``
+    makes the file optional too, and prints the sentence in its place (e.g. preview test results
+    that exist only after a local test run).
 
 ``kicad-sheet``, ``kicad-bom``, ``kicad-nets``, ``freecad-drawing``, ``freecad-3d``
     CAD content that needs the CAD tools. The argument names an export below ``xd_cad_dir``
@@ -133,17 +135,19 @@ class XdNeedimportDirective(Directive):
     required_arguments = 1
     final_argument_whitespace = False
     has_content = False
-    option_spec = {"optional": directives.flag}
+    option_spec = {"optional": directives.flag, "missing": directives.unchanged}
 
     def run(self):
         _, path = _src_path(self, self.arguments[0])
         if not path.exists():
+            if "missing" in self.options:
+                return [nodes.paragraph(text=self.options["missing"] or "")]
             if "optional" in self.options:
                 return []
             raise self.error(f"xd-needimport: {self.arguments[0]} not found")
         lines = [f".. needimport:: {self.arguments[0]}"]
         for k, v in self.options.items():
-            if k != "optional":
+            if k not in ("optional", "missing"):
                 lines.append(f"   :{k}: {v if v is not None else ''}".rstrip())
         self.state_machine.insert_input(lines, self.state_machine.input_lines.source(0))
         return []
