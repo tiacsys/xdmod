@@ -142,7 +142,7 @@ Rows marked *revised* or *superseded* were changed later. The note in the row na
 | D122 | **Agent-readable docs:** the **sphinx-llm** extension is tried for llms.txt / Markdown output of the doc sets. | 2026-11-14 |
 | D123 | **GitHub admin by agents** (repos, rulesets, labels, Pages settings) only after the owner approves each concrete action list. | 2026-11-14 |
 | D124 | **Posting approval:** agents post freely in robarm-* and xdmod (with the trailer). On other repos (zdocs, affirmatrix, upstream projects), they draft first and post after the owner's approval. | 2026-11-14 |
-| D125 | **Parallel agents work in git worktrees** under `<ws>/.worktrees/<branch>/<repo>` (`curatrix work start/done`). Shared parts aren't duplicated, and builds go to `build/<branch>/`. | 2026-11-14 |
+| D125 | **Parallel agents work in git worktrees** under `<ws>/.worktrees/<branch>/<repo>` (`curatrix work start/done`). Shared parts aren't duplicated, and builds go to `build/wt-<slug>/` (`feat/x` -> `build/wt-feat-x/`). | 2026-11-14 |
 | D126 | **Every PR in robarm-* and xdmod gets an agent review** (by an agent other than the author, `/review-pr`) before the owner's review. | 2026-11-14 |
 | D127 | **PR CI sibling resolution:** same-name branch → the repo's `main` if the manifest pin is an ancestor of it → manifest pin. So downstream PRs see upstream changes merged but not yet bumped. Refines D52. | 2026-11-14 |
 | D128 | **The definition holds the trace ID** (SysML `part def`, KiCad sheet file, FreeCAD part file). Usages are listed in an `instances` field, not as separate needs. A usage gets its own ID `<ID>.<n>` only if it has its own requirement. | 2026-11-14 |

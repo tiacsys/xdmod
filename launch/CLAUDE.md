@@ -18,7 +18,7 @@ are linked into `.claude/` (D113).
    `curatrix run [--use USE | -m MEM -t TIME] -- <cmd>` (exit 124 = timeout, 137 = out of memory).
    `curatrix limits` shows the table. Never raise a limit to make a runaway tool pass; find out why.
 3. **Build output only under `build/<area>/`** (D46): `<area>` = the repo name, `full` for the full set,
-   `<branch>` for worktree builds, or a named step. Nothing generated goes into a repo except the
+   `wt-<branch>` for worktree builds (`/` as `-`), or a named step. Nothing generated goes into a repo except the
    committed generated files (`generated/`, `model/generated/`, `views/`), which `curatrix gen` /
    `curatrix views build` write and `curatrix check` compares.
 4. **Use the workspace venv** (`.venv`, `eval "$(curatrix env)"`). No system packages, no sudo, no
