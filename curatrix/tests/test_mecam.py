@@ -80,6 +80,9 @@ def test_sheet_svg_and_pdf():
     ps = mecam._paths(view)
     assert len(ps) == 4 and ps[0] == [(0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (0.0, 0.0)]
     assert abs(min(y for _, y in ps[1]) + 5) < 0.2 or abs(max(y for _, y in ps[1]) - 5) < 0.2   # a half circle
+    # TechDraw's own circle form has a blank before the "=" (the canary base plate's top view)
+    ps = mecam._paths('<g><circle cx ="-11" cy ="6" r ="4" /></g>')
+    assert len(ps) == 1 and abs(max(x for x, _ in ps[0]) + 7) < 1e-6
     lines, texts = mecam.sheet({k: view for k in mecam.VIEWS}, {"assembly": "fx", "version": "fx/v1.0.0"}, True)
     assert any(t[3] == "PREVIEW" for t in texts) and any("Version: fx/v1.0.0" == t[3] for t in texts)
     pdf = mecam.sheet_pdf(lines, texts)

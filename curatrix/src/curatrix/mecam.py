@@ -189,7 +189,7 @@ def _paths(svg: str) -> list[list[tuple]]:
     """The polylines of a TechDraw view SVG: each path as a list of (x, y) points (arcs and curves
     flattened), circles as polygons."""
     out = []
-    for d in re.findall(r'<path[^>]*?\sd="([^"]*)"', svg):
+    for d in re.findall(r'<path[^>]*?\sd\s*=\s*"([^"]*)"', svg):
         toks = re.findall(r"[MLHVCSQAZmlhvcsqaz]|" + _NUM, d)
         pts, cur, start, cmd, i = [], (0.0, 0.0), (0.0, 0.0), "M", 0
 
@@ -249,7 +249,9 @@ def _paths(svg: str) -> list[list[tuple]]:
                 i += 1
         if len(pts) > 1:
             out.append(pts)
-    for cx, cy, r in re.findall(r'<circle[^>]*?cx="(' + _NUM + r')"[^>]*?cy="(' + _NUM + r')"[^>]*?r="(' + _NUM + r')"', svg):
+    # TechDraw writes circles as `<circle cx ="-11" cy ="6" r ="4" />` (a blank before the "=")
+    for cx, cy, r in re.findall(r'<circle[^>]*?\scx\s*=\s*"(' + _NUM + r')"[^>]*?\scy\s*=\s*"(' + _NUM
+                                + r')"[^>]*?\sr\s*=\s*"(' + _NUM + r')"', svg):
         cx, cy, r = float(cx), float(cy), float(r)
         out.append([(cx + r * math.cos(2 * math.pi * k / 32), cy + r * math.sin(2 * math.pi * k / 32)) for k in range(33)])
     return out
