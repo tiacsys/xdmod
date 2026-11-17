@@ -169,7 +169,7 @@ What is in iteration 1 and what moved to iteration 2.
    well inside the ``freecad`` limit of 10 minutes for a few variants.
 
 .. xd-adr:: Blender as an optional local renderer of the ME renderings
-   :id: XD-ADR-NEW-blender
+   :id: XD-ADR-0148
    :date: 2026-11-17
    :decision_status: proposed
    :status: valid

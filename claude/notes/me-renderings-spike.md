@@ -83,7 +83,7 @@ FreeCAD reported the workspace config dir (`GuiUp 1 cfg .../ws-syseng/.xdmod/fre
 
 The owner reversed "no Blender" the same day: the system package (`blender 5.2.3`, Arch) may
 render, through its executable only (no `bpy` wheel, no new system package). Proposed as
-`XD-ADR-NEW-blender` (refines XD-ADR-0147). What was tried and what `curatrix cam` does now:
+`XD-ADR-0148` (refines XD-ADR-0147). What was tried and what `curatrix cam` does now:
 
 | Question | Finding |
 |---|---|
