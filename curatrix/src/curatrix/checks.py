@@ -111,6 +111,10 @@ BUILTIN = [
      _lv({"local": "warning", "pr": "warning"}), "cad.projects", False, "c_jobset"),
     ("CK-F11", "XD_VERSION in a title-block comment of every sheet and board and in a silkscreen text",
      _lv({"local": "warning", "pr": "warning"}), "cad.projects", False, "c_version_variable"),
+    ("CK-F14", "FreeCAD assemblies 1:1 with the assembly defs of the ME model; skeleton; no reference to a top document",
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.freecad+model", False, "c_me_one_to_one"),
+    ("CK-F15", "FreeCAD links per part or sub-assembly equal the usages (ME model and system model)",
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.freecad+model", False, "c_link_counts"),
     ("CK-H1", ".FCStd uncompressed; drawio uncompressed", _lv({"local": "error", "pr": "error", "baseline": "error"}), None, False, "c_hygiene_compress"),
     ("CK-H2", "no build output inside the repo", _lv({"local": "error", "pr": "error"}), None, False, "c_hygiene_build"),
     ("CK-H3", "pins in requirements.txt / tools.yaml", _lv({"pr": "warning", "local": "warning"}), None, False, "c_pins"),
@@ -127,7 +131,8 @@ NEED_TEXT = {"model.variants": "model.variants: true", "model.upstream": "model.
              "variants": "a variants section (domain repos, with model.upstream)",
              "cad.projects": "cad.projects", "cad.projects+model": "cad.projects and a model section",
              "cad.connectors": "cad.projects and cad.connectors",
-             "cad.connectors+model": "cad.projects, cad.connectors and a model section"}
+             "cad.connectors+model": "cad.projects, cad.connectors and a model section",
+             "cad.freecad+model": "cad.freecad and a model section"}
 
 
 def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
@@ -151,6 +156,8 @@ def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
     if need in ("cad.connectors", "cad.connectors+model"):
         c = cfg.section("cad") or {}
         return bool(c.get("projects") and c.get("connectors")) and (need == "cad.connectors" or cfg.section("model") is not None)
+    if need == "cad.freecad+model":
+        return bool((cfg.section("cad") or {}).get("freecad")) and cfg.section("model") is not None
     if need == "cad.projects+model":
         return bool((cfg.section("cad") or {}).get("projects")) and cfg.section("model") is not None
     return cfg.section(need) is not None
@@ -361,6 +368,33 @@ def c_ee_one_to_one(ctx: Ctx, r: Result):
     from curatrix import harness
     if harness.patterns(ctx.cfg):        # cable defs <-> harness/<name>/ (task 5.22)
         r.findings += harness.one_to_one(ctx.cfg, m)
+
+
+def _model_or_finding(ctx: Ctx, r: Result):
+    s = ctx.cfg.section("model") or {}
+    mj = ctx.cfg.resolve(s.get("json", "generated/model.json"))
+    if not mj.exists():
+        r.findings = [f"{ctx.ws.rel(mj)} missing; run `curatrix gen model {ctx.repo.name}`"]
+        return None
+    return modelmod.Model.load(mj)
+
+
+def c_me_one_to_one(ctx: Ctx, r: Result):
+    """CK-F14 (XD-ADR-0128, XD-ADR-0137): assembly defs of the committed model.json <-> FreeCAD documents."""
+    from curatrix import meassemblies
+    m = _model_or_finding(ctx, r)
+    if m is not None:
+        ups, missing = gen.upstream_models(ctx.cfg)
+        r.findings = missing + meassemblies.one_to_one(ctx.cfg, m, upstream=ups)
+
+
+def c_link_counts(ctx: Ctx, r: Result):
+    """CK-F15 (XD-ADR-0138): FreeCAD links vs the usages of the ME model and of the upstream system model."""
+    from curatrix import meassemblies
+    m = _model_or_finding(ctx, r)
+    if m is not None:
+        ups, missing = gen.upstream_models(ctx.cfg)
+        r.findings = missing + meassemblies.link_counts(ctx.cfg, m, ups)
 
 
 def c_connectors_fresh(ctx: Ctx, r: Result):

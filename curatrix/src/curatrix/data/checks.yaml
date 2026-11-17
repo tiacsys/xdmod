@@ -115,6 +115,14 @@ checks:
     need: XD-CHECK-0036
     enforces: [XD-RULE-0049]
     description: "Each board def of the EE model has exactly one pcba/ project whose TraceID is its EE-PCBA ID, in the folder named after the def; every pcba/ project names one board def; external parts have no project; no link variables on projects. Each cable def (XdDomain::Cable, EE-HAR) has exactly one harness/<name>/<name>.yml whose metadata TraceID is its EE-HAR, in the folder named after the def, and back (cad.harnesses)."
+  CK-F14:
+    need: XD-CHECK-0046
+    enforces: [XD-RULE-0055]
+    description: "Each assembly def of the ME model has exactly one FreeCAD document with an object whose TraceID is its ME-ASM ID, named after the def; a top-level assembly is the folder assemblies/<name>/ with <name>.FCStd and <name>-skeleton.FCStd; no document refers to a top document; no link fields next to the TraceID."
+  CK-F15:
+    need: XD-CHECK-0047
+    enforces: [XD-RULE-0056]
+    description: "In the document of an assembly def, the FreeCAD links per part or sub-assembly (by the TraceID of the link target) equal its usages: the ME model's usages (with multiplicity) and the system model's usages in the blocks the assembly realizes; per configuration (Configs on links); links to the skeleton are not counted."
   CK-D7:
     need: XD-CHECK-0037
     enforces: [XD-RULE-0050]
