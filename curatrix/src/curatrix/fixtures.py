@@ -17,7 +17,7 @@ import xml.etree.ElementTree as ET
 from curatrix import limits
 
 
-def planted_table(ws) -> dict[str, str]:
+def planted_table(ws) -> tuple[dict[str, list[str]], list[str]]:
     path = ws.xdmod / "curatrix" / "tests" / "test_planted_errors.py"
     import sys
     sys.path.insert(0, str(path.parent))                    # the module imports `helpers`
@@ -27,7 +27,9 @@ def planted_table(ws) -> dict[str, str]:
         spec.loader.exec_module(mod)
     finally:
         sys.path.remove(str(path.parent))
-    return dict(mod.PLANTED), list(getattr(mod, "CONTROLS", []))
+    # a check may name several tests (a list), e.g. one per part of an extended check
+    table = {cid: [v] if isinstance(v, str) else list(v) for cid, v in mod.PLANTED.items()}
+    return table, list(getattr(mod, "CONTROLS", []))
 
 
 def _tool_versions(ws) -> dict[str, str]:
@@ -47,7 +49,7 @@ def run(ws, log=print) -> tuple[bool, dict]:
     out.mkdir(parents=True, exist_ok=True)
     junit = out / "planted-junit.xml"
     junit.unlink(missing_ok=True)                           # never read an old run's results
-    nodes = sorted(set(table.values()) | set(controls))
+    nodes = sorted({n for v in table.values() for n in v} | set(controls))
     argv = [str(ws.venv / "bin" / "python"), "-m", "pytest", "-q", "-p", "no:cacheprovider", "-m", "tools or not tools",
             f"--junitxml={junit}", *nodes]
     with open(out / "pytest.log", "w") as fh:
@@ -62,11 +64,12 @@ def run(ws, log=print) -> tuple[bool, dict]:
             prev = results.get(node)
             results[node] = state if prev in (None, "passed") or state == "failed" else prev
     rows = []
-    for cid, node in sorted(table.items()):
-        mod, _, fn = node.partition("::")
-        state = results.get(mod.rsplit("/", 1)[-1].removesuffix(".py") + "::" + fn, "not run")
-        rows.append({"check": cid, "test": node, "result": state})
-        log(f"  {'ok  ' if state == 'passed' else 'FAIL'} {cid:6} {state:8} {node}")
+    for cid, nodes_of in sorted(table.items()):
+        for node in nodes_of:
+            mod, _, fn = node.partition("::")
+            state = results.get(mod.rsplit("/", 1)[-1].removesuffix(".py") + "::" + fn, "not run")
+            rows.append({"check": cid, "test": node, "result": state})
+            log(f"  {'ok  ' if state == 'passed' else 'FAIL'} {cid:6} {state:8} {node}")
     for node in controls:                                   # clean cases that must pass
         mod, _, fn = node.partition("::")
         state = results.get(mod.rsplit("/", 1)[-1].removesuffix(".py") + "::" + fn, "not run")

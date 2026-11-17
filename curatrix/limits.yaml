@@ -14,6 +14,7 @@ uses:
   docs:      {memory: 4G, timeout: 15m}     # zdocs / Sphinx build (cmake + ninja)
   pilot:     {memory: 4G, timeout: 10m, java_heap: 3g, vmem: none}   # SysML Pilot via jshell
   kicad-cli: {memory: 2G, timeout: 5m}
+  wireviz:   {memory: 1G, timeout: 2m}      # WireViz + Graphviz dot, one harness (separate process, XD-ADR-0127)
   freecad:   {memory: 4G, timeout: 10m}     # FreeCADCmd export / offscreen GUI
   firefox:   {memory: 2G, timeout: 5m, vmem: none}   # headless SVG export (node + Firefox)
   elk:       {memory: 1G, timeout: 2m, vmem: none}   # elkjs layout (node)

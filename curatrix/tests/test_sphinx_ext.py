@@ -108,3 +108,35 @@ def test_needimport_stamp_shows_only_the_run_of_this_commit(tmp_path):
         page = (out / "index.html").read_text()
         assert ("SYS-EL-0099" in page) is shown
         assert (f"commit {head[:12]}" in page) is shown and ("No local run." in page) is not shown
+
+
+def test_harness_document_directives(tmp_path):
+    """The harness-<name> directives (task 5.22): ends, wires and BOM in plain Python; the diagram
+    from the local cam output, a notice without it (CI)."""
+    import json
+    import os
+    import yaml
+    from test_harness import GOOD
+    data = yaml.safe_load(yaml.safe_dump(GOOD))
+    data["metadata"].pop("TraceID")                         # no need targets in this plain build
+    for c in data["connectors"].values():
+        c["notes"] = "Port: -"
+    h = tmp_path / "harness" / "servo-cable"
+    h.mkdir(parents=True)
+    (h / "servo-cable.yml").write_text(yaml.safe_dump(data))
+    text = "".join(f".. xd-harness-{d}:: servo-cable\n\n" for d in ("ends", "diagram", "wires", "bom"))
+    env = dict(os.environ, XD_CAM_DIR=str(tmp_path / "cam"))
+    rc, log, out = build(tmp_path, text, env=env)
+    assert rc == 0, log
+    html = (out / "index.html").read_text()
+    assert "WireViz diagram of servo-cable: built locally" in html
+    assert "SERVO_PWM" in html and "W1:2" in html and "XHP-3" in html and "Lapp" in html
+    v = tmp_path / "cam" / "servo-cable" / "v0.1.0"
+    (v / "servo-cable").mkdir(parents=True)
+    (v / "servo-cable" / "servo-cable.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" id="wv"><rect/></svg>')
+    (v / "cam.json").write_text(json.dumps({"kind": "harness", "version": "servo-cable/v0.1.0", "release": True}))
+    shutil.rmtree(tmp_path / "src")
+    rc, log, out = build(tmp_path, text, env=env)
+    assert rc == 0, log
+    html = (out / "index.html").read_text()
+    assert 'id="wv"' in html and "servo-cable/v0.1.0" in html

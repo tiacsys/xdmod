@@ -73,7 +73,7 @@ SECTION_KEYS = {
     "model": {"libraries", "files", "export", "json", "needs", "variants", "upstream"},
     "stubs": {"out", "docs", "package"},
     "views": {"dir", "model"},
-    "cad": {"kicad", "freecad", "needs", "freecad_json", "projects", "connectors"},
+    "cad": {"kicad", "freecad", "needs", "freecad_json", "projects", "connectors", "harnesses"},
     "code": {"sources", "tests", "needs"},
     "variants": {"zephyr"},
 }

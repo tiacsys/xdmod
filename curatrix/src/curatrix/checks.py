@@ -91,13 +91,13 @@ BUILTIN = [
     ("CK-G2", "suspect links against the last baseline (R7)", _lv({"full": "report", "baseline": "error"}), "docs", False, "c_diff"),
     ("CK-F6", "KiCad projects: one per folder, named like it; no KiCad files elsewhere",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects", False, "c_ee_projects"),
-    ("CK-F7", "KiCad projects 1:1 with the board defs of the EE model",
+    ("CK-F7", "KiCad projects and harnesses 1:1 with the board and cable defs of the EE model",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.projects+model", False, "c_ee_one_to_one"),
     ("CK-D7", "connectors.json files match the KiCad schematics", _lv({"local": "warning", "pr": "warning"}),
      "cad.connectors", False, "c_connectors_fresh"),
     ("CK-D8", "connector extraction equals KiCad's XML netlist", _lv({"local": "warning", "baseline": "warning"}),
      "cad.connectors", True, "c_connectors_netlist"),
-    ("CK-F1", "connectors match the pin maps of the EE model (Port, pin numbers, net names)",
+    ("CK-F1", "connectors and harness ends match the pin maps of the EE model (Port, pin numbers, net names)",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.connectors+model", False, "c_connectors_model"),
     ("CK-F4a", "KiCad ERC per project: errors excluded or accepted (Accepted-by)",
      _lv({"local": "warning", "baseline": "warning"}), "cad.projects", True, "c_erc"),
@@ -356,7 +356,11 @@ def c_ee_one_to_one(ctx: Ctx, r: Result):
     if not mj.exists():
         r.findings = [f"{ctx.ws.rel(mj)} missing; run `curatrix gen model {ctx.repo.name}`"]
         return
-    r.findings = eeprojects.one_to_one(ctx.cfg, modelmod.Model.load(mj))
+    m = modelmod.Model.load(mj)
+    r.findings = eeprojects.one_to_one(ctx.cfg, m)
+    from curatrix import harness
+    if harness.patterns(ctx.cfg):        # cable defs <-> harness/<name>/ (task 5.22)
+        r.findings += harness.one_to_one(ctx.cfg, m)
 
 
 def c_connectors_fresh(ctx: Ctx, r: Result):
@@ -407,6 +411,9 @@ def c_connectors_model(ctx: Ctx, r: Result):
             continue
         r.findings += conn.conformance(json.loads(f.read_text()), (pr.variables().get("TraceID") or "").strip(), m,
                                        str(pr.sch.relative_to(ctx.repo.path)))
+    from curatrix import harness
+    for h in harness.discover(ctx.cfg):  # harness ends against the ports of both sides (task 5.22)
+        r.findings += harness.conformance(h, m, str(h.yml.relative_to(ctx.repo.path)))
 
 
 def _erc_drc(ctx: Ctx, r: Result, kind: str):

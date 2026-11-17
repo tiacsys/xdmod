@@ -69,7 +69,12 @@ EE repo
 KiCad library tables refer to the shared libraries only through variables (``${XD_KICAD_SYMBOLS}``
 and so on) and to ``lib/`` through ``${KIPRJMOD}``. ``curatrix launch kicad`` sets the variables
 (:need:`XD-ADR-0080`). The domain model owns the board, port and harness IDs; KiCad and WireViz
-files refer to them (:need:`XD-ADR-0128`). The jobset is a copy of the xdmod template
+files refer to them (:need:`XD-ADR-0128`): a KiCad project by its ``TraceID`` text variable, a
+WireViz harness by ``metadata: {TraceID: EE-HAR-....}``, and each of its connectors by a line
+``Port: EE-PORT-....`` in its ``notes`` (the port it mates with, on a board or an external part;
+WireViz shows the notes in the diagram). The connector's ``pins`` and ``pinlabels`` are the pin
+numbers and net names of that port's pin map. The cable def has one port per end, typed by the
+(conjugated) port def it mates with; ``EE-HAR connects EE-PORT`` comes from these ports. The jobset is a copy of the xdmod template
 (:need:`XD-ADR-0142`); ``accepted.yaml`` holds the accepted ERC and DRC findings (:need:`XD-ADR-0126`).
 There is one document per board, prototype project and harness (:need:`XD-ADR-0129`,
 :need:`XD-ADR-0127`).
