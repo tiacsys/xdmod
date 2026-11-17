@@ -26,12 +26,13 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from curatrix import limits
+from curatrix import limits, tracemodel
 from curatrix.ws import Workspace, is_framework_path
 
 SCHEMA_FILE = Path(__file__).resolve().parent / "data" / "run-record.schema.json"
 SCHEMA_ID = "xdmod-run-record/1"
-TC_RE = re.compile(r"\b(?:SW|EE|ME|INT|SYS)-(?:TC|ITC|STC)-[0-9]{4,}\b")
+# test case kinds from needs_config.toml (task 5.2): SW-TC, EE-TC, ME-TC, INT-ITC, INT-STC
+TC_RE = re.compile(r"\b(?:" + "|".join(sorted(tracemodel.kinds_of("TC", "ITC", "STC"))) + r")-[0-9]{4,}\b")
 ZTEST_RE = re.compile(
     r"/\*(?P<c>(?:(?!\*/).)*)\*/\s*ZTEST(?:_F|_USER|_USER_F)?\(\s*(?P<suite>\w+)\s*,\s*(?P<name>\w+)\s*\)", re.S)
 REPORTS = ("twister.json", "twister_report.xml")

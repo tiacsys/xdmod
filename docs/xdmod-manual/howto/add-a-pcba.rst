@@ -63,7 +63,7 @@ Checks
 ------
 
 - :need:`XD-CHECK-0019`: ``cad-needs.json`` matches the KiCad files (plain Python, no KiCad needed).
-- :need:`XD-CHECK-0004`: each element realizes or satisfies something (:need:`XD-RULE-0010`).
+- :need:`XD-CHECK-0001`: the strict docs build; its needs schema fails an element that realizes or satisfies nothing (:need:`XD-RULE-0010`).
 - Domain checks such as the netlist against the interface pin maps, and ERC, are commands in the
   repo's ``checks.yaml``.
 

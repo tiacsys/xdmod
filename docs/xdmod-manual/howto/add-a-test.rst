@@ -43,7 +43,7 @@ Evidence rules
 --------------
 
 - HIL results carry the firmware hash and the SHAs of all pinned repos (:need:`XD-RULE-0012`,
-  :need:`XD-CHECK-0005`).
+  enforced by the needs schema in the strict docs build, :need:`XD-CHECK-0001`).
 - Evidence counts only from commits on ``main`` or baseline tags (:need:`XD-ADR-0053`). Runs on PR
   branches are previews.
 - A result whose SHAs no longer match the pins is stale and doesn't count (:need:`XD-RULE-0013`,
