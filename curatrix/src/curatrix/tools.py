@@ -83,6 +83,7 @@ class SystemTool:
     cmd: list = field(default_factory=list)
     regex: str = ""
     optional: bool = False
+    pinned: bool = True              # false: a version the tool was tried with (doctor: warn, never FAIL)
     roles: list = field(default_factory=list)
     source: str = ""
 

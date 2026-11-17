@@ -23,8 +23,8 @@ are linked into `.claude/` (D113).
    `curatrix views build` write and `curatrix check` compares.
 4. **Use the workspace venv** (`.venv`, `eval "$(curatrix env)"`). No system packages, no sudo, no
    user-global tool configuration (KiCad, FreeCAD and drawio run with `.xdmod/` configs through
-   `curatrix launch`). **Never run KiCad or FreeCAD outside curatrix or its `.venv/bin` shims, not
-   even `--version`**: a bare `kicad-cli --version` rewrites `~/.config/kicad`.
+   `curatrix launch`). **Never run KiCad, FreeCAD or Blender outside curatrix or its `.venv/bin`
+   shims, not even `--version`**: a bare `kicad-cli --version` rewrites `~/.config/kicad`.
 5. **Trace rule** (D5, D36): the more concrete artifact holds the link; links point right to left in
    the V and from concrete to abstract. Backlinks are only ever computed. Each link type is declared
    on the need type that owns it (`xdmod/needs/needs_config.toml`).
@@ -78,7 +78,7 @@ the owner's review (D126). A change across repos uses one branch name in every r
 | `curatrix gen stubs\|model\|cad-needs\|code-needs\|freecad-json\|all <repo>` | regenerate the committed generated files |
 | `curatrix ids new <KIND>` / `ids fix <repo>` | issue IDs, replace placeholders |
 | `curatrix views build\|check\|normalize <repo>` | views as editable `.drawio.svg` |
-| `curatrix launch kicad\|freecad\|drawio\|claude` | GUI tools with workspace-local config (memory limit only) |
+| `curatrix launch kicad\|freecad\|blender\|drawio\|claude` | GUI tools with workspace-local config (memory limit only) |
 | `curatrix run -- <cmd>` | anything else, with the workspace env and limits |
 
 `west update` moves projects back to their pins (detached HEAD). While you work on branches use

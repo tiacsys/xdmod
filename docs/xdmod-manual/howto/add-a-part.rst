@@ -133,6 +133,27 @@ part (a ``lib/`` object, or one with ``Manufacturer`` or ``MPN``) names
 ``pcba-<name>`` / ``harness-<name>`` document, its parts stay in the EE BOM. CK-F12 warns about a
 bought part without them and about an own part without ``Material`` (:need:`XD-RULE-0058`).
 
+Design output and renderings
+----------------------------
+
+``curatrix cam`` writes the design output of a top-level assembly under
+``build/<repo>/cam/<assembly>/<version>/`` (:need:`XD-ADR-0143`): STEP, the printed parts, the
+drawing, the exploded view, the BOM and four renderings per variant
+(``renderings/front|top|right|iso.png``):
+
+.. code-block:: sh
+
+   curatrix cam robarm-me canary-assembly                # Blender if installed, else the fallback
+   curatrix cam robarm-me canary-assembly --no-blender   # always the renderer without Blender
+
+With Blender on the machine the renderings come from Blender (Cycles on the CPU, about 10 to 20
+seconds per view); without it from a plain-Python renderer in ``FreeCADCmd``
+(:need:`XD-ADR-0147`). ``cam.json`` says which (``renderings.method``: ``blender`` or ``zbuffer``).
+Blender is optional and not pinnable, so these images are local only; CI never has Blender
+(:need:`XD-ADR-NEW-blender`). Run Blender only through curatrix (``curatrix run -- blender``,
+``curatrix launch blender``) or the ``.venv/bin/blender`` shim: they add ``--factory-startup`` and
+keep its user files in ``.xdmod/blender/``. ``curatrix doctor`` shows the Blender version.
+
 Pitfalls
 --------
 

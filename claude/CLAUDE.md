@@ -105,6 +105,12 @@ Old curatrix rejects an unknown key; new curatrix may require it. So:
   bootstrap` / `update`, `setup.write_shims`, always for the main workspace) are a safety net, not a licence: they set the
   config but no limits. `curatrix doctor` warns when a KiCad/FreeCAD name on PATH is not the shim.
   To try a KiCad call by hand, use a fake workspace and `HOME` under `build/`.
+- **The same for Blender** (owner decision 2026-11-17, optional ME renderer): only `curatrix run
+  -- blender`, `curatrix launch blender` or the `.venv/bin/blender` shim. They add
+  `--factory-startup --offline-mode --disable-autoexec`, put every user path under
+  `.xdmod/blender/` and hide the workspace venv from Blender's Python (else its glTF importer
+  misses numpy). Blender is not pinnable: tests that need it are marked `tools`; CI renders with
+  the z-buffer fallback.
 - A test that runs `git` in a temp repo must not see the caller's environment by accident:
   `XD_BASE_REF` and `GITHUB_BASE_REF` change the base of CK-H4 and CK-H7.
 - CK-H4 detects agent commits by "Claude Code" or anthropic.com in the message. A planted message
