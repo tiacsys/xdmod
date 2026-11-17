@@ -38,3 +38,14 @@ jobs:
       repo: xdmod
       role: integration
       manifest: tiacsys/robarm-manifest   # the example project's manifest builds xdmod's workspace
+
+  # A PR that changes curatrix, needs_config.toml or the SysML library also checks the full set
+  # of the example project with this branch (task 5.7, P4-6). Not required yet: it reports.
+  downstream:
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/curatrix-check.yml
+    with:
+      repo: robarm-manifest
+      role: integration
+      stage: full
+      manifest: tiacsys/robarm-manifest

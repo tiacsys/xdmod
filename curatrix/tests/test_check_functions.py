@@ -130,24 +130,23 @@ def _git(repo, *args):
     subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
 
 
-def test_c_trailers(tmp_path):
-    remote = git_init(tmp_path / "remote")
-    _git(remote, "commit", "-q", "--allow-empty", "-m", "init")
+def test_c_trailers(tmp_path, monkeypatch):
+    """CK-H4 asks agent commits (they name Claude) for the trailer; human commits pass."""
     ctx = _ctx(tmp_path, [])
     repo = ctx.repo.path
+    monkeypatch.setenv("XD_BASE_REF", "nope")
     r = checks.Result("CK-H4", "trailers", level="warning")
     checks.c_trailers(ctx, r)
-    assert r.status == "skip"                                   # no origin/main
-    _git(repo, "remote", "add", "origin", str(remote))
-    _git(repo, "fetch", "-q", "origin")
-    _git(repo, "checkout", "-q", "-b", "work", "origin/main" if _has(repo, "origin/main") else "origin/master")
-    _git(repo, "commit", "-q", "--allow-empty", "-m", "with\n\nCo-Authored-By: Agent <noreply@anthropic.com>")
-    _git(repo, "commit", "-q", "--allow-empty", "-m", "without")
-    if not _has(repo, "origin/main"):
-        _git(repo, "update-ref", "refs/remotes/origin/main", "origin/master")
+    assert r.status == "skip"                                   # no base
+    _git(repo, "commit", "-q", "--allow-empty", "-m", "init")
+    _git(repo, "branch", "base")
+    monkeypatch.setenv("XD_BASE_REF", "base")
+    _git(repo, "commit", "-q", "--allow-empty", "-m", "agent\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>")
+    _git(repo, "commit", "-q", "--allow-empty", "-m", "a human commit")
+    _git(repo, "commit", "-q", "--allow-empty", "-m", "agent\n\nGenerated with [Claude Code], trailer forgotten")
     r = checks.Result("CK-H4", "trailers", level="warning")
     checks.c_trailers(ctx, r)
-    assert len(r.findings) == 1 and "no Co-Authored-By" in r.findings[0]
+    assert len(r.findings) == 1 and "agent commit without the trailer" in r.findings[0]
 
 
 def _has(repo, ref):

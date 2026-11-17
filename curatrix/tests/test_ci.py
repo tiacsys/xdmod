@@ -90,3 +90,29 @@ def test_tags_are_fetched(tmp_path, upstream):
     p = clone(tmp_path, upstream, upstream["pin"])
     ci.resolve_one(p, "feat/other", "robarm-sw", "")
     assert git(p.path, "describe", "--tags", upstream["pin"]) == "baseline/v0.1.0"
+
+
+def test_stacked_pr_sibling_uses_the_base_branch(tmp_path, upstream, monkeypatch):
+    """A stacked PR (head feat/y on base feat/x): a sibling without feat/y takes feat/x (task 5.7)."""
+    monkeypatch.setenv("GITHUB_BASE_REF", "feat/x")
+    p = clone(tmp_path, upstream, upstream["pin"], "robarm-sw")
+    r = ci.resolve_one(p, "feat/y", "robarm-ee", "")
+    assert r.rule == "base" and r.sha == upstream["feat"]
+
+
+def test_fetch_base_from_published_needs(tmp_path):
+    from curatrix.ws import Repo, Workspace
+    pages = tmp_path / "pages" / "latest" / "doc-a"
+    pages.mkdir(parents=True)
+    (pages / "needs.json").write_text('{"versions": {}}')
+    root = tmp_path / "ws"
+    repo = root / "r"
+    (repo / "docs").mkdir(parents=True)
+    (repo / "checks.yaml").write_text("version: 1\ndocs: {registry: docs/documents.yaml}\n")
+    (repo / "docs" / "documents.yaml").write_text(
+        f"base_url: file://{tmp_path / 'pages'}/\ndocuments:\n  doc-a: {{}}\n  doc-b: {{}}\n")
+    ws = Workspace(root)
+    ws.__dict__["repos"] = [Repo("r", repo, "r")]
+    out = tmp_path / "base"
+    assert ci.fetch_base(ws, "r", out, log=lambda *_: None) == 1
+    assert (out / "doc-a" / "needs.json").exists() and not (out / "doc-b").exists()

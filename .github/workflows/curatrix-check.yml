@@ -212,6 +212,11 @@ jobs:
           elif [ "$has_branch" = yes ]; then
             git -C xdmod fetch -q "$url" "+refs/heads/$HEAD_REF:refs/remotes/xd-ci/branch"
             git -C xdmod checkout -q --detach xd-ci/branch
+          elif [ -n "${GITHUB_BASE_REF:-}" ] && [ "$GITHUB_BASE_REF" != main ] \
+               && git ls-remote --exit-code --heads "$url" "refs/heads/$GITHUB_BASE_REF" >/dev/null; then
+            # a stacked PR: xdmod has no head branch, but the PR's base branch (task 5.7)
+            git -C xdmod fetch -q "$url" "+refs/heads/$GITHUB_BASE_REF:refs/remotes/xd-ci/branch"
+            git -C xdmod checkout -q --detach xd-ci/branch
           elif git -C xdmod merge-base --is-ancestor "$pin" xd-ci/main; then
             git -C xdmod checkout -q --detach xd-ci/main
           fi
@@ -251,11 +256,28 @@ jobs:
           fi
           echo "ulimit fallback: memory and timeout limits enforced"
 
+      - name: Change-impact base (published needs of main, CK-G1)
+        if: inputs.stage == 'pr'
+        continue-on-error: true            # Pages unreachable or nothing published: CK-G1 skips
+        working-directory: ws
+        run: .venv/bin/curatrix ci base --repo "$REPO" -o build/ci/base
+
       - name: curatrix check ${{ inputs.repo }} --stage ${{ inputs.stage }} --no-cad
         working-directory: ws
         run: |
-          # EXTRA_ARGS is split on purpose (several options)
-          .venv/bin/curatrix check "$REPO" --stage "$STAGE" --no-cad $EXTRA_ARGS
+          base=""
+          if [ -n "$(find build/ci/base -name needs.json 2>/dev/null | head -1)" ]; then base="--base build/ci/base"; fi
+          # EXTRA_ARGS and base are split on purpose (several options)
+          .venv/bin/curatrix check "$REPO" --stage "$STAGE" --no-cad $base $EXTRA_ARGS
+
+      - name: Change impact in the job summary
+        if: always()
+        working-directory: ws
+        run: |
+          for f in build/*/checks/needs-diff.md; do
+            [ -f "$f" ] && { echo "### Change impact ($f)"; cat "$f"; } >> "$GITHUB_STEP_SUMMARY"
+          done
+          true
 
       - name: Upload check results and docs
         if: always()

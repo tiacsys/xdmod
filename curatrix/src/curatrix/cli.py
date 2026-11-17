@@ -107,7 +107,7 @@ def cmd_work(a):
         if a.action == "start":
             if not a.args:
                 raise SystemExit("usage: curatrix work start <branch> <repo>...")
-            work.start(ws, a.args[0], a.args[1:])
+            work.start(ws, a.args[0], a.args[1:], base=a.base or "main")
         elif a.action == "done":
             if len(a.args) != 1:
                 raise SystemExit("usage: curatrix work done <branch> [--force] [--delete-branch]")
@@ -125,9 +125,14 @@ def cmd_ci(a):
     from curatrix import ci
     ws = _ws()
     if a.action == "siblings":
+        if not a.branch:
+            raise SystemExit("curatrix ci siblings: --branch is required")
         print(f"curatrix ci siblings: branch {a.branch!r}, under check {a.repo} @ {a.sha[:12] or '-'}")
         ci.siblings(ws, a.branch, a.repo, a.sha)
         return 0
+    if a.action == "base":
+        out = Path(a.out) if a.out else ws.build("ci") / "base"
+        return 0 if ci.fetch_base(ws, a.repo, out, a.version) else 1
     return 2
 
 
@@ -521,11 +526,14 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("args", nargs="*")
     s.add_argument("--force", action="store_true", help="done: also with uncommitted changes")
     s.add_argument("--delete-branch", action="store_true", help="done: delete the branches if merged")
+    s.add_argument("--base", help="start: the parent branch of a stacked PR (default: main)")
     s.set_defaults(func=cmd_work)
 
-    s = sub.add_parser("ci", help="CI helpers: `ci siblings` resolves sibling revisions (D127)")
-    s.add_argument("action", choices=["siblings"])
-    s.add_argument("--branch", required=True, help="the PR's head branch name (push: the branch pushed)")
+    s = sub.add_parser("ci", help="CI helpers: `ci siblings` resolves sibling revisions (D127); `ci base` fetches the published needs as the CK-G1/G2 base")
+    s.add_argument("action", choices=["siblings", "base"])
+    s.add_argument("-o", "--out", help="base: output folder (default build/ci/base)")
+    s.add_argument("--version", default="latest", help="base: the Pages folder (latest = main, vX.Y.Z = a baseline)")
+    s.add_argument("--branch", default="", help="siblings: the PR's head branch name (push: the branch pushed)")
     s.add_argument("--repo", required=True, help="west name of the repo under check")
     s.add_argument("--sha", default="", help="its PR head commit")
     s.set_defaults(func=cmd_ci)
