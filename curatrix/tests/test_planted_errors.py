@@ -66,6 +66,7 @@ PLANTED = {
     "CK-F17": ["curatrix/tests/test_mechecks.py::test_me_checks_freecad",
                "curatrix/tests/test_mechecks.py::test_f17_collisions_and_acceptance"],
     "CK-F18": "curatrix/tests/test_mechecks.py::test_f18_space_budget",
+    "CK-F19": "curatrix/tests/test_mecam.py::test_f19_version_face",
     "CK-E2": f"{HERE}::test_e2_value_not_in_sentence",
     "CK-E3": f"{HERE}::test_e3_wrong_ears_pattern",
     "CK-G1": f"{HERE}::test_g1_g2_changed_need_makes_links_suspect",
