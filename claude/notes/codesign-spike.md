@@ -2,7 +2,8 @@
 
 Date 2026-11-17. Inputs: ME-5 and EE-9 answers (`phase5-expectations.md`), FreeCAD spike §7
 (StepUp not run then), owner decision 2026-11-17 (StepUp with `HOME` sandboxed, pinned under
-`.xdmod/`; fallback the scripted STEP path). Result: XD-ADR-0134 accepted with the scope below, the
+`.xdmod/`; fallback the scripted STEP path). Result: XD-ADR-0134 proposed with the scope below (the owner accepts it in his own commit; the
+owner's "try it" approved the spike, not the decision text), the
 how-to `docs/xdmod-manual/howto/co-design-change.rst`, and the canary scenario as PRs on branch
 `feat/codesign` in robarm-syseng, robarm-me, robarm-ee and xdmod.
 
@@ -11,7 +12,7 @@ how-to `docs/xdmod-manual/howto/co-design-change.rst`, and the canary scenario a
 | # | Question | Verdict |
 |---|---|---|
 | 1 | StepUp push FreeCAD -> KiCad (outline + holes) from a script | **Works.** `export_pcb` in the FreeCAD GUI binary offscreen, dialogs replaced by logging, the sketch put into the GUI selection and `start_time` set (globals of the GUI command). Parses the KiCad 10 file (`version 20260206`), replaces every `Edge.Cuts` item, writes outline and holes in the old s-expression style |
-| 2 | Re-save by KiCad 10 | **Works** with `kicad-cli pcb upgrade --force` (without `--force` nothing happens: StepUp keeps the version header). The first re-save of the canary board also added `(thickness 0.15)` to five footprint texts |
+| 2 | Re-save by KiCad 10 | **Works** with `kicad-cli pcb upgrade --force` (without `--force` nothing happens: StepUp keeps the version header). The first re-save of the canary board also added `(thickness 0.15)` to four footprint texts |
 | 3 | DRC after the push | **Works**, no new findings (the two accepted unconnected items stay) |
 | 4 | Board model KiCad -> FreeCAD by StepUp (`onLoadBoard`) | **Cut.** It builds the board, then stalls after "placing board @ 0,0" (a shown widget, `raise()` offscreen); hit the limit twice (10 min, then 3 min with every `exec_` patched) |
 | 5 | Board model by the scripted STEP path | **Works**: `kicad-cli pcb export step --user-origin 88x112mm` + `Import.insert` in `FreeCADCmd`: board 30 x 20 x 1.51 mm in the board frame, holes at (4, 4) and (26, 16) r 1.6, J1's pin holes at (7, 12) and (7, 9.46). Component bodies missing: the KiCad 3D models are not in `libs/kicad/packages3D` (board library, 5.29) |
@@ -39,7 +40,8 @@ curatrix run --use freecad -- env HOME=$PWD/.xdmod/stepup/home QT_QPA_PLATFORM=o
 
 StepUp wrote nothing into the sandboxed `HOME` (no `ksu-config.ini`; it writes only from its
 preference dialog). It writes a backup `<board>-bkp-<time>.kicad_pcb-bak` next to the board copy
-(deleted by the wrapper). Spike scripts and logs: `build/spike-codesign/` (`scripts/push.py`,
+(the spike wrapper in `build/spike-codesign/scripts/` deleted it; with the how-to it stays in
+`build/` and only the `.kicad_pcb` is copied back). Spike scripts and logs: `build/spike-codesign/` (`scripts/push.py`,
 `run-push.sh`, `codesign-push.sh`, `step_in.py`; `out/*.json`, `out/drc-*.json`, `p1`..`p4`).
 
 Coordinates: StepUp writes sketch point (x, y) as KiCad (x, -y) when the grid origin is not set,
@@ -85,3 +87,9 @@ the push into a board already re-saved by KiCad (multi-line items) worked too.
   `tools.yaml` with `curatrix update` cloning it; until then the steps of the how-to.
 - The 3D models of the KiCad libraries for the STEP export (5.29).
 - StepUp's board load offscreen (iteration 2, only if EE pushing back is wanted).
+- Owner decisions: accept XD-ADR-0134 (status `proposed`), and whether the budget values a seat
+  restates (attributes redefining a `SYS-IF` budget attribute) stay out of the ten driving
+  parameters of XD-ADR-0137 (`meparams.py` leaves them out; that interprets XD-ADR-0137).
+- Exit criterion 4 (one co-design change through three repos on one branch name) is ready, not
+  done: it is shown when xdmod#59, the manifest bump, robarm-syseng#10, robarm-me#12 and
+  robarm-ee#15 are merged in that order.
