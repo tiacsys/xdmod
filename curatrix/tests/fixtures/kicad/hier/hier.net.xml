@@ -4,6 +4,7 @@
     <source>hier.kicad_sch</source>
     <date/>
     <tool>Eeschema 10.0.8</tool>
+    <textvar name="TraceID">EE-PCBA-0001</textvar>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
         <title/>
@@ -28,7 +29,7 @@
         <company/>
         <rev/>
         <date/>
-        <source>hier.kicad_sch</source>
+        <source>hier_ch.kicad_sch</source>
         <comment number="1" value=""/>
         <comment number="2" value=""/>
         <comment number="3" value=""/>
@@ -46,7 +47,7 @@
         <company/>
         <rev/>
         <date/>
-        <source>hier.kicad_sch</source>
+        <source>hier_ch.kicad_sch</source>
         <comment number="1" value=""/>
         <comment number="2" value=""/>
         <comment number="3" value=""/>
@@ -63,13 +64,17 @@
     <comp ref="J1">
       <value>Conn_01x03</value>
       <fields>
-        <field name="Port">EE-PORT-0001</field>
+        <field name="portName">servoOut</field>
+        <field name="portType">ServoHeader</field>
+        <field name="portTypeID">EE-PORT-0001</field>
         <field name="Footprint"/>
         <field name="Datasheet"/>
         <field name="Description"/>
       </fields>
       <libsource lib="" part="Conn_01x03_1" description="Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
-      <property name="Port" value="EE-PORT-0001"/>
+      <property name="portName" value="servoOut"/>
+      <property name="portType" value="ServoHeader"/>
+      <property name="portTypeID" value="EE-PORT-0001"/>
       <property name="Sheetname" value="Root"/>
       <property name="Sheetfile" value="hier.kicad_sch"/>
       <property name="ki_keywords" value="connector"/>

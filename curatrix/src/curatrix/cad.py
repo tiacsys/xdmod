@@ -33,8 +33,9 @@ from curatrix import ids as idmod
 MODEL_OWNED = ("EE-PCBA", "EE-PORT", "EE-HAR", "ME-ASM", "ME-PORT")
 LINK_FIELDS = {"Realizes": "realizes", "Satisfies": "satisfies", "Conforms": "conforms", "PartOf": "part_of"}
 TRACE_FIELDS = ("TraceID", *LINK_FIELDS, "Status", "Configs", "Port")
-# `Port` on a FreeCAD LCS (or a KiCad connector) names the ME-PORT / EE-PORT of the domain model
-# it implements: a reference, never a need (XD-ADR-0128, XD-ADR-0133)
+# `Port` on a FreeCAD LCS names the ME-PORT of the domain model it implements: a reference, never a
+# need (XD-ADR-0128, XD-ADR-0133). A KiCad connector names its port by portName, portType and
+# portTypeID (connectors.py, CK-F1), not here.
 
 
 def _list(v: str | None) -> list[str]:

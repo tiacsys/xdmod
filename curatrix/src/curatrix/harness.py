@@ -11,10 +11,13 @@ def (``CanaryCable`` -> ``canary-cable``). The cable def owns one port per end, 
 (conjugated) connector port def the end mates with; the model derives ``EE-HAR connects EE-PORT``
 from them (``model.to_needs``).
 
-Each connector of the YAML names the ``EE-PORT`` it mates with in its ``notes``, on a line
-``Port: EE-PORT-....`` (``Port: -`` for none; WireViz shows the notes in the diagram and allows no
-other free key on a connector). Its ``pins`` are the pin numbers of that port, its ``pinlabels``
-the net (signal) names of the port's pin map.
+Each connector of the YAML names the end port of the cable def it is, as a KiCad connector names
+the port of its board def (owner decisions Q10, Q11 of tiacsys/xdmod#69), on three lines of its
+``notes``: ``portName: boardEnd`` (the port usage; ``portName: -`` for none), ``portType:
+CanaryHeader`` (its def, ``~X`` counts as ``X``) and ``portTypeID: EE-PORT-....`` (the def's ID,
+which is also the port it mates with). WireViz shows the notes in the diagram and allows no other
+free key on a connector. Its ``pins`` are the pin numbers of that port, its ``pinlabels`` the net
+(signal) names of the port's pin map.
 
 CK-F1 reads the YAML in plain Python: a subset of the WireViz connection syntax (connection sets of
 ``{designator: pins}`` entries, pin numbers, pin labels, ranges ``1-3``); anything else (mates,
@@ -38,7 +41,7 @@ import yaml
 from curatrix import ids as idmod
 
 CABLE_DEF = "XdDomain::Cable"
-PORT_RE = re.compile(r"^\s*Port:\s*(\S+)\s*$", re.M)
+NOTE_RE = re.compile(r"^\s*(portName|portType|portTypeID|Port):\s*(\S+)\s*$", re.M)
 NO_PORT = "-"
 
 
@@ -121,19 +124,19 @@ def cable_ports(m, cable) -> list[tuple[str, str]]:
     return board_ports(m, cable)
 
 
-def port_owners(m) -> dict[str, list[tuple[str, str, str]]]:
-    """EE-PORT ID -> [(kind 'board'|'external', owner def name, owner ID or '')] of the boards and
-    external parts that own a port of that def."""
+def port_owners(m) -> dict[str, list[tuple[str, str, str, str]]]:
+    """EE-PORT ID -> [(kind 'board'|'external', owner def name, owner ID or '', port name)] of the
+    ports of boards and external parts typed by that def."""
     from curatrix import eeprojects
     from curatrix.connectors import board_ports
     boards, externals, _ = eeprojects.model_defs(m)
-    out: dict[str, list[tuple[str, str, str]]] = {}
+    out: dict[str, list[tuple[str, str, str, str]]] = {}
     for kind, defs in (("board", boards), ("external", externals)):
         for key, p in sorted(defs.items()):
-            for _, pid in board_ports(m, p):
+            for pname, pid in board_ports(m, p):
                 if pid:
                     own = key if idmod.kind_of(key) else ""
-                    out.setdefault(pid, []).append((kind, p.get("name") or "", own))
+                    out.setdefault(pid, []).append((kind, p.get("name") or "", own, pname))
     return out
 
 
@@ -256,38 +259,51 @@ def wiring(h: Harness) -> Wiring:
     return Wiring(sorted(sorted(g) for g in groups.values()), wires, unsupported)
 
 
+def port_fields(conn: dict) -> dict[str, str]:
+    """The port lines of a connector's notes: portName, portType, portTypeID (and the old Port)."""
+    return {m.group(1): m.group(2) for m in NOTE_RE.finditer(str(conn.get("notes") or ""))}
+
+
 def port_of(conn: dict) -> str | None:
-    """The EE-PORT a connector names in its notes (``Port: EE-PORT-....``), ``-`` or None."""
-    m = PORT_RE.search(str(conn.get("notes") or ""))
-    return m.group(1) if m else None
+    """The EE-PORT a connector mates with (its portTypeID; the old ``Port:`` line), ``-`` or None."""
+    f = port_fields(conn)
+    if (f.get("portName") or "") == NO_PORT:
+        return NO_PORT
+    return f.get("portTypeID") or f.get("Port")
 
 
 # ------------------------------------------------------------------ CK-F1: harness ends
 def conformance(h: Harness, m, where: str) -> list[str]:
-    """CK-F1 for one harness: every connector names its EE-PORT (``-`` = none); the ports are those
-    of the cable def; each port's pin map is on the connector with its pin numbers and net names
+    """CK-F1 for one harness: every connector names the end port of the cable def it is
+    (portName, portType, portTypeID; ``portName: -`` = none), each end by exactly one connector; each port's pin map is on the connector with its pin numbers and net names
     (pin labels); every conductor joins pins of one net; a pin-map net that another end carries is
     wired."""
-    from curatrix.connectors import _ref_key, pin_maps
+    from curatrix.connectors import _ref_key, check_port_fields, pin_maps, port_table
     if h.error:
         return [f"{where}: {h.error}"]
     findings: list[str] = []
     maps, names = pin_maps(m)
     cables, _ = cable_defs(m)
+    cable = cables.get(h.trace_id)
+    ends_of = {n: (dn, did) for n, dn, did in port_table(m, cable)} if cable is not None else {}
     w = wiring(h)
     findings += [f"{where}: {u}" for u in w.unsupported]
     ports: dict[str, str] = {}                       # designator -> EE-PORT
+    named: dict[str, list[str]] = {}                 # end port name -> designators
     for des, c in sorted(h.connectors().items()):
         c = c if isinstance(c, dict) else {}
-        port = port_of(c)
+        port, f = check_port_fields(port_fields(c), ends_of, f"connector {des}", where,
+                                    "has no line `portName: ...` in its notes; name the end port of the cable def "
+                                    "it is, or `portName: -` for none")
+        if cable is not None:
+            findings += f
+        name = port_fields(c).get("portName") or ""
+        if name in ends_of:
+            named.setdefault(name, []).append(des)
         if port is None:
-            findings.append(f"{where}: connector {des} names no port; add a line `Port: EE-PORT-....` "
-                            f"(or `Port: -`) to its notes")
-            continue
-        if port == NO_PORT:
             continue
         if port not in maps:
-            findings.append(f"{where}: connector {des}: Port {port} is no connector port def (EE-PORT) of the EE model")
+            findings.append(f"{where}: connector {des}: portTypeID {port} is no connector port def (EE-PORT) of the EE model")
             continue
         ports[des] = port
         pins, labels = pins_of(c)
@@ -321,32 +337,20 @@ def conformance(h: Harness, m, where: str) -> list[str]:
                 findings.append(f"{where}: {des} ({names[port]}): pin {num} ({net}) is not wired, but another end "
                                 f"carries {net}")
     # the ends against the cable def's ports
-    cable = cables.get(h.trace_id)
     if cable is None:
         findings.append(f"{where}: TraceID {h.trace_id or '(none)'} names no cable def of the EE model (see CK-F7)")
         return findings
-    want: dict[str, list[str]] = {}
-    ends = cable_ports(m, cable)
-    for pname, pid in ends:
-        if pid:
-            want.setdefault(pid, []).append(pname)
-        else:
+    for pname, (dname, pid) in ends_of.items():
+        if not pid:
             findings.append(f"{where}: the end {pname} of the cable def {m.qn(cable)} is typed by no connector port "
                             f"def with an EE-PORT ID")
-    if len(ends) < 2:
-        findings.append(f"{where}: the cable def {m.qn(cable)} has {len(ends)} end(s); a cable has at least two "
+        elif len(named.get(pname, [])) != 1:
+            got = named.get(pname, [])
+            findings.append(f"{where}: the end {pname} ({dname}) of the cable def {m.qn(cable)} is named by {len(got)} "
+                            f"connector(s) ({', '.join(sorted(got)) or 'none'}); exactly one names it in portName")
+    if len(ends_of) < 2:
+        findings.append(f"{where}: the cable def {m.qn(cable)} has {len(ends_of)} end(s); a cable has at least two "
                         f"(one port per end)")
-    have: dict[str, list[str]] = {}
-    for des, port in ports.items():
-        have.setdefault(port, []).append(des)
-    for pid, pnames in sorted(want.items()):
-        got = have.get(pid, [])
-        if len(got) != len(pnames):
-            findings.append(f"{where}: the cable def {m.qn(cable)} has {len(pnames)} end(s) at {names.get(pid, pid)} "
-                            f"({', '.join(pnames)}), {len(got)} connector(s) name it ({', '.join(sorted(got)) or 'none'})")
-    for pid, des in sorted(have.items()):
-        if pid not in want:
-            findings.append(f"{where}: {', '.join(sorted(des))}: Port {pid} is no end of the cable def {m.qn(cable)}")
     return findings
 
 

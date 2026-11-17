@@ -74,6 +74,7 @@ PLANTED = {
     "CK-G2": f"{HERE}::test_g1_g2_changed_need_makes_links_suspect",
     "CK-F20": "curatrix/tests/test_boardlib.py::test_f20_board_library",
     "CK-F21": "curatrix/tests/test_boardlib.py::test_f21_newer_board_version",
+    "CK-F22": "curatrix/tests/test_connectors.py::test_f22_port_and_connector_names",
     "CK-H1": f"{HERE}::test_h1_compressed_fcstd",
     "CK-H2": f"{HERE}::test_h2_build_output",
     "CK-H3": f"{HERE}::test_h3_unpinned_requirement",

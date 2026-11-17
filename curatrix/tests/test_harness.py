@@ -21,9 +21,9 @@ GOOD = {
     "metadata": {"title": "Servo cable", "TraceID": "EE-HAR-0001"},
     "connectors": {
         "X1": {"type": "JST XH housing", "manufacturer": "JST", "mpn": "XHP-3", "pins": [1, 2, 3],
-               "pinlabels": ["SERVO_PWM", "NC", "GND"], "notes": "Port: EE-PORT-0001"},
+               "pinlabels": ["SERVO_PWM", "NC", "GND"], "notes": "portName: boardEnd\nportType: ServoHeader\nportTypeID: EE-PORT-0001"},
         "X2": {"type": "JST XH receptacle", "pins": [1, 3], "pinlabels": ["SERVO_PWM", "GND"],
-               "notes": "Mates with the servo.\nPort: EE-PORT-0010"},
+               "notes": "Mates with the servo.\nportName: servoEnd\nportType: ServoPlug\nportTypeID: EE-PORT-0010"},
     },
     "cables": {"W1": {"wirecount": 2, "length": 0.3, "gauge": "0.14 mm2", "colors": ["OG", "BK"],
                       "manufacturer": "Lapp", "mpn": "49900"}},
@@ -52,33 +52,40 @@ def test_ports_and_wiring_of_the_good_harness():
 
 
 def test_f1_harness_ends():
-    """CK-F1 planted (harness ends): a connector without Port, an unknown Port, a pin label that
-    differs from the pin map, a pin of the map missing, a wire joining two nets, an unwired pin
-    another end carries, an end the cable def does not have, a mate the reader does not support."""
+    """CK-F1 planted (harness ends): a connector without portName, a portName that is no end of the
+    cable def, a wrong portType and portTypeID, the old Port line, a pin label that differs from the
+    pin map, a pin of the map missing, a wire joining two nets, an unwired pin another end carries,
+    an end named twice and one not at all, a mate the reader does not support."""
     m = _model()
     bad = yaml.safe_load(yaml.safe_dump(GOOD))
     bad["connectors"]["X1"]["pinlabels"] = ["SERVO_PWM", "NC", "GNDX"]
     bad["connectors"]["X2"]["pins"] = [1]
     bad["connectors"]["X2"]["pinlabels"] = ["SERVO_PWM"]
     bad["connectors"]["X3"] = {"pins": [1], "notes": "spare"}
-    bad["connectors"]["X4"] = {"pins": [1], "notes": "Port: EE-PORT-0077"}
-    bad["connectors"]["X5"] = {"pins": [1], "pinlabels": ["DATA"], "notes": "Port: EE-PORT-0002"}
+    bad["connectors"]["X4"] = {"pins": [1], "notes": "portName: j4\nportType: BusHeader\nportTypeID: EE-PORT-0002"}
+    bad["connectors"]["X5"] = {"pins": [1], "notes": "portName: boardEnd\nportType: BusHeader\nportTypeID: EE-PORT-0002"}
+    bad["connectors"]["X6"] = {"pins": [1], "notes": "Port: EE-PORT-0001"}
     bad["connections"] = [[{"X1": [1, 3]}, {"W1": [1, 2]}, {"X2": [1, 1]}], ["X1", "-->", "X2"]]
     text = "\n".join(harness.conformance(_h(bad), m, "h.yml"))
-    assert "h.yml: connector X3 names no port" in text
-    assert "connector X4: Port EE-PORT-0077 is no connector port def" in text
+    assert "h.yml: connector X3 has no line `portName: ...` in its notes" in text
+    assert "connector X4: portName 'j4' is no port of the def (ports: boardEnd, servoEnd)" in text
+    assert "connector X5: portType is 'BusHeader', the port boardEnd is typed by ServoHeader (EE-PORT-0001)" in text
+    assert "connector X5: portTypeID is 'EE-PORT-0002', the port boardEnd is typed by ServoHeader" in text
+    assert "connector X6 has the old field Port = 'EE-PORT-0001'; replace it by portName" in text
     assert "X1 (EePorts::ServoHeader): pin 3 is labelled 'GNDX', the pin map says 'GND'" in text
     assert "X2 (EeCables::ServoPlug): pin 3 of the pin map is not on the connector" in text
     assert "one conductor joins different nets: GND (X1:3), SERVO_PWM (X1:1 X2:1)" in text
     assert "connection set 2: entry 'X1' (mates, arrows and bare designators are not read)" in text
-    assert "X5: Port EE-PORT-0002 is no end of the cable def EeCables::ServoCable" in text
+    assert "the end boardEnd (ServoHeader) of the cable def EeCables::ServoCable is named by 2 connector(s) (X1, X5)" in text
     bad2 = yaml.safe_load(yaml.safe_dump(GOOD))
     bad2["connections"] = [[{"X1": 1}, {"W1": 1}, {"X2": 1}]]
-    bad2["connectors"]["X2"]["notes"] = "Port: EE-PORT-0001"
+    bad2["connectors"]["X2"]["notes"] = "portName: -"
+    text = "\n".join(harness.conformance(_h(bad2), m, "h.yml"))
+    assert "X1 (EePorts::ServoHeader): pin 3 (GND) is not wired" not in text      # X2 has no port now
+    assert "the end servoEnd (ServoPlug) of the cable def EeCables::ServoCable is named by 0 connector(s) (none)" in text
+    bad2["connectors"]["X2"]["notes"] = GOOD["connectors"]["X2"]["notes"]
     text = "\n".join(harness.conformance(_h(bad2), m, "h.yml"))
     assert "X1 (EePorts::ServoHeader): pin 3 (GND) is not wired, but another end carries GND" in text
-    assert "has 1 end(s) at EePorts::ServoHeader (boardEnd), 2 connector(s) name it (X1, X2)" in text
-    assert "has 1 end(s) at EeCables::ServoPlug (servoEnd), 0 connector(s) name it (none)" in text
     # a loop that shorts two signals of one connector (WireViz `loops`)
     bad3 = yaml.safe_load(yaml.safe_dump(GOOD))
     bad3["connectors"]["X1"]["loops"] = [[1, 3]]
@@ -145,8 +152,8 @@ def test_f1_through_the_check(tmp_path):
     root, repo = _repo(tmp_path)
     assert [x for x in _run(root, repo, "CK-F1", "c_connectors_model") if "harness/" in x] == []
     y = repo / "harness/servo-cable/servo-cable.yml"
-    y.write_text(y.read_text().replace("Port: EE-PORT-0010", "Port: EE-PORT-0099"))
-    assert any(x.startswith("harness/servo-cable/servo-cable.yml: connector X2: Port EE-PORT-0099")
+    y.write_text(y.read_text().replace("portTypeID: EE-PORT-0010", "portTypeID: EE-PORT-0099"))
+    assert any(x.startswith("harness/servo-cable/servo-cable.yml: connector X2: portTypeID is 'EE-PORT-0099'")
                for x in _run(root, repo, "CK-F1", "c_connectors_model"))
 
 
@@ -197,8 +204,8 @@ def test_tables():
         ("X2", "Connector, JST XH receptacle, 2 pins", "1", "", "", ""),
     ]
     owners = harness.port_owners(_model())
-    assert owners["EE-PORT-0010"] == [("external", "ServoMotor", "")]
-    assert ("board", "ControllerBoard", "EE-PCBA-0001") in owners["EE-PORT-0001"]
+    assert owners["EE-PORT-0010"] == [("external", "ServoMotor", "", "plug")]
+    assert ("board", "ControllerBoard", "EE-PCBA-0001", "servoOut") in owners["EE-PORT-0001"]
 
 
 def test_checks_yaml_key(tmp_path):

@@ -201,7 +201,15 @@ The principles of the trace model and the rules on the trace graph.
    :status: valid
    :decided_by: XD-ADR-0128, XD-ADR-0129
 
-   Every connector symbol of a board (reference ``J``, ``P`` or ``CN``, or any symbol with the field) has a ``Port`` field: the ``EE-PORT`` ID of the connector port def it implements, or ``-`` for a connector without a port of the board def. Each port of the board def is named by one connector, and the connector's pins carry the nets of the port def's pin map (pin number and net name; a root-sheet label ``/X`` is the net ``X``). A connector pin that is not in the pin map stays unconnected. The connector tables are committed as ``generated/<project>.connectors.json``, extracted in plain Python and equal to KiCad's XML netlist.
+   Every connector symbol of a board (reference ``X``, ``J``, ``P`` or ``CN``, or any symbol with one of the fields) has three hidden fields that name the port it implements: ``portName``, the name of the port usage of the board def (``canaryLink``), or ``-`` for a connector without a port of the board def; ``portType``, the name of that port's def (``CanaryHeader``); ``portTypeID``, the def's ``EE-PORT`` ID (``EE-PORT-0001``). Two connectors of the same port def are told apart by their ``portName``. Each port of the board def is named by exactly one connector, and the connector's pins carry the nets of the port def's pin map (pin number and net name; a root-sheet label ``/X`` is the net ``X``). A connector pin that is not in the pin map stays unconnected. The connector tables are committed as ``generated/<project>.connectors.json``, extracted in plain Python and equal to KiCad's XML netlist.
+
+.. xd-rule:: Ports have functional names, connectors X designators
+   :id: XD-RULE-0066
+   :tags: trace, cad
+   :status: valid
+   :decided_by: XD-ADR-0128
+
+   A port usage of a part in a domain model (a board, cable or external part) has a functional lowerCamelCase name that says what the interface is for (``servoBase``, ``canaryLink``), never a reference designator (``j1``, ``p3``, ``x2``): the designator is a schematic detail that changes, the interface name is stable and reaches the block diagrams, the harness ends and the devicetree. A connector of a board has a reference with the prefix ``X`` (``X1``, ``X2``), so connectors are told apart from jumpers (``J``, ``JP``); KiCad's connector symbols default to ``J``, so the prefix is set when the symbol is placed. Both are warnings (owner decisions Q10, Q11 of tiacsys/xdmod#69).
 
 .. xd-rule:: ERC and DRC errors are fixed or accepted by a human
    :id: XD-RULE-0051

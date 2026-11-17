@@ -82,7 +82,7 @@ ch.write(OUT / "hier_ch.kicad_sch", CHILD)
 # pin 3 -> GND power symbol and a global label ZZZ on the same wire; a PWR_FLAG on +5V alone
 rt = Sheet()
 j = rt.sym("Connector_Generic", "Conn_01x03", [(f"/{ROOT}", "J1")], "Conn_01x03", (80.01, 100.33, 0), mirror="y",
-           fields={"Port": "EE-PORT-0001"}, lib_name="Conn_01x03_1")
+           fields={"portName": "servoOut", "portType": "ServoHeader", "portTypeID": "EE-PORT-0001"}, lib_name="Conn_01x03_1")
 sheets = ""
 for sid, nm, y, page in ((S1, "ch1", 80.01, "2"), (S2, "ch2", 120.65, "3")):
     pin = (110.49, y + 5.08)

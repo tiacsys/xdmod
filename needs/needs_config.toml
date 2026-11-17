@@ -354,7 +354,7 @@ target_types = ["ee-req"]
 target_types = ["sys-if"]
 
 # EE-PORT and EE-HAR are emitted by the EE domain model (robarm-ee/model/), like EE-PCBA (5.14):
-# KiCad and WireViz files carry these IDs only as references (`Port` field, harness ends).
+# KiCad and WireViz files carry these IDs only as references (the connector field `portTypeID`, the harness ends' `portTypeID:` lines).
 [[needs.types]]
 directive = "ee-port"
 title = "EE Port (connector)"

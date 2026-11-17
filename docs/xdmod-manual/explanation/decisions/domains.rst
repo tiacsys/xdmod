@@ -92,6 +92,13 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    (:need:`XD-ADR-0117`). A single ME part is 1:1 with a model element only when the model treats it
    as a block. The CK-D4 readers change with this decision.
 
+   *Corrected 2026-11-17 (owner decisions Q10, Q11 of tiacsys/xdmod#69):* a KiCad connector names
+   its port with three fields instead of ``Port``: ``portName`` (the port usage of the board def,
+   e.g. ``canaryLink``), ``portType`` (its def name, ``CanaryHeader``) and ``portTypeID`` (the def's
+   ``EE-PORT`` ID); a harness end names the end port of its cable def the same way. Port usages get
+   functional names, never designators, and connectors the designator prefix ``X``
+   (:need:`XD-RULE-0066`). The ``Port`` property of a FreeCAD LCS stays.
+
 .. xd-adr:: Need kinds EE-PORT, ME-PORT and EE-HAR
    :id: XD-ADR-0133
    :date: 2026-11-17
@@ -105,6 +112,9 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
      ``conforms`` to the ``SYS-IF`` it specializes and is ``part_of`` its board (``EE-PCBA``). A port
      of an external part has no ``part_of``; its qualified name names the part. A KiCad connector
      names it in its ``Port`` field; a connector without a port says so with ``Port = -``.
+     *Corrected 2026-11-17 (owner decisions Q10, Q11 of tiacsys/xdmod#69):* the connector's fields
+     are ``portName`` (the board def's port usage; ``-`` for none), ``portType`` and ``portTypeID``
+     (its def's name and ``EE-PORT`` ID), see :need:`XD-ADR-0128`.
    - ``ME-PORT``: a mechanical interface of an assembly in the ME model, with its geometry. It
      ``conforms`` to the ``SYS-IF`` it specializes and is ``part_of`` its assembly (``ME-ASM``). In
      FreeCAD it is an LCS with a ``Port`` property.

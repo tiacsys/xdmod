@@ -97,8 +97,10 @@ BUILTIN = [
      "cad.connectors", False, "c_connectors_fresh"),
     ("CK-D8", "connector extraction equals KiCad's XML netlist", _lv({"local": "warning", "baseline": "warning"}),
      "cad.connectors", True, "c_connectors_netlist"),
-    ("CK-F1", "connectors and harness ends match the pin maps of the EE model (Port, pin numbers, net names)",
+    ("CK-F1", "connectors and harness ends match the EE model (portName, portType, portTypeID, pin numbers, net names)",
      _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.connectors+model", False, "c_connectors_model"),
+    ("CK-F22", "port names are functional (no designators like j1); connectors with a portName have X designators",
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "cad.connectors+model", False, "c_port_names"),
     ("CK-F4a", "KiCad ERC per project: errors excluded or accepted (Accepted-by)",
      _lv({"local": "warning", "baseline": "warning"}), "cad.projects", True, "c_erc"),
     ("CK-F4b", "KiCad DRC per board: errors excluded or accepted (Accepted-by); unrouted nets in one entry",
@@ -500,6 +502,22 @@ def c_connectors_model(ctx: Ctx, r: Result):
     from curatrix import harness
     for h in harness.discover(ctx.cfg):  # harness ends against the ports of both sides (task 5.22)
         r.findings += harness.conformance(h, m, str(h.yml.relative_to(ctx.repo.path)))
+
+
+def c_port_names(ctx: Ctx, r: Result):
+    """CK-F22 (owner decisions Q10, Q11 of tiacsys/xdmod#69): port usages of the EE model have
+    functional lowerCamelCase names, not designators; connectors with a portName are X1, X2, ..."""
+    from curatrix import connectors as conn, eeprojects
+    s = ctx.cfg.section("model") or {}
+    mj = ctx.cfg.resolve(s.get("json", "generated/model.json"))
+    if not mj.exists():
+        r.findings = [f"{ctx.ws.rel(mj)} missing; run `curatrix gen model {ctx.repo.name}`"]
+        return
+    r.findings = conn.port_name_findings(modelmod.Model.load(mj))
+    for pr in eeprojects.discover(ctx.cfg):
+        f = gen.connectors_path(ctx.cfg, pr.name)
+        if f.is_file():
+            r.findings += conn.designator_findings(json.loads(f.read_text()), str(pr.sch.relative_to(ctx.repo.path)))
 
 
 def _erc_drc(ctx: Ctx, r: Result, kind: str):

@@ -44,7 +44,8 @@ def test_extraction_equals_kicad_netlist():
     mine = conn.connectors(conn.netlist(CONN / "conn.kicad_sch"))
     assert conn.compare(mine, conn.from_xml(CONN / "conn.net.xml"), "conn") == []
     j1 = {p["number"]: p for p in mine[0]["pins"]}
-    assert mine[0]["port"] == "EE-PORT-0001" and mine[1]["port"] == "-"
+    assert (mine[0]["portName"], mine[0]["portType"], mine[0]["portTypeID"]) == ("servoOut", "ServoHeader", "EE-PORT-0001")
+    assert mine[1]["portName"] == "-" and mine[1]["portTypeID"] is None and "Port" not in mine[1]
     assert (j1["1"]["net"], j1["1"]["name"], j1["3"]["net"]) == ("/CANARY_A", "Pin_1", "GND")
     assert j1["2"]["net"] == "Net-(J1-Pin_2)"                   # the T without a junction did not join GND
 
@@ -78,15 +79,17 @@ def test_buses_are_reported(tmp_path):
 
 
 def test_d8_compare_reports_differences():
-    """CK-D8 planted: a pin on another net, a missing connector, another Port."""
+    """CK-D8 planted: a pin on another net, a missing connector, another portName and portTypeID."""
     mine = conn.connectors(conn.netlist(CONN / "conn.kicad_sch"))
     bad = copy.deepcopy(mine)
     bad[0]["pins"][0]["net"] = "/OTHER"
-    bad[0]["port"] = "EE-PORT-0002"
+    bad[0]["portName"] = "bus"
+    bad[0]["portTypeID"] = "EE-PORT-0002"
     del bad[1]
     f = conn.compare(bad, conn.from_xml(CONN / "conn.net.xml"), "conn")
     assert any("J1 pin 1: name/net 'Pin_1'/'/OTHER' here, 'Pin_1'/'/CANARY_A' in KiCad" in x for x in f)
-    assert any("J1: Port 'EE-PORT-0002' here, 'EE-PORT-0001' in KiCad" in x for x in f)
+    assert any("J1: portName 'bus' here, 'servoOut' in KiCad" in x for x in f)
+    assert any("J1: portTypeID 'EE-PORT-0002' here, 'EE-PORT-0001' in KiCad" in x for x in f)
     assert any("J2 is in KiCad's netlist, not in the extraction" in x for x in f)
 
 
@@ -133,7 +136,7 @@ def _doc_for_controller():
     doc = {"connectors": conn.connectors(conn.netlist(CONN / "conn.kicad_sch"))}
     doc["connectors"][0]["pins"][0]["net"] = "/SERVO_PWM"
     doc["connectors"][0]["pins"][1]["net"] = "unconnected-(J1-Pin_2-Pad2)"     # not in the pin map
-    doc["connectors"][1]["port"] = "EE-PORT-0002"
+    doc["connectors"][1].update(portName="bus", portType="BusHeader", portTypeID="EE-PORT-0002")
     doc["connectors"][1]["pins"][0]["net"] = "DATA"
     return doc
 
@@ -147,7 +150,8 @@ def test_pin_maps_from_the_model():
 
 def test_f1_against_the_model():
     """CK-F1 planted: a net differs from the pin map, a pin of the map is missing, a connector
-    without Port, an unknown Port, a port of the board without connector."""
+    without portName, a portName that is no port of the board, a wrong portType and portTypeID, the
+    old Port field, a port of the board without connector, a port named twice."""
     m = modelmod.Model.load(DOMAIN / "ee-model.json")
     good = _doc_for_controller()
     assert conn.conformance(good, "EE-PCBA-0001", m, "c") == []
@@ -155,16 +159,57 @@ def test_f1_against_the_model():
     bad["connectors"][0]["pins"][0]["net"] = "/CANARY_A"
     bad["connectors"][0]["pins"][1]["net"] = "/EXTRA"
     bad["connectors"][0]["pins"] = bad["connectors"][0]["pins"][:2]
-    bad["connectors"][1]["port"] = None
-    bad["connectors"].append({"ref": "J9", "port": "EE-PORT-0077", "pins": []})
+    bad["connectors"][1].update(portName=None, portType=None, portTypeID=None)
+    bad["connectors"].append({"ref": "J9", "portName": "j9", "pins": []})
+    bad["connectors"].append({"ref": "J8", "portName": "servoOut", "portType": "BusHeader", "portTypeID": "EE-PORT-0002",
+                              "pins": [{"number": "1", "name": "", "net": "SERVO_PWM"}, {"number": "3", "name": "", "net": "GND"}]})
+    bad["connectors"].append({"ref": "J7", "Port": "EE-PORT-0001", "portName": None, "pins": []})
     text = "\n".join(conn.conformance(bad, "EE-PCBA-0001", m, "c"))
     assert "J1 (EePorts::ServoHeader): pin 1 is on net '/CANARY_A', the pin map says 'SERVO_PWM'" in text
     assert "J1 (EePorts::ServoHeader): pin 3 of the pin map is not on the connector" in text
     assert "J1 (EePorts::ServoHeader): pin 2 is on net '/EXTRA', but the pin map has no pin 2" in text
-    assert "J2 has no Port field" in text
-    assert "J9: Port EE-PORT-0077 is no connector port def" in text
-    assert "1 port(s) of EePorts::BusHeader (bus), 0 connector(s) name it" in text
+    assert "J2 has no portName field" in text
+    assert "J9: portName 'j9' is no port of the def (ports: bus, servoOut)" in text
+    assert "J8: portType is 'BusHeader', the port servoOut is typed by ServoHeader (EE-PORT-0001): portType = ServoHeader" in text
+    assert "J8: portTypeID is 'EE-PORT-0002'" in text
+    assert "J7 has the old field Port = 'EE-PORT-0001'; replace it by portName" in text
+    assert "the port bus (BusHeader) of the board def EeBoards::ControllerBoard is named by 0 connector(s) (none)" in text
+    assert "the port servoOut (ServoHeader) of the board def EeBoards::ControllerBoard is named by 2 connector(s) (J1, J8)" in text
     assert "names no board def" in conn.conformance(good, "EE-PCBA-0099", m, "c")[0]
+
+
+def test_f22_port_and_connector_names():
+    """CK-F22 planted: a designator-like port name and one that is not lowerCamelCase in the model;
+    a connector with a portName and a J designator. Pins and signals inside port defs do not count."""
+    m = modelmod.Model.load(DOMAIN / "ee-model.json")
+    assert conn.port_name_findings(m) == []
+    data = json.loads((DOMAIN / "ee-model.json").read_text())
+    for x in data:
+        if x["identity"]["@id"] == "EeCables::ServoMotor::plug":
+            x["payload"]["name"] = "j1"
+        if x["identity"]["@id"] == "EeCables::ServoCable::boardEnd":
+            x["payload"]["name"] = "Board_End"
+    text = "\n".join(conn.port_name_findings(modelmod.Model(data)))
+    assert "model EeCables::ServoMotor::plug: the port name 'j1' looks like a reference designator" in text
+    assert "the port name 'Board_End' is not lowerCamelCase" in text
+    assert "pwm" not in text and "gnd" not in text
+    assert conn.designator_findings({"connectors": [{"ref": "X1", "portName": "servoOut"}, {"ref": "R1"}]}, "c") == []
+    assert conn.designator_findings({"connectors": [{"ref": "J1", "portName": "-"}]}, "c") == [
+        "c: J1 has a portName but no X designator; connectors are X1, X2, ... (set the reference prefix to X)"]
+    for name in ("j1", "p3", "x2", "cn1", "JP2"):
+        assert conn.DESIGNATOR_LIKE.match(name)
+    for name in ("canaryLink", "servoBase", "bus", "plug", "boardEnd"):
+        assert not conn.DESIGNATOR_LIKE.match(name)
+
+
+def test_f22_through_the_check(tmp_path):
+    root, repo = _repo(tmp_path)
+    (repo / "generated/conn.connectors.json").write_text(json.dumps(_doc_for_controller()))
+    f = _run(root, repo, "CK-F22", "c_port_names")
+    assert f == ["pcba/conn/conn.kicad_sch: J1 has a portName but no X designator; connectors are X1, X2, ... "
+                 "(set the reference prefix to X)",
+                 "pcba/conn/conn.kicad_sch: J2 has a portName but no X designator; connectors are X1, X2, ... "
+                 "(set the reference prefix to X)"]
 
 
 def test_f1_through_the_check(tmp_path):
@@ -185,6 +230,6 @@ def test_strip_root():
 def test_checks_switch_on(tmp_path):
     root, repo = _repo(tmp_path)
     ids = checks.builtin_ids(checkcfg.load(repo / "checks.yaml", root))
-    assert {"CK-D7", "CK-D8", "CK-F1"} <= set(ids)
+    assert {"CK-D7", "CK-D8", "CK-F1", "CK-F22"} <= set(ids)
     root, repo = _repo(tmp_path / "b", yaml_text='version: 1\ncad: {projects: ["pcba/*/*.kicad_pro"]}\n')
-    assert not {"CK-D7", "CK-D8", "CK-F1"} & set(checks.builtin_ids(checkcfg.load(repo / "checks.yaml", root)))
+    assert not {"CK-D7", "CK-D8", "CK-F1", "CK-F22"} & set(checks.builtin_ids(checkcfg.load(repo / "checks.yaml", root)))

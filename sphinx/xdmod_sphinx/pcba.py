@@ -197,8 +197,14 @@ class Connectors(Directive):
         doc = json.loads(f.read_text(encoding="utf-8"))
         lines = []
         for c in doc.get("connectors") or []:
-            port = c.get("port") or ""
-            pdesc = f":need:`{port}`" if port.startswith("EE-PORT-") else ("no port" if port == "-" else _lit(port))
+            name, tid = c.get("portName") or "", c.get("portTypeID") or ""
+            if name == "-":
+                pdesc = "no port"
+            elif name:
+                pdesc = f"port {_lit(name)} ({_lit(c.get('portType') or '?')}" + (
+                    f", :need:`{tid}`)" if tid.startswith("EE-PORT-") else ")")
+            else:
+                pdesc = "no portName field" + (f" (old Port {_lit(c['Port'])})" if c.get("Port") else "")
             lines += [f"**{c['ref']}** ({_lit(c.get('value'))}, {_lit(c.get('footprint'))}): {pdesc}", ""]
             lines += _table(["Pin", "Pin name", "Net"], [[_cell(p["number"]), _cell(p.get("name")), _lit(p.get("net"))]
                                                           for p in c.get("pins") or []])

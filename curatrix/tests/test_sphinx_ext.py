@@ -143,7 +143,7 @@ def test_harness_document_directives(tmp_path):
     data = yaml.safe_load(yaml.safe_dump(GOOD))
     data["metadata"].pop("TraceID")                         # no need targets in this plain build
     for c in data["connectors"].values():
-        c["notes"] = "Port: -"
+        c["notes"] = "portName: -"
     h = tmp_path / "harness" / "servo-cable"
     h.mkdir(parents=True)
     (h / "servo-cable.yml").write_text(yaml.safe_dump(data))

@@ -66,16 +66,26 @@ Steps
    - The outline and holes come from the board's space budget through the co-design push, not by
      hand (:ref:`howto-co-design-change`).
 
-4. **Connectors.** Every connector symbol (reference ``J``, ``P``, ``CN``, or any symbol with a
-   ``Port`` field) gets a ``Port`` field with the ``EE-PORT`` def ID it implements. Then write the
-   connector tables and commit them:
+4. **Connectors.** Name the board def's ports by function in the EE model, in lowerCamelCase
+   (``port canaryLink : CanaryHeader;``), never by designator (``j1``): the name reaches the block
+   diagram, the harness ends and later the devicetree (:need:`XD-RULE-0066`). In KiCad,
+   every connector gets the reference prefix ``X`` (``X1``, ``X2``; KiCad's connector symbols
+   default to ``J``, so change it in the symbol's properties) and three hidden fields:
+
+   - ``portName``: the port usage of the board def it implements (``canaryLink``), or ``-`` for a
+     connector without a port;
+   - ``portType``: that port's def name (``CanaryHeader``);
+   - ``portTypeID``: the def's ``EE-PORT`` ID (``EE-PORT-0001``).
+
+   Then write the connector tables and commit them:
 
    .. code-block:: sh
 
       curatrix gen connectors robarm-ee        # generated/<name>.connectors.json
 
-   CK-F1 compares pins and nets with the pin maps of the EE model, CK-D7 that the JSON is fresh, and
-   CK-D8 (local, KiCad) the extraction against KiCad's XML netlist.
+   CK-F1 compares the three fields with the model and pins and nets with the pin maps, CK-F22 warns
+   on designator-like port names and connectors without an ``X`` designator, CK-D7 checks that the
+   JSON is fresh, and CK-D8 (local, KiCad) the extraction against KiCad's XML netlist.
 
 5. **Variants** (at most two, :need:`XD-ADR-0136`): add them in KiCad as assembly variants (DNP and
    fields per variant; a pin-header shunt position as a field ``Setting``), write one def per
