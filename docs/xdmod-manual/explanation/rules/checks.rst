@@ -121,3 +121,19 @@ General rules that the hygiene and generated-file checks enforce.
    :decided_by: XD-ADR-0064
 
    Every tool runs with a memory limit and a timeout, so a runaway tool is stopped and can't stall the machine.
+
+.. xd-rule:: A repo states the checks it runs
+   :id: XD-RULE-0045
+   :tags: checks
+   :status: valid
+   :decided_by: XD-ADR-0125
+
+   A repo's ``checks.yaml`` lists in ``expect:`` exactly the checks it runs. A missing ``checks.yaml``, a check run that plans no check, and an error-level check skipped at the baseline stage all fail.
+
+.. xd-rule:: Pull requests stay small
+   :id: XD-RULE-0046
+   :tags: checks
+   :status: valid
+   :decided_by: XD-ADR-0125
+
+   A pull request holds one SYSMOD step or one tool feature. Generated files go with the change that causes them and are not counted.

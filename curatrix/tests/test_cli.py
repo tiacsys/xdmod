@@ -17,7 +17,8 @@ def ws(tmp_path, monkeypatch):
     (repo / "checks.yaml").write_text(
         "version: 1\nids: {ledger: ids.yaml}\n"
         "cad: {kicad: ['pcba/*/board.kicad_sch'], freecad: [], needs: generated/cad-needs.json}\n"
-        "commands:\n  - {id: CK-X1, name: echo, run: ['{python}', '-c', 'print(42)'], stages: [local]}\n")
+        "commands:\n  - {id: CK-X1, name: echo, run: ['{python}', '-c', 'print(42)'], stages: [local]}\n"
+        "expect: [CK-B7, CK-C1, CK-C2, CK-D4, CK-H1, CK-H2, CK-H3, CK-H4, CK-H6, CK-H7, CK-X1]\n")
     monkeypatch.chdir(root)
     return root
 
