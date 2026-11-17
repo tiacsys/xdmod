@@ -64,13 +64,16 @@ def _rst(directive, text: str) -> list[nodes.Node]:
     return node.children
 
 
-def _registry_docs(repo: Path) -> set[str]:
+def _registry_docs(repo: Path) -> dict[str, str]:
+    """Document ID -> its intersphinx name in zdocs (the registry ``prefix``, else the ID with
+    ``_`` for ``-``)."""
     try:
         cy = yaml.safe_load((repo / "checks.yaml").read_text()) or {}
         reg = repo / ((cy.get("docs") or {}).get("registry") or "docs/documents.yaml")
-        return set((yaml.safe_load(reg.read_text()) or {}).get("documents") or {})
+        docs = (yaml.safe_load(reg.read_text()) or {}).get("documents") or {}
+        return {d: (m or {}).get("prefix") or d.replace("-", "_") for d, m in docs.items()}
     except (OSError, yaml.YAMLError, AttributeError):
-        return set()
+        return {}
 
 
 def _model(repo: Path):
@@ -104,7 +107,7 @@ class HarnessEnds(Directive):
             for kind, name, oid in owners.get(port, []):
                 if kind == "board":
                     doc = f"pcba-{kebab(name)}"
-                    link = f", :external+{doc}:doc:`{doc} <index>`" if doc in docs else ""
+                    link = f", :external+{docs[doc]}:doc:`{doc} <index>`" if doc in docs else ""
                     parts.append(f"board {name} (:need:`{oid}`{link})" if oid else f"board {name}")
                 else:
                     parts.append(f"external part {name}")
