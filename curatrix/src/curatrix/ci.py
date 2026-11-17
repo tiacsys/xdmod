@@ -86,7 +86,9 @@ def resolve_one(p: Project, branch: str, under_check: str, head_sha: str, ws=Non
     """Apply D127 to one project (fetches, then checks out unless `checkout` is False)."""
     if p.name == under_check:
         if head_sha:
-            _fetch(p, [head_sha], ws)
+            # the PR's base too, as refs/remotes/xd-ci/base: CK-H7 measures the PR against it
+            base = os.environ.get("GITHUB_BASE_REF") or "main"
+            _fetch(p, [head_sha, f"+refs/heads/{base}:refs/remotes/xd-ci/base"], ws)
         target, rule, detail = head_sha, "head", "the repo under check, at the PR head"
     else:
         refs = ["+refs/heads/main:refs/remotes/xd-ci/main"]

@@ -189,10 +189,12 @@ def validate(raw: dict, path: Path) -> list[str]:
     ex = raw.get("expect")
     if ex is not None and not (isinstance(ex, list) and all(isinstance(x, str) for x in ex)):
         errs.append(f"{path}: expect must be a list of check IDs")
+    elif ex is not None and len(set(ex)) != len(ex):
+        errs.append(f"{path}: expect lists a check twice")
     ps = raw.get("pr_size")
     if ps is not None:
         if not isinstance(ps, dict) or set(ps) - {"lines", "files"} or \
-                not all(isinstance(v, int) and v > 0 for v in ps.values()):
+                not all(isinstance(v, int) and not isinstance(v, bool) and v > 0 for v in ps.values()):
             errs.append(f"{path}: pr_size must be a mapping with positive integers `lines` and `files`")
     if "model" in raw and isinstance(raw["model"], dict) and not raw["model"].get("files"):
         errs.append(f"{path}: model.files is required")
