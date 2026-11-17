@@ -294,7 +294,8 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    :refines: XD-ADR-0128, XD-ADR-0141
 
    **FreeCAD models of the boards live in their own repo,** ``robarm-freecad-pcba`` in the robot arm
-   (path ``libs/freecad-pcba``, in a west group that the ee and me roles both get). EE writes into it,
+   (a top-level west project like the other design repos, in the west groups ``ee`` and ``me``, so
+   the ee and me roles both get it). EE writes into it,
    ME reads from it, so neither depends on the other's repo. Only tagged board versions go in
    (:need:`XD-ADR-0140`): ``kicad-cli pcb export step`` with the variant and the version, then a
    headless FreeCAD import that adds the board's ``EE-PCBA`` ID and version as properties. The EE agent
@@ -303,3 +304,12 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    or an issue on the ME repo, and moving to it is an ME change. Creating the repo is an admin action
    that needs the owner's approval (:need:`XD-ADR-0112`). Proposed until task 5.29 has shown the
    headless STEP import (the FreeCAD spike did not test it).
+
+   Task 5.29 showed the headless STEP import (``FreeCADCmd``, ``Part.Shape.read``, canary board:
+   about 0.04 MB per variant without component models) and settled the details: one file per tagged
+   version and variant at ``boards/<board>/<board>-vX.Y.Z[-<variant>].FCStd``; an ``App::Part``
+   ``Board`` with ``TraceID`` (the ``EE-PCBA``), ``Version``, ``Variant`` and ``Commit``; ``curatrix
+   cam <ee repo> <board> --library`` refuses anything but an exact tag on main with a clean project
+   folder and never overwrites a file. The repo is top level (not under ``libs/``), because it is a
+   design repo with its own checks: worktree sets and the CI sibling resolution handle only
+   top-level repos. Checks: :need:`XD-RULE-0061` (CK-F20) and :need:`XD-RULE-0062` (CK-F21).

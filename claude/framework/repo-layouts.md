@@ -79,11 +79,17 @@ Only assemblies are tagged (`<name>/vX.Y.Z`, owner only, XD-ADR-0140). Design ou
 
 ### robarm-freecad-pcba (board library, XD-ADR-0139, proposed; created in task 5.29 after the owner's approval)
 ```
-<board>/<board>-<version>[-<variant>].FCStd   one file per tagged board version and variant: board body, connectors, tall parts,
-                                  no tracks; properties EE-PCBA ID and version; at most 5 MB per file to start
-checks.yaml  ids.yaml  claude/  .github/
+boards/<board>/<board>-<vX.Y.Z>[-<variant>].FCStd   one file per tagged board version and variant: board body and
+                                  components, no tracks; App::Part `Board` with TraceID (EE-PCBA), Version, Variant,
+                                  Commit; saved uncompressed; at most 5 MB per file to start; never replaced
+docs/board-library/              the list of board versions, made from the files at build time
+checks.yaml  claude/  .github/   no ids.yaml: the repo owns no IDs (the files carry robarm-ee's EE-PCBA IDs)
 ```
-Path `libs/freecad-pcba`, a west group that the ee and me roles both get. The EE agent opens the PR that adds a board version (STEP from `kicad-cli pcb export step`, headless FreeCAD import). CK-F20 checks that every file names an existing board tag.
+Top-level west project `robarm-freecad-pcba` (like the other design repos, so worktree sets and CI sibling
+resolution work), west groups `ee` and `me`. The EE agent writes a board version with `curatrix cam robarm-ee
+<board> --library` (tagged releases only: `kicad-cli pcb export step`, headless FreeCAD import) and opens the PR.
+CK-F20 checks every file against the board tags; CK-F21 in robarm-me (`cad.board_library`) notes a link to an
+older board version.
 
 ### robarm-sw
 ```

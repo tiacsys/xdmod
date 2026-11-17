@@ -1,0 +1,335 @@
+"""The board library (task 5.29, XD-ADR-0139): FreeCAD models of tagged board versions.
+
+``curatrix cam <ee-repo> <board> --board-model`` exports a ``pcba/`` project as a FreeCAD model, locally
+and for any version (previews too):
+
+1. copy the project into ``build/<area>/board-model/<board>/<version>/project/`` and write the
+   version into the copy's ``XD_VERSION`` (as ``curatrix cam`` does, XD-ADR-0142);
+2. ``kicad-cli pcb export step --no-dnp --subst-models [--variant V]`` per variant of the project
+   (board body and components, no tracks, pads or zones);
+3. ``FreeCADCmd`` runs ``xdmod/templates/freecad-pcba/import-step.py``: one ``App::Part`` ``Board``
+   with ``TraceID`` (group Trace) = the project's ``TraceID`` text variable (its ``EE-PCBA``) and
+   ``Version``, ``Variant``, ``Board``, ``Commit``, ``Source`` (group Board), and the shape inside;
+   saved with the workspace FreeCAD config (CompressionLevel 0, uncompressed);
+4. findings: compressed entries, a file above the size limit (5 MB to start), an invalid shape.
+
+``--library`` does the same for a **release** only (an exact tag ``<board>/vX.Y.Z`` on main and a
+clean project folder; anything else is refused before KiCad runs) and copies the files into
+``boards/<board>/<board>-<vX.Y.Z>[-<variant>].FCStd`` of the board library: the repo whose
+checks.yaml has a ``board_library`` section, which must be a checkout on a branch other than main
+(a worktree set). Existing files are never overwritten. Then the EE agent commits and opens the PR.
+
+Checks (plain Python, also in CI):
+
+* CK-F20 (in the library, section ``board_library``): every ``.FCStd`` sits at
+  ``boards/<board>/<board>-vX.Y.Z[-<variant>].FCStd``; its ``Board`` object carries an ``EE-PCBA``
+  TraceID, ``Version`` = ``<board>/vX.Y.Z`` and the variant of the name; the tag exists in the
+  source repo, names the same ``EE-PCBA`` in the project's ``TraceID`` at the tag, and ``Commit`` is
+  the tag's commit; at most ``max_mb`` per file.
+* CK-F21 (in an ME repo, ``cad.board_library``): an ME FreeCAD file that links a board model of the
+  library gets a note when the library has a newer version of that board and variant, or when the
+  linked file is not in the library (XD-ADR-0139: moving to a new version is an ME change).
+"""
+from __future__ import annotations
+
+import datetime as dt
+import json
+import re
+import shutil
+import subprocess
+from pathlib import Path
+
+from curatrix import cad
+
+DEFAULT_MAX_MB = 5.0
+VERSION_RE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
+TAG_RE = re.compile(r"^(?P<board>[^/]+)/(?P<v>v\d+\.\d+\.\d+)$")
+OBJECT = "Board"
+SKIP_COPY = shutil.ignore_patterns("*.kicad_prl", "*-backups", "fp-info-cache", "_autosave-*", "*.lck")
+
+
+class BoardLibError(Exception):
+    pass
+
+
+# ------------------------------------------------------------------ names
+def file_name(board: str, short: str, variant: str | None) -> str:
+    return f"{board}-{short}" + (f"-{variant}" if variant else "") + ".FCStd"
+
+
+def parse_name(board: str, name: str) -> tuple[str, str | None] | None:
+    """(vX.Y.Z, variant or None) of ``<board>-vX.Y.Z[-<variant>].FCStd``, None if the name does not fit."""
+    m = re.fullmatch(re.escape(board) + r"-(v\d+\.\d+\.\d+)(?:-(.+))?\.FCStd", name)
+    return (m.group(1), m.group(2)) if m else None
+
+
+def vkey(short: str) -> tuple[int, int, int]:
+    m = VERSION_RE.match(short)
+    return tuple(int(x) for x in m.groups()) if m else (-1, -1, -1)
+
+
+def board_props(fcstd: Path) -> dict:
+    """TraceID, Version, Variant, Board, Commit of the library object ``Board`` (plain Python)."""
+    sem = cad.freecad_trace(fcstd, fcstd.name)
+    o = sem["objects"].get(OBJECT) or {}
+    vals = o.get("values") or {}
+    out = {k: vals.get(k) for k in ("Version", "Variant", "Board", "Commit") if vals.get(k) is not None}
+    tid = (o.get("trace") or {}).get("TraceID")
+    if tid:
+        out["TraceID"] = tid
+    out["_found"] = bool(o)
+    return out
+
+
+# ------------------------------------------------------------------ git
+def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, timeout=60)
+
+
+# ------------------------------------------------------------------ export
+def export(ws, repo, cfg, pr, release_only: bool = False, log=print) -> dict:
+    """Export one pcba/ project as FreeCAD board models into build/; returns the record."""
+    from curatrix import cam, domvariants, limits, newasm, newpcba
+    ver, release = cam.version(repo.path, pr.name, pr.folder)
+    if release_only and not release:
+        raise BoardLibError(
+            f"{pr.name}: {ver} is not a tagged board version (an exact tag {pr.name}/vX.Y.Z on main and a clean "
+            f"project folder); the board library takes only tagged versions (XD-ADR-0139), and only the owner "
+            f"makes the tags (XD-ADR-0140). Use --board-model for a local preview")
+    tid = (pr.variables().get("TraceID") or "").strip()
+    if not tid:
+        raise BoardLibError(f"{ws.rel(pr.pro)}: no TraceID text variable (the EE-PCBA ID of the board, CK-F7)")
+    short = ver.split("/", 1)[1] if "/" in ver else ver
+    top = ws.build(cfg.area) / "board-model" / pr.name / short
+    if top.exists():
+        shutil.rmtree(top)
+    copy_dir = top / "project"
+    shutil.copytree(pr.folder, copy_dir, ignore=SKIP_COPY)
+    pro = copy_dir / pr.pro.name
+    d = json.loads(pro.read_text(encoding="utf-8"))
+    d.setdefault("text_variables", {})["XD_VERSION"] = ver
+    pro.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
+    pcb = copy_dir / f"{pr.name}.kicad_pcb"
+    if not pcb.is_file():
+        raise BoardLibError(f"{pr.name}: no {pcb.name}; a board model needs the layout")
+    tmp = top / "tmp"
+    tmp.mkdir(parents=True)
+    env = dict(ws.run_env(), TMPDIR=str(tmp))
+    head = _git(repo.path, "rev-parse", "HEAD").stdout.strip()
+    max_mb = DEFAULT_MAX_MB
+    files, findings = [], []
+    for variant in domvariants.kicad_variants(pr.pro) or [None]:
+        step = top / (file_name(pr.name, short, variant)[:-len(".FCStd")] + ".step")
+        argv = ["kicad-cli", "pcb", "export", "step", "--no-dnp", "--subst-models", "-f", "-o", str(step)]
+        argv += ["--variant", variant] if variant else []
+        log(f"  {pr.name} {ver}{' variant ' + variant if variant else ''}: kicad-cli pcb export step")
+        p = limits.run([*argv, str(pcb)], "kicad-cli", ws, env=env, capture_output=True, text=True)
+        (top / (step.stem + ".kicad-cli.log")).write_text(p.stdout + p.stderr, encoding="utf-8")
+        if p.returncode or not step.is_file():
+            raise BoardLibError(f"{pr.name}: kicad-cli pcb export step: exit {p.returncode} "
+                                f"{limits.explain_rc(p.returncode)}: {(p.stdout + p.stderr)[-400:]}")
+        fc = top / file_name(pr.name, short, variant)
+        try:
+            res = newasm.run_script(ws, ws.xdmod / "templates" / "freecad-pcba" / "import-step.py",
+                                    {"XD_STEP": str(step.resolve()), "XD_OUT": str(fc.resolve()), "XD_TRACE_ID": tid,
+                                     "XD_VERSION": ver, "XD_VARIANT": variant or "", "XD_BOARD": pr.name,
+                                     "XD_COMMIT": head},
+                                    top / (step.stem + ".result.json"))
+        except newpcba.NewError as e:
+            raise BoardLibError(f"{pr.name}: FreeCAD import: {e}") from e
+        for bak in top.glob("*.FCBak"):
+            bak.unlink()
+        mb = fc.stat().st_size / 1e6
+        f = file_findings(fc, max_mb)
+        findings += [f"{fc.name}: {x}" for x in f]
+        files.append({"file": fc.name, "variant": variant, "step": step.name, "mb": round(mb, 3),
+                      "solids": res.get("solids"), "bbox_mm": res.get("bbox_mm")})
+        log(f"    {ws.rel(fc)}: {mb:.2f} MB, {res.get('solids')} solids, bbox {res.get('bbox_mm')} mm")
+    shutil.rmtree(tmp, ignore_errors=True)
+    rec = {"kind": "board-model", "project": pr.name, "version": ver, "release": release, "commit": head,
+           "trace_id": tid, "date": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+           "files": files, "findings": findings, "folder": ws.rel(top)}
+    (top / "board-model.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
+    for x in findings:
+        log(f"  finding: {x}")
+    return rec
+
+
+def file_findings(fc: Path, max_mb: float) -> list[str]:
+    out = []
+    mb = fc.stat().st_size / 1e6
+    if mb > max_mb:
+        out.append(f"{mb:.2f} MB, above the limit of {max_mb:g} MB per file (XD-ADR-0139); simplify the 3D models "
+                   f"or ask the owner")
+    bad = cad.freecad_compressed(fc)
+    if bad:
+        out.append(f"saved compressed ({', '.join(bad[:3])} ...); FreeCAD must run with the workspace config")
+    return out
+
+
+# ------------------------------------------------------------------ into the library
+def find_library(ws) -> Path:
+    from curatrix import checkcfg
+    hits = []
+    for r in ws.repos:
+        cy = r.path / "checks.yaml"
+        if r.is_framework_repo and cy.is_file():
+            try:
+                if checkcfg.load(cy, ws.root).section("board_library") is not None:
+                    hits.append(r.path)
+            except Exception:                       # a broken checks.yaml elsewhere is not our concern here
+                continue
+    if len(hits) != 1:
+        raise BoardLibError(f"{'no' if not hits else 'more than one'} repo with a board_library section in its "
+                            f"checks.yaml in this workspace" + (f": {', '.join(ws.rel(h) for h in hits)}" if hits else
+                                                                 "") + "; name the library checkout with --into")
+    return hits[0]
+
+
+def add_to_library(ws, repo, cfg, pr, dest: Path | None = None, log=print) -> list[Path]:
+    """Export a tagged board version and copy its files into the library checkout ``dest``."""
+    from curatrix import cam
+    _, release = cam.version(repo.path, pr.name, pr.folder)
+    if not release:                                  # refuse before KiCad runs
+        export(ws, repo, cfg, pr, release_only=True, log=log)
+    lib = (dest or find_library(ws)).resolve()
+    branch = _git(lib, "symbolic-ref", "-q", "--short", "HEAD").stdout.strip()
+    if not branch or branch == "main":
+        raise BoardLibError(f"{ws.rel(lib)} is {'on main' if branch else 'detached'}; the library gets a board version "
+                            f"by a pull request: put it on a branch (curatrix work start <branch> <library repo>)")
+    rec = export(ws, repo, cfg, pr, release_only=True, log=log)
+    big = [x for x in rec["findings"] if "above the limit" in x or "compressed" in x]
+    if big:
+        raise BoardLibError(f"{pr.name}: not added to the library: " + "; ".join(big))
+    folder = lib / "boards" / pr.name
+    src = ws.root / rec["folder"]
+    targets = [folder / f["file"] for f in rec["files"]]
+    there = [t for t in targets if t.exists()]
+    if there:
+        raise BoardLibError(f"{', '.join(ws.rel(t) for t in there)} exist; a board version is written once and never "
+                            f"replaced (XD-ADR-0139)")
+    folder.mkdir(parents=True, exist_ok=True)
+    for f, t in zip(rec["files"], targets):
+        shutil.copyfile(src / f["file"], t)
+        log(f"  wrote {ws.rel(t)} ({f['mb']:.2f} MB)")
+    log(f"next: commit in {ws.rel(lib)} on {branch}, run `curatrix check {lib.name} --stage local`, open the PR "
+        f"(name the tag {rec['version']})")
+    return targets
+
+
+# ------------------------------------------------------------------ CK-F20
+def library_findings(ws, cfg) -> list[str]:
+    """CK-F20 on the library repo."""
+    s = cfg.section("board_library") or {}
+    max_mb = float(s.get("max_mb") or DEFAULT_MAX_MB)
+    src = cfg.resolve(s["source"]) if s.get("source") else None
+    out = []
+    if src is None or not (src / ".git").exists():
+        out.append(f"board_library.source {s.get('source')!r} is not a git checkout in this workspace: the board tags "
+                   f"cannot be checked")
+        src = None
+    repo = cfg.repo
+    tags = set(_git(src, "tag", "-l").stdout.split()) if src else set()
+    for fc in sorted(repo.rglob("*.FCStd")):
+        rel = fc.relative_to(repo).as_posix()
+        if rel.startswith(".git/"):
+            continue
+        parts = rel.split("/")
+        parsed = parse_name(parts[1], parts[2]) if len(parts) == 3 and parts[0] == "boards" else None
+        if parsed is None:
+            out.append(f"{rel}: not boards/<board>/<board>-vX.Y.Z[-<variant>].FCStd")
+            continue
+        board, (short, variant) = parts[1], parsed
+        tag = f"{board}/{short}"
+        out += [f"{rel}: {x}" for x in file_findings(fc, max_mb)]
+        try:
+            p = board_props(fc)
+        except Exception as e:                       # not a zip, no Document.xml, bad XML
+            out.append(f"{rel}: not readable as a FreeCAD file ({e})")
+            continue
+        if not p["_found"]:
+            out.append(f"{rel}: no object {OBJECT!r} (the model must come from `curatrix cam <ee-repo> {board} "
+                       f"--library`)")
+            continue
+        tid = p.get("TraceID") or ""
+        from curatrix import ids as idmod
+        if idmod.kind_of(tid) != "EE-PCBA":
+            out.append(f"{rel}: TraceID {tid or '(none)'} is not an EE-PCBA ID")
+        if p.get("Version") != tag:
+            out.append(f"{rel}: Version {p.get('Version')!r} does not match the file name ({tag})")
+        if (p.get("Variant") or None) != variant:
+            out.append(f"{rel}: Variant {p.get('Variant')!r} does not match the file name ({variant or 'none'})")
+        if src is None:
+            continue
+        if tag not in tags:
+            out.append(f"{rel}: no tag {tag} in {ws.rel(src)}; only tagged board versions go into the library "
+                       f"(XD-ADR-0139)")
+            continue
+        commit = _git(src, "rev-parse", f"{tag}^{{commit}}").stdout.strip()
+        if p.get("Commit") and p["Commit"] != commit:
+            out.append(f"{rel}: Commit {p['Commit'][:12]} is not the commit of tag {tag} ({commit[:12]})")
+        pro = next((f for f in _git(src, "ls-tree", "-r", "--name-only", tag).stdout.splitlines()
+                    if f.endswith(f"/{board}/{board}.kicad_pro")), None)
+        if pro is None:
+            out.append(f"{rel}: tag {tag} has no KiCad project {board}/{board}.kicad_pro")
+            continue
+        try:
+            tv = json.loads(_git(src, "show", f"{tag}:{pro}").stdout).get("text_variables") or {}
+        except ValueError:
+            tv = {}
+        if tv.get("TraceID") and tv["TraceID"] != tid:
+            out.append(f"{rel}: TraceID {tid}, but the project at {tag} is {tv['TraceID']}")
+    return out
+
+
+# ------------------------------------------------------------------ CK-F21
+def library_versions(lib: Path) -> dict[tuple[str, str | None], list[str]]:
+    """(board, variant) -> versions vX.Y.Z in the library, oldest first."""
+    out: dict = {}
+    for fc in sorted((lib / "boards").glob("*/*.FCStd")):
+        parsed = parse_name(fc.parent.name, fc.name)
+        if parsed:
+            out.setdefault((fc.parent.name, parsed[1]), []).append(parsed[0])
+    return {k: sorted(v, key=vkey) for k, v in out.items()}
+
+
+def newer_findings(ws, cfg) -> list[str]:
+    """CK-F21 on an ME repo: links into the board library that are not the newest version."""
+    lib_s = (cfg.section("cad") or {}).get("board_library")
+    lib = cfg.resolve(lib_s).resolve()
+    if not (lib / "boards").is_dir():
+        return [f"cad.board_library {lib_s!r}: no boards/ folder there (is the library in this workspace?)"]
+    versions = library_versions(lib)
+    out = []
+    for fc in cfg.globs((cfg.section("cad") or {}).get("freecad") or []):
+        rel = fc.relative_to(cfg.repo).as_posix()
+        try:
+            sem = cad.freecad_trace(fc, rel)
+        except Exception:
+            continue                                 # CK-D4 reports unreadable files
+        seen = set()
+        for o in sem["objects"].values():
+            for targets in (o.get("links") or {}).values():
+                for t in targets:
+                    f = t.get("file") or ""
+                    if not f:
+                        continue
+                    target = (fc.parent / f).resolve()
+                    try:
+                        inner = target.relative_to(lib / "boards").as_posix().split("/")
+                    except ValueError:
+                        continue
+                    if target in seen:
+                        continue
+                    seen.add(target)
+                    parsed = parse_name(inner[0], inner[1]) if len(inner) == 2 else None
+                    if parsed is None or not target.is_file():
+                        out.append(f"{rel}: links {f}, which is not a board version in the library")
+                        continue
+                    have = versions.get((inner[0], parsed[1])) or []
+                    newest = have[-1] if have else parsed[0]
+                    if vkey(newest) > vkey(parsed[0]):
+                        out.append(f"{rel}: links {inner[0]} {parsed[0]}" + (f" (variant {parsed[1]})" if parsed[1]
+                                                                            else "") +
+                                   f"; the library has {newest}. Moving to it is an ME change (XD-ADR-0139)")
+    return out
