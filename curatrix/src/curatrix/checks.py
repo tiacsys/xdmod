@@ -448,8 +448,19 @@ def c_pins(ctx: Ctx, r: Result):
             r.findings.append(f"tools.yaml: {e}")
 
 
+AGENT_TRAILER = re.compile(r"^Co-Authored-By: .+ <noreply@anthropic\.com>\s*$", re.M)
+AGENT_MARK = re.compile(r"\bClaude\b|anthropic\.com|Generated with \[Claude Code\]")
+
+
 def c_trailers(ctx: Ctx, r: Result):
-    base = "origin/main"
+    """CK-H4: agent commits since the PR base carry the agent trailer (D51). Agents commit under the
+    owner's identity, so a commit is an agent commit when its message names Claude or anthropic.com;
+    human commits are not asked for a trailer (task 5.7)."""
+    base = _base_ref(ctx.repo.path)
+    if base is None:
+        r.status = "skip"
+        r.findings = ["no base branch to compare with (set XD_BASE_REF)"]
+        return
     try:
         out = subprocess.run(["git", "-C", str(ctx.repo.path), "log", "--format=%H%x00%B%x01", f"{base}..HEAD"],
                              capture_output=True, text=True, timeout=60)
@@ -457,16 +468,15 @@ def c_trailers(ctx: Ctx, r: Result):
         r.findings = [f"git log failed: {e}"]
         return
     if out.returncode:
-        r.status = "skip"
-        r.findings = [f"no {base} to compare with"]
+        r.findings = [f"git log {base}..HEAD failed: {out.stderr.strip()[:200]}"]
         return
     for rec in out.stdout.split("\x01"):
         if not rec.strip():
             continue
         sha, _, body = rec.strip().partition("\x00")
-        if "Co-Authored-By:" not in body:
-            r.findings.append(f"{sha[:10]}: no Co-Authored-By trailer (fine for a human commit; agents must add it, D51)")
-
+        if AGENT_MARK.search(body) and not AGENT_TRAILER.search(body):
+            r.findings.append(f"{sha[:10]}: an agent commit without the trailer "
+                              f"`Co-Authored-By: <agent> <noreply@anthropic.com>` (D51)")
 
 def c_bootstrap(ctx: Ctx, r: Result):
     copy = ctx.cfg.bootstrap_copy

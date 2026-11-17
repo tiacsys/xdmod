@@ -41,7 +41,7 @@ class Project:
 class Resolution:
     name: str
     path: str
-    rule: str            # "head" | "branch" | "main" | "pin"
+    rule: str            # "head" | "branch" | "base" (stacked PR) | "main" | "pin"
     sha: str
     pin: str
     detail: str = ""
@@ -92,11 +92,18 @@ def resolve_one(p: Project, branch: str, under_check: str, head_sha: str, ws=Non
     else:
         refs = ["+refs/heads/main:refs/remotes/xd-ci/main"]
         has_branch = bool(branch) and branch != "main" and remote_has_branch(p, branch, ws)
+        # a stacked PR: a sibling without the head branch uses the PR's base branch, if it has it
+        base = os.environ.get("GITHUB_BASE_REF") or ""
+        has_base = not has_branch and base not in ("", "main") and remote_has_branch(p, base, ws)
         if has_branch:
             refs.append(f"+refs/heads/{branch}:refs/remotes/xd-ci/branch")
+        elif has_base:
+            refs.append(f"+refs/heads/{base}:refs/remotes/xd-ci/branch")
         _fetch(p, refs, ws)
         if has_branch:
             target, rule, detail = "refs/remotes/xd-ci/branch", "branch", f"branch {branch}"
+        elif has_base:
+            target, rule, detail = "refs/remotes/xd-ci/branch", "base", f"base branch {base} (stacked PR)"
         elif _git(["merge-base", "--is-ancestor", p.pin, "refs/remotes/xd-ci/main"], p.path, ws, check=False).returncode == 0:
             target, rule, detail = "refs/remotes/xd-ci/main", "main", "main (the pin is an ancestor)"
         else:
@@ -139,3 +146,49 @@ def siblings(ws: Workspace, branch: str, under_check: str, head_sha: str, log=pr
             for r in res:
                 f.write(f"| {r.name} | {r.rule} | `{r.sha[:12]}` | `{r.pin[:12]}` |\n")
     return res
+
+
+# ------------------------------------------------------------------ change-impact base (CK-G1, task 5.7)
+def fetch_base(ws: Workspace, repo_name: str, out: Path, version: str = "latest", log=print) -> int:
+    """Download the published needs.json of every document in the repo's docs registry from Pages
+    (``<base_url><version>/<doc>/needs.json``) into ``out/<doc>/needs.json``, as the base of CK-G1
+    (``latest``: main) or CK-G2 (a baseline folder ``vX.Y.Z``). Returns the number of files. A
+    document that is not published yet (404) is skipped with a note; other errors raise."""
+    import urllib.error
+    import urllib.request
+
+    import yaml
+
+    from curatrix import checkcfg
+    repo = ws.repo(repo_name)
+    cfg = checkcfg.load(repo.path / "checks.yaml", ws.root)
+    reg = cfg.docs_registry
+    if reg is None or not reg.is_file():
+        log(f"  {repo_name}: no docs registry, no base")
+        return 0
+    data = yaml.safe_load(reg.read_text()) or {}
+    base_url = (data.get("base_url") or "").rstrip("/") + "/"
+    if base_url == "/":
+        raise RuntimeError(f"{ws.rel(reg)} has no base_url (the Pages URL of the full set)")
+    n = 0
+    for doc in sorted(data.get("documents") or {}):
+        url = f"{base_url}{version}/{doc}/needs.json"
+        try:
+            with urllib.request.urlopen(url, timeout=60) as r:       # noqa: S310 (our own Pages URL)
+                body = r.read()
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                log(f"  {doc}: not published at {url} (new document?)")
+                continue
+            raise
+        except urllib.error.URLError as e:                   # file:// (tests): a missing file
+            if isinstance(e.reason, FileNotFoundError):
+                log(f"  {doc}: not published at {url}")
+                continue
+            raise
+        dst = out / doc / "needs.json"
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes(body)
+        n += 1
+    log(f"  base: {n} needs.json from {base_url}{version}/ -> {ws.rel(out)}")
+    return n

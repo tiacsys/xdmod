@@ -81,19 +81,23 @@ def framework_repos(ws: Workspace):
     return [r for r in ws.repos if r.is_framework_repo and "/" not in r.rel and (r.path / ".git").exists()]
 
 
-def _start_point(repo: Path, branch: str, ws) -> list[str]:
+def _start_point(repo: Path, branch: str, ws, base: str = "main") -> list[str]:
     """`git worktree add` arguments after the path: existing local branch, else the remote
-    branch, else a new branch from main."""
+    branch, else a new branch from `base` (main; the parent branch of a stacked PR)."""
     if _git(["rev-parse", "-q", "--verify", f"refs/heads/{branch}"], repo, ws, check=False).returncode == 0:
         return [branch]
     if "origin" in _git(["remote"], repo, ws).stdout.split():
         _git(["fetch", "-q", "origin"], repo, ws, check=False)
         if _git(["rev-parse", "-q", "--verify", f"refs/remotes/origin/{branch}"], repo, ws, check=False).returncode == 0:
             return ["--track", "-b", branch, f"origin/{branch}"]
-        if _git(["rev-parse", "-q", "--verify", "refs/remotes/origin/main"], repo, ws, check=False).returncode == 0:
-            return ["--no-track", "-b", branch, "origin/main"]
-    base = "main" if _git(["rev-parse", "-q", "--verify", "refs/heads/main"], repo, ws, check=False).returncode == 0 else "HEAD"
-    return ["-b", branch, base]
+        if _git(["rev-parse", "-q", "--verify", f"refs/remotes/origin/{base}"], repo, ws, check=False).returncode == 0:
+            return ["--no-track", "-b", branch, f"origin/{base}"]
+    if base != "main":
+        if _git(["rev-parse", "-q", "--verify", f"refs/heads/{base}"], repo, ws, check=False).returncode == 0:
+            return ["-b", branch, base]
+        raise WorkError(f"{repo.name}: no branch {base!r} to stack on (local or origin)")
+    start = "main" if _git(["rev-parse", "-q", "--verify", "refs/heads/main"], repo, ws, check=False).returncode == 0 else "HEAD"
+    return ["-b", branch, start]
 
 
 def _check_names(ws: Workspace, branch: str) -> None:
@@ -109,7 +113,7 @@ def _write_marker(wroot: Path, meta: dict) -> None:
     (wroot / MARKER).write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n")
 
 
-def start(ws: Workspace, branch: str, repos: list[str], log=print) -> Path:
+def start(ws: Workspace, branch: str, repos: list[str], log=print, base: str = "main") -> Path:
     if ws.root.parent.name == ".worktrees" or (ws.root / MARKER).exists() or ".worktrees" in ws.root.parts:
         raise WorkError("run `curatrix work start` from the main workspace root, not from a worktree set")
     if not repos:
@@ -147,7 +151,7 @@ def start(ws: Workspace, branch: str, repos: list[str], log=print) -> Path:
         elif dst.exists():
             raise WorkError(f"{ws.rel(dst)} exists and is not a worktree")
         if want_branch:
-            _git(["worktree", "add", "-q", str(dst), *_start_point(r.path, branch, ws)], r.path, ws)
+            _git(["worktree", "add", "-q", str(dst), *_start_point(r.path, branch, ws, base)], r.path, ws)
             log(f"  {rel}: worktree on {branch}")
         else:
             head = _git(["rev-parse", "HEAD"], r.path, ws).stdout.strip()
