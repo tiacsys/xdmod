@@ -29,6 +29,7 @@ with ``{ws}/`` (the workspace root).
       dir: views
     cad:                             # CK-D4 (plain Python, no CAD tools), CK-H1
       projects: ["pcba/*/*.kicad_pro", "proto/*/*.kicad_pro"]   # CK-F6, CK-F7 (with model): KiCad projects
+      connectors: generated          # CK-D7, CK-D8, CK-F1 (with model): <dir>/<project>.connectors.json
       kicad: ["pcba/*/*.kicad_sch"]  # extra root schematics (the projects' root sheets are read anyway)
       freecad: ["parts/*.FCStd", "assemblies/**/*.FCStd"]
       needs: generated/cad-needs.json
@@ -72,7 +73,7 @@ SECTION_KEYS = {
     "model": {"libraries", "files", "export", "json", "needs", "variants", "upstream"},
     "stubs": {"out", "docs", "package"},
     "views": {"dir", "model"},
-    "cad": {"kicad", "freecad", "needs", "freecad_json", "projects"},
+    "cad": {"kicad", "freecad", "needs", "freecad_json", "projects", "connectors"},
     "code": {"sources", "tests", "needs"},
     "variants": {"zephyr"},
 }

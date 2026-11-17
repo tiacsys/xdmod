@@ -156,6 +156,34 @@ def cad_needs(ws, cfg: ChecksConfig) -> Output:
                   needsmod.dumps(needsmod.doc(needs, f"{cfg.repo.name}-cad")), findings)
 
 
+# ------------------------------------------------------------------ connectors (CK-D7), plain Python
+def connectors_path(cfg: ChecksConfig, project: str) -> Path:
+    return cfg.resolve((cfg.section("cad") or {}).get("connectors") or "generated") / f"{project}.connectors.json"
+
+
+def connectors(ws, cfg: ChecksConfig) -> list[Output]:
+    """generated/<project>.connectors.json for every KiCad project (cad.projects): the connector
+    pin tables, read from the schematic in plain Python (task 5.18)."""
+    from curatrix import connectors as conn, eeprojects
+    if not (cfg.section("cad") or {}).get("connectors"):
+        raise GenError("checks.yaml has no cad.connectors (the folder of <project>.connectors.json)")
+    outs = []
+    for pr in eeprojects.discover(cfg):
+        if not pr.sch.is_file():
+            continue
+        outs.append(Output(connectors_path(cfg, pr.name), conn.dumps(conn.document(pr.name, pr.sch, cfg.repo))))
+    return outs
+
+
+def stale_connectors(cfg: ChecksConfig) -> list[str]:
+    """connectors.json files of projects that no longer exist."""
+    from curatrix import eeprojects
+    d = cfg.resolve((cfg.section("cad") or {}).get("connectors") or "generated")
+    names = {pr.name for pr in eeprojects.discover(cfg)}
+    return [f"{f.relative_to(cfg.repo)}: no project {f.name.removesuffix('.connectors.json')} any more; delete it"
+            for f in sorted(d.glob("*.connectors.json")) if f.name.removesuffix(".connectors.json") not in names]
+
+
 # ------------------------------------------------------------------ code needs (CK-D6), plain Python
 def code_needs(ws, cfg: ChecksConfig) -> Output:
     """SW-IMPL needs from @xdid Doxygen blocks, test case needs from the comments above ZTEST."""

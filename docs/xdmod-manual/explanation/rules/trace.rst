@@ -146,3 +146,11 @@ The principles of the trace model and the rules on the trace graph.
    :decided_by: XD-ADR-0128, XD-ADR-0135
 
    A KiCad project is the ``.kicad_pro`` in its own folder ``pcba/<name>/`` or ``proto/<name>/``, named like the folder, with the root sheet ``<name>.kicad_sch``; no KiCad project file lies outside these folders. Each board def of the EE model (a def that specializes ``XdDomain::Pcba`` directly; a board variant, which specializes its board def, is not a board def of its own) has exactly one ``pcba/`` project, in the folder named after the def (``JointController`` → ``joint-controller``), whose text variable ``TraceID`` is the def's ``EE-PCBA`` ID; every ``pcba/`` project names exactly one board def. External parts have no project. Links of a board come from the model, not from project variables.
+
+.. xd-rule:: Connectors name their port and follow its pin map
+   :id: XD-RULE-NEW-conn
+   :tags: trace, cad
+   :status: valid
+   :decided_by: XD-ADR-0128, XD-ADR-0129
+
+   Every connector symbol of a board (reference ``J``, ``P`` or ``CN``, or any symbol with the field) has a ``Port`` field: the ``EE-PORT`` ID of the connector port def it implements, or ``-`` for a connector without a port of the board def. Each port of the board def is named by one connector, and the connector's pins carry the nets of the port def's pin map (pin number and net name; a root-sheet label ``/X`` is the net ``X``). The connector tables are committed as ``generated/<project>.connectors.json``, extracted in plain Python and equal to KiCad's XML netlist.
