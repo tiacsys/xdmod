@@ -54,6 +54,10 @@ LINK_BY_KINDS = {
     ("ME-ASM", "SYS-EL"): "realizes",
     ("EE-PORT", "SYS-IF"): "conforms",
     ("ME-PORT", "SYS-IF"): "conforms",
+    # a board or harness conforms to its space or length budget: `dependency from Board to Budget`
+    # (co-design, XD-ADR-0134); a mechanical budget is no connector port of the board
+    ("EE-PCBA", "SYS-IF"): "conforms",
+    ("EE-HAR", "SYS-IF"): "conforms",
 }
 # kinds the CAD files own (XD-ADR-0128): a def with such a short name in a domain model is a
 # reference to the CAD need (a part the model counts, CK-F15), not a need of the model

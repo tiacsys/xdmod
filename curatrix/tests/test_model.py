@@ -110,3 +110,14 @@ def test_configs_from_the_upstream_configuration():
 
 def test_conformance_without_upstream_finds_nothing():
     assert model.conformance(domain()[0], []) == []
+
+
+def test_every_link_by_kinds_is_declared_in_the_trace_model():
+    """Each (source, target) pair of LINK_BY_KINDS is a link the trace model declares on the
+    source type (also the co-design budgets: EE-PCBA / EE-HAR conform to a SYS-IF, XD-ADR-0134)."""
+    from curatrix import tracemodel
+    declared = {t["directive"]: t.get("links", {}) for t in tracemodel.types()}
+    for (src, dst), link in model.LINK_BY_KINDS.items():
+        targets = declared[tracemodel.directive_of(src)].get(link, {}).get("target_types", [])
+        assert tracemodel.directive_of(dst) in targets, (src, link, dst)
+    assert model.LINK_BY_KINDS[("EE-PCBA", "SYS-IF")] == "conforms"

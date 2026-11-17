@@ -18,5 +18,6 @@ workspace root.
    add-a-configuration
    add-a-test
    cross-repo-change
+   co-design-change
    work-as-an-agent
    make-a-baseline

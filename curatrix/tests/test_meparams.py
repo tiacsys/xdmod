@@ -89,6 +89,37 @@ def test_model_params():
     assert any("at most 10" in f for f in findings), findings
 
 
+def test_budget_values_do_not_count():
+    """A port whose def specializes a SYS-IF space budget: the copied values are not counted toward
+    the ten parameters, its placement is (co-design, XD-ADR-0134)."""
+    def model(conforms):
+        data = canary_model()
+        b = M()
+        b.data = data
+        b.el("lib:Sys::BoardSpace", {"@type": "PortDefinition", "name": "BoardSpace", "qualifiedName": "Sys::BoardSpace",
+                                     "declaredShortName": "SYS-IF-0001", "isLibraryElement": True})
+        seat = b.el("Me::BoardSeat", {"@type": "PortDefinition", "name": "BoardSeat", "qualifiedName": "Me::BoardSeat",
+                                      "declaredShortName": "ME-PORT-0002"})
+        if conforms:
+            sub = b.el("Me::BoardSeat/sub", {"@type": "Subclassification", "superclassifier": {"@id": "lib:Sys::BoardSpace"}})
+            seat["ownedRelationship"].append({"@id": sub["@id"]})
+        for i, n in enumerate(("width", "depth", "holeDiameter", "hole1X", "hole1Y", "hole2X", "hole2Y")):
+            b.attr(seat, n, 10 + i, "millimetre")
+        asm = next(x["payload"] for x in data if x["identity"]["@id"] == "Me::CanaryAssembly")
+        su = b.own(asm, b.el("Me::CanaryAssembly::boardSeat", {"@type": "PortUsage", "name": "boardSeat",
+                                                               "type": [{"@id": seat["@id"]}]}))
+        for n in ("x", "y", "z"):
+            b.attr(su, n, 1, "millimetre")
+        return modelmod.Model(data)
+
+    m = model(conforms=True)
+    params, findings = meparams.model_params(m, m.get("Me::CanaryAssembly"))
+    assert len(params) == 14 and not findings, findings          # 4 + 3 placement counted, 7 budget values not
+    m = model(conforms=False)
+    _, findings = meparams.model_params(m, m.get("Me::CanaryAssembly"))
+    assert any("14 parameters" in f for f in findings), findings
+
+
 def test_cell_values_and_placements():
     assert meparams.cell_value("12 mm") == (12.0, "length")
     assert meparams.cell_value("=1.5 cm") == (15.0, "length")

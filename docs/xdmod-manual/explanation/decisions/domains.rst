@@ -134,21 +134,40 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
 .. xd-adr:: ME writes board geometry into KiCad in a co-design change
    :id: XD-ADR-0134
    :date: 2026-11-17
-   :decision_status: proposed
+   :decision_status: accepted
    :status: valid
    :revises: XD-ADR-0030
 
    **Second exception to the peer rule: ME may write into EE's KiCad project, but only inside a
-   co-design change.** The space a board may take (a box, the hole list, the connector positions) is
-   a ``SYS-IF`` budget in the system model; EE and ME both conform to it. A geometry change that
-   starts in ME is one change with one branch name over the ME, EE and (when the budget changes)
-   systems engineering repos (:need:`XD-ADR-0045`). The push from FreeCAD into the ``.kicad_pcb`` is a
-   defined tool step (KiCad StepUp, at least outline and mounting holes); the pushed file is re-saved
-   by KiCad 10 before the commit. The EE side reviews and merges its part. ME never takes EE geometry
-   outside such a change, and ME needs never link to EE needs. Keep-outs, connector positions, the
-   harness length and route, and pushing back from EE are decided by the co-design spike (task
-   5.28). Proposed until StepUp has run on a KiCad 10 board (FreeCAD spike §7: not run) and 5.28
-   reports.
+   co-design change.** The space a board may take is a ``SYS-IF`` budget in the system model: a
+   port def with a box (``width``, ``depth``, ``heightAbove``, ``heightBelow``), a hole list
+   (``hole<n>X``, ``hole<n>Y``, ``holeDiameter``) and connector positions (``<ref>X``, ``<ref>Y``,
+   pin 1), in the board frame (origin at the lower-left corner of the outline seen from the top, x
+   right, y up, z = 0 on the top face). The values are defaults, so a domain def can restate them.
+   The board def conforms to it by ``dependency from <board> to <budget>`` (a budget is no
+   connector port); the ME port def of the board seat specializes it and restates the values
+   FreeCAD needs, which do not count toward the ten parameters of :need:`XD-ADR-0137`. A geometry
+   change is one change with one branch name over the systems engineering, ME and EE repos
+   (:need:`XD-ADR-0045`).
+
+   **The push is one tool step on copies:** the sketch ``BoardOutline`` of the skeleton (driven by
+   the parameters) goes into a copy of the ``.kicad_pcb`` by KiCad StepUp (``export_pcb``), run from
+   a script in the FreeCAD GUI binary offscreen, with ``HOME`` set to a folder under ``.xdmod/`` for
+   that process only (StepUp writes ``~/ksu-config.ini``); then ``kicad-cli pcb upgrade --force``
+   re-saves the copy in the KiCad 10 format, DRC runs on it, and only then the file goes back into
+   the EE repo. StepUp is pinned by commit under ``.xdmod/``. It pushes the outline and the holes
+   (as ``Edge.Cuts`` circles, non-plated cut-outs); the board frame lands on the grid origin, or on
+   the lower-left corner of the old outline. The EE side reviews and merges its part. ME never takes
+   EE geometry outside such a change, and ME needs never link to EE needs.
+
+   **Scope in iteration 1** (co-design spike, ``claude/notes/codesign-spike.md``): keep-out zones
+   are not pushed (the box covers the space; StepUp could push them, iteration 2). Connector
+   positions are budget values, but never pushed: EE places connectors and a check compares them.
+   EE does not push back through StepUp: the board model reaches FreeCAD by the scripted STEP path
+   (``kicad-cli pcb export step``, headless import), because StepUp's board load stalls offscreen;
+   a change EE needs (a bigger box, a moved hole) is a budget change in the same co-design branch.
+   A harness length is a ``SYS-IF`` value its cable def conforms to like a board (``EE-HAR`` to
+   ``SYS-IF``); its route in the ME assembly is iteration 2.
 
 .. xd-adr:: External parts and prototype projects
    :id: XD-ADR-0135
