@@ -36,22 +36,24 @@ def find_assembly(cfg, element: str) -> tuple[str, str]:
                    f"the model, `curatrix ids fix`, `curatrix gen model`")
 
 
-def run_script(ws, script: Path, env_vars: dict[str, str], result: Path, use: str = "freecad") -> dict:
+def run_script(ws, script: Path, env_vars: dict[str, str], result: Path, use: str = "freecad",
+               exe: str = "FreeCADCmd") -> dict:
     """Run a FreeCADCmd script under curatrix limits with the workspace config. Inputs go by
     environment variables; success comes from the result file the script writes (FreeCADCmd exits
-    0 when a script raises, FreeCAD spike)."""
+    0 when a script raises, FreeCAD spike). ``exe="FreeCAD"`` runs the GUI binary on Qt's offscreen
+    platform instead (for view-provider data such as colours); such a script ends with ``os._exit``."""
     from curatrix import limits
     result.parent.mkdir(parents=True, exist_ok=True)
     result.unlink(missing_ok=True)
     env = ws.run_env({"QT_QPA_PLATFORM": "offscreen", **env_vars, "XD_RESULT": str(result)})
-    r = limits.run(["FreeCADCmd", str(script)], use, ws, capture_output=True, text=True, env=env)
+    r = limits.run([exe, str(script)], use, ws, capture_output=True, text=True, env=env)
     tail = (r.stdout + r.stderr)[-800:]
     if not result.is_file():
-        raise NewError(f"FreeCADCmd {script.name}: no result file (exit {r.returncode} "
+        raise NewError(f"{exe} {script.name}: no result file (exit {r.returncode} "
                        f"{limits.explain_rc(r.returncode)}): {tail}")
     out = json.loads(result.read_text())
     if not out.get("ok"):
-        raise NewError(f"FreeCADCmd {script.name} failed: {out.get('error') or out}")
+        raise NewError(f"{exe} {script.name} failed: {out.get('error') or out}")
     return out
 
 

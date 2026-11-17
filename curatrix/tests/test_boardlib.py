@@ -269,3 +269,70 @@ def test_release_version_takes_only_exact_release_tags(tmp_path):
     assert boardlib.release_version(ee, pr) == ("canary/v1.0.0-rc1-preview", False)
     _git(ee, "tag", "canary/v1.0.0")                       # the release on the same commit wins
     assert boardlib.release_version(ee, pr) == ("canary/v1.0.0", True)
+
+
+# ------------------------------------------------------------------ the coloured board model (finding 17, xdmod#69)
+def _materials(*rgbs):
+    """A PropertyMaterialList file as FreeCAD 1.1 writes it: count, 24 bytes per material, 12 more each."""
+    import struct
+
+    def packed(rgb):
+        r, g, b = (round(c * 255) for c in rgb)
+        return (r << 24) | (g << 16) | (b << 8) | 0xFF
+    data = struct.pack("<I", len(rgbs))
+    for rgb in rgbs:
+        data += struct.pack("<IIIIff", packed((0.333, 0.333, 0.333)), packed(rgb), packed((0.533, 0.533, 0.533)),
+                            0xFF, 0.9, 0.0)
+    return data + b"\0" * 12 * len(rgbs)
+
+
+def coloured_board_file(path, version, commit="", colours=None):
+    """The layout of import-step.py: Board (App::Part) with links named by designator, the models in
+    a hidden group, their face colours in GuiDocument.xml."""
+    import zipfile
+    board_file(path, version, commit=commit)
+    colours = colours if colours is not None else {"Model": [(0.824, 0.82, 0.78), (0.082, 0.086, 0.094)],
+                                                   "Model001": [(0.314, 0.486, 0.412)]}
+    objs = {"Board": "App::Part", "X_Axis": "App::Line", "R1": "App::Link", "PCB": "App::Link",
+            "Models": "App::DocumentObjectGroup", **{m: "Part::Feature" for m in colours}}
+    with zipfile.ZipFile(path) as z:
+        doc = z.read("Document.xml").decode()
+    doc = doc.replace("<Objects>", "<Objects>" + "".join(f'<Object type="{t}" name="{n}"/>' for n, t in objs.items()
+                                                           if n not in ("Board",)))
+    files = {"ShapeAppearance": _materials((0.8, 0.2, 0.2))}          # the X axis: not a component colour
+    vps = ['<ViewProvider name="X_Axis"><Properties><Property name="ShapeAppearance" '
+           'type="App::PropertyMaterialList"><MaterialList file="ShapeAppearance" version="3"/></Property>'
+           '</Properties></ViewProvider>', '<ViewProvider name="R1"><Properties/></ViewProvider>']
+    for i, (m, rgbs) in enumerate(colours.items(), 1):
+        files[f"ShapeAppearance{i}"] = _materials(*rgbs)
+        vps.append(f'<ViewProvider name="{m}"><Properties><Property name="ShapeAppearance" '
+                   f'type="App::PropertyMaterialList"><MaterialList file="ShapeAppearance{i}" version="3"/>'
+                   f'</Property></Properties></ViewProvider>')
+    gui = f'<?xml version="1.0"?><Document SchemaVersion="1"><ViewProviderData>{"".join(vps)}</ViewProviderData></Document>'
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_STORED) as z:
+        z.writestr("Document.xml", doc)
+        z.writestr("GuiDocument.xml", gui)
+        for n, data in files.items():
+            z.writestr(n, data)
+    return path
+
+
+def test_board_colours(tmp_path):
+    fc = coloured_board_file(tmp_path / "canary-v0.1.0.FCStd", "canary/v0.1.0")
+    assert boardlib.board_colours(fc) == {"Model": [(0.824, 0.82, 0.78), (0.082, 0.086, 0.094)],
+                                          "Model001": [(0.314, 0.486, 0.412)]}
+    # a model saved by FreeCADCmd (the old Part.Shape.read import) has no GuiDocument.xml: no colours
+    assert boardlib.board_colours(board_file(tmp_path / "old.FCStd", "canary/v0.1.0")) == {}
+    # the trace properties sit on Board as before
+    assert boardlib.board_props(fc)["Version"] == "canary/v0.1.0"
+
+
+def test_f20_accepts_the_coloured_layout(tmp_path):
+    root = tmp_path / "ws"
+    ee, sha = ee_repo(root)
+    ctx = _ctx(root, "lib", LIB)
+    coloured_board_file(ctx.repo.path / "boards/canary/canary-v0.1.0.FCStd", "canary/v0.1.0", commit=sha)
+    assert _run(ctx, checks.c_board_library) == []
+    # CK-F20 does not ask for colours: an old single-compound file stays valid
+    board_file(ctx.repo.path / "boards/canary/canary-v0.1.0-alt.FCStd", "canary/v0.1.0", "alt", commit=sha)
+    assert _run(ctx, checks.c_board_library) == []

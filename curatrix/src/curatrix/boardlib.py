@@ -7,11 +7,17 @@ and for any version (previews too):
    version into the copy's ``XD_VERSION`` (as ``curatrix cam`` does, XD-ADR-0142);
 2. ``kicad-cli pcb export step --no-dnp --subst-models [--variant V]`` per variant of the project
    (board body and components, no tracks, pads or zones);
-3. ``FreeCADCmd`` runs ``xdmod/templates/freecad-pcba/import-step.py``: one ``App::Part`` ``Board``
-   with ``TraceID`` (group Trace) = the project's ``TraceID`` text variable (its ``EE-PCBA``) and
-   ``Version``, ``Variant``, ``Board``, ``Commit``, ``Source`` (group Board), and the shape inside;
-   saved with the workspace FreeCAD config (CompressionLevel 0, uncompressed);
-4. findings: compressed entries, a file above the size limit (5 MB to start), an invalid shape.
+3. the FreeCAD GUI binary on Qt's offscreen platform (no window) runs
+   ``xdmod/templates/freecad-pcba/import-step.py``: ``ImportGui.insert`` keeps the STEP's structure and
+   colours (finding 17 of xdmod#69; ``FreeCADCmd`` has no view providers and loses the colours).
+   One ``App::Part`` ``Board`` with ``TraceID`` (group Trace) = the project's ``TraceID`` text
+   variable (its ``EE-PCBA``) and ``Version``, ``Variant``, ``Board``, ``Commit``, ``Source`` (group
+   Board); inside it one object per component, named by its reference designator (``R1``, ``J1``;
+   ``PCB`` = the board body): an ``App::Link`` to the component's 3D model, which is stored once per
+   model in the hidden group ``Models`` with the STEP colours per face (``ShapeAppearance`` in
+   ``GuiDocument.xml``); saved with the workspace FreeCAD config (CompressionLevel 0, uncompressed);
+4. findings: compressed entries, a file above the size limit (5 MB to start), an invalid shape, a file
+   without colours (``board_colours`` reads them back in plain Python; not part of CK-F20).
 
 ``--library`` does the same for a **release** only (an exact tag ``<board>/vX.Y.Z`` on main and a
 clean project folder; anything else is refused before KiCad runs) and copies the files into
@@ -43,7 +49,10 @@ import datetime as dt
 import json
 import re
 import shutil
+import struct
 import subprocess
+import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 
 from curatrix import cad
@@ -85,6 +94,54 @@ def board_props(fcstd: Path) -> dict:
     if tid:
         out["TraceID"] = tid
     out["_found"] = bool(o)
+    return out
+
+
+# PropertyMaterialList (version 3) file: uint32 count, then per material 4 packed colours (ambient, diffuse,
+# specular, emissive) and 2 floats (shininess, transparency), 24 bytes; after all of them 12 more bytes
+# per material (image and name data, not read here)
+MATERIAL_BYTES = 24
+
+
+def _rgb(packed: int) -> tuple[float, float, float]:
+    """FreeCAD's packed colour 0xRRGGBBAA -> (r, g, b) in 0..1, rounded to 3 places."""
+    return tuple(round(((packed >> sh) & 0xFF) / 255, 3) for sh in (24, 16, 8))
+
+
+def board_colours(fcstd: Path) -> dict[str, list[tuple[float, float, float]]]:
+    """Plain Python: object name -> the distinct diffuse colours of its faces (``ShapeAppearance`` of the
+    view provider in ``GuiDocument.xml``, a binary material list per object). Objects without a
+    ``ShapeAppearance`` (groups, links, parts) are left out; a file without ``GuiDocument.xml`` (saved by
+    ``FreeCADCmd``) gives ``{}``. Only ``Part::Feature`` objects count (not the datum axes and planes)."""
+    out: dict = {}
+    with zipfile.ZipFile(fcstd) as z:
+        names = set(z.namelist())
+        if "GuiDocument.xml" not in names:
+            return {}
+        doc = ET.fromstring(z.read("Document.xml"))
+        features = {o.get("name") for o in doc.iter("Object") if o.get("type") == "Part::Feature"}
+        root = ET.fromstring(z.read("GuiDocument.xml"))
+        for vp in root.iter("ViewProvider"):
+            if vp.get("name") not in features:
+                continue
+            ml = next((p.find("MaterialList") for p in vp.iter("Property") if p.get("name") == "ShapeAppearance"),
+                      None)
+            f = ml.get("file") if ml is not None else None
+            if not f or f not in names:
+                continue
+            data = z.read(f)
+            if len(data) < 4:
+                continue
+            (n,) = struct.unpack_from("<I", data, 0)
+            cols = []
+            for i in range(n):
+                off = 4 + i * MATERIAL_BYTES + 4                   # the diffuse colour, after the ambient one
+                if off + 4 > len(data):
+                    break
+                c = _rgb(struct.unpack_from("<I", data, off)[0])
+                if c not in cols:
+                    cols.append(c)
+            out[vp.get("name")] = cols
     return out
 
 
@@ -160,17 +217,24 @@ def export(ws, repo, cfg, pr, release_only: bool = False, log=print) -> dict:
                                     {"XD_STEP": str(step.resolve()), "XD_OUT": str(fc.resolve()), "XD_TRACE_ID": tid,
                                      "XD_VERSION": ver, "XD_VARIANT": variant or "", "XD_BOARD": pr.name,
                                      "XD_COMMIT": head},
-                                    top / (step.stem + ".result.json"))
+                                    top / (step.stem + ".result.json"), exe="FreeCAD")
         except newpcba.NewError as e:
             raise BoardLibError(f"{pr.name}: FreeCAD import: {e}") from e
         for bak in top.glob("*.FCBak"):
             bak.unlink()
         mb = fc.stat().st_size / 1e6
         f = file_findings(fc, max_mb)
+        if not board_colours(fc):                    # export only: CK-F20 does not ask for colours
+            f.append("no colours (no ShapeAppearance in GuiDocument.xml): not imported by the FreeCAD GUI binary "
+                     "(import-step.py, offscreen)")
         findings += [f"{fc.name}: {x}" for x in f]
+        comps = res.get("components") or []
         files.append({"file": fc.name, "variant": variant, "step": step.name, "mb": round(mb, 3),
-                      "solids": res.get("solids"), "bbox_mm": res.get("bbox_mm")})
-        log(f"    {ws.rel(fc)}: {mb:.2f} MB, {res.get('solids')} solids, bbox {res.get('bbox_mm')} mm")
+                      "solids": res.get("solids"), "bbox_mm": res.get("bbox_mm"),
+                      "components": [{k: c.get(k) for k in ("label", "model", "colours")} for c in comps],
+                      "models": res.get("models")})
+        log(f"    {ws.rel(fc)}: {mb:.2f} MB, {len(comps)} components ({res.get('models')} models), "
+            f"{res.get('solids')} solids, bbox {res.get('bbox_mm')} mm")
     shutil.rmtree(tmp, ignore_errors=True)
     rec = {"kind": "board-model", "project": pr.name, "version": ver, "release": release, "commit": head,
            "trace_id": tid, "date": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
