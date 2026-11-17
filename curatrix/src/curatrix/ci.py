@@ -1,10 +1,12 @@
 """CI helpers for the reusable workflow (`.github/workflows/curatrix-check.yml`).
 
-``curatrix ci siblings``: PR CI sibling resolution (repo-topology.md §7, D52, D127). For every
+``curatrix ci siblings``: PR CI sibling resolution (repo-topology.md §7, D52, D127; stacked PRs:
+task 5.7). For every
 active framework project of the west workspace (xdmod and every project with a ``checks.yaml``),
 check out, in this order:
 
-1. the branch with the PR's head branch name, if the project's remote has one;
+1. the branch with the PR's head branch name, if the project's remote has one; for a stacked PR
+   (base is not main) without it, the PR's base branch;
 2. the project's ``main``, if the manifest pin is an ancestor of it (so changes merged upstream
    but not yet bumped are seen);
 3. the manifest pin.
@@ -170,6 +172,9 @@ def fetch_base(ws: Workspace, repo_name: str, out: Path, version: str = "latest"
     base_url = (data.get("base_url") or "").rstrip("/") + "/"
     if base_url == "/":
         raise RuntimeError(f"{ws.rel(reg)} has no base_url (the Pages URL of the full set)")
+    import shutil
+    tmp = out.with_name(out.name + ".partial")            # all or nothing: a half base shows false impact
+    shutil.rmtree(tmp, ignore_errors=True)
     n = 0
     for doc in sorted(data.get("documents") or {}):
         url = f"{base_url}{version}/{doc}/needs.json"
@@ -186,9 +191,12 @@ def fetch_base(ws: Workspace, repo_name: str, out: Path, version: str = "latest"
                 log(f"  {doc}: not published at {url}")
                 continue
             raise
-        dst = out / doc / "needs.json"
+        dst = tmp / doc / "needs.json"
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes(body)
         n += 1
+    shutil.rmtree(out, ignore_errors=True)
+    if n:
+        tmp.rename(out)
     log(f"  base: {n} needs.json from {base_url}{version}/ -> {ws.rel(out)}")
     return n
