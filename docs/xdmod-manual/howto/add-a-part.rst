@@ -150,7 +150,7 @@ With Blender on the machine the renderings come from Blender (Cycles on the CPU,
 seconds per view); without it from a plain-Python renderer in ``FreeCADCmd``
 (:need:`XD-ADR-0147`). ``cam.json`` says which (``renderings.method``: ``blender`` or ``zbuffer``).
 Blender is optional and not pinnable, so these images are local only; CI never has Blender
-(:need:`XD-ADR-NEW-blender`). Run Blender only through curatrix (``curatrix run -- blender``,
+(:need:`XD-ADR-0148`). Run Blender only through curatrix (``curatrix run -- blender``,
 ``curatrix launch blender``) or the ``.venv/bin/blender`` shim: they add ``--factory-startup`` and
 keep its user files in ``.xdmod/blender/``. ``curatrix doctor`` shows the Blender version.
 
