@@ -171,7 +171,9 @@ def connectors(ws, cfg: ChecksConfig) -> list[Output]:
     for pr in eeprojects.discover(cfg):
         if not pr.sch.is_file():
             continue
-        outs.append(Output(connectors_path(cfg, pr.name), conn.dumps(conn.document(pr.name, pr.sch, cfg.repo))))
+        doc = conn.document(pr.name, pr.sch, cfg.repo)
+        outs.append(Output(connectors_path(cfg, pr.name), conn.dumps(doc),
+                           [f"{pr.name}: {u}" for u in doc.get("unsupported", [])]))
     return outs
 
 
