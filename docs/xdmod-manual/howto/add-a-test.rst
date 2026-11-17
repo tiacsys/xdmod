@@ -50,8 +50,10 @@ Evidence rules
   :need:`XD-CHECK-0011`).
 - Every requirement needs a ``verifies`` link (:need:`XD-RULE-0009`, :need:`XD-CHECK-0007`).
 
-.. note:: The run-record schema and the extraction of ``TR`` needs from test reports are being
-   built (task 4.5a). Until then, test reports show the sphinx-test-reports needs.
+.. note:: Run records exist: ``curatrix evidence record`` writes one from a Twister run onto the
+   ``evidence`` branch, and ``curatrix evidence read`` turns the records into ``TR`` needs (curatrix
+   README, "Evidence"). Showing these ``TR`` needs in the test reports comes with task 5.10. Until
+   then, test reports show the sphinx-test-reports needs.
 
 Checks
 ------

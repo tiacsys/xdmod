@@ -41,15 +41,30 @@ are linked into `.claude/` (D113).
 
 | Agents may | Agents may not |
 |---|---|
-| create branches, commit, push to their own branches | merge PRs, push to `main`, force-push to other people's branches |
+| create branches, commit, push to their own branches | merge PRs (Phase 5: see D140 below), push to `main`, force-push to other people's branches |
 | open PRs and issues and comment on them, with the provenance trailer | change repo or org settings, rulesets, secrets, create or delete repos without the owner's approval of the concrete action list (D123) |
-| add `Co-Authored-By`, and `Signed-off-by` where a repo requires it | affirm suspect links or give manual verdicts: they only propose them; a human commit counts (D58) |
+| add `Co-Authored-By`, and `Signed-off-by` where a repo requires it | affirm suspect links, give manual verdicts or write an `Accepted-by:` trailer: they only propose them; a human commit counts (D58, P5-4) |
 | run any tool through curatrix, under limits | run tools without limits, install system packages, use sudo |
 | record HIL evidence from `main` or baseline commits (D60) | record evidence from PR branches as anything but previews |
 | post freely in robarm-* and xdmod | post on other repos (zdocs, affirmatrix, upstream) before the owner approved the draft (D124) |
 
-Every PR in robarm-* and xdmod gets a review by another agent (`/review-pr`) before the owner's
-review (D126). A change across repos uses one branch name in every repo it touches (D52).
+Every PR in robarm-* and xdmod gets a review by another agent (`/xd-review-pr <repo> <PR>`) before
+the owner's review (D126). A change across repos uses one branch name in every repo it touches (D52).
+
+## Pull requests (workflow.md §3a, §3b)
+
+- **One SYSMOD step or one tool feature per PR.** CK-H7 warns above 600 hand-written lines or 15
+  files (generated files do not count).
+- **Stack** larger work: `curatrix work start <child> <repos> --base <parent>` and a PR against
+  `<parent>`. Review each layer, merge bottom-up, then rebase the child onto `origin/main`
+  (steps in `xdmod/claude/framework/workflow.md` §3a).
+- **`Accepted-by:`** (accepting an ERC/DRC or FreeCAD finding) is written only by humans. Agents
+  never write it; they propose the `accepted.yaml` entry in the PR.
+- **D140 is active in Phase 5** (P5-14): the coordinator agent may merge a PR in xdmod or robarm-* after an
+  agent review without open must-fix findings, with green required checks, and for robarm-ee and
+  robarm-me with the local CAD check run posted in the review. Other agents never merge.
+- **D-numbers** (D127) are the `legacy_id` of the `XD-ADR` needs (workflow.md §5):
+  `grep -rn ":legacy_id: D127" xdmod/docs`.
 
 ## Commands (curatrix, D98)
 
