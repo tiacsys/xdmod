@@ -160,11 +160,15 @@ def test_reexec_update_runs_update_after_west(monkeypatch):
     assert a.after_west and a.adopt
 
 
-def test_doctor_warns_on_missing_kicad_models_only_for_3d_roles(tmp_path):
+def test_doctor_warns_on_missing_kicad_models_for_every_ee_output_role(tmp_path):
     ws = Workspace(make_ws(tmp_path))
-    for role in ("ee", "me", "integration", "sw", None):
+    for role in ("sw", "syseng", None):
         assert setup.kicad_models_row(ws, role) is None
+    for role in ("ee", "me", "integration"):             # xdmod#69 finding 2: not silent there either
+        st, what, fix = setup.kicad_models_row(ws, role)
+        assert st == "warn" and "bare boards" in what and "--role full" in fix
     assert setup.kicad_models_row(ws, "ee3d")[0] == "warn"
+    assert setup.kicad_models_row(ws, "full")[2] == "west update"
     assert setup.kicad_models_row(ws, "full", ci=True) is None
     (ws.root / "libs" / "kicad" / "packages3D").mkdir(parents=True)
     assert setup.kicad_models_row(ws, "full") is None

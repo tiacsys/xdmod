@@ -13,6 +13,11 @@ there (``kicad-cli jobset run``) with ``XD_CAM_OUT`` = the version folder, so th
   ``.kicad_pro`` and ``.kicad_dru`` (KiCad exports neither);
 * ERC and DRC (``kicad-cli``, as CK-F4a/b) into ``erc-drc/`` and ``findings.json``: every finding
   with its acceptance state, for the board document (task 5.21; the checks do not read it);
+* the KiCad 3D models (xdmod#69 finding 2): every ``(model ...)`` path of the board, resolved
+  with the variables the KiCad run gets; ``cam.json`` records ``kicad_3d_models`` (``present``,
+  ``partial``, ``missing`` or ``none``) and the missing paths, ``cam`` prints a warning, and each
+  ``render-*.png`` gets a red banner, because KiCad renders a board without its models silently
+  (bare footprints, no parts);
 * ``cam.json`` in the version folder: version, commit, jobs, files.
 
 ``current(cam_dir, project, repo, folder)`` finds the output the board document may show: the run
@@ -522,6 +527,71 @@ def current(cam_dir: Path, project: str, repo: Path, folder: Path) -> tuple[dict
 
 
 # ------------------------------------------------------------------ the run
+MODEL_RE = re.compile(r'\(model\s+(?:"((?:[^"\\]|\\.)*)"|([^\s()]+))')
+VAR_RE = re.compile(r"\$\{([A-Za-z0-9_]+)\}|\$\(([A-Za-z0-9_]+)\)")
+MODEL_STATES = ("present", "partial", "missing", "none")
+MODELS_HINT = ("the KiCad 3D models are not in the workspace (libs/kicad/packages3D, west group kicad-3d): "
+               "role ee3d or full (curatrix bootstrap --role full --adopt), then curatrix cam again")
+
+
+def model_paths(pcb_text: str) -> list[str]:
+    """The 3D model paths of a board's footprints, as written (``${KICAD10_3DMODEL_DIR}/...``)."""
+    return list(dict.fromkeys((m.group(1) if m.group(1) is not None else m.group(2)).replace('\\"', '"')
+                              for m in MODEL_RE.finditer(pcb_text)))
+
+
+def resolve_model(path: str, env: dict, project_dir: Path) -> Path | None:
+    """A model path with its variables replaced (KIPRJMOD = the project folder); None when a variable
+    is unknown. A relative path is relative to the project folder, as in KiCad."""
+    vars_ = dict(env, KIPRJMOD=str(project_dir))
+    missing = False
+
+    def sub(m):
+        nonlocal missing
+        k = m.group(1) or m.group(2)
+        if not vars_.get(k):
+            missing = True
+            return ""
+        return vars_[k]
+    out = VAR_RE.sub(sub, path)
+    if missing:
+        return None
+    p = Path(out).expanduser()
+    return p if p.is_absolute() else project_dir / p
+
+
+def models_state(pcb: Path, env: dict) -> dict:
+    """``{"state": present|partial|missing|none, "referenced": n, "found": k, "missing": [...]}`` for
+    the 3D models a board's footprints name."""
+    paths = model_paths(pcb.read_text(encoding="utf-8")) if pcb.is_file() else []
+    gone = []
+    for mp in paths:
+        r = resolve_model(mp, env, pcb.parent)
+        if r is None or not r.is_file():
+            gone.append(mp)
+    n, k = len(paths), len(paths) - len(gone)
+    state = "none" if not n else "present" if not gone else "missing" if not k else "partial"
+    return {"state": state, "referenced": n, "found": k, "missing": gone}
+
+
+def mark_rendering(png: Path, text: str) -> None:
+    """A red banner with `text` across the top of a rendering (Pillow, pinned in requirements.txt)."""
+    from PIL import Image, ImageDraw, ImageFont
+    with Image.open(png) as im:
+        im = im.convert("RGBA")
+    w, h = im.size
+    size = max(12, w // 45)
+    try:
+        font = ImageFont.load_default(size=size)
+    except (TypeError, OSError):              # Pillow without FreeType: the bitmap font
+        font = ImageFont.load_default()
+    bar = size * 2
+    draw = ImageDraw.Draw(im)
+    draw.rectangle([0, 0, w, bar], fill=(200, 0, 0, 255))
+    draw.text((size // 2, size // 2), text, fill=(255, 255, 255, 255), font=font)
+    im.save(png)
+
+
 class CamError(Exception):
     pass
 
@@ -606,6 +676,18 @@ def run_project(ws, repo, cfg, pr, log=print) -> dict:
         raise CamError(str(e)) from None
     (out / "findings.json").write_text(json.dumps(found_rows, indent=2) + "\n", encoding="utf-8")
     singles += ["sch erc", "pcb drc"][:len(found_rows)]
+    from curatrix import limits as _limits
+    models = models_state(pcb, _limits.tool_env(ws, "kicad-cli", env))
+    marked, model_warn = [], []
+    if models["state"] in ("missing", "partial"):
+        model_warn = [f"3D models {models['state']}: {len(models['missing'])} of {models['referenced']} not found, "
+                      f"renderings and STEP without these parts; {MODELS_HINT}"]
+        log(f"  WARN {pr.name}: {model_warn[0]}")
+        banner = (f"KiCad 3D models missing ({len(models['missing'])} of {models['referenced']}): "
+                  "parts not shown")
+        for f in sorted(out.glob("render-*.png")):
+            mark_rendering(f, banner)
+            marked.append(str(f.relative_to(top)))
     shutil.rmtree(tmp, ignore_errors=True)
     files = sorted(str(f.relative_to(top)) for f in out.rglob("*") if f.is_file())
     head = _git(repo.path, "rev-parse", "HEAD").stdout.strip()
@@ -613,7 +695,9 @@ def run_project(ws, repo, cfg, pr, log=print) -> dict:
            "tree_state": state,
            "date": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
            "jobs": n_jobs, "single_exports": singles, "variants": variants, "stackup": source,
-           "warnings": [t for _, t in found] + version_findings(pr), "files": files}
+           "kicad_3d_models": models["state"], "kicad_3d_models_missing": models["missing"],
+           "renderings_marked": marked,
+           "warnings": [t for _, t in found] + version_findings(pr) + model_warn, "files": files}
     (top / "cam.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
     log(f"  {pr.name}: {len(files)} files in {ws.rel(out)} ({'release' if release else 'preview'})")
     return rec

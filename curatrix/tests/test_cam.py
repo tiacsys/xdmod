@@ -270,3 +270,49 @@ def test_cam_run(tmp_path):
     p.write_text(json.dumps(js))
     with pytest.raises(cam.CamError, match="Execute Command"):
         cam.run(ws, Repo("r", repo, "r"), cfg)
+
+
+# ------------------------------------------------------------------ KiCad 3D models (xdmod#69 finding 2)
+def test_models_state(tmp_path):
+    pcb = tmp_path / "b.kicad_pcb"
+    pcb.write_text('(kicad_pcb (footprint "R" (model "${KICAD10_3DMODEL_DIR}/R.3dshapes/R.step" (offset (xyz 0 0 0))))\n'
+                   ' (footprint "C" (model ${KIPRJMOD}/local.step))\n (footprint "J" (model "${NOPE}/J.step")))\n')
+    lib = tmp_path / "models"
+    env = {"KICAD10_3DMODEL_DIR": str(lib)}
+    st = cam.models_state(pcb, env)
+    assert st["state"] == "missing" and st["referenced"] == 3 and st["found"] == 0
+    (lib / "R.3dshapes").mkdir(parents=True)
+    (lib / "R.3dshapes" / "R.step").write_text("x")
+    (tmp_path / "local.step").write_text("x")
+    st = cam.models_state(pcb, env)
+    assert st["state"] == "partial" and st["missing"] == ["${NOPE}/J.step"]
+    pcb.write_text("(kicad_pcb)\n")
+    assert cam.models_state(pcb, env)["state"] == "none"
+
+
+def test_mark_rendering(tmp_path):
+    from PIL import Image
+    png = tmp_path / "render-top-default.png"
+    Image.new("RGB", (400, 300), (255, 255, 255)).save(png)
+    cam.mark_rendering(png, "KiCad 3D models missing")
+    with Image.open(png) as im:
+        assert im.size == (400, 300) and im.convert("RGB").getpixel((200, 2)) == (200, 0, 0)
+
+
+def test_cam_run_records_missing_models(tmp_path):
+    """The fixture board names two KiCad library models; the test workspace has no libs/kicad/packages3D:
+    cam.json says so, cam warns, every rendering gets the banner."""
+    if shutil.which("kicad-cli") is None:
+        pytest.skip("kicad-cli not installed")
+    from PIL import Image
+    root, repo = _repo(tmp_path)
+    ws = Workspace(root)
+    cfg = checkcfg.load(repo / "checks.yaml", root)
+    logs = []
+    rec = cam.run(ws, Repo("r", repo, "r"), cfg, log=logs.append)[0]
+    assert rec["kicad_3d_models"] == "missing" and len(rec["kicad_3d_models_missing"]) == 2
+    assert any("3D models missing" in w for w in rec["warnings"]) and any("WARN" in x for x in logs)
+    assert sorted(rec["renderings_marked"]) == sorted(f for f in rec["files"] if "/render-" in f) != []
+    top = ws.build("r") / "cam" / "drc" / rec["version"].split("/", 1)[1]
+    with Image.open(top / rec["renderings_marked"][0]) as im:
+        assert im.convert("RGB").getpixel((im.size[0] // 2, 2)) == (200, 0, 0)

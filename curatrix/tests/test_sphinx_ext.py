@@ -255,3 +255,13 @@ def test_assembly_document_directives(tmp_path):
     sys.path.insert(0, str(FIXTURES.parents[2] / "sphinx"))
     from xdmod_sphinx import asm
     assert [f.stem for f in asm._renderings({}, v / "top" / "base", "base")] == ["front", "right", "extra"]
+
+
+def test_pcba_renderings_note_missing_models():
+    """xdmod#69 finding 2: the board document says when the renderings lack the KiCad 3D models."""
+    sys.path.insert(0, str(FIXTURES.parents[2] / "sphinx"))
+    from xdmod_sphinx.pcba import Renderings
+    assert Renderings.models_note({"kicad_3d_models": "present"}) == []
+    assert Renderings.models_note({}) == []
+    (w,) = Renderings.models_note({"kicad_3d_models": "missing", "kicad_3d_models_missing": ["a", "b"]})
+    assert "missing" in w.astext() and "2 models not found" in w.astext() and "ee3d or full" in w.astext()

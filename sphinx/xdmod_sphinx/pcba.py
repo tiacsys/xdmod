@@ -229,6 +229,22 @@ class Renderings(Directive):
     required_arguments = 1
     VIEWS = (("render-top", "top"), ("render-bottom", "bottom"), ("render-3d", "3D"))
 
+    @staticmethod
+    def models_note(rec: dict) -> list:
+        """A warning when the KiCad 3D models were missing in the `curatrix cam` run (xdmod#69
+        finding 2): the renderings then show the board without (some of) its parts."""
+        state = rec.get("kicad_3d_models")
+        if state not in ("missing", "partial"):
+            return []
+        gone = rec.get("kicad_3d_models_missing") or []
+        w = nodes.warning()
+        w += nodes.paragraph(text=(
+            f"The KiCad 3D models were {state} when these renderings were made ({len(gone)} model"
+            f"{'s' if len(gone) != 1 else ''} not found): the parts without a model are not shown, and the "
+            "images carry a red banner. Build the output again in a workspace with the 3D models "
+            "(role ee3d or full)."))
+        return [w]
+
     def run(self):
         env = self.state.document.settings.env
         b = _Board(self)
@@ -236,7 +252,7 @@ class Renderings(Directive):
         if rec is None:
             return [nodes.paragraph(text=LOCAL)]
         docdir = Path(env.doc2path(env.docname)).parent
-        result = []
+        result = self.models_note(rec)
         for v in [x["name"] for x in b.variants()] or [None]:
             cap = f"Variant {v}" if v else "Board"
             shown = [(what, f) for stem, what in self.VIEWS

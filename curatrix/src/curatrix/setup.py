@@ -540,16 +540,26 @@ def launch(ws: Workspace, tool: str, args: list[str]) -> int:
 
 
 # ------------------------------------------------------------------ doctor (§5, 4.4b)
+# Roles that run EE design output (`curatrix cam`): the roles of kicad-cli in xdmod/tools.yaml.
+EE_OUTPUT_ROLES = ("ee", "ee3d", "me", "integration", "full")
+
+
 def kicad_models_row(ws: Workspace, role: str | None, ci: bool = False) -> tuple[str, str, str] | None:
-    """A doctor warning when a role that should have the KiCad 3D models (group kicad-3d) lacks
-    them: STEP exports and renderings then show bare boards. Roles that leave them out on purpose
-    (ee, me, integration, CI) get no warning."""
-    if ci or "+kicad-3d" not in ROLES.get(role or "", []):
+    """A doctor warning when a role that runs EE design output lacks the KiCad 3D models (group
+    kicad-3d): STEP exports and renderings then show bare boards (xdmod#69 finding 2). Also for the
+    roles that leave the group out (ee, me, integration): `curatrix cam` works there, so the gap must
+    not be silent. Not on CI, and not for syseng or sw."""
+    if ci or role not in EE_OUTPUT_ROLES:
         return None
     if (ws.root / "libs" / "kicad" / "packages3D").is_dir():
         return None
-    return ("warn", "KiCad 3D models (libs/kicad/packages3D) missing", "west update; STEP and renderings show bare boards")
-
+    if "+kicad-3d" in ROLES.get(role, []):
+        fix = "west update"
+    else:
+        fix = (f"role {role} leaves out the west group kicad-3d (~1.8 GB); for design output use role ee3d or "
+               "full: curatrix bootstrap --role full --adopt")
+    return ("warn", "KiCad 3D models (libs/kicad/packages3D) missing: `curatrix cam` renderings and STEP "
+                    "show bare boards", fix)
 
 
 def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
