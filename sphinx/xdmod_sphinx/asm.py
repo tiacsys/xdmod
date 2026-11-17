@@ -18,7 +18,8 @@ Local only, from the ``curatrix cam`` output of the commit the repo is at
 
 ``xd-asm-drawing``         the drawing sheet (SVG) per variant; the PDF named
 ``xd-asm-exploded``        the exploded view per variant
-``xd-asm-renderings``      ``<variant>/renderings/<view>.png`` (front, top, right/side, iso/3d; task 5.30)
+``xd-asm-renderings``      ``<variant>/renderings/<view>.png`` (front, top, right, iso; task 5.30), in the
+                           order of ``cam.json`` (``per_variant.<v>.renderings``, ``renderings.views``)
 ``xd-asm-mass``            mass and center of gravity per variant (``mass.json``)
 ``xd-asm-findings``        the ME check findings with their acceptance state (``findings.json``)
 
@@ -38,8 +39,13 @@ from docutils.statemachine import StringList
 NO_DATA = "No data yet."
 LOCAL = "Made locally with FreeCAD (curatrix cam) for the current commit; not part of this build."
 NO_RENDERINGS = ("The curatrix cam output of the current commit has no renderings (they come with task 5.30: "
-                 "renderings/<view>.png per variant).")
-VIEW_ORDER = ("front", "top", "right", "side", "iso", "3d")
+                 "renderings/<view>.png per variant, listed in cam.json).")
+VIEW_ORDER = ("front", "top", "right", "iso")
+INDENT = "· "                # one per level in the BOM designation (docutils drops leading spaces)
+TOP_ONLY = ("Made for the top-level assembly only: curatrix cam makes drawings, the exploded view and "
+            "renderings per top-level assembly (iteration 1); see the chapter of the top-level assembly.")
+PARAMS_TOP = ("A sub-assembly has no parameters of its own: the parameters of an assembly live in the skeleton "
+              "of its top-level assembly (XD-ADR-0137); see the Parameters section.")
 
 
 def _cur(name: str):
@@ -165,9 +171,12 @@ class Overview(Directive):
 
 class Parameters(Directive):
     required_arguments = 1
+    option_spec = SUB
 
     def run(self):
         a = _Asm(self)
+        if a.node is not a.tree:
+            return [nodes.paragraph(text=PARAMS_TOP)]
         m = a.model()
         asm = a.asm_def(m) if m is not None else None
         if asm is None:
@@ -239,12 +248,12 @@ class Bom(Directive):
         qty_head = ["Qty"] if vs == [ad.ALL] else [f"Qty {v}" for v in vs]
 
         def ident(r):
-            i = _lit(r["id"])
+            i = _need(r["id"]) if r["id"].startswith("ME-") else _lit(r["id"])
             d = r["document"]
             if d:
                 i += f", :external+{docs[d]}:doc:`{d} <index>`" if d in docs else f", document ``{d}``"
             return i
-        body = [[_lit(r["pos"]), "  " * r["level"] * 2 + _cell(r["designation"]), _cell(r["kind"]), ident(r),
+        body = [[_lit(r["pos"]), INDENT * r["level"] + _cell(r["designation"]), _cell(r["kind"]), ident(r),
                  *[str(r["qty"][v]) for v in vs], _cell(r["material"]), _cell(r["print_profile"]),
                  _cell(r["manufacturer"]), _cell(r["mpn"])] for r in rows]
         return _rst(self, ["Quantities per parent assembly. A standard fastener is named by its standard designation; "
@@ -261,10 +270,13 @@ def _registry_docs(repo: Path) -> dict[str, str]:
 
 class Drawing(Directive):
     required_arguments = 1
+    option_spec = SUB
 
     def run(self):
         from xdmod_sphinx import inline_svg
         a = _Asm(self)
+        if a.node is not a.tree:
+            return [nodes.paragraph(text=TOP_ONLY)]
         rec, top = a.cam()
         if rec is None:
             return [nodes.paragraph(text=LOCAL)]
@@ -288,10 +300,13 @@ class Drawing(Directive):
 
 class Exploded(Directive):
     required_arguments = 1
+    option_spec = SUB
 
     def run(self):
         from xdmod_sphinx import inline_svg
         a = _Asm(self)
+        if a.node is not a.tree:
+            return [nodes.paragraph(text=TOP_ONLY)]
         rec, top = a.cam()
         if rec is None:
             return [nodes.paragraph(text=LOCAL)]
@@ -310,24 +325,43 @@ class Renderings(Directive):
     """``<variant>/renderings/<view>.png`` of the cam output (task 5.30 makes them): Sphinx image
     nodes, so the PNGs are copied to ``_images/``; the views in ``VIEW_ORDER`` first."""
     required_arguments = 1
+    option_spec = SUB
 
     def run(self):
         env = self.state.document.settings.env
         a = _Asm(self)
+        if a.node is not a.tree:
+            return [nodes.paragraph(text=TOP_ONLY)]
         rec, top = a.cam()
         if rec is None:
             return [nodes.paragraph(text=LOCAL)]
         docdir = Path(env.doc2path(env.docname)).parent
         result = []
         for v in rec.get("variants") or []:
-            pngs = sorted((top / a.name / v / "renderings").glob("*.png"),
-                          key=lambda f: (VIEW_ORDER.index(f.stem) if f.stem in VIEW_ORDER else len(VIEW_ORDER), f.stem))
+            pngs = _renderings(rec, top / a.name / v, v)
             if not pngs:
                 continue
             result.append(nodes.paragraph(text=f"Variant {v}, {rec['version']}: {', '.join(f.stem for f in pngs)}."))
             result += [nodes.image(uri=os.path.relpath(f, docdir), alt=f"Variant {v}, {f.stem}", width="48%")
                        for f in pngs]
         return result or [nodes.paragraph(text=NO_RENDERINGS)]
+
+
+def _renderings(rec: dict, folder: Path, variant: str) -> list[Path]:
+    """The PNGs of one variant: in the order cam.json lists them (``per_variant.<v>.renderings``,
+    else ``renderings.views``, task 5.30), each ``renderings/<view>.png``; without a list, every
+    PNG of ``renderings/``, the views of ``VIEW_ORDER`` first."""
+    d = folder / "renderings"
+    per = ((rec.get("per_variant") or {}).get(variant) or {}).get("renderings")
+    top = rec.get("renderings")
+    listed = per or (top.get("views") if isinstance(top, dict) else None)
+    if isinstance(listed, dict):                # {view: file} or {view: {...}}: the views
+        listed = [v if isinstance(v, str) else k for k, v in listed.items()]
+    if listed:
+        files = [d / f"{Path(str(x)).stem}.png" for x in listed]
+        return [f for f in files if f.is_file()]
+    return sorted(d.glob("*.png"), key=lambda f: (VIEW_ORDER.index(f.stem) if f.stem in VIEW_ORDER
+                                                    else len(VIEW_ORDER), f.stem))
 
 
 class Mass(Directive):
@@ -360,8 +394,9 @@ class Mass(Directive):
                               _xyz(p["com_mm"])] for p in m["parts"]])
         if not lines:
             return [nodes.paragraph(text=NO_DATA)]
-        return _rst(self, ["Masses from the solid volume and the density of the material (printed parts as solid, "
-                           "without infill), or a part's own ``Mass`` property.", ""] + lines)
+        return _rst(self, ["Masses from the solid volume and the density of the material, or a part's own ``Mass`` "
+                           "or ``Density`` property. Printed parts count as solid, without the infill of the print "
+                           "profile, so their mass is an upper bound.", ""] + lines)
 
 
 class Findings(Directive):
@@ -382,8 +417,8 @@ class Findings(Directive):
             rows = [r for r in rows if r["description"].startswith(a.node.file + ":")
                     or any(r["description"].startswith(c.file + ":") for _, c in a.node.walk() if c is not a.node)]
         lines = [f"Checks {', '.join(d.get('checks') or [])} ({rec['version']}): {len(rows)} finding"
-                 f"{'s' if len(rows) != 1 else ''}. Accepted in ``assemblies/{a.name}/accepted.yaml`` by a human "
-                 f"commit with ``Accepted-by``.", ""]
+                 f"{'s' if len(rows) != 1 else ''}." + (f" An error is accepted in ``assemblies/{a.name}/accepted.yaml`` "
+                                                       f"by a human commit with ``Accepted-by``." if rows else ""), ""]
         if rows:
             lines += _table(["State", "Check", "Rule", "Items", "Description", "Acceptance"],
                             [[self.STATES.get(r["state"], r["state"]), _lit(r["check"]), _lit(r["rule"]),
@@ -394,9 +429,9 @@ class Findings(Directive):
 
 
 class SubAssemblies(Directive):
-    """One chapter per sub-assembly (each distinct document once): overview, interfaces, materials,
-    mass and findings with ``:sub:``. Drawings, renderings and parameters belong to the top-level
-    assembly (``curatrix cam`` and the skeleton are per top-level assembly, XD-ADR-0137)."""
+    """One chapter per sub-assembly (each distinct document once) with the sections of the top-level
+    chapter and ``:sub:``. Drawings, exploded view, renderings and parameters print a fixed sentence
+    there: ``curatrix cam`` and the skeleton are per top-level assembly (XD-ADR-0137, iteration 1)."""
     required_arguments = 1
 
     def run(self):
@@ -408,8 +443,10 @@ class SubAssemblies(Directive):
         for _, n in subs:
             title = f"Sub-assembly {n.designation} ({n.id})"
             lines += [title, "~" * len(title), ""]
-            for what, d in (("Overview", "overview"), ("Interfaces", "interfaces"), ("Materials", "materials"),
-                            ("Mass and center of gravity", "mass"), ("Findings", "findings")):
+            for what, d in (("Overview", "overview"), ("Drawings", "drawing"), ("Exploded view", "exploded"),
+                            ("Renderings", "renderings"), ("Mass and center of gravity", "mass"),
+                            ("Parameters", "parameters"), ("Materials", "materials"), ("Interfaces", "interfaces"),
+                            ("Findings", "findings")):
                 lines += [f".. rubric:: {what}", "", f".. xd-asm-{d}:: {a.name}", f"   :sub: {n.id}", ""]
         return _rst(self, lines, titles=True)
 

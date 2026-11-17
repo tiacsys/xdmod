@@ -78,7 +78,7 @@ Each section is one ``xd-asm-*`` directive with the assembly name as its argumen
      - fixed sentence
    * - Renderings
      - ``xd-asm-renderings``
-     - ``<variant>/renderings/<view>.png`` (front, top, right or side, iso or 3d first)
+     - ``<variant>/renderings/<view>.png`` (front, top, right, iso), as ``cam.json`` lists them
      - fixed sentence
    * - Mass and center of gravity
      - ``xd-asm-mass``
@@ -119,12 +119,16 @@ document:
    curatrix docs robarm-me
 
 The mass is the solid volume of each present part times the density of its ``Material``, or the
-part's own ``Mass`` (``12 g``) or ``Density`` (``1.24 g/cm^3``) property. Printed parts count as
-solid; the infill of the print profile is not applied, so the mass is an upper bound. The center of
-gravity is in the frame of the top-level assembly.
+part's own ``Mass`` (``12 g``) or ``Density`` (``1.24 g/cm^3``) property; both need a unit, and a
+density outside 0.01 to 25 g/cm³ is refused. Printed parts count as solid; the infill of the print
+profile is not applied, so their mass is an upper bound. The center of gravity is in the frame of
+the top-level assembly. A sub-assembly chapter shows the mass of its first use; drawings, exploded
+view, renderings and parameters exist only for the top-level assembly (iteration 1), so these
+sections of a sub-assembly chapter print a fixed sentence.
 
-In the BOM, a standard fastener (a ``lib/`` object with a ``Standard`` property such as
-``ISO 4762 M3x10, A2``) is named by its standard designation; another bought part names
+In the BOM, a standard fastener (any object with a ``Standard`` property such as
+``ISO 4762 M3x10, A2``, usually in ``lib/``) is named by its standard designation; another bought
+part (a ``lib/`` object, or one with ``Manufacturer`` or ``MPN``) names
 ``Manufacturer`` and ``MPN``; a board model or harness is one line with its version and its
 ``pcba-<name>`` / ``harness-<name>`` document, its parts stay in the EE BOM. CK-F12 warns about a
 bought part without them and about an own part without ``Material`` (:need:`XD-RULE-0058`).

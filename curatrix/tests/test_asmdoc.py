@@ -119,28 +119,55 @@ def test_mass_and_center_of_gravity():
             {"path": "D", "label": "d", "Material": "unknown", "volume": 5.0, "com": [1, 1, 1]}]
     m = asmdoc.mass(rows, {"pla": 1.24})
     assert [p["mass_g"] for p in m["parts"]] == [1.24, 10.0, 1.0, None]
-    assert [p["source"] for p in m["parts"]] == ["material PLA", "Mass property", "Density property", ""]
+    assert [p["source"] for p in m["parts"]] == ["material PLA", "Mass property", "Density property",
+                                                "no density for Material 'unknown' (data/materials.yaml)"]
     assert m["total_g"] == 12.24 and not m["complete"] and m["missing"] == ["D"]
     assert m["cog_mm"] == [round(100 / 12.24, 3), round(4 / 12.24, 3), 0.0]
+    bad = asmdoc.mass([{"path": "E", "Mass": "5", "volume": 1.0, "com": [0, 0, 0]},
+                       {"path": "F", "Density": "90 g/cm^3", "volume": 1.0, "com": [0, 0, 0]},
+                       {"path": "G", "Density": "1.2", "volume": 1.0, "com": [0, 0, 0]}], {})
+    assert [p["mass_g"] for p in bad["parts"]] == [None, None, None] and bad["missing"] == ["E", "F", "G"]
+    assert [p["source"] for p in bad["parts"]] == ["Mass '5' needs a unit (g, kg, mg)",
+                                                    "Density '90 g/cm^3' is 90 g/cm³, outside 0.01..25",
+                                                    "Density '1.2' needs a unit (g/cm^3, kg/m^3)"]
+    assert m["parts"][3]["source"] == "no density for Material 'unknown' (data/materials.yaml)"
     s = asmdoc.sub_mass(m, "Arm1")
     assert s["total_g"] == 11.0 and s["cog_mm"] == [round(100 / 11, 3), round(4 / 11, 3), 0.0] and s["complete"]
 
 
 def test_d10_assembly_output(tmp_path):
-    """CK-D10 planted for ME: no cam output of the current commit for a top-level assembly."""
+    """CK-D10 planted for ME: no cam output of the current commit; a clean run, then an uncommitted
+    change in the assembly folder (stale); a run on that dirty tree, then a shared part deleted
+    (stale, also without any file time); the same tree_state hash as the board document."""
+    from curatrix import cam, mecam
     root, repo, cfg, a = _setup(tmp_path, ext=False)
     subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
     subprocess.run(["git", "-C", str(repo), "commit", "-q", "-m", "asm"], check=True)
     ctx = checks.Ctx(Workspace(root), Repo("r", repo, "r"), cfg, "local", False, None, root / "out")
-    r = checks.Result("CK-D10", "CK-D10", level="warning")
-    checks.c_cam_output(ctx, r)
-    assert len(r.findings) == 1 and r.findings[0].startswith("top: no `curatrix cam` output of top for commit"), r.findings
+
+    def run():
+        r = checks.Result("CK-D10", "CK-D10", level="warning")
+        checks.c_cam_output(ctx, r)
+        return r.findings
+    f = run()
+    assert len(f) == 1 and f[0].startswith("top: no `curatrix cam` output of top for commit"), f
     head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-    top = root / "build" / "r" / "cam" / "top" / "v0.0.0-1-gabc-preview"
-    top.mkdir(parents=True)
-    (top / "cam.json").write_text(json.dumps({"kind": "assembly", "project": "top", "commit": head,
-                                              "version": "top/v0.0.0-1-gabc-preview", "variants": ["all"]}))
-    r = checks.Result("CK-D10", "CK-D10", level="warning")
-    checks.c_cam_output(ctx, r)
-    assert r.findings == []
+
+    def cam_json(n):
+        top = root / "build" / "r" / "cam" / "top" / f"v0.0.0-1-gabc{n}-preview"
+        top.mkdir(parents=True)
+        (top / "cam.json").write_text(json.dumps({
+            "kind": "assembly", "project": "top", "commit": head, "version": f"top/v0.0.0-1-gabc{n}-preview",
+            "variants": ["all"], "tree_state": cam.tree_state(repo, a, *mecam.shared_folders(repo))}))
+    cam_json(1)
+    assert run() == []
+    (a / "top.FCStd").write_bytes((a / "top.FCStd").read_bytes() + b"\0")     # uncommitted change
+    stale = "uncommitted changes that differ from those of the `curatrix cam` run"
+    assert any(stale in x for x in run())
+    cam_json(2)
+    assert run() == []
+    (repo / "lib" / "bearing.FCStd").unlink()                                     # a shared part deleted
+    assert any(stale in x for x in run())
+    subprocess.run(["git", "-C", str(repo), "checkout", "--", "."], check=True)   # clean: only a clean run counts
+    assert run() == []
     assert meassemblies.top_folders(cfg) == [a]

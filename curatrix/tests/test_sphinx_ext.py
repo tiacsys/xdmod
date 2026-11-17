@@ -1,4 +1,5 @@
 """xdmod_sphinx in a plain strict Sphinx build (no zdocs)."""
+import re
 import shutil
 import subprocess
 import sys
@@ -168,6 +169,8 @@ def test_assembly_document_directives(tmp_path):
     subprocess.run(["git", "-C", str(repo), "commit", "-qm", "asm"], check=True)
     needs = "".join(f".. me-asm:: {t}\n   :id: {i}\n   :status: valid\n   :realizes: SYS-EL-0002\n\n"
                     for t, i in (("Top", "ME-ASM-0001"), ("Arm", "ME-ASM-0002")))
+    needs += "".join(f".. me-part:: P{i}\n   :id: ME-PART-000{i}\n   :status: valid\n   :realizes: SYS-EL-0002\n\n"
+                     for i in (2, 3, 4))
     text = needs + "".join(f".. xd-asm-{d}:: top\n\n" for d in (
         "overview", "drawing", "exploded", "renderings", "mass", "materials", "findings", "subassemblies", "bom"))
     env = dict(os.environ, XD_CAM_DIR=str(tmp_path / "cam"))
@@ -177,6 +180,9 @@ def test_assembly_document_directives(tmp_path):
     assert "Made locally with FreeCAD (curatrix cam)" in html
     assert "Sub-assembly arm (ME-ASM-0002)" in html and "Used 2 times in top" in html
     assert "ISO 4762 M3x10, A2" in html and "canary-board canary-board/v0.1.0" in html and "pcba-canary-board" in html
+    assert "· ISO 4762 M3x10, A2" in html                                   # indented one level below the arm
+    assert "Made for the top-level assembly only" in html and "has no parameters of its own" in html
+    assert 'href="#ME-PART-0002"' in html
     head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     v = tmp_path / "cam" / "top" / "v0.1.0"
     for var in ("SYS-CFG-0002", "base"):
@@ -202,3 +208,28 @@ def test_assembly_document_directives(tmp_path):
     assert "mass 3.5 g" in html and "(1, 2, 3) mm" in html and "mass 1.27 g" in html   # the arm's own mass
     assert "proposed, not accepted" in html and "B1 and Plate overlap" in html
     assert "has no renderings" in html
+    import struct
+    import zlib
+
+    def png(path):                                         # a real 1 x 1 PNG
+        def chunk(t, d):
+            return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d))
+        path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
+                         + chunk(b"IDAT", zlib.compress(b"\x00\xff\x00\x00")) + chunk(b"IEND", b""))
+    (v / "top" / "base" / "renderings").mkdir(parents=True)
+    for name in ("right", "front", "extra"):              # task 5.30: the list in cam.json counts, in its order
+        png(v / "top" / "base" / "renderings" / f"{name}.png")
+    rec = json.loads((v / "cam.json").read_text())
+    rec["per_variant"] = {"base": {"renderings": {x: f"top/base/renderings/{x}.png" for x in ("front", "right")}}}
+    rec["renderings"] = {"views": ["front", "top", "right", "iso"]}
+    (v / "cam.json").write_text(json.dumps(rec))
+    shutil.rmtree(out)
+    rc, log, out = build(tmp_path / "third", text, env=env, defines=[f"xd_repo={repo}"])
+    assert rc == 0, log
+    html = (out / "index.html").read_text()
+    imgs = re.findall(r'<img alt="Variant base, (\w+)"', html)
+    assert imgs == ["front", "right"], imgs
+    assert (out / "_images" / "front.png").is_file()
+    sys.path.insert(0, str(FIXTURES.parents[2] / "sphinx"))
+    from xdmod_sphinx import asm
+    assert [f.stem for f in asm._renderings({}, v / "top" / "base", "base")] == ["front", "right", "extra"]
