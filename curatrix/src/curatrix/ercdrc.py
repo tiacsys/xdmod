@@ -12,7 +12,7 @@ XD-ADR-0144; checks CK-F4a, CK-F4b, CK-F8, CK-F9).
   needs an accepted entry ``{check: CK-F8, rule: <rule>}``.
 * **CK-F9**: ``accepted.yaml`` is well formed, and every entry and KiCad exclusion is either
   accepted or reported as a proposal.
-* The ME checks (``mechecks``: CK-F4c, CK-F16, CK-F17, CK-F18, task 5.25) use the same file in
+* The ME checks (``mechecks``: CK-F4c, CK-F16, CK-F17, task 5.25) use the same file in
   ``assemblies/<name>/accepted.yaml``, the same entries (items: part names) and the same acceptor
   rule; CK-F9 covers those files too.
 
@@ -33,7 +33,7 @@ owner's acceptance into one commit with the agent trailer, so every acceptance b
 
     version: 1
     accepted:
-      - check: CK-F4b              # CK-F4a | CK-F4b | CK-F8; ME: CK-F4c | CK-F16 | CK-F17 | CK-F18
+      - check: CK-F4b              # CK-F4a | CK-F4b | CK-F8; ME: CK-F4c | CK-F16 | CK-F17
         rule: unconnected_items    # the KiCad rule key (CK-F8: the severity key or dru:<rule name>)
         items: all                 # or a list of designators: [J1, R1]
         reason: routing is not done in iteration 1 (XD-ADR-0144)
@@ -53,7 +53,7 @@ from pathlib import Path
 import yaml
 
 ACCEPTED = "accepted.yaml"
-ENTRY_CHECKS = ("CK-F4a", "CK-F4b", "CK-F8", "CK-F4c", "CK-F16", "CK-F17", "CK-F18")   # EE, then ME (mechecks)
+ENTRY_CHECKS = ("CK-F4a", "CK-F4b", "CK-F8", "CK-F4c", "CK-F16", "CK-F17")   # EE, then ME (mechecks)
 ENTRY_KEYS = {"check", "rule", "items", "reason"}
 REF = re.compile(r"\b(?:of|[Ss]ymbol|[Ff]ootprint)\s+([A-Za-z_#]*[A-Za-z][0-9]+[A-Za-z0-9_]*)\b")
 UNCOMMITTED = "0" * 40
@@ -62,8 +62,8 @@ UNCOMMITTED = "0" * 40
 # ------------------------------------------------------------------ reports
 @dataclass
 class Finding:
-    check: str                   # CK-F4a | CK-F4b; ME (mechecks): CK-F4c | CK-F16 | CK-F17 | CK-F18
-    rule: str                    # KiCad's type key; ME: recompute | solid | overlap | space-budget
+    check: str                   # CK-F4a | CK-F4b; ME (mechecks): CK-F4c | CK-F16 | CK-F17
+    rule: str                    # KiCad's type key; ME: recompute | solid | overlap
     severity: str                # error | warning | "" (a rule switched off)
     description: str
     items: list[str]

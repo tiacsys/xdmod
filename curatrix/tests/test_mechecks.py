@@ -64,11 +64,11 @@ def test_f17_collisions_and_acceptance(tmp_path, monkeypatch):
                          {"a": "A", "b": "C", "volume": 0.0005}], joined=[("B", "C")])
     monkeypatch.setattr(mechecks, "run", lambda ws, cfg, out: res)
     f = _run(root, repo, "c_collisions").findings
-    assert f == ["error: overlap (error): assemblies/fx/fx.FCStd (variant SYS-CFG-0002): A and B overlap by 500 mm³ "
-                 "(tolerance 0.001 mm³) [A, B]"], f
+    assert f == ["error: overlap (error): assemblies/fx/fx.FCStd: A and B overlap by 500 mm³ (tolerance 0.001 mm³) "
+                 "[A, B]"], f                                # in every variant: one finding, no variant label
     res["assemblies"][0]["overlaps"][1]["volume"] = 0.5            # joined, but beyond the joint tolerance
     f = _run(root, repo, "c_collisions").findings
-    assert any("B and C overlap by 0.5 mm³ (tolerance 0.1 mm³, joined)" in x for x in f), f
+    assert any("(variant SYS-CFG-0002): B and C overlap by 0.5 mm³ (tolerance 0.1 mm³, joined)" in x for x in f), f
     res["assemblies"][0]["overlaps"].pop(1)
     (repo / "assemblies" / "fx" / "accepted.yaml").write_text(ACCEPT)
     _commit(repo, "propose" + AGENT)
@@ -85,8 +85,8 @@ def test_f17_collisions_and_acceptance(tmp_path, monkeypatch):
 
 
 def test_f18_space_budget(tmp_path, monkeypatch):
-    """CK-F18: without a board model a skip with its reason; planted: a board model is reported
-    as not checked until the co-design task gives the budget its form."""
+    """CK-F18 until task 5.28: always a skip with its reason, never a finding that needs acceptance;
+    planted: a placed board model is named in the reason (not checked)."""
     root, repo = _repo(tmp_path)
     res = _result(repo, [])
     monkeypatch.setattr(mechecks, "run", lambda ws, cfg, out: res)
@@ -94,9 +94,9 @@ def test_f18_space_budget(tmp_path, monkeypatch):
     assert r.status == "skip" and "no board model" in r.findings[0], r
     res["assemblies"][0]["children"].append({"name": "Board", "kind": "board", "configs": "", "id": "EE-PCBA-0001"})
     r = _run(root, repo, "c_space_budget")
-    assert r.status != "skip" and r.findings == [
-        "error: space-budget (error): assemblies/fx/fx.FCStd: board model Board (EE-PCBA-0001): its SYS-IF space "
-        "budget is not checked yet; the budget's form comes from the co-design task 5.28 [Board]"], r.findings
+    assert r.status == "skip" and r.findings == [
+        "board model(s) Board placed, but the SYS-IF space budget has no form yet (co-design task 5.28): not "
+        "checked"], r.findings
 
 
 def test_recompute_and_solids_shared_documents(tmp_path, monkeypatch):
@@ -130,8 +130,9 @@ def _fixture(tmp_path, repo, extra=None):
 @pytest.mark.tools
 def test_me_checks_freecad(tmp_path):
     """CK-F4c, CK-F16, CK-F17 planted in a FreeCAD fixture (FreeCADCmd): a fillet that cannot be
-    built, a face with an ME-PART TraceID, two overlaps (one only in variant SYS-CFG-0002); the
-    joined pair touches, the library screw through both is left out; nothing is saved."""
+    built, a face with an ME-PART TraceID, three overlaps (A-B in every variant, the joined pair
+    B-C beyond the joint tolerance, C-D only in variant SYS-CFG-0002); E touches two parts without
+    a joint, the library screw through A and B is left out; nothing is saved."""
     if shutil.which("FreeCADCmd") is None:
         pytest.skip("FreeCADCmd not installed")
     root, repo = _repo(tmp_path)
@@ -145,10 +146,11 @@ def test_me_checks_freecad(tmp_path):
         "error: solid (error): parts/sheet.FCStd: Sheet (ME-PART-0004): no solid (shape type Face) [sheet#Sheet]"]
     f = _run(root, repo, "c_collisions").findings
     assert sorted(f) == [
-        "error: overlap (error): assemblies/fx/fx.FCStd (variant SYS-CFG-0002): A and B overlap by 500 mm³ "
-        "(tolerance 0.001 mm³) [A, B]",
-        "error: overlap (error): assemblies/fx/fx.FCStd (variant SYS-CFG-0002): C and D overlap by 500 mm³ "
-        "(tolerance 0.001 mm³) [C, D]"], f
+        "error: overlap (error): assemblies/fx/fx.FCStd (variant SYS-CFG-0002): C and D overlap by 400 mm³ "
+        "(tolerance 0.001 mm³) [C, D]",
+        "error: overlap (error): assemblies/fx/fx.FCStd: A and B overlap by 500 mm³ (tolerance 0.001 mm³) [A, B]",
+        "error: overlap (error): assemblies/fx/fx.FCStd: B and C overlap by 100 mm³ (tolerance 0.1 mm³, joined) "
+        "[B, C]"], f                         # E touches A and B without a joint: no finding
     assert _run(root, repo, "c_space_budget").status == "skip"
     assert subprocess.run(["git", "-C", str(repo), "status", "--porcelain"], capture_output=True,
                           text=True).stdout == ""                     # the check saved nothing
