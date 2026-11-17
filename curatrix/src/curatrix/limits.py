@@ -126,7 +126,7 @@ def run(cmd: list[str], use: str = "script", ws: Workspace | None = None, *, mem
     if env is None and ws is not None:
         env = ws.run_env()
     if ws is not None:
-        env = tool_env(ws, use, env)
+        env = tool_env(ws, use, env, cmd)
     if ws is not None and "cwd" not in kw:
         kw["cwd"] = ws.root
     r = subprocess.run(wrap(cmd, lim), env=env, **kw)
@@ -145,20 +145,23 @@ def explain_rc(rc: int) -> str:
     return {124: "timeout (limit reached)", 137: "killed (memory limit reached?)"}.get(rc, "")
 
 
-# uses whose tools read a user-global config: they always get the workspace-local one (rule 4)
-TOOL_CONFIG = {"kicad-cli": "kicad", "freecad": "freecad", "gui": None}
+FREECAD_NAMES = ("FreeCAD", "FreeCADCmd", "freecad", "freecadcmd")
 
 
-def tool_env(ws: Workspace, use: str, env: dict | None) -> dict | None:
-    """KiCad and FreeCAD runs get the same workspace-local config as `curatrix launch` (KiCad's
-    KICAD_CONFIG_HOME, FreeCAD's XDG dirs under .xdmod/), so a scripted run never writes the user's
-    ~/.config (task 5.3 incident: a pcbnew run rewrote ~/.config/kicad)."""
-    tool = TOOL_CONFIG.get(use)
-    if tool is None:
-        return env
+def tool_env(ws: Workspace, use: str, env: dict | None, cmd: list[str] | None = None) -> dict | None:
+    """The workspace-local config of KiCad and FreeCAD, so a scripted run never writes the user's
+    ~/.config (rule 4, D88; task 5.3 incident: a pcbnew run rewrote ~/.config/kicad).
+
+    KiCad's variables (KICAD_CONFIG_HOME, KICAD10_*) only affect KiCad, so every run gets them,
+    also `python board.py` that imports pcbnew under `script`. FreeCAD's config lives in the XDG
+    dirs, which other tools (git, gh) read too, so they are set only for the `freecad` use or a
+    FreeCAD command."""
     from curatrix import setup                      # local import: setup imports limits
-    launch = setup.launch_env(ws, tool)
-    keys = [k for k in launch if k.startswith(("KICAD", "XDG_"))]
     out = dict(env if env is not None else ws.run_env())
-    out.update({k: launch[k] for k in keys})
+    kicad = setup.launch_env(ws, "kicad")
+    out.update({k: v for k, v in kicad.items() if k.startswith("KICAD")})
+    exe = Path(cmd[0]).name if cmd else ""
+    if use == "freecad" or exe.startswith(FREECAD_NAMES):
+        fc = setup.launch_env(ws, "freecad")
+        out.update({k: v for k, v in fc.items() if k.startswith("XDG_")})
     return out
