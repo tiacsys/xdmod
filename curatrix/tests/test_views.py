@@ -97,3 +97,28 @@ def test_unknown_or_unimplemented_kind():
 
 def test_view_not_in_model():
     assert any("no view of this name" in e for e in views.check_file(SVG, None))
+
+
+def board_view(root="EeBoards::ControllerBoard", **opts):
+    m = model.Model.load(FIXTURES / "sysml" / "domain" / "ee-model.json")
+    v = views.ViewDef(name="board", short_id=None, kind="interconnection", root=root, layer=None,
+                      qualified_name="EeBoards::board", opts=opts)
+    return m, v
+
+
+def test_interconnection_root_ports_sit_on_the_frame():
+    """A board def with only its own ports (XD-ADR-0130): the ports are drawn on the frame,
+    with the board's short name in the title, in either layout direction."""
+    m, v = board_view()
+    g = views.graph(m, v)
+    (frame,) = g["nodes"]
+    assert frame["shape"] == "frame" and frame["label"] == "«part def»\n<EE-PCBA-0001> ControllerBoard"
+    assert sorted(p["label"] for p in frame["ports"]) == ["bus", "servoOut"]
+    m, down = board_view(direction="DOWN")
+    assert {p["side"] for p in views.graph(m, down)["nodes"][0]["ports"]} <= {"NORTH", "SOUTH"}
+    xml = views.to_mxfile(g)
+    assert views.content_of(xml) == views.content_of(views.to_mxfile(views.graph(m, down)))
+    # planted: a committed picture without one of the board's ports fails CK-D3
+    planted = xml.replace('id="EeBoards::ControllerBoard.bus"', 'id="EeBoards::ControllerBoard.gone"')
+    assert "missing in the file: EeBoards::ControllerBoard.bus" in views.diff_content(
+        views.content_of(xml), views.content_of(planted))

@@ -55,8 +55,19 @@ Checks
   the picture is fresh. It needs no browser.
 - :need:`XD-CHECK-0025`: no compressed diagrams (:need:`XD-RULE-0039`).
 
-.. note:: Iteration 1 builds the view kinds ``interconnection`` and ``decomposition``.
-   ``context``, ``usecases``, ``allocation`` and ``variants`` come later. Keeping manual layout
+.. note:: curatrix builds the view kinds ``interconnection`` and ``decomposition``, and the
+   SysML v2 standard views ``general``, ``actionflow``, ``statetransition`` and ``usecases``.
+   A ``general`` view shows what its ``expose`` and ``filter`` select; ``show`` limits the
+   relationships it draws and ``compartments`` (``all``, ``none``, ``root``, ``doc``, or a list
+   such as ``all,doc``) the lists inside the boxes. ``between`` names two or more packages: the
+   view then shows only the relations between them (a view across two domains). In an
+   ``interconnection`` view, ``show`` names the ports to draw. ``direction`` (``DOWN``,
+   ``RIGHT``, ``LEFT``, ``UP``) sets the layout direction; the default depends on the kind
+   (``RIGHT`` for ``interconnection``, ``DOWN`` for the others). Every drawing must fit a 4:3 or 16:9
+   page, upright or across (a width to height ratio from 9:16 to 16:9). When it does not,
+   ``views build`` turns the layout by 90 degrees, wraps long chains and moves the legend, and
+   reports the ratio; ``RIGHT!`` forbids turning. If no layout fits, split the view.
+   ``context``, ``allocation`` and ``variants`` come later. Keeping manual layout
    across rebuilds is iteration 2 (:need:`XD-ADR-0037`). Trace graphs use ``needflow``, not drawio
    (:need:`XD-ADR-0086`).
 
