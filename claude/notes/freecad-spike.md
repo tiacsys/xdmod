@@ -11,32 +11,33 @@ and logs are under `build/spike-freecad/` (not committed): `scripts/` (the scrip
 | # | Question | Verdict |
 |---|---|---|
 | 1 | Master sketch across documents | **Works with this fallback**: parameters and master sketch in a skeleton document, not in the top assembly document (else a document cycle); a script opens the top first and recomputes in order |
-| 2 | Model drives CAD (script writes cells) | **Works**: 2 to 18 changed lines in `Document.xml`, 1 line per value in the semantic JSON, no object-ID churn |
+| 2 | Model drives CAD (script writes cells) | **Works**: 6 to 18 changed lines in `Document.xml`, 1 line per value in the semantic JSON, no object-ID churn |
 | 3 | Configuration tables, presence by `Configs` | **Works** (one ordering pitfall); presence by `Configs` works, FreeCAD itself can also hide a link per variant |
 | 4 | LCS with `Port`; collision check | **Works**; the semantic JSON needs small additions |
-| 5 | Exploded view as a TechDraw view | **Works with this fallback**: only with the GUI binary offscreen, not with `FreeCADCmd` |
+| 5 | Exploded view as a TechDraw view | **Works with this fallback**: the Assembly exploded view needs the GUI binary, and that run hung in 6 of 8 tries; a scripted exploded compound with a TechDraw view in `FreeCADCmd` worked 3 of 3 (view SVG, no page frame) |
 | 6 | Version embossed at export | **Works**, source file unchanged (md5 checked) |
-| 7 | KiCad StepUp | **Works with this fallback** (from code reading only): GUI binary only, core push and load functions take arguments but can open modal dialogs; scripted use was not run (see 7) |
-| 8 | MCP servers | **Works with this fallback**: two candidates can be pinned and run with the workspace-local config; not needed for iteration 1 |
+| 7 | KiCad StepUp | **Open**: not run. From the code: GUI binary only; the push and load functions take arguments but can open modal dialogs. The scripted test (`scripts/q7.py`) is the first step of 5.28 |
+| 8 | MCP servers | **Cut for iteration 1**: not needed; two candidates named, not tried |
 
 User-global FreeCAD config stayed untouched: see "Isolation" at the end.
 
 ## How FreeCAD was run
 
-Every run used the workspace-local XDG dirs of `curatrix launch freecad` and the curatrix limits
-(wrapper `build/spike-freecad/scripts/fc.sh`):
+Every run used the workspace-local XDG dirs of `curatrix launch freecad` (under `.xdmod/freecad/`)
+and the curatrix limits. The first pass set the `XDG_*` variables by hand, because the installed
+curatrix did not set them for `curatrix run` then. Since xdmod#35 `limits.run` sets them itself for
+the `freecad` use and every `FreeCAD*` command, so the evidence rerun used curatrix alone
+(wrapper `build/spike-freecad/scripts/fc.sh`, all runs: `scripts/rerun.sh`):
 
 ```sh
-env XDG_CONFIG_HOME=.xdmod/freecad/config XDG_DATA_HOME=.xdmod/freecad/data \
-    XDG_CACHE_HOME=.xdmod/freecad/cache QT_QPA_PLATFORM=offscreen \
-    .venv/bin/curatrix run --use freecad -- FreeCADCmd <script.py>     # or FreeCAD (GUI binary)
+QT_QPA_PLATFORM=offscreen .venv/bin/curatrix run --use freecad -- FreeCADCmd <script.py>   # or FreeCAD
 ```
 
-FreeCAD confirmed it used them (first lines of `q1_build.py`):
+FreeCAD confirmed the dirs in both binaries (`out/where.log`, `out/where-gui.log`):
 
 ```
-compression 0
-UserAppData .../ws-syseng/.xdmod/freecad/data/FreeCAD/v1-1/ UserConfig .../ws-syseng/.xdmod/freecad/config/FreeCAD/v1-1/
+XDCONFIG UserConfig .../ws-syseng/.xdmod/freecad/config/FreeCAD/v1-1/ UserAppData .../ws-syseng/.xdmod/freecad/data/FreeCAD/v1-1/ UserCache .../ws-syseng/.xdmod/freecad/cache/FreeCAD/v1-1/Cache/
+GuiUp 1 UserConfig .../ws-syseng/.xdmod/freecad/config/FreeCAD/v1-1/ ... (same for the GUI binary)
 ```
 
 The semantic JSON came from `curatrix.cad.freecad_trace` of xdmod `origin/main` (the code behind
@@ -44,15 +45,26 @@ The semantic JSON came from `curatrix.cad.freecad_trace` of xdmod `origin/main` 
 
 Found on the way (for curatrix, not changed here):
 
-- `cad.freecad_shapes` (the shape part of `gen freecad-json`) starts `FreeCADCmd` with
-  `ws.run_env()` only, so **without** the XDG dirs: it reads and writes the user's `~/.config/FreeCAD`.
-  It must use `launch_env(ws, "freecad")` (or the same XDG dirs). The same holds for `curatrix run`.
-- Every save writes a backup `<name>.<timestamp>.FCBak` next to the file. Set
-  `Document/CreateBackupFiles = false` in the workspace `user.cfg`, and ignore `*.FCBak` in robarm-me.
+- Every save writes a backup `<name>.<timestamp>.FCBak` next to the file. `setup.py`
+  (`FREECAD_USER_CFG` / `ensure_freecad_config`, run by `curatrix update` and `launch`) should also
+  write `Document/CreateBackupFiles = false` into the workspace `user.cfg`; 5.23 adds `*.FCBak` to
+  robarm-me's `.gitignore`.
 - `FreeCADCmd` treats extra command-line arguments as files to open ("File format not supported").
   Pass script inputs by environment variables (`XD_VERSION=...`), as the scripts here do.
-- When a script raises, `FreeCADCmd` printed the script's output twice and the second document got
-  the name `asm_var1`: the script seems to run twice. Scripts must write into a fresh directory.
+  `cad.freecad_shapes` is hit, but works today: it passes `script fcstd out.json`, and FreeCADCmd
+  runs the script (which writes the JSON), then opens the `.FCStd` a second time, then tries to
+  import the output `.json` as a FEM mesh and prints a traceback
+  (`importYamlJsonMesh.py ... invalid literal for int() with base 10: 'bbox'`), with exit code 0
+  (`out/freecad_shapes.log`, `out/freecad_shapes_by_hand.log`). It works only because of this order.
+  Pass the paths by environment variables instead.
+- `FreeCADCmd` exits with 0 when the script raises (`out/q5_cmd_fallback_no_template.log`:
+  `Exception while processing file ... [Template not set for Page]`, `exit 0`). Every curatrix
+  FreeCAD step must judge success by a result file it checks, not by the exit code.
+- When a script raises, `FreeCADCmd` runs it a second time in the same process
+  (`out/t_raise.log`: `RUN pid 1723555 document name twice`, then `... document name twice1`).
+  Scripts must be safe to run twice (fresh output directory, no appends).
+- A GUI FreeCAD killed by an outer `timeout` around `curatrix run` stays alive (curatrix's own
+  `timeout 10m` child survives). Use curatrix's timeout only.
 
 ## 1. Master sketch across documents (ME-6)
 
@@ -247,7 +259,8 @@ TechDraw page with a `DrawViewPart` whose `Source` is the exploded view object.
   `File "/usr/lib/freecad/Mod/Assembly/CommandCreateView.py", line 578 ... class TaskAssemblyCreateView(QtCore.QObject): NameError: name 'QtCore' is not defined`.
   A document that contains an exploded view opens in `FreeCADCmd` and recomputes, but the view's
   proxy is `None` (it prints the same error).
-- **GUI binary, `QT_QPA_PLATFORM=offscreen`** (`FC_GUI=1 scripts/fc.sh q5.py`): works.
+- **GUI binary, `QT_QPA_PLATFORM=offscreen`** (`FC_GUI=1 scripts/fc.sh q5.py`): worked in the first
+  run and in try 6 of the rerun (`out/q5_gui_try6.result.log`):
   ```
   CommandCreateView imported
   exploded shape bbox BoundBox (0, 0, 0, 20, 10, 40) lid placement after (should be unchanged) Vector (0.0, 0.0, 5.0)
@@ -260,13 +273,30 @@ TechDraw page with a `DrawViewPart` whose `Source` is the exploded view object.
   Two things are needed: TechDraw computes hidden lines in a thread, so the script must wait
   (`Gui.updateGui()` and sleep until `view.getVisibleEdges()` is not empty, 0.5 s here), and the
   script must end with `os._exit(0)` (the GUI binary does not quit by itself).
+- **But it is not reliable.** In 6 of 8 runs it hung after the TechDraw view was added
+  (`out/q5_gui.log`, `q5_gui_try2..5,7,8`): a `faulthandler` dump shows the main thread stuck in
+  `Gui.updateGui()` (and the same with `QCoreApplication.processEvents()`), line 45 of `q5.py`
+  (`out/q5_gui_try4.stack.txt`, `q5_gui_try5.stack.txt`). A second FreeCAD running at the same time
+  is not the cause (try 7 was clean and hung). Cause not found in the time-box.
+- **Headless fallback that works** (`scripts/q5_cmd_fallback.py`, 3 of 3 runs,
+  `out/q5_cmd_fallback_{1,2,3}.log`): the script builds the exploded compound itself (each part's
+  shape at its placement plus its move, plus explosion lines), a `TechDraw::DrawViewPart` of it in
+  `FreeCADCmd`, `TechDraw.viewPartAsSvg(view)`: `visible edges 19`, SVG of 1317 bytes, the same as
+  the GUI result. A page needs a template, else `Template not set for Page`. This gives the view as
+  SVG, not a full page (PDF) with frame.
 - Not solved in the time-box: the page template frame did not show in the SVG export (only the
   views); the export with our own template (freecad-storage.md §4) was not tried here.
 
-Input for 5.26 / 5.27: exploded view **in**: the owner (or an agent in the GUI binary) defines the
-moves in the assembly document; `curatrix cam` exports with the GUI binary offscreen, like the
-full-page TechDraw export. Checks that run in `FreeCADCmd` must ignore the proxy error of exploded
-views. Use `freecad` limits (it took a few seconds).
+Input for 5.26 / 5.27: exploded view **in, by the fallback**: the moves are data (a small table per
+assembly: link, offset; or read from the `Move` objects' `References` and `MovementTransform` in
+`Document.xml`, which plain Python can do), `curatrix cam` builds the exploded compound and the
+TechDraw view in `FreeCADCmd` and exports the view SVG. The Assembly workbench's exploded view in the
+GUI binary is not reliable enough for CAM (6 of 8 hangs); the owner may still use it to design the
+moves. Checks that run in `FreeCADCmd` must ignore the proxy error of exploded
+views. Use `freecad` limits (it took a few seconds). **Open item for 5.26:** a full page with our
+TechDraw template (frame and editable fields) exported by the GUI binary offscreen is not shown yet;
+here the frame was missing from the SVG, and the GUI run hung in 6 of 8 tries. 5.26 starts by
+showing that the page export works reliably (for example 10 runs in a row), or falls back to view SVGs.
 
 ## 6. Version on parts at export
 
@@ -306,7 +336,8 @@ here); use the short tag on printed parts and the full string in the drawing.
   `.xdmod/freecad/data/FreeCAD/v1-1/Mod/kicadStepUpMod` (the `UserAppData` that FreeCAD reported),
   or add it to `sys.path` in a script. Two catches: it keeps its own config in **`~/ksu-config.ini`**
   (`home = expanduser("~")`, line 3026 of `kicadStepUptools.py`), so curatrix must set `HOME` to a
-  workspace dir for StepUp runs (or patch that line); and it stores 87 preferences under
+  workspace dir (absolute, under `.xdmod/`) **only for the StepUp process**, because `HOME` also
+  changes what git, gh and ssh read (or patch that line); and it stores 87 preferences under
   `Mod/kicadStepUpGui` in the workspace `user.cfg`.
 - Script use (from reading the code): `kicadStepUptools.py` (22 857 lines) imports `FreeCADGui`,
   `PySide.QtGui`, `ImportGui` and `pivy` at module level, so it **cannot load in `FreeCADCmd`**; only
@@ -321,41 +352,48 @@ here); use the short tag on printed parts and the full string in the drawing.
   - So both can be called from a script in the GUI binary, with the risk of a hidden modal dialog;
     a wrapper must time out (curatrix limits do) and could replace `say_warning` and
     `QMessageBox.information` with logging before the call.
-- **Not run.** My test (`scripts/q7.py`: push a 50 × 30 mm outline with two holes into a copy of the
-  canary board, then load it back) was blocked by the session's permission check (running a cloned
-  third-party workbench), so the KiCad 10 file format (`version 20260206`) is untested with StepUp's
-  parser. The script is ready; the owner can run it:
-  `HOME=build/spike-freecad/q7/home FC_GUI=1 build/spike-freecad/scripts/fc.sh build/spike-freecad/scripts/q7.py`
+- **Not run.** Running the cloned third-party workbench was blocked by the session's permission
+  check, and the owner decides whether it runs. So the KiCad 10 file format (`version 20260206`) is
+  untested with StepUp's parser. The test is written: `build/spike-freecad/scripts/q7.py` pushes a
+  50 × 30 mm outline with two 3.2 mm holes into a copy of the canary board (replacing
+  `say_warning` and `QMessageBox.information` by logging, so no dialog blocks), then loads the
+  board back. The run command is in its header:
+  ```sh
+  mkdir -p .xdmod/stepup-home build/spike-freecad/q7
+  cp .worktrees/feat/canary-c0/robarm-ee/pcba/canary-board/canary-board.kicad_pcb build/spike-freecad/q7/
+  HOME=$PWD/.xdmod/stepup-home QT_QPA_PLATFORM=offscreen \
+    .venv/bin/curatrix run --use freecad -- FreeCAD build/spike-freecad/scripts/q7.py
+  ```
 
-Input for 5.19 / 5.28: keep the review's split: the STEP path (`kicad-cli pcb export step`) for the
+Input for 5.28 / 5.29: keep the review's split: the STEP path (`kicad-cli pcb export step`) for the
 automated board model; StepUp for the interactive push ME → KiCad (outline and holes), run by a
 person in `curatrix launch freecad`, or by a curatrix wrapper in the GUI binary offscreen with the
 dialogs patched out, after the run above shows it works on a KiCad 10 board. `tools.yaml` pins the
-commit; `curatrix update` clones it into `.xdmod/freecad/data/.../Mod/`; set `HOME` for it.
-5.28 must start with that test.
+commit; `curatrix update` clones it into `.xdmod/freecad/data/.../Mod/`; set `HOME` for the StepUp process only.
+5.28 must start with that test (`q7.py`). The missing `LICENSE` file goes into the
+StepUp licence record of 5.29.
 
 ## 8. MCP servers for FreeCAD
 
-From GitHub (metadata by `gh api repos/<repo>`, 2026-11-17):
+From GitHub (metadata by `gh api repos/<repo>`, 2026-11-17), the two candidates:
 
 | Repo | Licence | Last push | Stars | What it does |
 |---|---|---|---|---|
-| [neka-nat/freecad-mcp](https://github.com/neka-nat/freecad-mcp) | MIT | 2026-11-16 | 3364 | FreeCAD addon starts an XML-RPC server in the GUI; MCP server via `uvx freecad-mcp`; tools to create/edit objects, run code (`execute_code`, also `execute_code_headless` = `freecadcmd -c` in a separate process), screenshots. Tags up to `v0.1.32` |
+| [neka-nat/freecad-mcp](https://github.com/neka-nat/freecad-mcp) | MIT | 2026-11-16 | 3364 | FreeCAD addon starts an XML-RPC server in the GUI; MCP server as the Python package `freecad-mcp`; tools to create/edit objects, run code (`execute_code`, also `execute_code_headless` = `freecadcmd -c` in a separate process), screenshots. Tags up to `v0.1.32` |
 | [spkane/freecad-addon-robust-mcp-server](https://github.com/spkane/freecad-addon-robust-mcp-server) | Apache-2.0 | 2026-11-16 | 271 | PyPI `freecad-robust-mcp` (0.5.0-beta) plus a bridge workbench; XML-RPC, socket, headless and embedded modes; 150+ tools (documents, PartDesign, export, macros) |
-| [bonninr/freecad_mcp](https://github.com/bonninr/freecad_mcp) | MIT | 2025-03-20 | 230 | addon + socket server, basic modelling; inactive |
-| [contextform/freecad-mcp](https://github.com/contextform/freecad-mcp) | none | 2025-08-15 | 139 | automation server; no licence |
-| [theosib/FreeCAD-MCP-Server](https://github.com/theosib/FreeCAD-MCP-Server) | none on GitHub (README says LGPL-2.1+) | 2026-03-05 | 37 | bridge to an addon over TCP 9876, for Claude Code |
-| [jango-blockchained/mcp-freecad](https://github.com/jango-blockchained/mcp-freecad) | MIT | 2025-11-06 | 27 | general server |
-| [lucygoodchild/freecad-mcp-server](https://github.com/lucygoodchild/freecad-mcp-server) | none | 2025-06-02 | 9 | Node server, primitives only |
+
+Rejected: bonninr/freecad_mcp (MIT, no push since 2025-03), jango-blockchained/mcp-freecad (MIT,
+small, since 2025-11), contextform/freecad-mcp, theosib/FreeCAD-MCP-Server and
+lucygoodchild/freecad-mcp-server (no licence on GitHub; the last one only makes primitives).
 
 Pinned and workspace-local: yes for the first two. The addon part goes into
 `.xdmod/freecad/data/FreeCAD/v1-1/Mod/` at a pinned tag (FreeCAD finds it there because of the XDG
-dirs); the MCP part runs from the workspace venv (`pip install freecad-robust-mcp==<ver>` or
-`uvx freecad-mcp@0.1.32`); the MCP server entry goes into the workspace `.claude/` settings, not the
+dirs); the MCP part is installed with `pip install <package>==<version>` into the workspace `.venv` (not
+`uvx`, which uses the user-global uv cache and tool dirs); the MCP server entry goes into the workspace `.claude/` settings, not the
 user's. Both open a local port and give the agent arbitrary code execution inside FreeCAD, so the
 FreeCAD started by `curatrix launch freecad` must run under the memory limit as today. Not tried here.
 
-Verdict: not needed for iteration 1: everything above works with plain scripts under
+Verdict: cut for iteration 1, not needed: everything above works with plain scripts under
 `curatrix run`, which are reviewable and repeatable. An MCP server helps an agent that works
 interactively in the owner's running FreeCAD (inspect the model, screenshots). Candidate if wanted:
 `neka-nat/freecad-mcp` (most used, MIT, active) or `spkane` (Apache-2.0, headless mode).
@@ -368,14 +406,25 @@ interactively in the owner's running FreeCAD (inspect the model, screenshots). C
 - ADR: model drives CAD through one curatrix writer with the recompute order of 1; it writes values
   only, never rebuilds objects.
 - ADR: variant = row of the configuration table + `Configs` on links; no suppression.
-- ADR: CAD output (exploded views, full TechDraw pages, StepUp) needs the GUI binary with
-  `QT_QPA_PLATFORM=offscreen`; checks and value writes use `FreeCADCmd`. Both through curatrix with the
-  workspace XDG dirs (fix `freecad_shapes` and `curatrix run` first).
+- ADR: full TechDraw pages and StepUp need the GUI binary with
+  `QT_QPA_PLATFORM=offscreen`; checks, value writes and the exploded view (fallback of 5) use `FreeCADCmd`. Both through curatrix, which
+  sets the workspace XDG dirs (xdmod#35); a test that `freecad_shapes` gets them would keep it so.
 - `tools.yaml`: StepUp pinned by commit (role me, and ee for the board model if the owner keeps it),
   a pinned font for the version emboss; `doctor` checks both.
 - `checks.md`: CK-F3 also over all variant rows; collision check by boolean common per variant;
   "one solid after emboss" in CAM.
 - `freecad_trace` additions: `XLink*`, expressions, named sketch constraints, `Port`, the variant table.
+
+## Evidence files
+
+All under `build/spike-freecad/` (not committed). `scripts/rerun.sh` reruns everything with logs in
+`out/<script>.log` (first line: the command, last line: `exit <code>`), under curatrix limits with the
+workspace config. Logs: `where*.log` (the dirs), `q1_build/change/check/check2/session/recipe/
+recipe_check.log`, `q1b_build/change.log`, `q3.log`, `q3_switch.log`, `q4.log`, `q5_cmd*.log`,
+`q5_gui*.log` and `*.stack.txt`, `q5_cmd_fallback_*.log`, `q6_export.log`, `q6_md5_*.txt`,
+`t_raise.log`, `freecad_shapes*.log`, `isolation-*.txt`. The `Document.xml` and JSON diffs of 2 are in
+`q2/` and `q2pd/`. In the rerun `q1_recipe` was run after `q1_check2`/`q1_session`, so its "before"
+state differs from the first pass; the results are the same (`plain recompute: width 90.0 mm pad 7.0 mm`).
 
 ## Isolation evidence
 
@@ -387,5 +436,7 @@ ls -la --time-style=full-iso ~/.config/FreeCAD ~/.local/share/FreeCAD ~/.cache/F
 ```
 
 Both outputs were identical (`find` listing md5 `5e694d863995b193715368c10c6893aa` before and after,
-including `~/.config/FreeCAD/v1-1/user.cfg` at mtime `1794871415.85`, 20111 bytes). No
+including `~/.config/FreeCAD/v1-1/user.cfg` at mtime `1794871415.85`, 20111 bytes). The same holds
+for the evidence rerun with curatrix alone setting the dirs: `out/isolation-before.txt` and
+`out/isolation-after.txt` are identical, md5 again `5e694d86...` (`out/isolation-diff.txt`). No
 `~/ksu-config.ini` exists. All FreeCAD state went to `.xdmod/freecad/`.
