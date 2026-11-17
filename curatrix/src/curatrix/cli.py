@@ -69,6 +69,12 @@ def cmd_run(a):
     return rc
 
 
+def cmd_fixtures(a):
+    from curatrix import fixtures
+    ok, _ = fixtures.run(_ws())
+    return 0 if ok else 1
+
+
 def cmd_limits(a):
     from curatrix import limits
     ws = _ws()
@@ -435,6 +441,9 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("-v", "--verbose", action="store_true")
     s.add_argument("cmd", nargs=argparse.REMAINDER)
     s.set_defaults(func=cmd_run)
+
+    s = sub.add_parser("fixtures", help="run the planted error of every built-in check (also the tool-backed ones) and record the result")
+    s.set_defaults(func=cmd_fixtures)
 
     s = sub.add_parser("limits", help="show the resolved limits table and backend")
     s.set_defaults(func=cmd_limits)

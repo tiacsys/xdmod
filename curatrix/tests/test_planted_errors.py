@@ -1,0 +1,246 @@
+"""Every built-in check fails on a planted error (task 5.3, exit criterion 2 of Phase 5).
+
+PLANTED maps each check ID of checks.BUILTIN to the test that plants an error the check must
+report: a case in this module, or an existing test elsewhere (by node id). A check without an
+entry fails `test_every_check_has_a_planted_error`. Cases marked `tools` need a tool (the Pilot)
+and run only locally: `curatrix fixtures` runs every entry, also those, and records the result
+(rule, tool versions, date) for the Phase 5 review and every baseline.
+"""
+import json
+import subprocess
+import zipfile
+
+import pytest
+
+from curatrix import checkcfg, checks, gen, graph, needs as needsmod
+from curatrix.ws import Repo, Workspace
+from helpers import git_init
+
+HERE = "curatrix/tests/test_planted_errors.py"
+
+# check ID -> node id (relative to xdmod/) of the test that plants an error it must find
+PLANTED = {
+    "CK-A6": "curatrix/tests/test_needs_config.py::test_planted_error_fails",
+    "CK-A1": f"{HERE}::test_a1_unknown_link",
+    "CK-A3": f"{HERE}::test_a3_id_does_not_match_its_type",
+    "CK-B1": f"{HERE}::test_b1_requirement_not_refined",
+    "CK-B2": f"{HERE}::test_b2_requirement_not_verified",
+    "CK-B3": f"{HERE}::test_b3_link_to_retired",
+    "CK-B4": "curatrix/tests/test_variants.py::test_planted_errors",
+    "CK-B5": f"{HERE}::test_b5_duplicate_id",
+    "CK-B6": f"{HERE}::test_b6_stale_evidence",
+    "CK-B7": f"{HERE}::test_b7_tombstone",
+    "CK-C1": f"{HERE}::test_c1_placeholder",
+    "CK-C2": f"{HERE}::test_c2_id_not_in_ledger",
+    "CK-D1": f"{HERE}::test_d1_stale_stubs",
+    "CK-E1": "curatrix/tests/test_tools_live.py::test_pilot_reports_errors",
+    "CK-D2": f"{HERE}::test_d2_stale_model_json",
+    "CK-D3": "curatrix/tests/test_views.py::test_content_change_and_stale_picture",
+    "CK-D4": "curatrix/tests/test_cli.py::test_gen_and_check_cad_needs",
+    "CK-D5": "curatrix/tests/test_provenance.py::test_made_with_another_version_is_reported",
+    "CK-E2": f"{HERE}::test_e2_value_not_in_sentence",
+    "CK-E3": f"{HERE}::test_e3_wrong_ears_pattern",
+    "CK-G1": f"{HERE}::test_g1_g2_changed_need_makes_links_suspect",
+    "CK-G2": f"{HERE}::test_g1_g2_changed_need_makes_links_suspect",
+    "CK-H1": f"{HERE}::test_h1_compressed_fcstd",
+    "CK-H2": f"{HERE}::test_h2_build_output",
+    "CK-H3": f"{HERE}::test_h3_unpinned_requirement",
+    "CK-H4": f"{HERE}::test_h4_missing_trailer",
+    "CK-H5": f"{HERE}::test_h5_bootstrap_drift",
+    "CK-H6": "curatrix/tests/test_check_runner.py::test_expect_list",
+    "CK-H7": "curatrix/tests/test_check_runner.py::test_pr_size_counts_hand_written_lines_only",
+}
+
+
+def test_every_check_has_a_planted_error():
+    assert sorted(PLANTED) == sorted(b[0] for b in checks.BUILTIN)
+
+
+# ------------------------------------------------------------------ helpers
+def _ctx(tmp_path, needs=(), yaml_text="version: 1\n", stage="local", owners=None):
+    root = tmp_path / "ws"
+    repo = git_init(root / "r")
+    (repo / "checks.yaml").write_text(yaml_text)
+    ws = Workspace(root)
+    out = tmp_path / "out"
+    out.mkdir(exist_ok=True)
+    ctx = checks.Ctx(ws, Repo("r", repo, "r"), checkcfg.load(repo / "checks.yaml", root), stage, False, None, out)
+    ctx.graph = graph.Graph({n["id"]: n for n in needs}, owners or {})
+    ctx.graph_findings = graph.check(ctx.graph, stage)
+    return ctx
+
+
+def _run(ctx, cid, fn, level="error"):
+    r = checks.Result(cid, cid, level=level)
+    fn(ctx, r)
+    return r.findings
+
+
+def _graph_finds(tmp_path, cid, needs, stage="local", owners=None):
+    ctx = _ctx(tmp_path, needs, stage=stage, owners=owners)
+    return _run(ctx, cid, checks.c_graph)
+
+
+V = {"status": "valid"}
+REQ = {"id": "SYS-REQ-0001", "type": "sys-req", **V, "content": "The arm shall answer within 50 ms."}
+SWR = {"id": "SW-REQ-0001", "type": "sw-req", **V, "refines": ["SYS-REQ-0001"]}
+
+
+def _commit(repo, rel, text):
+    p = repo / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text)
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", rel], check=True)
+
+
+# ------------------------------------------------------------------ graph rules
+def test_a1_unknown_link(tmp_path):
+    assert _graph_finds(tmp_path, "CK-A1", [REQ, {**SWR, "refines": ["SYS-REQ-0099"]}])
+
+
+def test_a3_id_does_not_match_its_type(tmp_path):
+    assert _graph_finds(tmp_path, "CK-A3", [REQ, {"id": "SYS-REQ-0002", "type": "sw-req", **V}])
+
+
+def test_b1_requirement_not_refined(tmp_path):
+    assert _graph_finds(tmp_path, "CK-B1", [REQ], stage="full")
+
+
+def test_b2_requirement_not_verified(tmp_path):
+    assert _graph_finds(tmp_path, "CK-B2", [REQ, SWR], stage="full")
+
+
+def test_b3_link_to_retired(tmp_path):
+    assert _graph_finds(tmp_path, "CK-B3", [{**REQ, "status": "retired"}, SWR])
+
+
+def test_b5_duplicate_id(tmp_path):
+    assert _graph_finds(tmp_path, "CK-B5", [REQ, SWR], stage="full",
+                        owners={"SYS-REQ-0001": ["a/needs.json", "b/needs.json"]})
+
+
+def test_b6_stale_evidence(tmp_path, monkeypatch):
+    tr = {"id": "TR-INT-STC-0001-aaaaaaaa", "type": "tr", **V, "result_of": ["INT-STC-0001"],
+          "shas": ["r=1111111111111111111111111111111111111111"]}
+    ctx = _ctx(tmp_path, [tr], stage="full")
+    monkeypatch.setattr(Workspace, "repos", property(lambda self: [Repo("r", self.root / "r", "r", "2" * 40)]))
+    assert _run(ctx, "CK-B6", checks.c_stale, "report")
+
+
+def test_b7_tombstone(tmp_path):
+    ctx = _ctx(tmp_path, yaml_text="version: 1\ncad: {needs: generated/cad-needs.json}\n")
+    rp = gen.retired_path(ctx.cfg)
+    rp.parent.mkdir(parents=True)
+    rp.write_text(needsmod.dumps(needsmod.doc({"EE-CMP-0001": {"id": "EE-CMP-0001", "type": "ee-cmp",
+                                                               "status": "retired", "title": "x"}}, "r")))
+    assert _run(ctx, "CK-B7", checks.c_tombstones, "warning")
+
+
+# ------------------------------------------------------------------ IDs
+def test_c1_placeholder(tmp_path):
+    ctx = _ctx(tmp_path, yaml_text="version: 1\nids: {ledger: ids.yaml}\n")
+    _commit(ctx.repo.path, "docs/x.rst", ".. sys-req:: X\n   :id: SYS-REQ-NEW-a\n")
+    assert _run(ctx, "CK-C1", checks.c_placeholders)
+
+
+def test_c2_id_not_in_ledger(tmp_path):
+    ctx = _ctx(tmp_path, yaml_text="version: 1\nids: {ledger: ids.yaml}\n")
+    _commit(ctx.repo.path, "ids.yaml", "SYS-REQ:\n  - 1\n")
+    _commit(ctx.repo.path, "docs/x.rst", ".. sys-req:: X\n   :id: SYS-REQ-0007\n")
+    assert _run(ctx, "CK-C2", checks.c_ledger)
+
+
+# ------------------------------------------------------------------ generated files
+def test_d1_stale_stubs(tmp_path, monkeypatch):
+    ctx = _ctx(tmp_path, yaml_text="version: 1\nstubs: {out: model/generated/NeedStubs.sysml, docs: [se-req]}\n")
+    nj = tmp_path / "se-req" / "needs.json"
+    nj.parent.mkdir()
+    nj.write_text(json.dumps(needsmod.doc({"SYS-REQ-0001": {**REQ, "title": "answer"}}, "x")))
+    monkeypatch.setattr(gen, "docs_needs_json", lambda ws, cfg, ids=None: [nj])
+    stale = ctx.repo.path / "model" / "generated" / "NeedStubs.sysml"
+    stale.parent.mkdir(parents=True)
+    stale.write_text("package NeedStubs {}\n")                       # the need is missing in it
+    assert _run(ctx, "CK-D1", checks.c_stubs)
+
+
+@pytest.mark.tools
+def test_d2_stale_model_json(tmp_path):
+    """Needs the Pilot (local only): a model.json that does not match the model fails CK-D2."""
+    from curatrix.ws import Workspace as W
+    real = W()
+    if not real.opt.joinpath("sysml-pilot").exists() and not list(real.opt.glob("*pilot*")):
+        pytest.skip("Pilot not installed")
+    ctx = _ctx(tmp_path, yaml_text="version: 1\nmodel: {files: [model/a.sysml]}\n")
+    (ctx.repo.path / "model").mkdir()
+    (ctx.repo.path / "model" / "a.sysml").write_text("package A { part def B; }\n")
+    (ctx.repo.path / "generated").mkdir()
+    (ctx.repo.path / "generated" / "model.json").write_text("{}\n")
+    ctx.ws = real
+    ctx.cfg = checkcfg.load(ctx.repo.path / "checks.yaml", real.root)
+    f = _run(ctx, "CK-D2", checks.c_model)
+    assert any("does not match the model" in x or "missing" in x for x in f), f
+
+
+# ------------------------------------------------------------------ requirements
+def test_e2_value_not_in_sentence(tmp_path):
+    ctx = _ctx(tmp_path, [{**REQ, "max": "40", "unit": "ms"}])
+    assert _run(ctx, "CK-E2", checks.c_ears, "warning")
+
+
+def test_e3_wrong_ears_pattern(tmp_path):
+    ctx = _ctx(tmp_path, [{**REQ, "ears": "event"}])
+    assert _run(ctx, "CK-E3", checks.c_ears, "warning")
+
+
+# ------------------------------------------------------------------ change impact
+def test_g1_g2_changed_need_makes_links_suspect(tmp_path, monkeypatch):
+    ctx = _ctx(tmp_path, [REQ, SWR], stage="pr")
+    base = tmp_path / "base" / "needs.json"
+    base.parent.mkdir()
+    base.write_text(json.dumps(needsmod.doc({"SYS-REQ-0001": REQ, "SW-REQ-0001": SWR}, "x")))
+    new = tmp_path / "new" / "needs.json"
+    new.parent.mkdir()
+    new.write_text(json.dumps(needsmod.doc({"SYS-REQ-0001": {**REQ, "content": "40 ms"}, "SW-REQ-0001": SWR}, "x")))
+    monkeypatch.setattr(gen, "docs_needs_json", lambda ws, cfg, ids=None: [new])
+    ctx.base = base.parent
+    assert _run(ctx, "CK-G1", checks.c_diff, "report")
+
+
+# ------------------------------------------------------------------ hygiene
+def test_h1_compressed_fcstd(tmp_path):
+    ctx = _ctx(tmp_path)
+    f = ctx.repo.path / "parts" / "p.FCStd"
+    f.parent.mkdir()
+    with zipfile.ZipFile(f, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("Document.xml", "<Document>" + "x" * 1000 + "</Document>")
+    subprocess.run(["git", "-C", str(ctx.repo.path), "add", "-A"], check=True)
+    assert _run(ctx, "CK-H1", checks.c_hygiene_compress)
+
+
+def test_h2_build_output(tmp_path):
+    ctx = _ctx(tmp_path)
+    (ctx.repo.path / "build").mkdir()
+    (ctx.repo.path / "build" / "x.o").write_text("x")
+    assert _run(ctx, "CK-H2", checks.c_hygiene_build)
+
+
+def test_h3_unpinned_requirement(tmp_path):
+    ctx = _ctx(tmp_path)
+    (ctx.repo.path / "requirements.txt").write_text("sphinx\n")
+    assert _run(ctx, "CK-H3", checks.c_pins, "warning")
+
+
+def test_h4_missing_trailer(tmp_path):
+    ctx = _ctx(tmp_path)
+    _commit(ctx.repo.path, "a.txt", "a")
+    subprocess.run(["git", "-C", str(ctx.repo.path), "update-ref", "refs/remotes/origin/main", "HEAD"], check=True)
+    _commit(ctx.repo.path, "b.txt", "b")                              # no Co-Authored-By trailer
+    assert _run(ctx, "CK-H4", checks.c_trailers, "warning")
+
+
+def test_h5_bootstrap_drift(tmp_path):
+    ctx = _ctx(tmp_path, yaml_text="version: 1\nbootstrap_template: scripts/bootstrap.sh\n")
+    (ctx.repo.path / "scripts").mkdir()
+    (ctx.repo.path / "scripts" / "bootstrap.sh").write_text("#!/bin/sh\necho drift\n")
+    assert _run(ctx, "CK-H5", checks.c_bootstrap, "warning")
