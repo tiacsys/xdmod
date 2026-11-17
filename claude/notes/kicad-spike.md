@@ -13,7 +13,18 @@ Work dir: `build/spike-kicad/` (not committed). Source read at tag `10.0.8` of
 | 3. ERC/DRC JSON with exclusions | **Works with this fallback**: exclusions and their comments are in the JSON. But an exclusion that no longer matches shows as an excluded *phantom* entry in ERC, and the exclusion key is an opaque string with positions. Use our `accepted.yaml` for anything not single and stable (P5-4 confirmed) |
 | 4. Connector extraction from the XML netlist | **Works.** Pin number, pin name, net, all hidden fields (`Port`, `TraceID`), and variant overrides |
 | 5. MCP servers | **Cut for iteration 1.** Several exist and are active; none is needed for 5.17–5.21, and all assume user-global paths |
-| Isolation of the user's config | **Works with extra variables**: `KICAD_CONFIG_HOME` alone is not enough; KiCad also writes a cache dir and a documents dir in `$HOME` (see §6) |
+| Isolation of the user's config | **Works with extra variables**: `KICAD_CONFIG_HOME` alone is not enough; KiCad also writes a cache dir and a documents dir in `$HOME` (see §6; fixed in curatrix by xdmod#41) |
+
+Corrections to the plan review and the plan:
+
+- P5-3: a jobset job **can** name a variant (10.0.8). Fallback B (single exports per variant) is not needed;
+  plan 5.12/5.20 can drop "single exports per variant where needed". The version still goes through the
+  copy's `.kicad_pro` (option A).
+- P5-3, stackup: confirmed, no native export; a table from plain Python.
+- P5-4.2 (severities as a bypass) and P5-4.3 (unrouted nets need our own `accepted.yaml`): confirmed.
+- P5-15: both cross-checks (BOM per variant, XML netlist) are workable.
+- New: `libs/kicad/packages3D` is missing (a `doctor` item); `jobset run` needs a job-count check (§2.4).
+- New: the title-block `Rev` field cuts off a long version (§2.1).
 
 ## 1. Setup
 
@@ -67,11 +78,18 @@ Where the version shows (output in `build/spike-kicad/out-jobset/`):
 
 | Output | Evidence |
 |---|---|
-| Schematic PDF | `pdftotext`: `Rev: canary-board/v0.0.0-1-...`, `Version canary-board/v0.0.0-1-gabc1234-preview`, `Board version: canary-board/v0.0.0-1-gabc1234-preview` |
+| Schematic PDF | `pdftotext -layout`: `Rev: canary-board/v0.0.0-1-` (**cut off**, see below), `Version canary-board/v0.0.0-1-gabc1234-preview`, `Board version: canary-board/v0.0.0-1-gabc1234-preview` |
 | Schematic SVG | 6 occurrences of the version string |
 | PCB silkscreen | SVG of `F.SilkS`: 2 occurrences; visible in the top rendering |
-| PCB PDF (with frame) | text `canary-board/v0.0.0-1-gabc1234-preview` and `Rev: canary-board/v0.0.0-1` |
+| PCB PDF (with frame) | silkscreen text `canary-board/v0.0.0-1-gabc1234-preview`; frame `Rev: canary-board/v0.0.0-1` (**cut off**) |
 | Gerber | header `%TF.ProjectId,canary-board,<uuid>,canary-board/v0.0.0-1-gabc1234-preview*%` in every layer |
+
+**The title-block `Rev` field cuts off the version** in both PDFs: `Rev: canary-board/v0.0.0-1-`. The hash
+and the `-preview` mark are lost, so a preview build can look like a release in the Rev box. Only the
+comment line and free texts show the full string. Input for 5.17/5.20: put the full version into a
+title-block comment line (`comment 2 "Version ${XD_VERSION}"`, which fits) and let the 5.20 check look
+there; keep `rev` empty or short (for example only the `vX.Y.Z` part, a second variable
+`XD_REV`), or widen the Rev field in a workspace drawing sheet (`.kicad_wks`) of the template.
 
 Important detail: `pcbnew` also writes the project text variables into the `.kicad_pcb` as board
 properties (`(property "XD_VERSION" "unversioned")`). The `.kicad_pro` value wins: the silkscreen showed
@@ -93,7 +111,11 @@ version in `.kicad_pro` for the jobset (option A of P5-3), `-D` only for single 
 differ as expected (§3). ERC and DRC take no variant.
 
 So P5-3 "jobs cannot carry the variant" is wrong for 10.0.8: the shared jobset can hold one job per
-output and variant (at most two variants, so at most two copies of the variant-dependent jobs).
+output and variant. Nothing in KiCad ties these jobs to `schematic.variants`: a variant added to the
+`.kicad_pro` but not to the jobset silently gets no outputs, and a job naming a removed variant was not
+tested. Input: `curatrix new pcba` (5.17) writes one job per variant and variant-dependent output, and a
+5.20 plain-Python check compares the variant names in the jobs with `schematic.variants` (and the
+`.kicad_pcb` `(variants ...)` list).
 
 ### 2.3 Which EE-3 outputs work natively
 
@@ -122,17 +144,22 @@ Run time of the whole jobset on the canary: 4.4 s wall (37 s CPU, mostly the hig
 2. **BOM job without delimiters writes a CSV without separators** (`RefsValueFootprintQty...`). The
    template must set `"field_delimiter": ","`, `"string_delimiter": "\""`, `"ref_delimiter": ","`,
    `"ref_range_delimiter": "-"`.
-3. **ERC and DRC jobs fail the jobset when there are violations** (`fail_on_error` defaults to true in
+3. **Variant jobs must copy the base job's settings.** In the spike `bom-addr41` had a shorter
+   `fields_ordered` than `bom` (no `Manufacturer`, `MPN`), so the variant BOM lost those columns. That
+   would break the per-variant cross-check (P5-15) and the MPN warning of 5.21. Rule for the template:
+   a variant job equals its base job except for the variant name and the output file name; the 5.20
+   check compares them.
+4. **ERC and DRC jobs fail the jobset when there are violations** (`fail_on_error` defaults to true in
    jobs; `jobset run` exit code 6). Either set `"fail_on_error": false` in the template and evaluate
    the JSON in curatrix (recommended: 5.19 does the evaluation), or keep ERC/DRC out of the CAM jobset.
-4. `"output_filename": "sch/"` (a folder) fails for the schematic PDF job (`Failed to create file`);
+5. `"output_filename": "sch/"` (a folder) fails for the schematic PDF job (`Failed to create file`);
    give a file name. The SVG job writes one file per sheet named after the sheet, whatever you give.
-5. `jobset run` writes into `$TMPDIR/<uuid>/` and does not clean it up; it also creates
+6. `jobset run` writes into `$TMPDIR/<uuid>/` and does not clean it up; it also creates
    `$TMPDIR/org.kicad.kicad/instances`. curatrix must set `TMPDIR` under `build/`.
-6. Destination `"output_path"` is relative to the project folder (`"../out-jobset"` worked).
-7. Locale: with the user's `LC_NUMERIC=de_DE.UTF-8`, `pcb export stats` writes `"34,0000 mm"`;
-   with `LC_ALL=C.UTF-8` it writes `"34.0000 mm"`. curatrix should set `LC_ALL=C.UTF-8` for KiCad runs.
-8. The DRC job with `"parity": true` printed `Failed to fetch schematic netlist for parity tests` on
+7. Destination `"output_path"` is relative to the project folder (`"../out-jobset"` worked).
+8. Locale: with the user's `LC_NUMERIC=de_DE.UTF-8`, `pcb export stats` writes `"34,0000 mm"`;
+   with `LC_ALL=C.UTF-8` it writes `"34.0000 mm"`. xdmod#41 sets `LC_ALL=C.UTF-8` for KiCad batch runs.
+9. The DRC job with `"parity": true` printed `Failed to fetch schematic netlist for parity tests` on
    the first run (before the schematic was complete); later runs were fine. Not followed further.
 
 ## 3. Assembly variants (EE-2, EE-8)
@@ -288,11 +315,27 @@ Two variables move them (verified, the fake `HOME` stayed empty):
 - `KICAD_DOCUMENTS_HOME=<dir>` → `<dir>/kicad/10.0/...`
 
 Without them KiCad falls back to `XDG_CACHE_HOME` / `XDG_DATA_HOME`, which are set to the user's dirs
-in this desktop session. **Input for curatrix (`launch_env` and `run`):** set `KICAD_CONFIG_HOME`,
-`KICAD_CACHE_HOME`, `KICAD_DOCUMENTS_HOME` (e.g. `.xdmod/kicad-cache`, `.xdmod/kicad-docs`), the four
-`KICAD10_*_DIR`, `TMPDIR` under `build/`, and `LC_ALL=C.UTF-8`. KiCad also writes into
-`KICAD_CONFIG_HOME` on every run (`kicad_common.json`, `pcbnew.json`, `3d_viewer.json`, `cvpcb.json`,
-`fpedit.json` in `.xdmod/kicad/10.0` were rewritten), which is fine because it is workspace-local.
+in this desktop session. The spike unset `XDG_*` and used a fake `HOME`; the result carries over to
+curatrix, which keeps the real ones, because both variables win over the platform paths in the source
+(`common/paths.cpp:39` for `KICAD_DOCUMENTS_HOME`, `:468` for `KICAD_CACHE_HOME`).
+
+What curatrix does with this (xdmod#41):
+
+- `launch_env` sets `KICAD_CACHE_HOME` and `KICAD_DOCUMENTS_HOME` under `.xdmod/`; through
+  `limits.tool_env` they reach the GUI and every scripted run.
+- KiCad batch runs (`kicad-cli`, pcbnew/eeschema scripts) get `LC_ALL=C.UTF-8`; the GUI keeps the
+  user's locale.
+- `TMPDIR` under `build/` for `jobset run` is still open (§2.4, pitfall 6).
+
+Side effect, intended by rule 4: `KICAD_DOCUMENTS_HOME` also moves the GUI's `plugins`, `scripting`,
+`3rdparty` (plugin and content manager) and the default user library and template folders. Under
+`curatrix launch kicad` the owner's PCM plugins and personal libraries from `~/.local/share/kicad` do
+not show up. This is on purpose; do not "fix" it, install what a board needs through the workspace.
+
+KiCad also writes into `KICAD_CONFIG_HOME` on every run (`kicad_common.json`, `pcbnew.json`,
+`3d_viewer.json`, `cvpcb.json`, `fpedit.json` in `.xdmod/kicad/10.0` were rewritten), which is fine
+because it is workspace-local. But parallel runs (checks over several boards in 5.19/5.20) can race on
+these shared JSON files: run KiCad jobs one after the other, or give each run its own copy of the config.
 
 `libs/kicad/packages3D` is missing: `XD_KICAD_3DMODELS` points to it, but it does not exist. Without it
 STEP and renderings have no parts (5.20, 5.21, EE-5).
@@ -300,8 +343,9 @@ STEP and renderings have no parts (5.20, 5.21, EE-5).
 Before/after record of the user's dirs: see the PR text. Summary: `~/.local/share/kicad` and
 `~/.cache/kicad` unchanged; in `~/.config/kicad/10.0/` the file `kicad_common.json` changed at
 02:30:43, 46 s **before** the first KiCad run of this spike (02:31:29, under the fake `HOME`) and while
-no KiCad run of mine had started; nothing changed after that. Another process (another agent or a GUI
-session) wrote it.
+no KiCad run of mine had started; nothing changed after that (`find -newer` gives 0 files). This write is
+**unexplained and was not caused by the spike's runs**. It is the same kind of leak as the task 5.3
+incident; it needs a follow-up (find the process, for example another agent's unisolated KiCad run).
 
 ## 7. MCP servers for KiCad
 
@@ -336,7 +380,9 @@ harmless but would need a patch to use the workspace libraries. Not worth it now
 - Template `.kicad_pro`: `text_variables.XD_VERSION = "unversioned"`, a full `erc` section with all
   `rule_severities`, `board.design_settings.rule_severities`, `schematic.variants` (empty or the board's
   variants).
-- curatrix env for every KiCad run: the list in §6.
+- curatrix env for KiCad: as in xdmod#41 (§6); `TMPDIR` for batch runs still to add.
+- Title block: full version in a comment line, `rev` short or empty (§2.1).
+- `curatrix new pcba` writes one job per variant and output, copied from the base job (§2.2, §2.4).
 
 **5.18 (connectors):** read `Port`/`TraceID` from `<comp><fields>`; pin names from `<libparts>`;
 nets from `<nets>`, strip the leading `/` of root-sheet net names (or require global labels on
@@ -353,6 +399,9 @@ connector nets); variants from `<comp><variants>`.
 **5.20 (CAM):**
 - shared jobset with the outputs of §2.3, `fail_on_error: false` or no ERC/DRC jobs, BOM delimiters
   set, no `pcb_export_stats` job, file names not folders, one variant-named job per variant;
+- checks: the variant names in the jobs equal `schematic.variants`; each variant job equals its base
+  job except variant and file name; the version check looks at the comment line, not `rev`;
+- run KiCad jobs one after the other (shared `.xdmod/kicad` JSON);
 - after `jobset run`: check the "N jobs succeeded" count equals the job count (pitfall 1), and the
   exit code;
 - the plain-Python checks planned (no `special_execute`, no `special_copyfiles` outside the output)
@@ -360,7 +409,8 @@ connector nets); variants from `<comp><variants>`.
   `gr_text` contain `${XD_VERSION}`;
 - `TMPDIR` under `build/`; remove `$TMPDIR/<uuid>` after the run.
 
-**5.21 (board document):** the BOM CSV per variant from the jobset can serve as the cross-check for the
+**5.21 (board document):** variant BOMs only carry `Manufacturer`/`MPN` if the variant job copies the
+base job's fields (§2.4). The BOM CSV per variant from the jobset can serve as the cross-check for the
 plain-Python BOM reader (P5-15); variant overrides are in the netlist too, so one reader can serve both.
 
 ## 9. Not done in the time box
