@@ -261,7 +261,7 @@ def test_h4_missing_trailer(tmp_path):
     ctx = _ctx(tmp_path)
     _commit(ctx.repo.path, "a.txt", "a")
     subprocess.run(["git", "-C", str(ctx.repo.path), "update-ref", "refs/remotes/origin/main", "HEAD"], check=True)
-    _commit(ctx.repo.path, "b.txt", "b", "made by Claude, trailer forgotten")   # an agent commit without trailer
+    _commit(ctx.repo.path, "b.txt", "b", "b\n\nGenerated with [Claude Code], trailer forgotten")   # agent commit, no trailer
     assert _run(ctx, "CK-H4", checks.c_trailers, "warning")
 
 
