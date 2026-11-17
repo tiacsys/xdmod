@@ -16,8 +16,10 @@ links, layers and configs (never geometry, D64a); it rejects compressed diagrams
 errors, and compares the stored hash with the embedded diagram (picture freshness).
 
 View definitions are SysML ``view``s with ``@XdView { kind = "..."; root = "..."; }`` (D94).
-Iteration 1 implements the kinds ``interconnection`` and ``decomposition``; the others are
-reported as not implemented.
+Implemented kinds: ``interconnection`` and ``decomposition`` (here), and the SysML v2 standard
+views ``general``, ``actionflow``, ``statetransition`` and ``usecases`` (``views/sysml.py`` builds
+the graph, ``views/draw.py`` lays it out and writes drawio). The others are reported as not
+implemented.
 """
 from __future__ import annotations
 
@@ -35,8 +37,9 @@ from pathlib import Path
 from curatrix.model import Model, element_id
 
 HERE = Path(__file__).resolve().parent
-IMPLEMENTED = ("interconnection", "decomposition")
-KNOWN = ("context", "usecases", "decomposition", "interconnection", "allocation", "variants")
+SYSML_KINDS = ("general", "actionflow", "statetransition", "usecases")
+IMPLEMENTED = ("interconnection", "decomposition", *SYSML_KINDS)
+KNOWN = ("context", "usecases", "decomposition", "interconnection", "allocation", "variants", *SYSML_KINDS[:3])
 HASH_ATTR = "data-xdmod-hash"
 PORT = 12
 LAYER_FILL = {"context": "#F5F5F5", "functional": "#DAE8FC", "logical": "#D5E8D4", "product": "#FFF2CC", None: "#FFFFFF"}
@@ -51,6 +54,7 @@ class ViewDef:
     layer: str | None
     qualified_name: str
     exposed: set = field(default_factory=set)
+    opts: dict = field(default_factory=dict)    # direction, show, compartments, between
 
 
 class ViewError(Exception):
@@ -66,10 +70,14 @@ def discover(m: Model) -> list[ViewDef]:
         meta = m.trace_meta(v, "XdTrace::XdView")
         if not meta:
             continue
+        opts = {k: str(meta[k]) for k in ("direction", "show", "compartments", "between") if meta.get(k)}
+        if opts.get("direction", "").endswith("!"):     # "RIGHT!": the layout may not turn the view
+            opts["direction"], opts["fixed"] = opts["direction"][:-1], "1"
         out.append(ViewDef(name=v.get("declaredName") or v.get("name") or v["@id"],
                            short_id=v.get("declaredShortName"), kind=str(meta.get("kind", "")),
                            root=meta.get("root"), layer=meta.get("layer"), qualified_name=v.get("qualifiedName", ""),
-                           exposed={x["@id"] for x in (v.get("exposedElement") or []) if isinstance(x, dict)}))
+                           exposed={x["@id"] for x in (v.get("exposedElement") or []) if isinstance(x, dict)},
+                           opts=opts))
     return sorted(out, key=lambda v: v.name)
 
 
@@ -115,7 +123,8 @@ def _ports(m: Model, u: dict) -> list[dict]:
             continue
         seen.add(pu["name"])
         conj = any((m.get(t) or {}).get("@type") == "ConjugatedPortDefinition" for t in pu.get("type", []) or [])
-        out.append({"id": f"{u['qualifiedName']}.{pu['name']}", "label": pu["name"], "side": "WEST" if conj else "EAST"})
+        out.append({"id": f"{u['qualifiedName']}.{pu['name']}", "label": pu["name"], "side": "WEST" if conj else "EAST",
+                    "kind": "PortUsage"})
     return sorted(out, key=lambda p: p["id"])
 
 
@@ -131,6 +140,12 @@ def graph(m: Model, v: ViewDef) -> dict:
         raise ViewError(f"view {v.name}: unknown kind {v.kind!r} (known: {', '.join(KNOWN)})")
     if v.kind not in IMPLEMENTED:
         raise ViewError(f"view {v.name}: kind {v.kind!r} is not implemented yet (iteration 1: {', '.join(IMPLEMENTED)})")
+    if v.kind in SYSML_KINDS:
+        from curatrix.views import sysml
+        try:
+            return sysml.build(m, v, v.opts)
+        except sysml.GraphError as e:
+            raise ViewError(f"view {v.name}: {e}") from None
     if not v.root:
         raise ViewError(f"view {v.name}: @XdView needs root")
     root = _find(m, v.root)
@@ -162,6 +177,17 @@ def graph(m: Model, v: ViewDef) -> dict:
             if len(ends) == 2:
                 cid = f"{rid}::connect({ends[0].split('::')[-1]}->{ends[1].split('::')[-1]})"
                 g["edges"].append({"id": cid, "src": ends[0], "dst": ends[1], "sysml_kind": c["@type"], "label": ""})
+        if v.opts.get("show"):     # only these ports, their connections, and the parts that have them
+            keep = {x.strip() for x in v.opts["show"].split(",") if x.strip()}
+            unknown = keep - {p["label"] for n in g["nodes"][1:] for p in n["ports"]}
+            if unknown:
+                raise ViewError(f"view {v.name}: show names ports that no part has: {', '.join(sorted(unknown))}")
+            for n in g["nodes"][1:]:
+                n["ports"] = [p for p in n["ports"] if p["label"] in keep]
+            pids = {p["id"] for n in g["nodes"] for p in n["ports"]}
+            g["edges"] = [e for e in g["edges"] if e["src"] in pids and e["dst"] in pids]
+            g["nodes"] = g["nodes"][:1] + [n for n in g["nodes"][1:] if n["ports"]]
+        _as_drawn(g, root, v)
     else:  # decomposition: definition -> part usages -> their definitions, as a tree
         def rec(p, pid, depth):
             if depth > 4:
@@ -179,8 +205,55 @@ def graph(m: Model, v: ViewDef) -> dict:
     return g
 
 
+def _as_drawn(g: dict, root: dict, v: ViewDef) -> None:
+    """Interconnection graphs are drawn by views/draw.py: a frame for the root, rounded part
+    usages with their ports, plain lines for connections and interfaces (SysML v2 notation)."""
+    from curatrix.views.sysml import header, keyword, node as snode, size_for
+    g["draw"] = True
+    g["direction"] = (v.opts.get("direction") or "RIGHT").upper()
+    first = g["nodes"][0]
+    vertical = g["direction"] in ("DOWN", "UP")
+    flip = {"WEST": "NORTH", "EAST": "SOUTH"} if g["direction"] == "DOWN" else {"WEST": "SOUTH", "EAST": "NORTH"}
+    # the root's own ports sit on the frame (a board with its connectors, XD-ADR-0130)
+    rports = [{**p, "side": flip[p["side"]]} for p in first["ports"]] if vertical else first["ports"]
+    title = header(root) if root.get("name") == first["label"] else f"«{keyword(root)}»\n{first['label']}"
+    frame = snode(first["id"], title, first["sysml_kind"], shape="frame",
+                  trace_id=first["trace_id"], ports=rports)
+    frame.update({k: first[k] for k in ("layer", "configs")})
+    if len(g["nodes"]) == 1:
+        # a def with only its own ports: a box that, with the legend below it, keeps the drawing
+        # between 16:9 and 9:16
+        n = max([sum(p["side"] == s for p in first["ports"]) for s in ("EAST", "WEST")] + [1])   # per side
+        pw = max([len(p["label"]) for p in first["ports"]] or [0]) * 6.6
+        frame["w"], frame["h"] = max(frame["w"], round(2 * pw + 240)), max(frame["h"], 40 * n + 80)
+    out = [frame]
+    for n in g["nodes"][1:]:
+        sides = {s: [p for p in n["ports"] if p["side"] == s] for s in ("WEST", "EAST")}
+        w, _ = size_for([n["label"]], min_w=150)
+        if vertical:   # conjugated ports on the entry side (top for DOWN), the others on the exit side
+            ports = [{**p, "side": flip[p["side"]]} for p in n["ports"]]
+            per = max([sum(len(p["label"]) * 6.6 + 24 for p in sides[s]) for s in sides] + [0])
+            w, h = round(max(w + 16, per + 16)), 64
+        else:
+            ports = n["ports"]
+            pw = {s: max([len(p["label"]) for p in sides[s]] or [0]) * 6.6 for s in sides}
+            w, h = round(w + 2 * max(pw.values()) + 16), max(56, 30 + 22 * max(len(sides["WEST"]), len(sides["EAST"])))
+        d = snode(n["id"], n["label"], n["sysml_kind"], parent=n["parent"], shape="usage", trace_id=n["trace_id"],
+                  w=w, h=h, ports=ports)
+        d.update({k: n[k] for k in ("layer", "configs")})
+        d["fill"] = LAYER_FILL.get(n["layer"] or None, "#FFFFFF")
+        out.append(d)
+    g["nodes"] = out
+    for e in g["edges"]:
+        e["rel"] = "flow" if e["sysml_kind"] == "FlowConnectionUsage" else "connection"
+
+
 # ------------------------------------------------------------------ layout (elkjs)
 def to_elk(g: dict) -> dict:
+    if g["kind"] in SYSML_KINDS or g.get("draw"):
+        from curatrix.views import draw
+        return draw.to_elk(g)
+
     def port(p):
         return {"id": p["id"], "width": PORT, "height": PORT,
                 "layoutOptions": {"elk.port.side": p["side"], "elk.port.borderOffset": "-6"}}
@@ -227,20 +300,87 @@ def run_elk(ws, elk_graph: dict) -> dict:
 
 
 def positions(laid: dict) -> dict[str, dict]:
-    """id -> absolute box (x, y, width, height) and edge bend points, from ELK root coordinates."""
-    out = {}
-
-    def rec(n):
-        for c in n.get("children", []) or []:
-            out[c["id"]] = {k: c.get(k, 0) for k in ("x", "y", "width", "height")}
-            for p in c.get("ports", []) or []:
-                out[p["id"]] = {k: p.get(k, 0) for k in ("x", "y", "width", "height")}
-            rec(c)
-        for e in n.get("edges", []) or []:
-            sec = (e.get("sections") or [{}])[0]
-            out[e["id"]] = {"bends": [(b["x"], b["y"]) for b in sec.get("bendPoints", []) or []]}
-    rec(laid)
+    """id -> absolute box (x, y, width, height); edges: route points (start, bends, end), bends
+    and label box, from ELK root coordinates."""
+    from curatrix.views import draw
+    out = draw.positions(laid)
+    for v in out.values():
+        if "points" in v:
+            v["bends"] = v["points"][1:-1]
     return out
+
+
+# ------------------------------------------------------------------ canvas ratio
+# A diagram must fit a page: its canvas is between 9:16 (portrait) and 16:9 (landscape), so
+# 4:3 and 16:9 pages in either orientation take it without large empty margins.
+RATIO_MIN, RATIO_MAX = 9 / 16, 16 / 9
+PERPENDICULAR = {"RIGHT": "DOWN", "LEFT": "UP", "DOWN": "RIGHT", "UP": "LEFT"}
+
+
+def canvas_ratio(mxfile_xml: str) -> float:
+    """Width / height of the drawing: top-level boxes (with the legend) and edge routes."""
+    root = ET.fromstring(mxfile_xml)
+    xs, ys = [], []
+    for obj in root.iter("object"):
+        c = obj.find("mxCell")
+        g = c.find("mxGeometry") if c is not None else None
+        if g is None:
+            continue
+        if c.get("vertex") == "1" and c.get("parent") == "1":
+            x, y = float(g.get("x", 0)), float(g.get("y", 0))
+            xs += [x, x + float(g.get("width", 0))]
+            ys += [y, y + float(g.get("height", 0))]
+        elif c.get("edge") == "1" and c.get("parent") == "1":
+            for pt in g.iter("mxPoint"):
+                if pt.get("as") != "offset":
+                    xs.append(float(pt.get("x", 0))); ys.append(float(pt.get("y", 0)))
+    if not xs:
+        return 1.0
+    return max(1.0, max(xs) - min(xs)) / max(1.0, max(ys) - min(ys))
+
+
+def ratio_error(r: float) -> float:
+    """0 inside [RATIO_MIN, RATIO_MAX], else how far outside (log scale)."""
+    import math
+    return max(0.0, math.log(r / RATIO_MAX), math.log(RATIO_MIN / r))
+
+
+def layout(ws, m: Model, v: ViewDef, log=lambda *_: None) -> tuple[dict, str, float]:
+    """Lay out a view so that its canvas ratio fits a page. Tries, in this order: the view as
+    declared; the perpendicular direction (unless the view fixes it with ``direction = "RIGHT!"``);
+    with layer wrapping; both. The legend goes below (wide or narrow) or to the right. The first try within
+    [RATIO_MIN, RATIO_MAX] wins, else the closest. Returns (graph, mxfile, ratio).
+    Only geometry changes between the tries: the content (CK-D3) is the same."""
+    fixed = bool(v.opts.get("fixed"))
+    tries = [{}]
+    turn = v.kind in ("general", "actionflow", "statetransition", "usecases", "interconnection") and not fixed
+    if turn:
+        other = PERPENDICULAR.get(graph(m, v).get("direction", "DOWN"), "RIGHT")
+        tries.append({"direction": other})
+    tries.append({"wrap": True})
+    if turn:
+        tries.append({"direction": other, "wrap": True})
+    best = None
+    for t in tries:
+        vv = v
+        if "direction" in t:
+            vv = ViewDef(**{**v.__dict__, "opts": {**v.opts, "direction": t["direction"]}})
+        g = graph(m, vv)
+        if t.get("wrap"):
+            g["wrap"] = True
+        pos = positions(run_elk(ws, to_elk(g)))
+        for legend in ("below", "below-narrow", "right"):
+            g["legend"] = legend
+            xml = to_mxfile(g, pos)
+            r = canvas_ratio(xml)
+            score = (ratio_error(r), tries.index(t), ("below", "below-narrow", "right").index(legend))
+            if best is None or score < best[0]:
+                best = (score, g, xml, r)
+            if ratio_error(r) == 0:
+                log(f"  {v.name}: {t or 'as declared'}, legend {legend}, ratio {r:.2f}")
+                return g, xml, r
+    log(f"  {v.name}: no layout within {RATIO_MIN:.2f}..{RATIO_MAX:.2f}; best ratio {best[3]:.2f}")
+    return best[1], best[2], best[3]
 
 
 # ------------------------------------------------------------------ drawio XML
@@ -287,6 +427,9 @@ def _cell(root, cid, label, style, parent, geom=None, edge=None, attrs=None):
 
 def to_mxfile(g: dict, pos: dict | None = None) -> str:
     """Normalized, uncompressed drawio XML for a view graph (pos=None: dummy geometry, content only)."""
+    if g["kind"] in SYSML_KINDS or g.get("draw"):
+        from curatrix.views import draw
+        return draw.to_mxfile(g, pos, normalize_xml)
     pos = pos or {}
     mx = ET.Element("mxfile", {"host": "xdmod-curatrix"})
     dia = ET.SubElement(mx, "diagram", {"id": "view:" + g["view"], "name": g["view"]})
@@ -428,7 +571,10 @@ def content_of(mxfile_xml: str) -> dict[str, tuple]:
         c = obj.find("mxCell")
         if c is None:
             continue
-        out[obj.get("id")] = (obj.get("label") or "", c.get("parent"), c.get("source"), c.get("target"),
+        label = obj.get("label") or ""
+        if obj.get("sysml_kind") == "legend":     # where the legend breaks its lines is layout
+            label = " ".join(label.split())
+        out[obj.get("id")] = (label, c.get("parent"), c.get("source"), c.get("target"),
                               obj.get("sysml_kind") or "", obj.get("link") or "", obj.get("trace_id") or "",
                               obj.get("layer") or "", obj.get("configs") or "")
     return out
@@ -470,7 +616,7 @@ def geometry_errors(mxfile_xml: str) -> list[str]:
             errs.append(f"{cid}: width/height must be > 0")
         if parent in boxes:
             pw, ph = boxes[parent][0][2], boxes[parent][0][3]
-            tol = PORT if kinds.get(cid) == "PortUsage" else 1
+            tol = PORT if kinds.get(cid) in ("PortUsage", "pin") else 1
             if x < -tol or y < -tol or x + w > pw + tol or y + h > ph + tol:
                 errs.append(f"{cid}: lies outside its parent {parent}")
     return errs

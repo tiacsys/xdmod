@@ -7,8 +7,8 @@ from pathlib import Path
 
 from curatrix import limits
 from curatrix.model import Model
-from curatrix.views import (ViewError, compose, discover, file_name, graph, normalize_xml, positions, read_svg,
-                            run_elk, to_elk, to_mxfile, HERE)
+from curatrix.views import (RATIO_MAX, RATIO_MIN, ViewError, compose, discover, file_name, graph, layout,
+                            normalize_xml, ratio_error, read_svg, HERE)
 
 
 def firefox() -> str:
@@ -47,10 +47,13 @@ def build(ws, model: Model, views_dir: Path, out_dir: Path, only: list[str] | No
         except ViewError as e:
             errors.append(str(e))
             continue
+        g, xml, r = layout(ws, model, v, log=log)
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / f"{v.name}.json").write_text(json.dumps(g, indent=1, sort_keys=True) + "\n")
-        laid = run_elk(ws, to_elk(g))
-        todo.append((v, to_mxfile(g, positions(laid))))
+        if ratio_error(r):    # still written, so that it can be looked at; the build fails
+            errors.append(f"view {v.name}: no layout fits a page (width/height {r:.2f}, allowed "
+                          f"{RATIO_MIN:.2f}..{RATIO_MAX:.2f}); split the view or change its direction")
+        todo.append((v, xml))
     if todo:
         svgs = render_batch(ws, [(v.name, x) for v, x in todo], out_dir / "_render")
         views_dir.mkdir(parents=True, exist_ok=True)

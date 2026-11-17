@@ -7,6 +7,12 @@ const elk = new ELK();
 let buf = "";
 process.stdin.on("data", (d) => (buf += d));
 process.stdin.on("end", async () => {
-  const out = await elk.layout(JSON.parse(buf));
-  process.stdout.write(JSON.stringify(out));
+  try {
+    const out = await elk.layout(JSON.parse(buf));
+    process.stdout.write(JSON.stringify(out));
+  } catch (e) {
+    // the bundled elkjs is minified: print the message, not a line of minified source
+    process.stderr.write(`elkjs: ${e && (e.message || e.toString())}\n`);
+    process.exit(1);
+  }
 });

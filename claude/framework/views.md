@@ -24,6 +24,9 @@ Status: **AGREED 2026-11-14** (review answers → D94–D97). Built on D2, D38, 
 | `interconnection` | parts with ports and connectors inside one part (IBD-like) | 10b–10d | ELK layered, ports on borders |
 | `allocation` | functional → logical → product (150 %) (`realizes`) | 10a–10d | ELK layered, three columns |
 | `variants` | per configuration: the variant chosen at each variation point, side by side (D102) | 10c–10d | ELK layered, one column per configuration |
+| `general` | SysML v2 general view: what `expose`/`filter` select; definitions, usages, specialization, composite and reference features, dependencies (added 2026-11-15 for the XDMOD self-model); `between` = only the relations across packages (one view per pair of domains) | any | ELK layered, `direction` option |
+| `actionflow` | SysML v2 action flow view: actions with pins, successions, flows, decide/merge/fork/join, start/done | any | ELK layered, model-order cycle breaking |
+| `statetransition` | SysML v2 state transition view: states, entry, transitions with trigger and guard | any | ELK layered |
 | `trace` | needs graph around one need (requirement ↔ model ↔ domain ↔ tests) | all | sphinx-needs `needflow` (graphviz); not drawio (question 2) |
 
 ## 3. Where views are defined
@@ -78,3 +81,12 @@ The committed `.drawio.svg` becomes the layout store. Content is regenerated, an
 2. **Trace graphs** use sphinx-needs `needflow` (graphviz). The user has a separate tool for analysing trace graphs interactively in the works (D95).
 3. **SVG in CI:** views are committed as **editable SVG** (`.drawio.svg`), rendered locally. CI checks content and freshness without a browser (D96).
 4. **drawio desktop** 31.7.0 is already installed as a system package (D97).
+
+## Page ratio (owner, 2026-11-15)
+
+Every drawing fits a 4:3 or 16:9 page in either orientation: width / height between 9:16 and
+16:9 (`views.RATIO_MIN`, `RATIO_MAX`; `views build` fails a view outside it).
+`views.layout` tries the declared direction, the perpendicular one, layer wrapping, both, and
+three legend placements, and keeps the first layout in range. The content (CK-D3) is the same
+for every try. A view with too much in it is split, not squeezed (one view per domain, or per
+pair of domains that have links).

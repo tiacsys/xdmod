@@ -192,7 +192,7 @@ Stages from `checks.md`. "own" = curatrix's graph check over all needs.json file
 | CK-E1 | the Pilot parses the model with 0 errors | `model` | local, pr, baseline | yes |
 | CK-D2 | `model.json` + `model-needs.json` match the model | `model` | local, pr, baseline | yes |
 | CK-E4 | conformance of a domain model to its upstream (inherited ports redefined, port defs specialize, name clashes solved, link type per kind pair) on the committed JSON, no Java | `model.upstream` | local, pr (warning) | yes |
-| CK-D3 | views: content, uncompressed, geometry sane, picture fresh | `views` | local, pr, baseline | yes (kinds `interconnection`, `decomposition`) |
+| CK-D3 | views: content, uncompressed, geometry sane, picture fresh | `views` | local, pr, baseline | yes (kinds `interconnection`, `decomposition`, `general`, `actionflow`, `statetransition`, `usecases`) |
 | CK-D4 | `cad-needs.json` matches KiCad/FreeCAD files (plain Python, so also in PR CI) | `cad` | local, pr, baseline | yes |
 | CK-F6 | KiCad projects by `.kicad_pro`: one per folder, named like the folder, root sheet of the same name; no KiCad project file outside the project folders (plain Python) | `cad.projects` | local, pr, baseline (warning) | yes |
 | CK-F7 | board defs of the EE model (`XdDomain::Pcba`) 1:1 with `pcba/` projects by `TraceID` = `EE-PCBA`, folder named after the def; external parts have none (plain Python, committed `model.json`) | `cad.projects` + `model` | local, pr, baseline (warning) | yes (`proto/` projects: not yet); cable defs 1:1 with `harness/<name>/<name>.yml` by `metadata.TraceID` = `EE-HAR` (with `cad.harnesses`) |
@@ -560,10 +560,12 @@ Rendering needs node + elkjs + Firefox + the pinned drawio viewer (local only).
 Working and tested: `env`, `run`, `limits`, `doctor`, `bootstrap`/`update` (their west and pip steps
 were not run against a real manifest yet), `launch` (env verified; GUIs not started in tests),
 `docs`, `check` with the catalogue above, `gen` (stubs, model, cad-needs, freecad-json incl.
-`--shape`, tombstones, cad-exports), `ids`, `views` (interconnection, decomposition), `variants list`, `pleml check`,
+`--shape`, tombstones, cad-exports), `ids`, `views` (interconnection, decomposition, and the SysML v2 standard views general,
+actionflow, statetransition, usecases: `views/sysml.py` builds the graph, `views/draw.py` the
+layout and drawio cells), `variants list`, `pleml check`,
 `needs-diff`, pre-commit hook, Sphinx extension, reusable CI workflow (first version, untested on GitHub).
 
-Stubbed / later: view kinds `context`, `usecases`, `allocation`, `variants`;
+Stubbed / later: view kinds `context`, `allocation`, `variants`;
 coverage per configuration (R2 per cell, `coverage-matrix`), `config-page`, `sysml-element`;
 variant rules V6, T1–T3 and `configs` derivation; FreeCAD TechDraw / GLB exports and the review
 report; CK-F* domain checks (repos add them as `commands`);
