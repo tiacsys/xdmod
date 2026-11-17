@@ -2,7 +2,8 @@
 
 Moved from the coordinator's working file `build/phase5-work/decision-log.md` (task 5.32), because
 `build/` is emptied before the owner's review. Cleaned up: one section per task, in task order; every
-decision and every item for the owner is kept. Open owner actions and decisions are collected in
+decision, merge record and item for the owner is kept, and facts are updated from main where they
+changed since (marked where the 5.32 agent added something). Open owner actions and decisions are collected in
 `phase5-owner-actions.md`; what moved to iteration 2 in `iteration2-list.md`.
 
 How Phase 5 ran: the owner asked (2026-11-17) to work through the blocks of Phase 5 one after
@@ -158,6 +159,9 @@ Built by a delegated agent, reviewed by another. Decisions taken there:
 
 ## 5.8 Agent material (xdmod#36)
 
+- **Merged (xdmod#36):** `xdmod/claude/CLAUDE.md`, the `/xd-review-pr` command with six checklists,
+  the skills xd-sysmod-stakeholders-and-needs, xd-ears-requirements and xd-issue-ids (plus
+  placeholder KiCad and FreeCAD skills), the workflow rules, and the demo script for block A.
 - Under D140 only the coordinator agent merges, when there is an agent review without open must-fix,
   green required checks, and for robarm-ee/robarm-me the posted local CAD check run.
 - Stacked PRs: measure a layer with `XD_BASE_REF=<parent>`; after the parent merges, retarget the
@@ -324,7 +328,8 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
   1:1 check). `proto/` projects are not 1:1-checked yet (no marker for prototype blocks).
 - `Port` holds the EE-PORT def ID; two ports of the same def on one board are matched by count.
   Connectors = references J, P, CN, or any symbol with a `Port` field.
-- Canary J1 drawn (Port = EE-PORT-0001, nets CANARY_A/B). KiCad pitfall: a wire end inside another
+- Canary J1 drawn (Port = EE-PORT-0001, nets CANARY_A/B); its footprint on the PCB was open and was
+  placed in 5.19 (the DRC errors J1.1-R1.1 show it). KiCad pitfall: a wire end inside another
   wire needs a junction.
 - **Open:** buses, pin alternate names. User KiCad config untouched (33 entries, same timestamps).
 
@@ -351,7 +356,11 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
   clones untested.
 - **Rule-4 incident 2 (for the owner):** a review agent ran `kicad-cli --version` once directly; that
   alone rewrote `~/.config/kicad/10.0/kicad_common.json` at 06:29:22 (2598 to 2625 bytes). Likely the
-  cause of the 02:30:43 write too. Led to the shims and the hard rule (owner decision, XD-ADR-0145).
+  cause of the 02:30:43 write too. The proposal then: a `kicad-cli` / `FreeCADCmd` shim in
+  `.venv/bin` that sets the workspace config and calls the real tool, `curatrix doctor` failing when
+  `.venv/bin` is not first on `PATH` in agent sessions, and a hard line in xdmod `claude/CLAUDE.md`
+  and the review checklist. It led to the shims and the hard rule (owner decision, XD-ADR-0145);
+  doctor warns rather than fails.
   The owner may want to check the two changes to `kicad_common.json`.
 
 ## 5.21 Board document (xdmod#55, robarm-ee#14)
@@ -400,7 +409,7 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
   model.json grew about 5000 lines (SI unit expressions).
 - Tool shims merged (xdmod#52, XD-ADR-0145) and installed in the main workspace (13 shims). Findings:
   (1) `curatrix update` had to run twice after a curatrix change (the running process keeps the old
-  code when `west update` moves xdmod; fixed by the re-exec of `fix/update-manifest`, task 5.32).
+  code when `west update` moves xdmod; fix proposed in xdmod#64, open at the time of writing).
   (2) **For the owner:** agent sessions (Claude Code's shell) do not have `.venv/bin` first on
   `PATH`, so a bare `kicad-cli` still reaches `/usr/bin`; doctor warns. Options: a workspace
   `.claude/settings.json` env `PATH` entry (needs the owner's OK, it changes how every session here
@@ -419,7 +428,8 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
 - Print profile `print/<name>.ini` copied next to 3MF/STL; emboss text `vX.Y.Z` (+`P` for a preview);
   DejaVu Sans Mono Bold vendored in xdmod with its licence; a run is a preview when `parts/`, `lib/`
   or `print/` have changes.
-- 5.26 review fixes: CK-F19 renumbered to XD-CHECK-0056 / XD-RULE-0063. **Open nits:** versioned
+- 5.26 review fixes (xdmod#57 at d804d76, robarm-me#10 at 3d0d71c): CK-F19 renumbered to
+  XD-CHECK-0056 / XD-RULE-0063. **Open nits:** versioned
   output file names; `MaxWidth` 16 on the canary part (needs a FreeCAD edit).
 - **For the owner:** tag `canary-assembly/v0.1.0` proposed. **Configs on the link (not the part)**
   kept as the FreeCAD spike found; the owner to confirm.
@@ -441,7 +451,8 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
   units for Mass/Density.
 - **Open:** findings of shared parts show in every assembly document; the board line and the
   sub-assembly chapters are only tested by fixtures; CK-H7 warned (1331 lines / 19 files).
-- **For the owner:** sub-assembly chapters print fixed sentences for drawings, exploded view,
+- **For the owner (question added by the 5.32 agent, from the 5.27 agent's report and the review of
+  xdmod#61; not in the decision log):** sub-assembly chapters print fixed sentences for drawings, exploded view,
   renderings and parameters (only the top-level assembly has them in iteration 1); confirm or ask for
   more.
 
@@ -484,7 +495,8 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
   checks CK-F20 (library files vs board tags) and CK-F21 ("newer board version" note in robarm-me).
 - STEP read as one shape (colours lost). **XD-ADR-0139 stays proposed** (owner to accept). Demo only
   with a local, never-pushed tag; the real canary has no tag (owner-only).
-- IDs of #58 collided with #56/#57 and were renumbered at merge time.
+- IDs of #58 (XD-CHECK-0052/53, XD-RULE-0061/62) collided with #56/#57 and were renumbered at merge
+  time (the first of the three ledger collisions; merge order #56, #57, then #58).
 
 ## 5.30 ME renderings (xdmod#60) and Blender (xdmod#62)
 
@@ -493,8 +505,8 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
   `SoOffscreenRenderer` has no GLX context). **Go:** FreeCAD tessellation drawn into a numpy z-buffer
   with visible edges; Qt writes the text and the PNG. Note `claude/notes/me-renderings-spike.md`.
 - Own decisions: the side view is `right` (as in `views/` and the drawing); colours by BOM kind, not
-  from `GuiDocument.xml`; numpy (a FreeCAD dependency) inside FreeCADCmd. **XD-ADR-0147 proposed**
-  (owner to accept). User dirs unchanged.
+  from `GuiDocument.xml`; numpy (a FreeCAD dependency) inside FreeCADCmd. **XD-ADR-0147 proposed**.
+  **For the owner:** accept XD-ADR-0147. User dirs unchanged.
 - Owner decision (reverses "no Blender"): Blender 5.2.3 (system package) through its executable, no
   bpy wheel. Isolation: `BLENDER_USER_CONFIG/SCRIPTS/RESOURCES`, XDG and `TMPDIR` under
   `.xdmod/blender/`, `--factory-startup --offline-mode --disable-autoexec`, a curatrix wrapper and a
@@ -505,7 +517,9 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
   in FreeCADCmd); Cycles CPU, 32 samples, seed 0, no denoiser, no shadows; orthographic iso; marking
   with blf at the same scale as #60; a failing Blender stops with a hint. Canary: 33 s with Blender,
   6 s without. Review fixes: the shim keeps `PATH`, `run -- blender` gets the blender limits, threads
-  capped at half the cores. **XD-ADR-0148 proposed** (owner to accept).
+  capped at half the cores. **XD-ADR-0148 proposed**.
+  **For the owner:** accept XD-ADR-0148.
+- Order: xdmod#60 (the fallback renderer) merged first, the Blender PR #62 was stacked on it.
 - **Open:** overlapping faces mix in Blender. Do not run `curatrix update` from a main older than #62
   (its `write_shims` deletes the Blender shim it did not write).
 
@@ -522,15 +536,32 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
 ## 5.32 Manual, fixture run, iteration 2 list
 
 - Manual how-tos for the EE and ME roles (xdmod `docs/phase5-manual`), these records
-  (`docs/phase5-records`), and the `curatrix update` fixes (`fix/update-manifest`).
+  (`docs/phase5-records`), and the `curatrix update` fixes (xdmod#64, `fix/update-manifest`).
 - The recorded local fixture run is in `phase5-fixture-run.md`; the draft iteration 2 list in
   `iteration2-list.md` (to be agreed by the owner, exit criterion 6).
 - The Phase 5 review by another agent (Fable) follows.
 
+## Merges and pin bumps (merge records)
+
+- robarm-manifest#25 (pin bump, green full set): the manifest pinned xdmod 2844966 and the canary in
+  every repo; the main workspace moved to these pins with `curatrix update`.
+- Task 5.8 merged as xdmod#36 (see 5.8).
+- Task 5.10 complete: xdmod#40, #42, #43, robarm-sw#7, #9 merged; pins bumped by robarm-manifest#26,
+  #27, #28.
+- Task 5.15 merged: xdmod#45, robarm-ee#7, pin bump robarm-manifest#29.
+- Task 5.16 merged: xdmod#46, robarm-ee#8, pin bump robarm-manifest#30.
+- Tasks 5.17/5.18 merged: xdmod#47, #48, robarm-ee#9, #10; pin bump robarm-manifest#31 and the next.
+- Tasks 5.25/5.26: merge order xdmod#56, #57 (d804d76), then #58 (renumbered); robarm-me#10 at 3d0d71c.
+- Task 5.28: merge order xdmod#59, manifest bump, robarm-syseng#10, robarm-me#12, robarm-ee#15.
+- Task 5.29: robarm-manifest#39 (the new repo in the manifest), xdmod#58, robarm-freecad-pcba#1,
+  robarm-me#11.
+- Task 5.30: xdmod#60, then the stacked Blender PR xdmod#62.
+
 ## Workspace and process notes
 
 - **Main of xdmod was red for about 30 minutes:** #33 and #34 were each green but were merged back to
-  back without a combined run. Lesson: rebase and re-run CI before merging the second of two PRs
+  back without a combined run: the planted CK-H4 case of #33 used a commit message that the new
+  agent-commit marker of #34 no longer counted. Fixed in #35. Lesson: rebase and re-run CI before merging the second of two PRs
   that touch the same check.
 - **Canary merge order:** robarm-ee/me/sw merged before robarm-syseng#8, so their mains were red for
   a few minutes (their links point to syseng needs). Upstream first next time.
@@ -538,8 +569,9 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
   not #35). The merge loop did not look at non-required checks; required ones are enforced by the
   ruleset.
 - **Spikes 5.11-5.13 ran in parallel** with block B (reports only, independent of the open PRs);
-  every KiCad/FreeCAD run set the workspace-local config explicitly and proved `~/.config`
-  untouched.
+  every agent was told to set the workspace-local config for every KiCad/FreeCAD run explicitly
+  (the installed curatrix then predated xdmod#35) and to keep and report `~/.config` untouched; the
+  reports showed it unchanged (the 02:30:43 write stays unexplained, see 5.12).
 - **ID collisions between parallel xdmod PRs** happened three times (XD-CHECK/XD-RULE from the
   shared ledger). Practice: issue IDs (`ids fix`) right before pushing, merge the issuing PR first.
   Idea for iteration 2: a check that warns when a PR's new ledger numbers are already on main.
@@ -552,11 +584,11 @@ ADRs XD-ADR-0126 to XD-ADR-0144. Own decisions of the writing agent:
   message once (doctor showed no FAIL; log `build/phase5-work/update.log`, now gone).
 - **`curatrix update` did not move the manifest repo:** after bumps merged on GitHub, the local
   robarm-manifest `main` stayed 7 commits behind and `west update -k` checked out stale pins (xdmod
-  went back to 6f566e8). Fixed by hand, then in curatrix (`fix/update-manifest`, task 5.32): update
-  fetches and fast-forwards the manifest repo when it is on its default branch and clean, and warns
-  otherwise. The owner's from-scratch run would have hit this.
+  went back to 6f566e8). Fixed by hand (`fetch` + `merge --ff-only`). Fix proposed in xdmod#64
+  (`fix/update-manifest`, task 5.32, open at the time of writing): update fetches and fast-forwards
+  the manifest repo when it is on its default branch and clean, and warns otherwise. The owner's from-scratch run would have hit this.
 - **`curatrix update` ran old code after west moved xdmod** and crashed reading the new `tools.yaml`
-  (`pinned:`); a second run worked. Fixed in `fix/update-manifest`: update re-executes itself after
-  the west step when xdmod's HEAD changed.
+  (`pinned:`); a second run worked. Fix proposed in xdmod#64 (open at the time of writing): update
+  re-executes itself after the west step when xdmod's HEAD changed.
 - The main checkout of robarm-syseng was behind the manifest pin for a while (`curatrix update` once
   the agents were idle).

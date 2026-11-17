@@ -15,7 +15,7 @@ the main workspace at xdmod 83578e4 (= `origin/main`), with KiCad, FreeCAD, the 
 Firefox through curatrix.
 
 "passed" means the test passed: the check reported its planted error (and, where the test has one,
-the clean case stayed clean). The `control` row is the clean strict build of the sample project.
+the clean case stayed clean). Exception: CK-F18, whose test asserts a skip (see below). The `control` row is the clean strict build of the sample project.
 
 User configuration: no file under `~/.config/kicad`, `~/.config/FreeCAD`, `~/.local/share/kicad`,
 `~/.cache/kicad` or `~/.config/blender` changed during the run (the newest, `kicad_common.json`, is
@@ -48,6 +48,7 @@ built-in checks:
 | CK-F2 | devicetree vs the EE board model: not built (moved behind 5.15, then to iteration 2) |
 | CK-F5 (a, b, c) | firmware build, Twister, preview TR needs: repo commands of robarm-sw (`checks.yaml` `commands`), not built-in; their failure is the command's exit code, no planted error in the xdmod fixture |
 | CK-F13 | variant names and overrides across the EE model and KiCad files: not built (iteration 2) |
+| CK-F18 | board inside its space budget: the check exists, but it is always a skip with its reason until the budget is checked, so its planted test `test_f18_space_budget` asserts the skip, not a finding (iteration 2 list, A5) |
 
 ## The record
 
