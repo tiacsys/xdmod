@@ -171,6 +171,22 @@ The principles of the trace model and the rules on the trace graph.
 
    Every attribute with a value of a part or port usage of a top-level assembly def, or of the usage's def, is a parameter with the alias ``<usage>_<attribute>`` in the spreadsheet ``Params`` of the assembly's ``<name>-skeleton.FCStd``; at most ten per assembly. ``curatrix gen freecad-params`` writes the values; the master sketch and the parts take their dimensions from ``Params``. Each port with a placement (``x``, ``y``, ``z``, ``yaw``, ``pitch``, ``roll`` of ``XdDomain::MechanicalPort``) has one LCS with the property ``Port`` = its ``ME-PORT``, at that placement in the assembly. Values agree within the default tolerance of their kind (lengths 0.001 mm, angles 0.001 deg) or the one of ``@XdDomain::ModelMatchTolerance`` on the attribute, in the attribute's own unit: the agreement of the number in the CAD file with the model, not a manufacturing tolerance. ``Params`` holds no alias the model does not know.
 
+.. xd-rule:: FreeCAD documents build
+   :id: XD-RULE-0061
+   :tags: trace, cad
+   :status: valid
+   :decided_by: XD-ADR-0126, XD-ADR-0137
+
+   Every FreeCAD document of an ME repo recomputes in ``FreeCADCmd`` without an invalid object (the exploded-view objects of the Assembly workbench, whose proxy cannot load there, are left out), and every object with an ``ME-PART`` ``TraceID`` is valid solids: a valid shape, at least one solid, every solid with a volume, no face or shell outside the solids. Anything else is an error that passes only when accepted in ``assemblies/<name>/accepted.yaml`` under the acceptor rule of :need:`XD-ADR-0126`; the items are ``<document stem>#<object>``.
+
+.. xd-rule:: Assemblies have no unaccepted overlaps
+   :id: XD-RULE-0062
+   :tags: trace, cad
+   :status: valid
+   :decided_by: XD-ADR-0126, XD-ADR-0137
+
+   The direct children of an assembly (the links in the group of the object with the ``ME-ASM`` ``TraceID``) do not overlap, per variant (a link with ``Configs`` is there only in the configurations it names): a common volume above 0.001 mm³ is an error, above 0.1 mm³ for parts joined by an assembly joint, which may touch. The skeleton link and library fasteners (an object in ``lib/`` with a ``Standard`` property) are left out. Other overlaps pass only when accepted in ``assemblies/<name>/accepted.yaml`` (rule ``overlap``, items the two link names). Each board model in an assembly stays inside its ``SYS-IF`` space budget, in the form the co-design task gives it.
+
 .. xd-rule:: Connectors name their port and follow its pin map
    :id: XD-RULE-0050
    :tags: trace, cad

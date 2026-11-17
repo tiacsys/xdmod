@@ -12,6 +12,9 @@ XD-ADR-0144; checks CK-F4a, CK-F4b, CK-F8, CK-F9).
   needs an accepted entry ``{check: CK-F8, rule: <rule>}``.
 * **CK-F9**: ``accepted.yaml`` is well formed, and every entry and KiCad exclusion is either
   accepted or reported as a proposal.
+* The ME checks (``mechecks``: CK-F4c, CK-F16, CK-F17, CK-F18, task 5.25) use the same file in
+  ``assemblies/<name>/accepted.yaml``, the same entries (items: part names) and the same acceptor
+  rule; CK-F9 covers those files too.
 
 Accepted (XD-ADR-0126): the newest commit that wrote one of the entry's own lines (``git blame``),
 or the one that added the exclusion to the ``.kicad_pro`` (``git log -S``), carries an
@@ -30,7 +33,7 @@ owner's acceptance into one commit with the agent trailer, so every acceptance b
 
     version: 1
     accepted:
-      - check: CK-F4b              # CK-F4a | CK-F4b | CK-F8
+      - check: CK-F4b              # CK-F4a | CK-F4b | CK-F8; ME: CK-F4c | CK-F16 | CK-F17 | CK-F18
         rule: unconnected_items    # the KiCad rule key (CK-F8: the severity key or dru:<rule name>)
         items: all                 # or a list of designators: [J1, R1]
         reason: routing is not done in iteration 1 (XD-ADR-0144)
@@ -50,7 +53,7 @@ from pathlib import Path
 import yaml
 
 ACCEPTED = "accepted.yaml"
-ENTRY_CHECKS = ("CK-F4a", "CK-F4b", "CK-F8")
+ENTRY_CHECKS = ("CK-F4a", "CK-F4b", "CK-F8", "CK-F4c", "CK-F16", "CK-F17", "CK-F18")   # EE, then ME (mechecks)
 ENTRY_KEYS = {"check", "rule", "items", "reason"}
 REF = re.compile(r"\b(?:of|[Ss]ymbol|[Ff]ootprint)\s+([A-Za-z_#]*[A-Za-z][0-9]+[A-Za-z0-9_]*)\b")
 UNCOMMITTED = "0" * 40
@@ -59,17 +62,20 @@ UNCOMMITTED = "0" * 40
 # ------------------------------------------------------------------ reports
 @dataclass
 class Finding:
-    check: str                   # CK-F4a | CK-F4b
-    rule: str                    # KiCad's type key
+    check: str                   # CK-F4a | CK-F4b; ME (mechecks): CK-F4c | CK-F16 | CK-F17 | CK-F18
+    rule: str                    # KiCad's type key; ME: recompute | solid | overlap | space-budget
     severity: str                # error | warning | "" (a rule switched off)
     description: str
     items: list[str]
     uuids: list[str]
     excluded: bool = False
     comment: str = ""
+    names: list[str] = field(default_factory=list)   # ME: the part names an entry's items name
 
     @property
     def refs(self) -> list[str]:
+        if self.names:
+            return sorted(set(self.names))
         return sorted({m.group(1) for i in self.items for m in REF.finditer(i)})
 
     def line(self) -> str:
@@ -152,10 +158,10 @@ def load_entries(path: Path) -> tuple[list[Entry], list[str]]:
         if e.get("check") not in ENTRY_CHECKS:
             bad.append(f"check must be one of {', '.join(ENTRY_CHECKS)}")
         if not isinstance(e.get("rule"), str) or not e.get("rule"):
-            bad.append("rule (the KiCad rule key) is missing")
+            bad.append("rule (the KiCad rule key, or the ME rule) is missing")
         its = e.get("items")
         if not (its == "all" or (isinstance(its, list) and its and all(isinstance(x, str) and x for x in its))):
-            bad.append("items must be `all` or a list of designators (never positions)")
+            bad.append("items must be `all` or a list of designators or part names (never positions)")
         if not isinstance(e.get("reason"), str) or not e["reason"].strip():
             bad.append("reason is missing")
         if bad:
@@ -416,7 +422,13 @@ def severity_diffs(pro: Path, template: Path) -> list[tuple[str, str]]:
 
 # ------------------------------------------------------------------ per project
 def project_entries(cfg, pr, acc: Acceptors) -> tuple[list[Entry], list[str]]:
-    path = pr.folder / ACCEPTED
+    return folder_entries(cfg, pr.folder, acc)
+
+
+def folder_entries(cfg, folder: Path, acc: Acceptors) -> tuple[list[Entry], list[str]]:
+    """The entries of ``<folder>/accepted.yaml`` with their acceptance (a KiCad project folder or an
+    ME assembly folder, XD-ADR-0126), and format findings."""
+    path = folder / ACCEPTED
     entries, errs = load_entries(path)
     rel = str(path.resolve().relative_to(cfg.repo.resolve()))
     for e in entries:
