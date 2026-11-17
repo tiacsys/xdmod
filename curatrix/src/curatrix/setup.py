@@ -226,6 +226,7 @@ FREECAD_USER_CFG = """<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
       <FCParamGroup Name="Preferences">
         <FCParamGroup Name="Document">
           <FCInt Name="CompressionLevel" Value="0"/>
+          <FCBool Name="CreateBackupFiles" Value="0"/>
         </FCParamGroup>
       </FCParamGroup>
     </FCParamGroup>
@@ -242,7 +243,8 @@ def freecad_dirs(ws: Workspace) -> dict[str, Path]:
 
 def ensure_freecad_config(ws: Workspace) -> Path:
     """FreeCAD 1.1 reads its user config from $XDG_CONFIG_HOME/FreeCAD/v1-1/user.cfg (verified with
-    1.1.4); the launcher points XDG_* into <ws>/.xdmod/freecad and keeps CompressionLevel = 0 (D63)."""
+    1.1.4); the launcher points XDG_* into <ws>/.xdmod/freecad and keeps CompressionLevel = 0 (D63) and
+    CreateBackupFiles = false (no .FCBak files, FreeCAD spike)."""
     d = freecad_dirs(ws)
     for p in d.values():
         p.mkdir(parents=True, exist_ok=True)
@@ -262,14 +264,18 @@ def ensure_freecad_config(ws: Workspace) -> Path:
     g = root
     for name in ("Root", "BaseApp", "Preferences", "Document"):
         g = group(g, name)
-    cl = next((i for i in g.findall("FCInt") if i.get("Name") == "CompressionLevel"), None)
-    if cl is None:
-        ET.SubElement(g, "FCInt", {"Name": "CompressionLevel", "Value": "0"})
-    elif cl.get("Value") == "0":
-        return cfg
-    else:
-        cl.set("Value", "0")
-    tree.write(cfg, encoding="UTF-8", xml_declaration=True)
+    changed = False
+    # uncompressed saves (D63); no <name>.<time>.FCBak next to every saved file (FreeCAD spike)
+    for tag, name in (("FCInt", "CompressionLevel"), ("FCBool", "CreateBackupFiles")):
+        el = next((i for i in g.findall(tag) if i.get("Name") == name), None)
+        if el is None:
+            ET.SubElement(g, tag, {"Name": name, "Value": "0"})
+            changed = True
+        elif el.get("Value") != "0":
+            el.set("Value", "0")
+            changed = True
+    if changed:
+        tree.write(cfg, encoding="UTF-8", xml_declaration=True)
     return cfg
 
 

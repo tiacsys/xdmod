@@ -32,7 +32,9 @@ from curatrix import ids as idmod
 # kinds the domain model owns (XD-ADR-0128): a CAD file names them, it does not make the need
 MODEL_OWNED = ("EE-PCBA", "EE-PORT", "EE-HAR", "ME-ASM", "ME-PORT")
 LINK_FIELDS = {"Realizes": "realizes", "Satisfies": "satisfies", "Conforms": "conforms", "PartOf": "part_of"}
-TRACE_FIELDS = ("TraceID", *LINK_FIELDS, "Status", "Configs")
+TRACE_FIELDS = ("TraceID", *LINK_FIELDS, "Status", "Configs", "Port")
+# `Port` on a FreeCAD LCS (or a KiCad connector) names the ME-PORT / EE-PORT of the domain model
+# it implements: a reference, never a need (XD-ADR-0128, XD-ADR-0133)
 
 
 def _list(v: str | None) -> list[str]:
@@ -243,6 +245,50 @@ def _prop_value(p: ET.Element):
     return None
 
 
+def _xlinks(p: ET.Element) -> list[dict]:
+    """Targets of a link property (``App::PropertyLink*``, ``App::PropertyXLink*``) as
+    ``{file, object, sub}``: ``file`` is relative to the linking document ("" = the same
+    document); the ``stamp`` (the other file's save time) is noise and left out."""
+    out = []
+    for x in p.iter():
+        if x.tag == "XLink" and x.get("name"):
+            e = {"file": x.get("file") or "", "object": x.get("name")}
+            subs = [s.get("value") for s in x.findall("Sub") if s.get("value")] or \
+                   ([x.get("sub")] if x.get("sub") else [])
+            if subs:
+                e["sub"] = subs
+            out.append(e)
+        elif x.tag == "Link" and (x.get("value") or x.get("obj")):
+            # PropertyLink(List) writes value=, PropertyLinkSubList obj= and sub=
+            e = {"file": "", "object": x.get("value") or x.get("obj")}
+            if x.get("sub"):
+                e["sub"] = [x.get("sub")]
+            out.append(e)
+        elif x.tag == "LinkSub" and x.get("value"):
+            e = {"file": "", "object": x.get("value")}
+            subs = [s.get("value") for s in x.findall("Sub") if s.get("value")]
+            if subs:
+                e["sub"] = subs
+            out.append(e)
+    return out
+
+
+def _expressions(p: ET.Element) -> dict[str, str]:
+    return {e.get("path"): e.get("expression") for e in p.iter("Expression") if e.get("path")}
+
+
+def _constraints(p: ET.Element) -> dict[str, float]:
+    """Named sketch constraints ``{name: value}`` (dimensions of a master sketch)."""
+    out = {}
+    for c in p.iter("Constrain"):
+        if c.get("Name"):
+            try:
+                out[c.get("Name")] = round(float(c.get("Value")), 6)
+            except (TypeError, ValueError):
+                out[c.get("Name")] = c.get("Value")
+    return out
+
+
 def freecad_document(fcstd: Path) -> ET.Element:
     with zipfile.ZipFile(fcstd) as z:
         return ET.fromstring(z.read("Document.xml"))
@@ -260,9 +306,19 @@ def freecad_trace(fcstd: Path, source: str) -> dict:
     for o in (data if data is not None else []):
         name = o.get("name")
         props = {}
+        links, exprs, constraints = {}, {}, {}
         for p in o.iter("Property"):
             pname = p.get("name")
-            props[pname] = (p.get("type"), _prop_value(p), p.get("group"))
+            ptype = p.get("type") or ""
+            props[pname] = (ptype, _prop_value(p), p.get("group"))
+            if ptype.startswith(("App::PropertyLink", "App::PropertyXLink")):
+                tg = _xlinks(p)
+                if tg:
+                    links[pname] = tg
+            elif pname == "ExpressionEngine":
+                exprs = _expressions(p)
+            elif pname == "Constraints" and ptype == "Sketcher::PropertyConstraintList":
+                constraints = _constraints(p)
         t = types.get(name, "")
         if t == "Spreadsheet::Sheet":
             sheets[props.get("Label", (None, name))[1] or name] = props.get("cells", (None, {}))[1] or {}
@@ -273,6 +329,12 @@ def freecad_trace(fcstd: Path, source: str) -> dict:
             entry["trace"] = trace
         if "Placement" in props:
             entry["placement"] = props["Placement"][1]
+        if links:
+            entry["links"] = links
+        if exprs:
+            entry["expressions"] = exprs
+        if constraints:
+            entry["constraints"] = constraints
         values = {}
         for k, (ptype, v, _grp) in sorted(props.items()):
             if k in TRACE_FIELDS or k in ("Label", "Label2", "Placement", "Visibility") or v is None:
@@ -301,6 +363,12 @@ def freecad_needs(fcstd: Path, source: str, refs: list | None = None) -> tuple[d
     needs, findings = {}, []
     for name, o in sem["objects"].items():
         tr = o.get("trace") or {}
+        port = str(tr.get("Port") or "").strip()
+        if port and port != "-":
+            if idmod.kind_of(port) != "ME-PORT":
+                findings.append(f"{source}: {name}: Port {port!r} is not an ME-PORT ID")
+            elif refs is not None:
+                refs.append((port, source))
         n, f = trace_need({k: str(v) for k, v in tr.items()}, o.get("label") or name,
                           f"FreeCAD object ``{name}`` ({o.get('type')}) in ``{source}``.", source, refs)
         findings += f

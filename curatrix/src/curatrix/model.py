@@ -55,6 +55,9 @@ LINK_BY_KINDS = {
     ("EE-PORT", "SYS-IF"): "conforms",
     ("ME-PORT", "SYS-IF"): "conforms",
 }
+# kinds the CAD files own (XD-ADR-0128): a def with such a short name in a domain model is a
+# reference to the CAD need (a part the model counts, CK-F15), not a need of the model
+CAD_OWNED_KINDS = ("EE-CMP", "ME-PART")
 # a port need is `part_of` the domain defs of these kinds that own a port typed by it (XD-ADR-0133)
 PART_OF_KINDS = {"EE-PORT": ("EE-PCBA",), "ME-PORT": ("ME-ASM",)}
 # a harness `connects` the port defs that type the ports (ends) of its cable def (XD-ADR-0133)
@@ -380,7 +383,7 @@ def to_needs(m: Model, project: str = "model", source_of: dict[str, str] | None 
             if re.match(rf"^(?:{'|'.join(idmod.DOMAINS)})-[A-Z]+-", sid):
                 findings.append(f"{m.qn(p)}: short name {sid!r} is not a valid ID")
             continue
-        if kind in idmod.RESERVED_KINDS:
+        if kind in idmod.RESERVED_KINDS or kind in CAD_OWNED_KINDS:
             continue
         if kind not in MODEL_KINDS:
             findings.append(f"{m.qn(p)}: kind {kind} cannot be generated from the model (only {', '.join(MODEL_KINDS)})")

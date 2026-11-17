@@ -236,6 +236,31 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    runs reliably, or falls back to view SVGs. Both run through curatrix with the workspace-local
    configuration. Based on the FreeCAD spike (``claude/notes/freecad-spike.md``).
 
+.. xd-adr:: FreeCAD assemblies: skeleton file name, parameter aliases, open order
+   :id: XD-ADR-0146
+   :date: 2026-11-17
+   :decision_status: proposed
+   :status: valid
+   :refines: XD-ADR-0137
+
+   Proposed by the agent of tasks 5.23 and 5.24, for the owner to accept or change; it states what
+   the code of these tasks does where it differs from :need:`XD-ADR-0137`.
+
+   - **The skeleton is** ``assemblies/<name>/<name>-skeleton.FCStd``, not ``skeleton.FCStd``.
+     FreeCAD names a document after its file, and a cross-document expression names that document
+     (``canary_assembly_skeleton#MasterSketch.Constraints.partLength``). With one file name for every
+     skeleton, two assemblies opened together clash, and a later rename touches every part
+     expression.
+   - **The parameter aliases are** ``<usage>_<attribute>``: the usage is a port or a part usage of the
+     top-level assembly def (``mount_x``, ``canaryPart_length``), so a main dimension of a part can be
+     a parameter too; :need:`XD-ADR-0137` said ``<port>_<attribute>``.
+   - **The writer opens the skeleton first, then the top document.** The top document links only the
+     part ``Skeleton`` of the skeleton, so through the top FreeCAD loads the skeleton only partially,
+     without ``Params`` (found in task 5.24). The skeleton depends on no other document; the parts
+     then load fully through the top. The writer stops when any document is still partial.
+   - Parts that take values from a skeleton belong to that assembly and sit in its folder
+     (``assemblies/<name>/parts/``); a shared part in ``parts/`` takes no value from a skeleton.
+
 .. xd-adr:: A board library repo for ME
    :id: XD-ADR-0139
    :date: 2026-11-17

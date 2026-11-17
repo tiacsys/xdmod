@@ -372,11 +372,14 @@ def cmd_gen(a):
 
 # ------------------------------------------------------------------ new
 def cmd_new(a):
-    from curatrix import newpcba
+    from curatrix import newasm, newpcba
     ws = _ws()
     repo = _repo(ws, a.repo)
     try:
-        newpcba.new_pcba(ws, repo, _cfg(ws, repo), a.element, kicad=not a.no_kicad)
+        if a.what == "asm":
+            newasm.new_asm(ws, repo, _cfg(ws, repo), a.element, freecad=not a.no_freecad)
+        else:
+            newpcba.new_pcba(ws, repo, _cfg(ws, repo), a.element, kicad=not a.no_kicad)
     except newpcba.NewError as e:
         print(f"curatrix new {a.what}: {e}", file=sys.stderr)
         return 1
@@ -602,11 +605,15 @@ def parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_gen)
 
     s = sub.add_parser("new", help="scaffolds: `new pcba <BoardDef>` makes the KiCad project, jobset, library tables "
-                                   "and the pcba-<name> document of a board def of the EE model")
-    s.add_argument("what", choices=["pcba"])
-    s.add_argument("element", help="the board def (name, qualified name or EE-PCBA ID) in the repo's model.json")
-    s.add_argument("--repo", help="the EE repo (name or path; default: the repo of the current folder)")
-    s.add_argument("--no-kicad", action="store_true", help="do not let KiCad save the new files (tests)")
+                                   "and the pcba-<name> document of a board def of the EE model; `new asm "
+                                   "<AssemblyDef>` the FreeCAD top document, skeleton.FCStd and the asm-<name> "
+                                   "document of an assembly def of the ME model")
+    s.add_argument("what", choices=["pcba", "asm"])
+    s.add_argument("element", help="the board or assembly def (name, qualified name or EE-PCBA / ME-ASM ID) in the "
+                                   "repo's model.json")
+    s.add_argument("--repo", help="the EE or ME repo (name or path; default: the repo of the current folder)")
+    s.add_argument("--no-kicad", action="store_true", help="pcba: do not let KiCad save the new files (tests)")
+    s.add_argument("--no-freecad", action="store_true", help="asm: make only the folder and the document (tests)")
     s.set_defaults(func=cmd_new)
 
     s = sub.add_parser("cam", help="EE design output into build/<area>/cam/<name>/<version>/: a pcba/ project (copy, "

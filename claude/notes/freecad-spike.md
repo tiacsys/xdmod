@@ -398,6 +398,20 @@ Verdict: cut for iteration 1, not needed: everything above works with plain scri
 interactively in the owner's running FreeCAD (inspect the model, screenshots). Candidate if wanted:
 `neka-nat/freecad-mcp` (most used, MIT, active) or `spkane` (Apache-2.0, headless mode).
 
+## Found later (tasks 5.23, 5.24)
+
+- **Partial load of the skeleton.** The top document links only the part `Skeleton` of the skeleton.
+  Opened through the top, FreeCAD loads the skeleton partially (`Document.Partial` is true) and
+  `Params` is missing; a script that then looks for `Params` finds nothing. The writer of
+  `gen freecad-params` opens the skeleton first, then the top, and stops when a document is still
+  partial.
+- **Document name clash.** FreeCAD names a document after its file (`skeleton.FCStd` -> `skeleton`),
+  and a cross-document expression stores that name (`skeleton#MasterSketch...`, next to the file
+  XLink). Every assembly with a `skeleton.FCStd` would open as `skeleton`. The skeleton is therefore
+  `<name>-skeleton.FCStd` (proposed decision XD-ADR-0146).
+- A cross-document link from a new document needs the document saved first (`Owner document not
+  saved`), as for expressions.
+
 ## Input for 5.14 (decisions)
 
 - ADR: per top assembly a `skeleton.FCStd` with `Params` (aliases `<port>_<attribute>`, the variant

@@ -147,6 +147,22 @@ The principles of the trace model and the rules on the trace graph.
 
    A KiCad project is the ``.kicad_pro`` in its own folder ``pcba/<name>/`` or ``proto/<name>/``, named like the folder, with the root sheet ``<name>.kicad_sch``; no KiCad project file lies outside these folders. Each board def of the EE model (a def that specializes ``XdDomain::Pcba`` directly; a board variant, which specializes its board def, is not a board def of its own) has exactly one ``pcba/`` project, in the folder named after the def (``JointController`` → ``joint-controller``), whose text variable ``TraceID`` is the def's ``EE-PCBA`` ID; every ``pcba/`` project names exactly one board def. External parts have no project. Links of a board come from the model, not from project variables.
 
+.. xd-rule:: One FreeCAD document per assembly def
+   :id: XD-RULE-0055
+   :tags: trace, cad
+   :status: valid
+   :decided_by: XD-ADR-0128, XD-ADR-0137
+
+   Each assembly or sub-assembly def of the ME model (a def that specializes ``XdDomain::Assembly`` directly, with an ``ME-ASM`` short name) has exactly one FreeCAD document, named after the def (``CanaryAssembly`` → ``canary-assembly.FCStd``), with one object whose ``TraceID`` is the def's ID; every such document names one def. A top-level assembly is the folder ``assemblies/<name>/`` with the top document ``<name>.FCStd`` and ``<name>-skeleton.FCStd``; its own parts sit in the folder, shared parts in ``parts/``. No document refers to a top document: parts and sub-assemblies refer only to the skeleton. Links of an assembly come from the model, not from document properties.
+
+.. xd-rule:: FreeCAD links follow the usages
+   :id: XD-RULE-0056
+   :tags: trace, cad
+   :status: valid
+   :decided_by: XD-ADR-0138
+
+   In the document of an assembly def, the number of FreeCAD links to a part or sub-assembly (named by the ``TraceID`` of the link target) equals its usages: the usages the ME model owns (internal parts and sub-assemblies, with multiplicity) plus the usages of the system model inside the system blocks the assembly realizes, counted for the ME def that realizes each used block. A link with ``Configs`` counts only for those configurations. Every other link target has a ``TraceID``; the link to the skeleton is not counted.
+
 .. xd-rule:: Connectors name their port and follow its pin map
    :id: XD-RULE-0050
    :tags: trace, cad
