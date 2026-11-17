@@ -220,3 +220,76 @@ def test_f4a_erc(tmp_path):
     sch.write_text(text[:pos] + LABEL + text[pos:])
     f = _run(root, repo, "CK-F4a", "c_erc")
     assert any("error: label_dangling" in x for x in f), f
+
+
+TWO = ("version: 1\naccepted:\n  - check: CK-F4b\n    rule: clearance\n    items: [R1]\n    reason: first\n"
+       "  - check: CK-F4b\n    rule: silk_overlap\n    items: [J1]\n    reason: second\n")
+
+
+def _statuses(root, repo):
+    cfg = checkcfg.load(repo / "checks.yaml", root)
+    from curatrix import eeprojects
+    entries, _ = ercdrc.project_entries(cfg, eeprojects.discover(cfg)[0], ercdrc.Acceptors(repo))
+    return [(e.lines, e.status) for e in entries]
+
+
+def test_entry_line_ranges(tmp_path):
+    """Each entry's range is its own lines only (review of #49): accepting entry 2 by changing its
+    first line does not accept entry 1, and an entry appended below an accepted one leaves it
+    accepted. A block scalar reason keeps its lines."""
+    root, repo = _repo(tmp_path)
+    acc = repo / "pcba" / "drc" / "accepted.yaml"
+    acc.write_text(TWO)
+    _commit(repo, "propose two" + AGENT)
+    acc.write_text(TWO.replace("  - check: CK-F4b\n    rule: silk", "  - check: CK-F4b  # ok\n    rule: silk"))
+    _commit(repo, "accept entry 2\n\nAccepted-by: Owner")
+    assert _statuses(root, repo) == [((3, 6), "proposed"), ((7, 10), "accepted")]
+    acc.write_text(TWO.replace("reason: first", "reason: first (owner)"))
+    _commit(repo, "accept entry 1, re-propose entry 2\n\nAccepted-by: Owner")
+    acc.write_text(acc.read_text() + "  - check: CK-F4b\n    rule: x\n    items: all\n    reason: |\n      long\n"
+                   "      text\n\n")
+    _commit(repo, "append a proposal" + AGENT)
+    st = _statuses(root, repo)
+    assert st[0] == ((3, 6), "accepted") and st[2] == ((11, 16), "proposed"), st
+
+
+def test_acceptance_not_from_merges_or_prose(tmp_path):
+    """`Accepted-by:` only as a real trailer; a merge commit never accepts; an agent change merged
+    in from a parallel branch is not covered by an acceptance on the other branch."""
+    root, repo = _repo(tmp_path)
+    acc = repo / "pcba" / "drc" / "accepted.yaml"
+    acc.write_text(UNROUTED)
+    _commit(repo, "Accepted-by: nobody yet\n\nprose")
+    assert _statuses(root, repo)[0][1] == "proposed"
+    _git = lambda *a: subprocess.run(["git", "-C", str(repo), *a], check=True, capture_output=True)  # noqa: E731
+    _git("branch", "-M", "main")
+    _git("checkout", "-q", "-b", "agent")
+    acc.write_text(UNROUTED.replace("items: all", "items: [U9]"))
+    _commit(repo, "widen" + AGENT)
+    _git("checkout", "-q", "main")
+    acc.write_text(UNROUTED.replace("  - check: CK-F4b", "  - check: CK-F4b  # ok"))
+    _commit(repo, "accept\n\nAccepted-by: Owner")
+    assert _statuses(root, repo)[0][1] == "accepted"
+    _git("merge", "-q", "--no-edit", "agent")
+    cfg = checkcfg.load(repo / "checks.yaml", root)
+    from curatrix import eeprojects
+    entries, _ = ercdrc.project_entries(cfg, eeprojects.discover(cfg)[0], ercdrc.Acceptors(repo))
+    assert entries[0].status == "proposed" and "parallel branch" in entries[0].why, entries[0].why
+    assert ercdrc.Acceptors(repo).verdict(subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
+                                          capture_output=True, text=True).stdout.strip())[1].endswith(
+        "is a merge commit (an acceptance is a single commit, rebase merges only)")
+
+
+def test_f8_pin_map_and_unused_entry(tmp_path):
+    """CK-F8: a changed cell of the ERC pin conflict matrix is a difference; an accepted CK-F8 entry
+    that matches no difference is reported."""
+    root, repo = _repo(tmp_path)
+    pro = repo / "pcba" / "drc" / "drc.kicad_pro"
+    d = json.loads(pro.read_text())
+    d["erc"]["pin_map"][11][0] = 0
+    pro.write_text(json.dumps(d, indent=2) + "\n")
+    (pro.parent / "accepted.yaml").write_text("version: 1\naccepted:\n  - check: CK-F8\n    rule: dru:gone\n"
+                                              "    items: all\n    reason: a test\n")
+    f = _run(root, repo, "CK-F8", "c_severities")
+    assert any("erc.pin_map differs from the template: [11][0] 0 (template 2)" in x for x in f), f
+    assert any("entry 1 (CK-F8 dru:gone: all) matches no severity difference" in x for x in f), f
