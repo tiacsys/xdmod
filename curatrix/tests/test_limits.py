@@ -63,3 +63,16 @@ def test_ulimit_fallback_runs(monkeypatch):
 
 def test_norm_rc():
     assert limits.norm_rc(-9) == 137 and limits.norm_rc(3) == 3
+
+
+def test_kicad_and_freecad_runs_get_the_workspace_config(tmp_path, monkeypatch):
+    """A scripted KiCad or FreeCAD run never uses the user's ~/.config (rule 4)."""
+    from curatrix import limits
+    from curatrix.ws import Workspace
+    from helpers import make_ws
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    k = limits.tool_env(ws, "kicad-cli", {"HOME": "/home/x"})
+    assert k["KICAD_CONFIG_HOME"].startswith(str(ws.root)) and k["HOME"] == "/home/x"
+    f = limits.tool_env(ws, "freecad", {})
+    assert f["XDG_CONFIG_HOME"].startswith(str(ws.root))
+    assert limits.tool_env(ws, "script", {"A": "1"}) == {"A": "1"}
