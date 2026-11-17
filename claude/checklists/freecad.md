@@ -13,7 +13,7 @@ list grows with tasks 5.13 and 5.23-5.27.
 ## Files
 - [ ] No FreeCAD ran outside curatrix or its `.venv/bin` shims, not even `FreeCADCmd --version`
       (a bare call writes `~/.config/FreeCAD`). A PR text or log showing a bare `FreeCAD`,
-      `FreeCADCmd` or `freecad` call is a must-fix: ask the owner to check `~/.config/FreeCAD`.
+      `FreeCADCmd`, `freecad` or `freecadcmd` call is a must-fix: ask the owner to check `~/.config/FreeCAD`.
 - [ ] Saved by FreeCAD started through `curatrix launch freecad` (or `curatrix run --use freecad`),
       so the file is stored uncompressed (CK-H1, D63).
 - [ ] No unchanged document re-saved: a `.FCStd` changed but its semantic JSON did not -> drop it.

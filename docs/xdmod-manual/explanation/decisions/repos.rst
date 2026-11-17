@@ -226,11 +226,15 @@ Repos, the west workspace, names, tags and paths.
 
    **Never run KiCad or FreeCAD outside curatrix or its shims, not even** ``--version``. A bare
    ``kicad-cli --version`` rewrites ``~/.config/kicad/10.0/kicad_common.json``; agents did this twice.
-   As a safety net, ``curatrix bootstrap`` and ``update`` write shims into ``<workspace>/.venv/bin`` for
-   ``kicad-cli``, ``kicad``, ``eeschema``, ``pcbnew``, ``FreeCAD``, ``FreeCADCmd`` and ``freecad`` (each one
-   that exists on the machine). A shim sets the workspace-local config that ``curatrix run`` sets and
-   runs the real binary, found by absolute path when the shim is written (never ``.venv/bin`` itself or
-   another shim). ``curatrix env`` puts ``.venv/bin`` first on ``PATH``; ``curatrix doctor`` warns when
-   a KiCad or FreeCAD name on ``PATH`` is not the shim. Nothing outside the workspace changes: no
+   As a safety net, ``curatrix bootstrap`` and ``update`` write shims into the main workspace's
+   ``.venv/bin`` (also when run from a worktree set) for every KiCad and FreeCAD program on the machine:
+   ``kicad-cli``, ``kicad``, ``eeschema``, ``pcbnew``, ``bitmap2component``, each program with a KiCad
+   ``.kiface`` (``gerbview``, ``pl_editor``, ``pcb_calculator``, ...) and every ``freecad*`` program in any
+   case (``FreeCAD``, ``FreeCADCmd``, ``freecad``, ``freecadcmd``, ...). A shim sets the workspace-local
+   config that ``curatrix run`` sets (``LC_ALL`` only for ``kicad-cli``; the GUIs keep the user's
+   locale) and runs the real binary, found by absolute path when the shim is written (never
+   ``.venv/bin`` itself or another shim). KiCad's IDF converters (``idfcyl``, ``dxf2idf``, ...) write no
+   config and get no shim. ``curatrix env`` puts ``.venv/bin`` first on ``PATH``; ``curatrix doctor`` warns when
+   a KiCad or FreeCAD name on ``PATH`` is not the shim, or a shim's real binary is gone. Nothing outside the workspace changes: no
    user-global files, no ``PATH`` edits in shell profiles. The shims set no limits, so the tools still
    run through curatrix (:need:`XD-ADR-0064`).

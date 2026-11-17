@@ -317,12 +317,25 @@ def launch_env(ws: Workspace, tool: str) -> dict[str, str]:
 
 
 # ------------------------------------------------------------------ tool shims
-# A bare `kicad-cli --version` rewrites ~/.config/kicad/10.0/kicad_common.json (owner decision
-# 2026-11-17, after two agent runs did it). So bootstrap/update write shims with these names into
-# .venv/bin, which `curatrix env` puts first on PATH: each sets the workspace-local config that
+# A bare `kicad-cli --version` rewrites ~/.config/kicad/10.0/kicad_common.json (XD-ADR-0145, after
+# two agent runs did it). So bootstrap/update write shims with the KiCad and FreeCAD program names
+# into .venv/bin, which `curatrix env` puts first on PATH: each sets the workspace-local config that
 # `curatrix run` sets (limits.tool_env) and execs the real binary by its absolute path.
-SHIM_TOOLS = ("kicad-cli", "kicad", "eeschema", "pcbnew", "FreeCAD", "FreeCADCmd", "freecad")
+KICAD_PROGRAMS = ("kicad-cli", "kicad", "eeschema", "pcbnew", "bitmap2component")
+FREECAD_PREFIX = "freecad"           # FreeCAD, FreeCADCmd, freecad, freecadcmd, freecad-thumbnailer, ...
 SHIM_MARK = "# curatrix tool shim"
+WORKTREE_MARKER = ".xdmod-worktree.json"     # work.MARKER (work imports setup)
+
+
+def main_workspace(ws: Workspace) -> Workspace:
+    """A worktree set links the main workspace's .venv, so its shims belong to the main workspace:
+    shims written with a set's paths would point into a folder that `curatrix work done` removes."""
+    m = ws.root / WORKTREE_MARKER
+    if m.is_file():
+        main = json.loads(m.read_text()).get("main_workspace")
+        if main:
+            return Workspace(Path(main))
+    return ws
 
 
 def shim_dir(ws: Workspace) -> Path:
@@ -337,10 +350,22 @@ def is_shim(p: Path) -> bool:
         return False
 
 
-def real_tool(ws: Workspace, name: str, path: str | None = None) -> Path | None:
-    """The first `name` on PATH that is neither in .venv/bin nor a shim (of any workspace), so a
-    shim never execs itself or another shim."""
+def shim_real(p: Path) -> Path | None:
+    """The real binary a shim execs (its `exec` line)."""
+    import shlex
+    try:
+        for line in p.read_text().splitlines():
+            if line.startswith("exec "):
+                return Path(shlex.split(line)[1])
+    except (OSError, ValueError, IndexError):
+        pass
+    return None
+
+
+def _path_dirs(ws: Workspace, path: str | None) -> list[Path]:
+    """PATH without .venv/bin (also reached through a symlink)."""
     skip = shim_dir(ws).resolve()
+    out = []
     for d in (path if path is not None else os.environ.get("PATH", "")).split(os.pathsep):
         if not d:
             continue
@@ -349,61 +374,109 @@ def real_tool(ws: Workspace, name: str, path: str | None = None) -> Path | None:
                 continue
         except OSError:
             continue
-        p = Path(d) / name
-        if p.is_file() and os.access(p, os.X_OK) and not is_shim(p):
+        out.append(Path(d))
+    return out
+
+
+def _runnable(p: Path) -> bool:
+    return p.is_file() and os.access(p, os.X_OK)
+
+
+def real_tool(ws: Workspace, name: str, path: str | None = None) -> Path | None:
+    """The first `name` on PATH that is neither in .venv/bin nor a shim (of any workspace), so a
+    shim never execs itself or another shim."""
+    for d in _path_dirs(ws, path):
+        p = d / name
+        if _runnable(p) and not is_shim(p):
             return p.absolute()
     return None
 
 
+def shim_names(ws: Workspace, path: str | None = None) -> list[str]:
+    """The KiCad and FreeCAD programs on this machine, derived from the install folders: next to
+    each KiCad program, every `_<name>.kiface` with a `<name>` program (gerbview, pl_editor,
+    pcb_calculator, ...); next to each FreeCAD program, every program named freecad* (any case)."""
+    names: dict[str, None] = {}
+    for d in _path_dirs(ws, path):
+        try:
+            entries = sorted(d.iterdir())
+        except OSError:
+            continue
+        files = {e.name for e in entries}
+        if any(n in files for n in KICAD_PROGRAMS):
+            for n in KICAD_PROGRAMS:
+                if n in files:
+                    names[n] = None
+            for f in sorted(files):
+                if f.startswith("_") and f.endswith(".kiface") and f[1:-7] in files:
+                    names[f[1:-7]] = None
+        for f in sorted(files):
+            if f.lower().startswith(FREECAD_PREFIX):
+                names[f] = None
+    return [n for n in names if real_tool(ws, n, path)]
+
+
 def shim_env(ws: Workspace, name: str) -> dict[str, str]:
-    """Only the variables `curatrix run -- <name>` adds for this tool (KICAD*, LC_ALL, XDG_*)."""
-    return dict(sorted(limits.tool_env(ws, "script", {}, [name]).items()))
+    """The variables `curatrix run -- <name>` adds for this tool (KICAD*, XDG_*), and LC_ALL only
+    for the batch tool kicad-cli: the GUI programs keep the user's locale."""
+    env = limits.tool_env(ws, "script", {}, [name])
+    if name != "kicad-cli":
+        env.pop("LC_ALL", None)
+    return dict(sorted(env.items()))
 
 
 def shim_text(ws: Workspace, name: str, real: Path) -> str:
     import shlex
+    q = shlex.quote(str(real))
     lines = ["#!/bin/sh",
              f"{SHIM_MARK} (written by `curatrix bootstrap` / `update`; do not edit)",
              f"# workspace: {ws.root}",
              f"# Runs {real} with the workspace-local config, never ~/.config, ~/.cache or ~/.local.",
              "# It sets no limits: run tools through `curatrix run` (rule 2)."]
     lines += [f"export {k}={shlex.quote(v)}" for k, v in shim_env(ws, name).items()]
-    lines.append(f'exec {shlex.quote(str(real))} "$@"')
+    lines.append(f"[ -x {q} ] || {{ echo {shlex.quote(f'{name}: {real} is gone; run curatrix update')} >&2; exit 127; }}")
+    lines.append(f'exec {q} "$@"')
     return "\n".join(lines) + "\n"
 
 
 def write_shims(ws: Workspace, path: str | None = None) -> list[str]:
-    """Write a shim for each tool in SHIM_TOOLS found on PATH; remove our shims of tools that are
-    gone. Touches only <ws>/.venv/bin. Returns the names with a shim."""
+    """Write a shim for each KiCad/FreeCAD program found on PATH (shim_names) and remove our shims
+    of programs that are gone. Always for the main workspace, also when called from a worktree set.
+    Touches only <ws>/.venv/bin. Returns the names with a shim."""
+    ws = main_workspace(ws)
     d = shim_dir(ws)
     d.mkdir(parents=True, exist_ok=True)
     made = []
-    for name in SHIM_TOOLS:
+    for name in shim_names(ws, path):
         p = d / name
         if os.path.lexists(p) and not is_shim(p):
             say(f"  {p} exists and is not a curatrix shim: left alone")
             continue
-        real = real_tool(ws, name, path)
-        if real is None:
-            if p.exists():
-                p.unlink()
-            continue
-        text = shim_text(ws, name, real)
+        text = shim_text(ws, name, real_tool(ws, name, path))
         if not p.exists() or p.read_text() != text:
             p.write_text(text)
         p.chmod(0o755)
         made.append(name)
+    for p in sorted(d.iterdir()):
+        if p.name not in made and not p.is_symlink() and is_shim(p):
+            p.unlink()
     return made
 
 
 def shim_rows(ws: Workspace, path: str | None = None) -> list[tuple[str, str, str]]:
     """Doctor rows: a KiCad/FreeCAD name found first on PATH that is not this workspace's shim
-    would write ~/.config when called bare."""
+    would write ~/.config when called bare; a shim whose real binary is gone fails."""
     rows = []
     path = path if path is not None else os.environ.get("PATH", "")
-    mine = shim_dir(ws).resolve()
+    d = shim_dir(ws)
+    mine = d.resolve()
+    shims = sorted(p.name for p in d.iterdir() if not p.is_symlink() and is_shim(p)) if d.is_dir() else []
+    for name in shims:
+        real = shim_real(d / name)
+        if real is None or not _runnable(real):
+            rows.append(("warn", f"stale shim .venv/bin/{name}: {real} is gone", "curatrix update"))
     seen = False
-    for name in SHIM_TOOLS:
+    for name in dict.fromkeys([*shim_names(ws, path), *shims]):
         found = shutil.which(name, path=path)
         if not found:
             continue
@@ -411,7 +484,13 @@ def shim_rows(ws: Workspace, path: str | None = None) -> list[tuple[str, str, st
         fp = Path(found)
         if fp.parent.resolve() == mine and is_shim(fp):
             continue
-        fix = 'eval "$(curatrix env)"' if is_shim(shim_dir(ws) / name) else "curatrix update"
+        own = d / name
+        if os.path.lexists(own) and not is_shim(own):
+            fix = f"remove or rename .venv/bin/{name}, then curatrix update"
+        elif is_shim(own):
+            fix = 'eval "$(curatrix env)"'
+        else:
+            fix = "curatrix update"
         rows.append(("warn", f"{name} on PATH is {found}, not the workspace shim",
                      f"a bare call writes ~/.config; {fix}"))
     if seen and not rows:

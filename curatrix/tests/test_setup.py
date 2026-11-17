@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import xml.etree.ElementTree as ET
@@ -155,7 +156,7 @@ def test_shim_runs_with_the_workspace_config_without_touching_home(tmp_path, mon
     home = tmp_path / "home"
     home.mkdir()
     env = {"PATH": os.pathsep.join([str(ws.venv / "bin"), str(sysbin), "/usr/bin", "/bin"]), "HOME": str(home)}
-    r = subprocess.run(["kicad-cli", "--version"], env=env, capture_output=True, text=True, check=True)
+    r = subprocess.run(["kicad-cli", "--version"], env=env, capture_output=True, text=True, check=True, timeout=30)
     assert r.stdout.strip() == f"{ws.state / 'kicad'}|C.UTF-8|--version"
     assert list(home.iterdir()) == []
 
@@ -201,3 +202,82 @@ def test_curatrix_env_puts_the_shims_first(tmp_path, monkeypatch):
     ws = Workspace(make_ws(tmp_path, monkeypatch))
     assert ws.env()["PATH"].split(os.pathsep)[0] == str(ws.venv / "bin")
     assert ws.run_env()["PATH"].split(os.pathsep)[0] == str(ws.venv / "bin")
+
+
+def test_shim_names_are_derived_from_the_install_folders(tmp_path, monkeypatch):
+    """All KiCad programs with a kiface (gerbview, pl_editor, ...) and every freecad* program,
+    not a short fixed list; GUI shims keep the user's locale, only kicad-cli sets LC_ALL."""
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    sysbin = tmp_path / "usr" / "bin"
+    for n in ("kicad", "kicad-cli", "eeschema", "gerbview", "pl_editor", "pcb_calculator", "idfcyl",
+              "freecadcmd", "FreeCAD", "fcinfo"):
+        _fake_tool(sysbin, n)
+    for k in ("_gerbview.kiface", "_pl_editor.kiface", "_pcb_calculator.kiface", "_kipython.kiface"):
+        (sysbin / k).write_text("")
+    names = setup.shim_names(ws, str(sysbin))
+    assert names == ["kicad-cli", "kicad", "eeschema", "gerbview", "pcb_calculator", "pl_editor",
+                     "FreeCAD", "freecadcmd"]
+    setup.write_shims(ws, str(sysbin))
+    assert "LC_ALL" not in (ws.venv / "bin" / "kicad").read_text()
+    assert "LC_ALL" not in (ws.venv / "bin" / "gerbview").read_text()
+    assert "KICAD_CONFIG_HOME" in (ws.venv / "bin" / "gerbview").read_text()
+    assert "XDG_CONFIG_HOME" in (ws.venv / "bin" / "freecadcmd").read_text()
+
+
+def test_stale_shim_fails_clearly_and_doctor_reports_it(tmp_path, monkeypatch):
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    sysbin = tmp_path / "usr" / "bin"
+    real = _fake_tool(sysbin, "kicad-cli")
+    path = os.pathsep.join([str(ws.venv / "bin"), str(sysbin)])
+    setup.write_shims(ws, path)
+    assert setup.shim_real(ws.venv / "bin" / "kicad-cli") == real
+    real.unlink()                                                       # KiCad removed or moved
+    rows = setup.shim_rows(ws, path)
+    assert rows == [("warn", f"stale shim .venv/bin/kicad-cli: {real} is gone", "curatrix update")]
+    r = subprocess.run([str(ws.venv / "bin" / "kicad-cli")], capture_output=True, text=True, timeout=30,
+                       env={"PATH": "/usr/bin:/bin"})
+    assert r.returncode == 127 and "run curatrix update" in r.stderr
+    assert setup.write_shims(ws, path) == [] and not (ws.venv / "bin" / "kicad-cli").exists()
+
+
+def test_doctor_names_a_user_file_in_venv_bin(tmp_path, monkeypatch):
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    sysbin = tmp_path / "usr" / "bin"
+    _fake_tool(sysbin, "kicad-cli")
+    _fake_tool(ws.venv / "bin", "kicad-cli", "mine")
+    rows = setup.shim_rows(ws, os.pathsep.join([str(ws.venv / "bin"), str(sysbin)]))
+    assert rows[0][0] == "warn" and "remove or rename .venv/bin/kicad-cli" in rows[0][2]
+
+
+def test_shims_from_a_worktree_set_belong_to_the_main_workspace(tmp_path, monkeypatch):
+    """`curatrix update` in a set must not write the set's paths into the shared .venv/bin."""
+    main = make_ws(tmp_path)
+    wroot = main / ".worktrees" / "feat" / "x"
+    wroot.mkdir(parents=True)
+    (wroot / ".venv").symlink_to(os.path.relpath(main / ".venv", wroot))
+    (wroot / ".xdmod-worktree.json").write_text(json.dumps({"branch": "feat/x", "main_workspace": str(main)}))
+    sysbin = tmp_path / "usr" / "bin"
+    _fake_tool(sysbin, "kicad-cli")
+    assert setup.write_shims(Workspace(wroot), str(sysbin)) == ["kicad-cli"]
+    text = (main / ".venv" / "bin" / "kicad-cli").read_text()
+    assert f"# workspace: {main}\n" in text and ".worktrees" not in text
+    assert f"KICAD_CONFIG_HOME={main / '.xdmod' / 'kicad'}\n" in text
+    assert not (wroot / ".xdmod").exists()
+
+
+def test_launch_runs_the_real_binary_not_the_shim(tmp_path, monkeypatch):
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    sysbin = tmp_path / "usr" / "bin"
+    for n in ("kicad", "FreeCAD"):
+        _fake_tool(sysbin, n)
+    path = os.pathsep.join([str(ws.venv / "bin"), str(sysbin)])
+    setup.write_shims(ws, path)
+    monkeypatch.setenv("PATH", path)
+    seen = []
+    monkeypatch.setattr(setup.limits, "wrap", lambda cmd, lim: cmd)
+    monkeypatch.setattr(setup.subprocess, "run",
+                        lambda cmd, **kw: seen.append((cmd, kw["env"])) or subprocess.CompletedProcess(cmd, 0))
+    assert setup.launch(ws, "kicad", []) == 0
+    assert setup.launch(ws, "freecad", []) == 0
+    assert [c[0][0] for c in seen] == [str(sysbin / "kicad"), str(sysbin / "FreeCAD")]
+    assert seen[0][1]["KICAD_CONFIG_HOME"] == str(ws.state / "kicad")      # launch_env still applies

@@ -10,7 +10,7 @@ For `pcba/`, `proto/`, `harness/`, `lib/` in robarm-ee. Background: `robarm-ee/c
 ## Files
 - [ ] No KiCad tool ran outside curatrix or its `.venv/bin` shims, not even `kicad-cli --version`
       (a bare call rewrites `~/.config/kicad`). A PR text or log showing a bare `/usr/bin/kicad-cli`,
-      `pcbnew` or `eeschema` call is a must-fix: ask the owner to check `~/.config/kicad`.
+      `pcbnew`, `eeschema`, `gerbview` or other KiCad program call is a must-fix: ask the owner to check `~/.config/kicad`.
 - [ ] Every `.kicad_sch`, `.kicad_pcb`, `.kicad_pro` was saved by KiCad itself (the GUI through
       `curatrix launch kicad`, or KiCad's Python / `kicad-cli` through `curatrix run --use kicad-cli`).
       Hand-edited S-expressions are a must-fix unless the PR says why.
