@@ -332,7 +332,7 @@ def to_mxfile(g: dict, pos: dict | None, normalize) -> str:
     # the legend text is content: its line breaks must not depend on the layout. Below the
     # drawing it is wide and flat; to the right of it (for wide drawings) narrow and tall.
     side = g.get("legend", "below")
-    text = _wrap(LEGEND.get(g["kind"], "Legend"), {"below": 120, "below-narrow": 80, "right": 60}[side])
+    text = _wrap(LEGEND.get(g["kind"], "Legend"), {"below": 120, "below-narrow": 80, "right": 60, "below-narrowest": 44}[side])
     width = round(max(len(s) for s in text.split("\n")) * 4.9 + 16)
     xy = (right + 32, top) if side == "right" else (left, bottom + 24)
     cell(LEGEND_ID, text, "text;html=0;align=left;verticalAlign=top;fontFamily=Helvetica;fontSize=9;fillColor=#FFFFFF;"

@@ -1,3 +1,4 @@
+import re
 import base64
 import urllib.parse
 import zlib
@@ -120,3 +121,32 @@ def test_interconnection_root_ports_sit_on_the_frame():
     planted = xml.replace('id="EeBoards::ControllerBoard.bus"', 'id="EeBoards::ControllerBoard.gone"')
     assert "missing in the file: EeBoards::ControllerBoard.bus" in views.diff_content(
         views.content_of(xml), views.content_of(planted))
+
+
+def test_ck_d3_fails_a_layout_that_does_not_fit_a_page(tmp_path):
+    """CK-D3 applies the page rule of `views build` (9:16 .. 16:9), so CI catches a committed
+    layout that build would reject. Planted: the legend stretched far to the right."""
+    v, exp = expected()
+    assert not [e for e in views.check_file(SVG, exp) if "does not fit a page" in e]   # the committed fixture fits
+    content, _, _ = views.read_svg(SVG)
+    wide = re.sub(r'(<object id="xd-legend"[^>]*>\s*<mxCell[^>]*>\s*<mxGeometry[^>]*?)width="\d+"',
+                  r'\1width="9000"', views.normalize_xml(content))
+    assert wide != views.normalize_xml(content)
+    bad = tmp_path / "bad.drawio.svg"
+    bad.write_text(views.compose("<svg></svg>", wide, v.name))
+    assert any("does not fit a page" in e for e in views.check_file(bad, exp))
+
+
+@pytest.mark.tools
+def test_two_leaf_decomposition_fits_a_page():
+    """A def with two parts gave a flat, wide tree (2.4:1, later 1.88:1) that `views build`
+    rejected; the narrowest legend place makes it fit."""
+    from pathlib import Path
+    from curatrix.ws import Workspace
+    ws = Workspace(Path(__file__).resolve().parents[3])
+    if not (ws.opt / "node").exists():
+        pytest.skip("node not installed")
+    v = views.ViewDef(name="parts", short_id=None, kind="decomposition", root="Probe::LogicalJoint", layer=None,
+                      qualified_name="parts")
+    _, _, r = views.layout(ws, probe(), v)
+    assert views.ratio_error(r) == 0, r
