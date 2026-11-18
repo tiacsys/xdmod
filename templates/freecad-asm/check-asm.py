@@ -4,9 +4,11 @@
 #   XD_FILES   JSON list of the documents to open, in this order (per assembly the skeleton, then the
 #              top document, so the parts load fully through its links; then every other document)
 #   XD_LIB     the repo's lib/ folder (library fasteners live there)
-#   XD_SEATS   JSON {ME-PORT: {width, depth, heightAbove, heightBelow}} of the board seats (CK-F18):
-#              the ME seat ports that specialize a SYS-IF space budget, with the budget's values (a
-#              seat may lack some: then only the seat is reported, without bbox and intrusions)
+#   XD_SEATS   JSON {ME-PORT: {width, depth, heightAbove, heightBelow, [mountZoneDiameter,
+#              hole<n>X, hole<n>Y]}} of the board seats (CK-F18): the ME seat ports that specialize a
+#              SYS-IF space budget, with the budget's values (a seat may lack some: then only the seat
+#              is reported, without bbox and intrusions). With mountZoneDiameter, a cylinder of that
+#              diameter around each hole, through the whole box height, is cut from the box first
 #   XD_RESULT  the result file (JSON)
 # FreeCADCmd exits 0 when a script raises, so the caller judges success by the result file only; the
 # script never raises and is safe to run twice. It never saves a document.
@@ -24,6 +26,7 @@
 #   budgets:   per assembly, one entry per board child (CK-F18): {board, seat (the LCS whose
 #              placement in the assembly equals the board link's, or ""), port, placement,
 #              bbox (the board's bounding box in the seat frame: xmin, ymin, zmin, xmax, ymax, zmax),
+#              zones: the number of mounting zones cut from the box,
 #              intrusions: [{name, volume, z}] the non-fastener parts inside the budget box
 #              (common volume in mm^3, its z range in the seat frame), fasteners: [{name, volume}]
 #              common volume of the board with each fastener}
@@ -125,8 +128,15 @@ def budget_of(d, kids, skels, seats, board):
     loc = sh.transformed(seat.inverse().toMatrix())
     bb = loc.BoundBox
     e["bbox"] = [round(v, 6) for v in (bb.XMin, bb.YMin, bb.ZMin, bb.XMax, bb.YMax, bb.ZMax)]
-    box = Part.makeBox(b["width"], b["depth"], b["heightAbove"] + b["heightBelow"],
-                       App.Vector(0, 0, -b["heightBelow"]))
+    h = b["heightAbove"] + b["heightBelow"]
+    box = Part.makeBox(b["width"], b["depth"], h, App.Vector(0, 0, -b["heightBelow"]))
+    holes = sorted({k[:-1] for k in b if k.startswith("hole") and k[-1:] in "XY" and k[4:-1].isdigit()})
+    zone = b.get("mountZoneDiameter") or 0
+    e["zones"] = 0
+    for n in holes if zone > 0 else ():
+        if n + "X" in b and n + "Y" in b:   # the zone: a cylinder through the whole box height, 1 mm beyond it
+            box = box.cut(Part.makeCylinder(zone / 2, h + 2, App.Vector(b[n + "X"], b[n + "Y"], -b["heightBelow"] - 1)))
+            e["zones"] += 1
     for k in kids:
         if k["kind"] != "part":
             continue

@@ -23,8 +23,8 @@ What sits where
      - Owner, reviewer
    * - robarm-syseng
      - The budget: a port def with the box (``width``, ``depth``, ``heightAbove``,
-       ``heightBelow``), the hole list (``hole<n>X``, ``hole<n>Y``, ``holeDiameter``) and the
-       connector positions (``<ref>X``, ``<ref>Y``, pin 1), in the board frame: origin at the
+       ``heightBelow``), the hole list (``hole<n>X``, ``hole<n>Y``, ``holeDiameter``), optional
+       mounting zones (``mountZoneDiameter``, see below) and the connector positions (``<ref>X``, ``<ref>Y``, pin 1), in the board frame: origin at the
        lower-left corner of the outline seen from the top, x right, y up, z = 0 on the top face.
        Values are ``default`` values, so the domains can restate them.
      - systems engineering; reviews whether the budget still fits the system
@@ -37,6 +37,22 @@ What sits where
      - ``dependency from <board> to <budget>`` in the EE model (the board conforms to it); outline
        and holes on ``Edge.Cuts`` of the ``.kicad_pcb``, written by the push.
      - EE; reviews the pushed file, the DRC and the connector positions, and merges its part
+
+Mounting zones
+--------------
+
+A board is held at its holes: a stand-off or boss below it, a screw head or nut above it. Both lie
+inside the budget's box. ``attribute mountZoneDiameter default 8 [mm];`` in the budget gives each
+hole ``hole<n>X``/``hole<n>Y`` a zone of that diameter, on both sides of the board and through the
+whole box height (:need:`XD-ADR-0134`). The zone belongs to the mount:
+
+- **ME** may put supports (below the board) and fastener heads (above it) there; CK-F18 leaves the
+  zones out of the box. A support wider than its zone still reaches into the box and is a finding.
+- **EE** keeps components and pads out of a zone. No check covers this yet (a planned EE check:
+  no footprint pad or courtyard in a zone); the EE reviewer looks at the holes.
+
+The seat restates ``mountZoneDiameter`` like the other budget values. A budget without it has no
+zones, and every part in its box is a finding.
 
 Steps
 -----
@@ -150,8 +166,9 @@ Checks
 - CK-F4b: DRC of the pushed board (the push itself adds no findings on the canary).
 - CK-F18, "board inside its space budget" (local, FreeCAD): the board model of the board library,
   linked at the seat's LCS, fits the budget's box in the board frame (``width`` x ``depth``, from
-  ``-heightBelow`` to ``heightAbove``; tolerance 0.01 mm); no other part reaches into the box (a
-  stand-off under the board does: accept it in ``accepted.yaml`` or change the budget); no library
+  ``-heightBelow`` to ``heightAbove``; tolerance 0.01 mm); no other part reaches into the box
+  outside its mounting zones (a stand-off wider than its zone does: make it narrower, widen the
+  zone in the budget, or accept it in ``accepted.yaml``); no library
   fastener collides with the board (a screw that misses its hole). Board versus part collisions are
   CK-F17's. A skip without a board model. Not checked yet (iteration 2): the KiCad outline and
   ``Edge.Cuts`` circles against ``width``, ``depth`` and the hole list, and the connector positions;

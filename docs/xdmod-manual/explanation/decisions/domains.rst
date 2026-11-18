@@ -185,6 +185,15 @@ and FreeCAD files refer to them (Phase 5, task 5.14). Decisions that rest on the
    co-design branch. A harness length is a ``SYS-IF`` value its cable def conforms to like a board
    (``EE-HAR`` to ``SYS-IF``); its route in the ME assembly is iteration 2.
 
+   Note (2026-11-18, owner decision on the CK-F18 boss finding, xdmod#69): a budget may have
+   **mounting zones**: ``mountZoneDiameter`` gives a zone of that diameter around each of its holes,
+   on both sides of the board, through the whole box height. ME may put supports below the board
+   and fastener heads above it into a zone; EE keeps parts and pads out of it. CK-F18 cuts the zones
+   from the budget box before it measures parts in the box; a budget without the attribute has no
+   zones. The canary budget ``SYS-IF-0001`` has 8 mm zones (its 8 mm stand-off bosses and the
+   5.7 mm heads of its ISO 7380 M3 screws). An EE check that no footprint pad or courtyard lies in a
+   zone is planned, not built.
+
 .. xd-adr:: External parts and prototype projects
    :id: XD-ADR-0135
    :date: 2026-11-17

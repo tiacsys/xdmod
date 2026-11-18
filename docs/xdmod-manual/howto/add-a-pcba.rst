@@ -67,7 +67,8 @@ Steps
    - Iteration 1 stops before routing: placement, outline and silkscreen; the unrouted-net DRC
      errors are accepted in one entry (:need:`XD-ADR-0144`, step 6).
    - The outline and holes come from the board's space budget through the co-design push, not by
-     hand (:ref:`howto-co-design-change`).
+     hand (:ref:`howto-co-design-change`). Keep components and pads out of the budget's mounting
+     zones (``mountZoneDiameter`` around each hole): supports and screw heads sit there.
 
 4. **Connectors.** Name the board def's ports by function in the EE model, in lowerCamelCase
    (``port canaryLink : CanaryHeader;``), never by designator (``j1``): the name reaches the block
