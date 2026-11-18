@@ -80,4 +80,4 @@ The robarm documents link to `xdmod-manual` (method references). xdmod never lin
 1. **Test reports** are separate documents, one per domain plus integration (D109).
 2. **CAD-derived needs** are generated locally, committed (`generated/cad-needs.json`), and checked locally and at the baseline (check CK-D4). CI imports them and sees the full trace graph (D110).
 3. **The XDMOD manual** is part of the robarm full set, built from the pinned xdmod (D111).
-4. **One doc per PCBA and one per prototype configuration** (D112). For wiring harnesses, **WireViz** (YAML → harness diagram + BOM) is evaluated as an option. Adopted 2026-11-17 (XD-ADR-0127): one `harness-<name>` document per harness.
+4. **One doc per PCBA and one per prototype configuration** (D112). For wiring harnesses, **WireViz** (YAML → harness diagram + BOM) is evaluated as an option. Adopted 2026-11-17 (XD-ADR-0127); since XD-ADR-0149 (2026-11-18) one `harnesses` document per repo holds every cable (one `harness/<name>/` folder per cable stays).

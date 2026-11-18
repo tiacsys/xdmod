@@ -204,7 +204,8 @@ The linked document set, zdocs, and how documents get their content.
    :revises: XD-ADR-0129
 
    Owner decision Q8 and finding 15 of tiacsys/xdmod#69 (2026-11-17), written down for the owner's
-   acceptance. **EE and ME get the V-model split that SW has:** ``ee-req``, ``ee-test-spec``,
+   acceptance. Correction to :need:`XD-ADR-0129`: the harness diagram is never shown in CI; it comes
+   only from a local ``curatrix cam`` run, and the ``harnesses`` document names a missing or stale run. **EE and ME get the V-model split that SW has:** ``ee-req``, ``ee-test-spec``,
    ``ee-test-report`` and ``me-req``, ``me-test-spec``, ``me-test-report``. ``ee-design`` and
    ``me-design`` keep the design only; the requirements move to ``ee-req`` / ``me-req`` with their
    IDs. **Per-deliverable documents sit in one sub-folder of** ``docs/`` **per kind:**
