@@ -628,8 +628,10 @@ def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
     row = kicad_models_row(ws, role, ci)
     if row:
         add(*row)
-    from curatrix import freecadmcp
+    from curatrix import freecadmcp, kicadmcp
     for row in freecadmcp.doctor_rows(ws, role):
+        add(*row)
+    for row in kicadmcp.doctor_rows(ws, role, smoke=not ci):
         add(*row)
     for row in shim_rows(ws):
         add(*row)
@@ -681,6 +683,9 @@ def refresh(ws: Workspace, adopt: bool = False, force_pip: bool = False) -> None
     say("== FreeCAD MCP server (token, addon settings, .mcp.json)")
     from curatrix import freecadmcp
     freecadmcp.ensure(ws, ws.role, say)
+    say("== KiCad MCP server (.mcp.json)")
+    from curatrix import kicadmcp
+    kicadmcp.ensure(ws, ws.role, say)
     say("== KiCad/FreeCAD/Blender shims in .venv/bin (workspace-local config)")
     say(f"  shims: {', '.join(write_shims(ws)) or '(no KiCad, FreeCAD or Blender found)'}")
 

@@ -15,6 +15,9 @@ all active repos; one tool name with two different versions is an error. Format 
         strip: 1                # tarball: leading path components to drop (default 1)
         subdir: share/...       # tarball / zip / conda / git: copy only this folder
         licence: MIT            # optional: the licence, and any gap in it (shown by `doctor`)
+        python_venv:            # tarball only: a separate venv <location>/venv for the tool's Python
+          requirements: requirements.lock.txt   # inside the tool; pip --no-deps --require-hashes
+          system_modules: [pcbnew, _pcbnew]     # made importable from the base Python's site-packages
         links: {jshell: bin/jshell}   # symlinks <ws>/.venv/bin/<name> -> <location>/<path>
         env: {JAVA_HOME: "{location}"}  # exported by `curatrix env`
         roles: [sw]             # optional: install only for these roles
@@ -35,10 +38,18 @@ commit, and extracts its tree (``git archive``) into the location. No checkout, 
 location. The url must be https://. A location that is already a git checkout (made by hand
 before the tool was curated) is adopted and stamped only at the pinned commit without changes;
 otherwise the install stops with a message and never deletes it.
+
+``python_venv`` gives a tarball tool its own Python environment, separate from the workspace
+``.venv``: ``<location>/venv`` from the base interpreter of the workspace Python, the tool's
+hashed lock file installed with ``pip --no-deps --require-hashes`` (pip cache under
+``.xdmod/cache/pip``, never ``~/.cache``), and ``system_modules`` (e.g. KiCad's SWIG ``pcbnew``,
+which only the distribution package provides) symlinked from the base Python's site-packages into
+``<location>/sysmods`` with a ``.pth`` file pointing there.
 """
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -75,6 +86,7 @@ class Tool:
     package: str = ""
     commit: str = ""          # kind git: the pinned commit (instead of sha256)
     licence: str = ""         # the licence and any gap in it (doctor shows it)
+    python_venv: dict = field(default_factory=dict)   # tarball: own venv (requirements, system_modules)
     links: dict = field(default_factory=dict)
     env: dict = field(default_factory=dict)
     roles: list = field(default_factory=list)
@@ -99,6 +111,16 @@ class Tool:
             raise ToolsError(f"{self.source}: tool {self.name}: url is required")
         if self.subdir and self.kind not in ("tarball", "zip", "conda", "git"):
             raise ToolsError(f"{self.source}: tool {self.name}: subdir is not supported for kind {self.kind}")
+        if self.python_venv:
+            pv = self.python_venv
+            if self.kind != "tarball":
+                raise ToolsError(f"{self.source}: tool {self.name}: python_venv is only for kind tarball")
+            unknown = set(pv) - {"requirements", "system_modules"}
+            req = pv.get("requirements", "")
+            if unknown or not req or Path(req).is_absolute() or ".." in Path(req).parts \
+                    or not isinstance(pv.get("system_modules", []), list):
+                raise ToolsError(f"{self.source}: tool {self.name}: python_venv needs requirements (a path "
+                                 "inside the tool) and optionally system_modules (a list), nothing else")
         loc = Path(self.location)
         if loc.is_absolute() or ".." in loc.parts or self.location.rstrip("/") == STATE_PREFIX.rstrip("/"):
             raise ToolsError(f"{self.source}: tool {self.name}: location must be a folder below .venv or .xdmod/")
@@ -286,7 +308,63 @@ def installed_ok(ws: Workspace, t: Tool) -> bool:
         return False
     if t.kind == "git":                      # an adopted checkout must still be at the pin, unchanged
         return checkout_problem(ws, t) is None
+    if t.python_venv and not venv_python(ws, t).exists():
+        return False
     return True
+
+
+def venv_python(ws: Workspace, t: Tool) -> Path:
+    """The interpreter of a tool's own venv (python_venv)."""
+    return t.path(ws) / "venv" / "bin" / "python"
+
+
+def base_python() -> tuple[Path, Path]:
+    """The base interpreter of the Python running curatrix (not the workspace venv) and its
+    site-packages, where distribution packages such as KiCad's pcbnew live."""
+    import sys
+    import sysconfig
+    exe = Path(sys.base_prefix) / "bin" / f"python{sys.version_info.major}.{sys.version_info.minor}"
+    site = Path(sysconfig.get_path("purelib", vars={"base": sys.base_prefix, "platbase": sys.base_prefix}))
+    return exe, site
+
+
+def install_python_venv(ws: Workspace, t: Tool, loc: Path, log=print) -> None:
+    """python_venv: <loc>/venv with the tool's hashed lock file and the system modules."""
+    pv = t.python_venv
+    req = loc / pv["requirements"]
+    if not req.is_file():
+        raise ToolsError(f"{t.name}: python_venv requirements {pv['requirements']} not in the tool")
+    exe, site = base_python()
+    venv = loc / "venv"
+    r = limits.run([str(exe), "-m", "venv", "--clear", str(venv)], "install", ws, capture_output=True, text=True)
+    if r.returncode:
+        raise ToolsError(f"{t.name}: creating the venv failed:\n{r.stdout}{r.stderr}")
+    env = dict(ws.run_env())
+    env.update(PIP_CACHE_DIR=str(ws.state / "cache" / "pip"), PIP_DISABLE_PIP_VERSION_CHECK="1",
+               PIP_CONFIG_FILE=os.devnull, PYTHONNOUSERSITE="1")
+    env.pop("PIP_USER", None)
+    r = limits.run([str(venv / "bin" / "python"), "-m", "pip", "install", "-q", "--no-deps", "--require-hashes",
+                    "--only-binary=:all:", "-r", str(req)], "install", ws, env=env, capture_output=True, text=True)
+    if r.returncode:
+        raise ToolsError(f"{t.name}: pip install --require-hashes failed:\n{r.stdout[-2000:]}{r.stderr[-2000:]}")
+    mods = pv.get("system_modules") or []
+    if mods:
+        sysmods = loc / "sysmods"
+        sysmods.mkdir(exist_ok=True)
+        for mod in mods:
+            found = sorted(site.glob(f"{mod}.py")) + sorted(site.glob(f"{mod}*.so")) + \
+                sorted(p for p in site.glob(mod) if p.is_dir())
+            if not found:
+                raise ToolsError(f"{t.name}: system module {mod} not found in {site} (is the system package installed?)")
+            for src in found:
+                link = sysmods / src.name
+                if link.is_symlink() or link.exists():
+                    link.unlink()
+                link.symlink_to(src)
+        purelib = next((venv / "lib").glob("python*/site-packages"))
+        (purelib / "xd-system-modules.pth").write_text(str(sysmods) + "\n")
+    log(f"           venv {ws.rel(venv) if venv.is_relative_to(ws.root) else venv}: {req.name} (hashed)"
+        + (f", system modules {', '.join(mods)} from {site}" if mods else ""))
 
 
 # ------------------------------------------------------------------ installer
@@ -426,6 +504,8 @@ def install(ws: Workspace, t: Tool, log=print, adopt: bool = False) -> None:
                     shutil.rmtree(loc)
                 loc.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copytree(content, loc, symlinks=True)
+        if t.python_venv:
+            install_python_venv(ws, t, loc, log)
     for name, rel in (t.links or {}).items():
         link = ws.venv / "bin" / name
         if link.is_symlink() or link.exists():

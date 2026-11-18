@@ -83,6 +83,29 @@ tools:
     licence: MIT
     roles: [ee, ee3d, me, integration, full]
 
+  - name: kicad-mcp
+    # KiCad MCP server: mixelpixx/KiCAD-MCP-Server v2.9.0 (MIT, upstream 9dd467c2) through the fork
+    # tiacsys/KiCAD-MCP-Server, branch xd/main = the tag + the configurable-path patches
+    # (KICAD_MCP_HOME/LOG_DIR, KICAD_DOCUMENTS_HOME/CONFIG_HOME, KICAD_MCP_STRICT_PATHS,
+    # KICAD_API_SOCKET/TOKEN), offered upstream (xdmod#69 finding 19, owner decisions Q1, Q3;
+    # build/research-kicad-mcp/report.md). The release asset holds the built dist/, production
+    # node_modules and requirements.lock.txt (hashed, without pymupdf, which is AGPL-3.0).
+    # Started by `curatrix mcp-server kicad` (.mcp.json server `kicad`); its Python worker runs in its
+    # own venv with the system KiCad's SWIG pcbnew linked in.
+    # PREVIEW PIN: the tag v2.9.0-xd.1 is not made yet (fork PRs #3-#5 under review); this sha256
+    # is of a local build of the patch stack (c4d3b0d). Replace it with SHA256SUMS of the release.
+    version: "2.9.0-xd.1"
+    kind: tarball
+    url: https://github.com/tiacsys/KiCAD-MCP-Server/releases/download/v2.9.0-xd.1/kicad-mcp-server-2.9.0-xd.1.tar.gz
+    sha256: 49a14494497c9c518ac8e86f7a7be6157f1b64c3f5bea31b3196e2c1f1e91d00
+    strip: 1
+    location: opt/kicad-mcp
+    licence: MIT
+    python_venv:
+      requirements: requirements.lock.txt
+      system_modules: [pcbnew, _pcbnew]
+    roles: [ee, ee3d, me, integration, full]
+
 # Tools used from the machine (D19). Exact pins only for tools that shape committed output
 # (views: firefox; the tools above); minimum versions for the rest, so that a rolling distro's
 # patch release does not break `curatrix doctor` (task 5.5, P4-12). The minimums are the
