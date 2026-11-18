@@ -137,11 +137,21 @@ def test_f11_version_variable(tmp_path):
     good = pcb.read_text()
     pcb.write_text(good.replace("(at 95.5 108.4 0)", "(at 110 108.4 0)"))      # the version line runs off
     f = _run(root, repo, "CK-F11", "c_version_variable")
-    assert len(f) == 1 and "would run past the board outline (x 88 to 118 mm)" in f[0], f
+    assert len(f) == 1 and "with ${XD_VERSION} ('v0.1.0-12-gabc1234-dirty-preview'" in f[0], f
+    assert "would run past the board outline (x 88 to 118, y 92 to 112 mm)" in f[0], f
+    pcb.write_text(good.replace("(at 95.5 108.4 0)", "(at 95.5 111.8 0)"))      # ... below the board (y)
+    f = _run(root, repo, "CK-F11", "c_version_variable")
+    assert len(f) == 1 and "would run past the board outline" in f[0], f
+    pcb.write_text(good.replace("(at 95.5 106.2 0)", "(at 116 106.2 0)"))       # the board name line runs off
+    f = _run(root, repo, "CK-F11", "c_version_variable")
+    assert len(f) == 1 and "with ${XD_BOARD} ('drc'" in f[0] and "would run past" in f[0], f
     hole = '(gr_circle (center 100 108.4) (end 101.6 108.4) (stroke (width 0.05) (type default)) (fill no) (layer "Edge.Cuts"))\n'
     pcb.write_text(good.replace("(embedded_fonts no)", hole + "\t(embedded_fonts no)"))
     f = _run(root, repo, "CK-F11", "c_version_variable")
     assert len(f) == 1 and "would cross the hole at (100, 108.4)" in f[0], f
+    pcb.write_text(good.replace("(at 95.5 108.4 0)", "(at 92 101.27 0)"))       # over the pads of the header
+    f = _run(root, repo, "CK-F11", "c_version_variable")
+    assert any("would cross pad" in x for x in f), f
     pcb.write_text(good)
     sch = d / "drc.kicad_sch"
     sch.write_text(sch.read_text().replace('(title "${XD_BOARD}")', '(title "Canary board")')
