@@ -16,8 +16,8 @@ What curatrix adds (``ensure``, run by bootstrap/update):
 * the addon's settings ``freecad_mcp_settings.json`` in FreeCAD's user data folder: remote access off,
   allowed IPs 127.0.0.1, the token, auto-start off;
 * the ``freecad`` entry of ``<ws>/.mcp.json`` (other servers are kept). No approval is written:
-  Claude Code asks each person once per workspace (owner decision 2026-11-18, tiacsys/xdmod#69); an
-  approval an older curatrix wrote into ``.claude/settings.local.json`` is removed.
+  Claude Code asks each person once per workspace (owner decision 2026-11-18, tiacsys/xdmod#69).
+  curatrix never touches ``.claude/settings.local.json``: Claude Code stores the person's answer there.
 
 ``curatrix mcp-server freecad`` runs ``freecad-mcp`` under the ``mcp`` limits with ``HOME`` and the
 XDG folders under ``.xdmod/freecad-mcp/``: freecad-mcp 0.1.32 writes its headless scripts to
@@ -163,26 +163,16 @@ def _merge_json(p: Path, change) -> bool:
 
 
 def write_mcp_config(ws: Workspace) -> list[str]:
-    """The `freecad` server in <ws>/.mcp.json; everything else is kept. No approval: Claude Code asks
-    each person once (owner decision 2026-11-18). An approval an older curatrix wrote into
-    <ws>/.claude/settings.local.json is taken out again; a person's own `disabledMcpjsonServers`
-    entry is never touched."""
+    """The `freecad` server in <ws>/.mcp.json; everything else is kept. No approval (owner decision
+    2026-11-18): Claude Code asks each person once and stores the answer in
+    <ws>/.claude/settings.local.json, which curatrix never touches (it cannot tell an old curatrix
+    entry from the person's own answer)."""
     made = []
 
     def server(d):
         d.setdefault("mcpServers", {})[SERVER] = mcp_entry(ws)
-
-    def unapprove(d):
-        on = d.get("enabledMcpjsonServers")
-        if isinstance(on, list) and SERVER in on:
-            on.remove(SERVER)
-            if not on:
-                del d["enabledMcpjsonServers"]
-    loc = ws.root / ".claude" / "settings.local.json"
-    steps = [(ws.root / ".mcp.json", server)] + ([(loc, unapprove)] if loc.is_file() else [])
-    for p, fn in steps:
-        if _merge_json(p, fn):
-            made.append(ws.rel(p))
+    if _merge_json(ws.root / ".mcp.json", server):
+        made.append(ws.rel(ws.root / ".mcp.json"))
     return made
 
 

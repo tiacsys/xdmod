@@ -316,7 +316,7 @@ and the pip package `freecad-mcp` at the same version. `curatrix update` also ma
 `.xdmod/freecad/mcp-token` (0600), writes the addon settings (`freecad_mcp_settings.json`: remote
 off, allowed IPs 127.0.0.1, the token, auto-start off), the server `freecad` in `<ws>/.mcp.json`
 but no approval: Claude Code asks each person once per workspace, as for `kicad` (owner decision
-2026-11-18; an approval an older curatrix wrote into `.claude/settings.local.json` is removed). The `.mcp.json` command is
+2026-11-18; curatrix never touches `.claude/settings.local.json`, where Claude Code stores the answer). The `.mcp.json` command is
 `curatrix mcp-server freecad`: it reads the token from its file (never in `curatrix env`), sets
 `HOME` and `XDG_*` to `.xdmod/freecad-mcp/{home,cache,config,data}` (freecad-mcp writes headless
 scripts to `~/.cache/freecad-mcp`), and execs `.venv/bin/freecad-mcp` under the `mcp` limits
