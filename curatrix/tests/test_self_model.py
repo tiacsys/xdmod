@@ -135,6 +135,15 @@ def test_two_domain_view_shows_only_links_across(m, key, pkg):
             {(e["src"].split("::")[-1], e["dst"].split("::")[-1], e["label"]) for e in g["edges"]}
 
 
+def test_peer_domain_view_shows_only_sw_to_ee(m):
+    """SW may conform to the EE board model (5.14); that is the only link between peer domains."""
+    g = _view(m, "eeSw")
+    edges = {(e["src"].split("::")[1], e["src"].split("::")[-1], e["dst"].split("::")[-1], e["label"]) for e in g["edges"]}
+    assert edges and all(src == "Software" for src, *_ in edges), edges
+    assert {(s, d) for _, s, d, _ in edges} == {(s, d) for s in ("SwArchitectureElement", "SwDetailedDesignElement")
+                                                for d in ("Pcba", "Port")}
+
+
 def test_repo_view_compartments_and_values(m):
     g = _view(m, "sysRepo")
     sys_repo = next(n for n in g["nodes"] if n["id"].endswith("::SysEngRepo"))

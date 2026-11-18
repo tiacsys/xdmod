@@ -79,7 +79,7 @@ The EE repo holds one KiCad project per PCBA, the prototype wiring, the domain t
 .. sysml-view:: /views/eeRepo.drawio.svg
    :caption: eeRepo: the repo, its documents and design files (general view)
 
-A circuit block is part of a PCBA. Both satisfy EE requirements. EE tests verify EE requirements, and test results point back to the test case they come from.
+A circuit block is part of a PCBA, and so is a connector port (``ee-port``, with its pin map from the EE model). A harness (``ee-har``) connects the ports its ends mate with; it realizes a system element and satisfies EE requirements like a PCBA. PCBAs and circuit blocks satisfy EE requirements. EE tests verify EE requirements, and test results point back to the test case they come from.
 
 .. sysml-view:: /views/eeNeeds.drawio.svg
    :caption: eeNeeds: need types and the trace links inside the domain (general view)
@@ -92,7 +92,7 @@ The ME repo holds the FreeCAD parts and assemblies, the domain tests and the nee
 .. sysml-view:: /views/meRepo.drawio.svg
    :caption: meRepo: the repo, its documents and design files (general view)
 
-The same pattern as EE: a part is part of an assembly, both satisfy ME requirements, and ME tests verify them.
+The same pattern as EE: a part is part of an assembly, and so is a mechanical port (``me-port``, a mounting interface or a board seat); parts and assemblies satisfy ME requirements, and ME tests verify them.
 
 .. sysml-view:: /views/meNeeds.drawio.svg
    :caption: meNeeds: need types and the trace links inside the domain (general view)
@@ -126,10 +126,11 @@ Inside the domain there is only one kind of link: a test result points to its te
 Between two domains
 -------------------
 
-These diagrams show only the links that cross from one domain to another. Every crossing link
-goes to systems engineering: a domain requirement refines a system requirement or an interface,
-a design element realizes a system model element and conforms to an interface, and a
-system-level test verifies a system requirement or an interface.
+These diagrams show only the links that cross from one domain to another. Almost every crossing
+link goes to systems engineering: a domain requirement refines a system requirement or an
+interface, a design element realizes a system model element and conforms to an interface, and a
+system-level test verifies a system requirement or an interface. The one exception is SW to EE
+(last diagram below).
 
 .. sysml-view:: /views/sysSw.drawio.svg
    :caption: sysSw: software to systems engineering (general view)
@@ -143,11 +144,17 @@ system-level test verifies a system requirement or an interface.
 .. sysml-view:: /views/sysInt.drawio.svg
    :caption: sysInt: system-level verification to systems engineering (general view)
 
-There are no diagrams for EE and SW, EE and ME, or ME and SW, because these pairs have no links
-by design. Peer domains never link to each other. When EE and SW must agree on a pin map, the
-agreement is an interface need (``SYS-IF``) in the systems repo, and both link to it with
-``conforms`` (:need:`XD-RULE-0003`, :need:`XD-ADR-0030`). In the diagrams above, ``Interface``
-is that meeting point. System-level verification has no links to the engineering domains
+Peer domains meet at an interface need (``SYS-IF``) in the systems repo, and both link to it
+with ``conforms`` (:need:`XD-RULE-0003`, :need:`XD-ADR-0030`). In the diagrams above,
+``Interface`` is that meeting point. There is one exception: SW reads the board pin maps from
+the EE model, so a SW architecture or detailed design element may conform to a PCBA or a
+connector port of EE (``ee-pcba``, ``ee-port``); EE never links to SW. EE and ME, and ME and
+SW, have no links to each other, so they have no diagram.
+
+.. sysml-view:: /views/eeSw.drawio.svg
+   :caption: eeSw: the one link between peer domains, software conforming to the EE board model (general view)
+
+System-level verification has no links to the engineering domains
 either: it verifies the system. It does import their needs, as the next section shows.
 
 The whole workspace
@@ -226,7 +233,8 @@ The change process
 
 A change runs on one branch name in every repo it touches (:need:`XD-ADR-0045`). It is checked
 locally and in CI, and reviewed by a second agent (:need:`XD-ADR-0115`). Then a person, the owner
-or a domain engineer, reviews and merges it (:need:`XD-ADR-0043`, :need:`XD-ADR-0051`). If the
+or a domain engineer, reviews and merges it (:need:`XD-ADR-0043`, :need:`XD-ADR-0051`); during
+Phase 5 the coordinator agent may also merge after an agent review without open must-fix findings. If the
 change made links suspect, an agent prepares the affirmations and a person confirms them
 (:need:`XD-RULE-0014`). After each action name comes its action definition: the kind of task
 (agent work, agent review, a person's decision, a CI run), which says who may do it.
