@@ -244,14 +244,15 @@ class Bom(Directive):
         rows = ad.indented_bom(a.tree, vs)
         if not rows:
             return [nodes.paragraph(text=NO_DATA)]
-        docs = _registry_docs(a.repo)
+        env = self.state.document.settings.env
         qty_head = ["Qty"] if vs == [ad.ALL] else [f"Qty {v}" for v in vs]
 
         def ident(r):
             i = _need(r["id"]) if r["id"].startswith("ME-") else _lit(r["id"])
             d = r["document"]
             if d:
-                i += f", :external+{docs[d]}:doc:`{d} <index>`" if d in docs else f", document ``{d}``"
+                xn = _xref_name(env, a.repo, d)
+                i += f", :external+{xn}:doc:`{d} <index>`" if xn else f", document ``{d}``"
             return i
         body = [[_lit(r["pos"]), INDENT * r["level"] + _cell(r["designation"]), _cell(r["kind"]), ident(r),
                  *[str(r["qty"][v]) for v in vs], _cell(r["material"]), _cell(r["print_profile"]),
@@ -263,9 +264,9 @@ class Bom(Directive):
                                  "Manufacturer", "MPN"], body))
 
 
-def _registry_docs(repo: Path) -> dict[str, str]:
-    from xdmod_sphinx.harness import _registry_docs as r
-    return r(repo)
+def _xref_name(env, repo: Path, doc: str) -> str | None:
+    from xdmod_sphinx.harness import xref_name
+    return xref_name(env, repo, doc)
 
 
 class Drawing(Directive):

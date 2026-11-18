@@ -201,6 +201,20 @@ def test_harnesses_document(tmp_path):
     assert html.count("Bill of materials") == 2
 
 
+def test_xref_name_follows_the_build(tmp_path):
+    """The link to a board document uses the intersphinx name of the build it is in: the repo's
+    registry gives pcba_x, the full set's registry pcba-x (found in the full docs build)."""
+    import types
+    sys.path.insert(0, str(FIXTURES.parents[2] / "sphinx"))
+    from xdmod_sphinx import harness as hd
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs/documents.yaml").write_text("documents:\n  pcba-x: {group: g}\n")
+    env = lambda m: types.SimpleNamespace(config=types.SimpleNamespace(intersphinx_mapping=m))  # noqa: E731
+    assert hd.xref_name(env({"pcba_x": ()}), tmp_path, "pcba-x") == "pcba_x"
+    assert hd.xref_name(env({"pcba-x": ()}), tmp_path, "pcba-x") == "pcba-x"
+    assert hd.xref_name(env({}), tmp_path, "pcba-x") is None
+
+
 def test_harness_diagram_documents_are_always_outdated():
     """A document with xd-harness-diagram is re-read on every build, so a later `curatrix cam`
     run shows up without a clean build (the plain test build above re-reads anyway)."""
