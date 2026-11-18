@@ -95,6 +95,8 @@ The principles of the trace model and the rules on the trace graph.
 
    Every product-layer ``SYS-EL``, ``SW-ARCH``, ``EE-PCBA``, ``EE-CMP``, ``ME-ASM`` and ``ME-PART`` has a ``realizes`` or a ``satisfies`` link.
 
+   Catalog parts are left out: an ``ME-PART`` whose FreeCAD object has a ``Standard`` designation (a standard fastener, need field ``standard``) or both ``Manufacturer`` and ``MPN`` (a bought part, need field ``catalog``). ``curatrix gen cad-needs`` writes these fields; such a part is used in many places and realizes no system element of its own. KiCad components do not get the fields yet.
+
 .. xd-rule:: Links to retired needs are reported, with a grace period
    :id: XD-RULE-0011
    :legacy_id: R4

@@ -16,7 +16,10 @@ followed); the PCBA itself from ``text_variables`` of the ``.kicad_pro`` (TraceI
 A sheet file used several times carries one ID; its usages are listed in ``instances`` (D128).
 The XML netlist of ``kicad-cli sch export netlist --format kicadxml`` can be read instead.
 
-FreeCAD: object properties in ``Document.xml`` inside the ``.FCStd`` zip.
+FreeCAD: object properties in ``Document.xml`` inside the ``.FCStd`` zip. A FreeCAD part need of a
+catalog part also carries ``standard`` (its ``Standard`` property, a standard fastener) or
+``catalog`` (``<Manufacturer> <MPN>``, both set); the schema rule XD-S-R3 (no orphan design,
+XD-RULE-0010) leaves such parts out. KiCad components do not get these fields yet.
 """
 from __future__ import annotations
 
@@ -375,6 +378,14 @@ def freecad_needs(fcstd: Path, source: str, refs: list | None = None) -> tuple[d
         findings += f
         if n is None:
             continue
+        # a catalog part (XD-RULE-0010 does not apply): a standard fastener or a bought part
+        vals = o.get("values") or {}
+        std = str(vals.get("Standard") or "").strip()
+        man, mpn = str(vals.get("Manufacturer") or "").strip(), str(vals.get("MPN") or "").strip()
+        if std:
+            n["standard"] = std
+        elif man and mpn:
+            n["catalog"] = f"{man} {mpn}"
         if n["id"] in needs:
             findings.append(f"{source}: TraceID {n['id']} is on more than one object")
             continue

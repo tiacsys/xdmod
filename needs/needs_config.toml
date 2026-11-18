@@ -37,6 +37,16 @@ schema = { type = "string", enum = ["draft", "valid", "retired"] }
 description = "Generated needs: source path relative to the repo."
 schema = { type = "string" }
 
+[needs.fields.standard]
+description = "ME-PART from CAD: the standard designation of a standard fastener (FreeCAD property `Standard`, e.g. `ISO 7380-1 M3x6, A2`). A catalog part: R3 does not apply."
+schema = { type = "string" }
+default = ""
+
+[needs.fields.catalog]
+description = "ME-PART from CAD: `<Manufacturer> <MPN>` of a bought part (FreeCAD properties `Manufacturer` and `MPN`, both set). A catalog part: R3 does not apply."
+schema = { type = "string" }
+default = ""
+
 [needs.fields.legacy_id]
 description = "The old name of a decision or rule before it became a need, e.g. D37 or R3 (D120)."
 schema = { type = "string" }
@@ -652,7 +662,10 @@ validate.local = { properties = { satisfies = { minItems = 1 } }, required = ["s
 [[needs.schema_definitions.schemas]]
 id = "XD-S-R3-no-orphan-design"
 severity = "violation"
-select = { properties = { type = { enum = ["sw-arch", "ee-pcba", "ee-cmp", "ee-har", "me-asm", "me-part"] }, status = { enum = ["draft", "valid"] }, realizes = { maxItems = 0 } } }
+# Catalog parts (a `standard` designation or a `catalog` Manufacturer + MPN, written by `curatrix gen
+# cad-needs`) are left out: a standard screw or a bought part used in several assemblies realizes
+# no system element of its own (finding 16 of xdmod#69).
+select = { properties = { type = { enum = ["sw-arch", "ee-pcba", "ee-cmp", "ee-har", "me-asm", "me-part"] }, status = { enum = ["draft", "valid"] }, realizes = { maxItems = 0 }, standard = { maxLength = 0 }, catalog = { maxLength = 0 } } }
 validate.local = { properties = { satisfies = { minItems = 1 } }, required = ["satisfies"] }
 
 # --- R5: a HIL result carries the firmware hash and the pinned SHAs (D57, D60)
