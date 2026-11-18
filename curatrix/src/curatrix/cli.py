@@ -105,6 +105,15 @@ def cmd_update(a):
     return setup.update(_ws(), adopt=a.adopt, after_west=a.after_west)
 
 
+def cmd_mcp_server(a):
+    from curatrix import freecadmcp, tools
+    try:
+        return freecadmcp.serve(_ws())
+    except tools.ToolsError as e:
+        print(f"curatrix mcp-server {a.server}: {e}", file=sys.stderr)
+        return 1
+
+
 def cmd_launch(a):
     from curatrix import setup
     return setup.launch(_ws(), a.tool, a.args)
@@ -682,6 +691,10 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("tool", choices=["kicad", "freecad", "blender", "drawio", "claude"])
     s.add_argument("args", nargs=argparse.REMAINDER)
     s.set_defaults(func=cmd_launch)
+
+    s = sub.add_parser("mcp-server", help="an MCP server for Claude Code (.mcp.json): workspace HOME, token, limits")
+    s.add_argument("server", choices=["freecad"])
+    s.set_defaults(func=cmd_mcp_server)
 
     s = sub.add_parser("docs", help="zdocs build of a repo (or `full`) into build/<area>/docs (strict)")
     s.add_argument("target")

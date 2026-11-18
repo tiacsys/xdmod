@@ -125,5 +125,14 @@ StepUp 13.1.7 keeps its settings in FreeCAD's preferences (workspace `user.cfg`)
 `~/.local/share` of KiCad, FreeCAD and Blender were unchanged (`ls -la --time-style=full-iso` before
 and after). After each stop the addon setting `auto_start_rpc` was false again and the port closed.
 
+Run 4 (after the review of #80): the recipe of the freecad-authoring skill, verbatim, with the MCP
+server's `HOME` and `XDG_CACHE_HOME` under `.xdmod/freecad-mcp/`: same result (R1 and J1 coloured,
+3.3 s), and afterwards every patched `QMessageBox`/`QDialog` method was the original object again
+and the two StepUp preferences were gone (they had not existed before). In runs 0-3 the MCP server
+had the real `HOME`; it made no headless call, and `~/.cache/freecad-mcp` was not created; now
+`.mcp.json` starts it through `curatrix mcp-server freecad`, which sets a workspace `HOME`. The
+StepUp preferences of runs 1-3 never reached the workspace `user.cfg` (FreeCAD was stopped by
+SIGTERM, so it did not save); an explicit removal run left only two empty groups.
+
 Not tried yet: the push back (`export_pcb`, report §8 steps 3-4) through the MCP server, and a
 headless load with the same patches (would answer finding 17 without a GUI).

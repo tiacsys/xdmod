@@ -545,10 +545,17 @@ def launch(ws: Workspace, tool: str, args: list[str]) -> int:
     lim = limits.resolve(use, ws)
     say(f"curatrix launch {tool}: {limits.describe(lim)}"
         + (f"; MCP RPC server on 127.0.0.1:9875 with token, HOME={ws.rel(Path(env['HOME']))}" if mcp else ""))
+    import signal
+
+    def stop(sig, frame):                    # SIGTERM/SIGHUP: run the finally (auto-start off) too
+        raise SystemExit(128 + sig)
+    old = {sg: signal.signal(sg, stop) for sg in (signal.SIGTERM, signal.SIGHUP)} if mcp else {}
     try:
         return limits.norm_rc(subprocess.run(limits.wrap([exe, *args], lim), cwd=ws.root, env=env).returncode)
     finally:
         freecadmcp.after_launch(ws, mcp)
+        for sg, h in old.items():
+            signal.signal(sg, h)
 
 
 # ------------------------------------------------------------------ doctor (§5, 4.4b)
