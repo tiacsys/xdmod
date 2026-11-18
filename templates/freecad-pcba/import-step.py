@@ -82,7 +82,10 @@ try:
     if len(roots) != 1:
         raise RuntimeError(f"expected one top object in the STEP import, got {[o.Label for o in roots]}")
     root = roots[0]
-    thick = float(os.environ.get("XD_THICKNESS") or 0)
+    if not os.environ.get("XD_THICKNESS"):
+        raise RuntimeError("XD_THICKNESS missing: without the board thickness the model would keep z = 0 on its "
+                           "bottom face instead of the top face (board frame)")
+    thick = float(os.environ["XD_THICKNESS"])
     # into the board frame: z = 0 on the top face; every placement below is taken with transform=True,
     # so it includes this one
     root.Placement = App.Placement(App.Vector(0, 0, -thick), App.Rotation()).multiply(root.Placement)
