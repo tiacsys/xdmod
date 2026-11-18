@@ -116,7 +116,7 @@ def _subst(text: str, values: dict[str, str]) -> str:
 
 # sub-folder of docs/ per kind of per-deliverable document (owner decision Q8 of tiacsys/xdmod#69);
 # the registry entry names it as ``doc_dir: <sub>/<id>``, the deploy path stays ``html/<id>/``
-SUBFOLDERS = {"pcba-": "pcbas", "asm-": "assemblies", "fw-": "firmware"}
+SUBFOLDERS = {"pcba-": "pcbas", "asm-": "assemblies", "fw-": "firmware", "proto-": "protos"}
 
 
 def doc_folder(doc_id: str) -> str:
