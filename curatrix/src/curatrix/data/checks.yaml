@@ -12,7 +12,7 @@ checks:
   CK-A7:
     need: XD-CHECK-0060
     enforces: [XD-RULE-0067]
-    description: "Plain Python on the docs registry and the folders below docs/: every own registry entry has its document folder, every document folder is in the registry, per-deliverable documents sit in their sub-folder (pcbas/, assemblies/, firmware/), and a repo with harnesses has one harnesses document and no harness-<cable> documents."
+    description: "Plain Python on the docs registry and the folders below docs/: every own registry entry has its document folder, every document folder is in the registry, per-deliverable documents sit in their sub-folder (pcbas/, assemblies/, firmware/, protos/), and a repo with harnesses has one harnesses document and no harness-<cable> documents."
   CK-A1:
     need: XD-CHECK-0002
     enforces: [XD-RULE-0002]
