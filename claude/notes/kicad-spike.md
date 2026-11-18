@@ -447,6 +447,12 @@ Curated as tools.yaml `kicad-mcp` (tarball + new `python_venv`), started by `cur
 | With `curatrix launch kicad` open (IPC server switched on in `.xdmod/kicad/10.0/kicad_common.json` for the trial only, restored afterwards) | `check_kicad_ui`: running, `ipc_connected: true` on `/tmp/kicad/api.sock`. With only the project manager open, the session stays on SWIG (the GUI does not hold the board); live board edits need the PCB editor open. IPC tools (`ipc_*`) are not in the default toolboxes |
 | User folders (`~/.config/kicad`, `~/.local/share/kicad`, `~/.cache/kicad`, `~/.kicad-mcp`, `~/.cache/pip`, FreeCAD and Blender folders) | unchanged during install, doctor and trial (`find -newer`). The only write below HOME of the night: the **unpatched upstream** test suite created `~/.kicad-mcp/logs` (5 files) before the fork patches; moved to `build/kicad-mcp-fork/evidence/` |
 
+Release check (same night): with the released `v2.9.0-xd.1` asset (sha256 `96bee2f6…`) the doctor
+handshake FAILED: strict mode refused `XDG_*_HOME` below `$HOME`, and this workspace lives below
+`$HOME` (a rule added in fork #4 after the trial build). Fork PR #7 limits the rule to the desktop
+folders; the handshake with that fix (scratch copy of the release) passes, user folders unchanged.
+The pin moves to `v2.9.0-xd.2` (with #6, readonly DRC report under `KICAD_MCP_HOME`) before #84 merges.
+
 Open: the IPC server is off in the workspace KiCad config; switching it on for `curatrix launch
 kicad` is a decision for the owner (socket without auth, report §3). The readonly DRC report file
 above. The server needs more than 30 s to exit after its stdin closes when the worker is still warming
