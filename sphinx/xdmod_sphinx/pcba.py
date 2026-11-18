@@ -252,7 +252,7 @@ class Renderings(Directive):
         if rec is None:
             return [nodes.paragraph(text=LOCAL)]
         docdir = Path(env.doc2path(env.docname)).parent
-        result = self.models_note(rec)
+        result, images = self.models_note(rec), 0
         for v in [x["name"] for x in b.variants()] or [None]:
             cap = f"Variant {v}" if v else "Board"
             shown = [(what, f) for stem, what in self.VIEWS
@@ -262,7 +262,10 @@ class Renderings(Directive):
             result.append(nodes.paragraph(text=f"{cap}, {_version(rec)}: {', '.join(w for w, _ in shown)}."))
             result += [nodes.image(uri=os.path.relpath(f, docdir), alt=f"{cap}, {what}", width="32%")
                        for what, f in shown]
-        return result or [nodes.paragraph(text=NO_DATA)]
+            images += len(shown)
+        if not images:                     # a models note alone must not hide that no image exists
+            result.append(nodes.paragraph(text=NO_DATA))
+        return result
 
 
 class Schematic(Directive):
