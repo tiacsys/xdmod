@@ -79,23 +79,31 @@ def views_block(cfg, qname: str, wanted: list[tuple[str, str, str]], log=print, 
     from curatrix import views
     s = cfg.section("model") or {}
     mj = cfg.resolve(s.get("json", "generated/model.json"))
-    have = [v for v in views.discover(modelmod.Model.load(mj))] if mj.exists() else []
+    # a view's root is a qualified name (views.graph finds it by exactly that; another spelling
+    # fails `views build`), so the string compare finds every view that builds
+    have = views.discover(modelmod.Model.load(mj)) if mj.exists() else []
     simple = qname.split("::")[-1]
+    no_ck_d3 = cfg.section("views") is None
     out = []
     for kind, suffix, caption in wanted:
         hit = sorted(v.name for v in have if v.kind == kind and v.root == qname)
         if hit:
-            out.append(f".. sysml-view:: /views/{hit[0]}.drawio.svg\n   :caption: {caption} (view ``{hit[0]}``)\n")
+            # the caption is plain text (not rst): no backticks
+            out.append(f".. sysml-view:: /views/{hit[0]}.drawio.svg\n   :caption: {caption} (view {hit[0]})\n")
             continue
         if optional:
             continue
         name = lower_camel(simple) + suffix
         snippet = f'view {name} {{ @XdView {{ kind = "{kind}"; root = "{qname}"; }} }}'
+        ck = (" CK-D3 checks views only with a ``views:`` section in ``checks.yaml`` (and ``CK-D3`` in "
+              "``expect:``); this repo has none yet." if no_ck_d3 else "")
         out.append(f"The model has no {kind} view of ``{simple}`` yet. Add ``{snippet}`` to the model, run "
                    f"``curatrix gen model`` and ``curatrix views build``, and replace this paragraph with "
-                   f"``.. sysml-view:: /views/{name}.drawio.svg``.\n")
+                   f"``.. sysml-view:: /views/{name}.drawio.svg``.{ck}\n")
         log(f"  no {kind} view of {simple} in the model: add `{snippet}`, then `curatrix views build` "
             f"(the document says where it goes)")
+        if no_ck_d3:
+            log("  checks.yaml has no views: section: add `views: {dir: views}` and CK-D3 to expect:, so CK-D3 checks it")
     return "\n".join(out)
 
 

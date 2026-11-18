@@ -191,6 +191,7 @@ def test_new_pcba(tmp_path):
     # no view of the board in the model yet: the document says what to add (no missing file)
     assert "The model has no interconnection view of ``JointController`` yet" in idx
     assert 'kind = "interconnection"; root = "Ee::JointController"' in idx and "\n.. sysml-view::" not in idx
+    assert "views:`` section in ``checks.yaml``" in idx          # the repo has no views section: CK-D3 is off
     assert '(REPO, "views/*.drawio.svg")' in (repo / "docs/pcba-joint-controller/conf.py").read_text()
     assert _run(root, repo, "CK-F6", "c_ee_projects") == []
     f7 = _run(root, repo, "CK-F7", "c_ee_one_to_one")
@@ -216,6 +217,7 @@ def test_new_pcba_embeds_the_board_views(tmp_path, monkeypatch):
     newpcba.new_pcba(Workspace(root), Repo("r", repo, "r"), cfg, "JointController", kicad=False, log=lambda *_: None)
     idx = (repo / "docs/pcba-joint-controller/index.rst").read_text()
     assert ".. sysml-view:: /views/jointController.drawio.svg" in idx
+    assert "(view jointController)" in idx and "(view ``" not in idx      # the caption is not rst
     assert ".. sysml-view:: /views/jointControllerVariants.drawio.svg" in idx
     assert "other.drawio.svg" not in idx and "has no" not in idx and "__" not in idx
 
