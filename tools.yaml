@@ -92,11 +92,12 @@ tools:
     # node_modules and requirements.lock.txt (hashed, without pymupdf, which is AGPL-3.0).
     # Started by `curatrix mcp-server kicad` (.mcp.json server `kicad`); its Python worker runs in its
     # own venv with the system KiCad's SWIG pcbnew linked in.
-    # Tag v2.9.0-xd.1 = xd/main 98965fa; sha256 from the release's SHA256SUMS.
-    version: "2.9.0-xd.1"
+    # Tag v2.9.0-xd.2 = xd/main 9bd4d68 (adds fork #6 readonly reports, #7 strict XDG fix);
+    # sha256 from the release's SHA256SUMS.
+    version: "2.9.0-xd.2"
     kind: tarball
-    url: https://github.com/tiacsys/KiCAD-MCP-Server/releases/download/v2.9.0-xd.1/kicad-mcp-server-2.9.0-xd.1.tar.gz
-    sha256: 96bee2f6f8d98ff9b470086b446080cb6056088dfe8db652d010b6ad2a17e3f2
+    url: https://github.com/tiacsys/KiCAD-MCP-Server/releases/download/v2.9.0-xd.2/kicad-mcp-server-2.9.0-xd.2.tar.gz
+    sha256: 4cd1974c260c42f48850362239d07f49f6cd73f57882cb9e071f6a6885e29a4f
     strip: 1
     location: opt/kicad-mcp
     licence: MIT
