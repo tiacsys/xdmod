@@ -98,7 +98,8 @@ package XdmodViews {
     // ------------------------------------------------------------------ two domains at a time
     // Only the relations between the two domains are drawn. By the trace rule, the engineering
     // domains and system-level verification link to systems engineering; peer domains (EE, ME,
-    // SW) do not link to each other but meet at a shared SYS-IF (XD-RULE-0001).
+    // SW) meet at a shared SYS-IF (XD-RULE-0003), except SW, which may conform to the EE board
+    // model (eeSw, 5.14).
     view sysSw {
         doc /* Trace links from software to systems engineering. */
         @XdView { kind = "general"; direction = "LEFT"; show = "reference"; compartments = "none";
@@ -113,6 +114,14 @@ package XdmodViews {
                   between = "XdmodNeeds::System, XdmodNeeds::Electrical"; }
         expose XdmodNeeds::System::*;
         expose XdmodNeeds::Electrical::*;
+        filter @SysML::ItemDefinition;
+    }
+    view eeSw {
+        doc /* The one link between peer domains: SW conforms to the EE board model (5.14). */
+        @XdView { kind = "general"; direction = "LEFT"; show = "reference"; compartments = "none";
+                  between = "XdmodNeeds::Electrical, XdmodNeeds::Software"; }
+        expose XdmodNeeds::Electrical::*;
+        expose XdmodNeeds::Software::*;
         filter @SysML::ItemDefinition;
     }
     view sysMe {
