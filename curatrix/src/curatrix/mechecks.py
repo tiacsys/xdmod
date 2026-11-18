@@ -22,7 +22,11 @@ load fully through its links), recomputes everything without saving and reports:
   the ME port defs (``ME-PORT``) that specialize a ``SYS-IF`` budget of the upstream model; the
   budget's box is ``width`` x ``depth`` in the board frame (origin at the lower-left corner of the
   outline seen from the top, z = 0 on the top face), from ``-heightBelow`` to ``heightAbove``,
-  with the values the seat restates or else the budget's defaults. Findings (rule ``space``):
+  with the values the seat restates or else the budget's defaults. A budget with a
+  ``mountZoneDiameter`` has a mounting zone around each of its holes (``hole<n>X``/``hole<n>Y``): a
+  cylinder of that diameter through the whole box height, which is left out of the box (supports
+  below the board, fastener heads above it; owner decision on the canary bosses, 2026-11-18). A
+  budget without it has no zones. Findings (rule ``space``):
   a board link not placed at a seat LCS (an LCS with ``Port`` = a seat, reached through the
   skeleton link); a board that reaches out of the box by more than ``BOX_TOL``; a part (not a
   fastener, not a board) with a common volume above ``OVERLAP_TOL`` with the box (a stand-off
@@ -44,6 +48,7 @@ document (``parts/``, ``lib/``) in the ``accepted.yaml`` of any assembly. Agents
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from curatrix import ercdrc, meassemblies
@@ -54,6 +59,8 @@ JOINED_TOL = 0.1            # mm^3, parts joined by an assembly joint
 RULES = {"CK-F4c": "recompute", "CK-F16": "solid", "CK-F17": "overlap", "CK-F18": "space"}
 BOX_TOL = 0.01              # mm, a board beyond its budget box; KiCad's STEP seats components 5 um off the top face
 BOX = ("width", "depth", "heightAbove", "heightBelow")
+ZONE = "mountZoneDiameter"  # optional: the diameter of the mounting zone around each budget hole
+HOLE = re.compile(r"hole\d+[XY]$")
 _CACHE: dict[tuple, dict] = {}
 
 
@@ -73,7 +80,8 @@ def files(cfg) -> list[Path]:
 
 
 def seats(cfg) -> dict[str, dict]:
-    """{ME-PORT: {budget, values: {width, depth, heightAbove, heightBelow}, missing}} of every seat:
+    """{ME-PORT: {budget, values: {width, depth, heightAbove, heightBelow, [mountZoneDiameter,
+    hole<n>X, hole<n>Y]}, missing}} of every seat:
     an ME port def that specializes a ``SYS-IF`` space budget of the upstream model (co-design,
     XD-ADR-0134). A value the seat restates wins over the budget's default."""
     from curatrix import gen, ids as idmod, meparams, model as modelmod
@@ -100,7 +108,8 @@ def seats(cfg) -> dict[str, dict]:
                 if el is None:
                     continue
                 for a in meparams._attributes(mm, el):
-                    v = meparams._value(mm, a) if a.get("name") in BOX else None
+                    n = a.get("name") or ""
+                    v = meparams._value(mm, a) if n in BOX or n == ZONE or HOLE.match(n) else None
                     if v is not None and v[1] == "length":
                         values[a["name"]] = v[0]
             out[pid] = {"budget": sid, "values": values, "missing": [k for k in BOX if k not in values]}
@@ -230,11 +239,12 @@ def _space_findings(cfg, res: dict) -> list[tuple[str | None, ercdrc.Finding]]:
                 if over > BOX_TOL:
                     add(f"{board} reaches {over:.3g} mm {what} of the space budget {seat['budget']} at {b['seat']} "
                         f"({b['port']}; board {axis} {bb[i]:.3f} mm, budget {edge:g} mm, tolerance {BOX_TOL:g} mm)", [])
+            zones = f", outside its mounting zones ({v[ZONE]:g} mm)" if b.get("zones") else ""
             for x in b.get("intrusions") or []:
                 if x["volume"] > OVERLAP_TOL:
                     add(f"{x['name']} reaches into the space budget {seat['budget']} of {board} at {b['seat']} "
                         f"({b['port']}) by {x['volume']:.4g} mm³, z {x['z'][0]:.3g} to {x['z'][1]:.3g} mm in the "
-                        f"board frame (tolerance {OVERLAP_TOL:g} mm³)", [x["name"]])
+                        f"board frame{zones} (tolerance {OVERLAP_TOL:g} mm³)", [x["name"]])
     return out
 
 
@@ -260,12 +270,14 @@ def folder_entries(cfg, acc: ercdrc.Acceptors) -> tuple[dict[str, list[ercdrc.En
 
 
 def evaluate(cfg, check: str, found: list[tuple[str | None, ercdrc.Finding]],
-             entries: dict[str, list[ercdrc.Entry]]) -> ercdrc.Outcome:
-    """The errors of one check that no accepted entry covers, and the entries that match nothing."""
+             entries: dict[str, list[ercdrc.Entry]], level: str = "") -> ercdrc.Outcome:
+    """The errors of one check that no accepted entry covers, and the entries that match nothing.
+    ``level``: the check's level in this run (warning | error), printed in the finding lines."""
     total = ercdrc.Outcome()
     mine = {k: [e for e in v if e.check == check] for k, v in entries.items()}
     by_folder: dict[str | None, list[ercdrc.Finding]] = {}
     for folder, f in found:
+        f.level = level
         by_folder.setdefault(folder, []).append(f)
     for folder, fs in by_folder.items():
         pool = mine.get(folder, []) if folder else [e for v in mine.values() for e in v]

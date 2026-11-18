@@ -20,6 +20,10 @@
 #   Skeleton (Port ME-PORT-0009) at (0, 40, 20); in the top document the links Board (at the seat),
 #   Board2 (at no seat), F (box-b at (0, 40, 8): 1 mm into a 3 mm heightBelow box, 100 mm^3),
 #   ScrewOk (through the board's hole) and ScrewBad (through the board body at (10, 45))
+# XD_SUPPORT=1 (with XD_BOARD=1) adds the mounting-zone fixture of CK-F18: parts/support.FCStd, a
+#   Part::Cylinder of 8 mm diameter and 1.4 mm height (ME-PART-0006), and its link Support at
+#   (15, 45, 17): in the board frame under (15, 5), from z = -3 to -1.6 (a stand-off under the board,
+#   exactly as wide as an 8 mm zone around a hole at (15, 5))
 import json
 import os
 import traceback
@@ -149,6 +153,14 @@ try:
         link("F", made["box-b"][1], (0, 40, 8))
         link("ScrewOk", made["screw"][1], (5, 45, 10))
         link("ScrewBad", made["screw"][1], (10, 45, 10))
+        if os.environ.get("XD_SUPPORT"):
+            d = doc(f"{root}/parts/support.FCStd", "support")
+            c = d.addObject("Part::Cylinder", "Support")
+            c.Radius, c.Height = 4, 1.4
+            trace(c, "ME-PART-0006")
+            d.recompute()
+            d.saveAs(f"{root}/parts/support.FCStd")
+            link("Support", c, (15, 45, 17))
     j = top.addObject("App::FeaturePython", "Joint")
     j.addProperty("App::PropertyXLinkSubHidden", "Reference1", "Joint")
     j.addProperty("App::PropertyXLinkSubHidden", "Reference2", "Joint")

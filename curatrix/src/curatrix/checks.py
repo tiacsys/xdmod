@@ -623,7 +623,7 @@ def _me(ctx: Ctx, r: Result, check: str):
         r.findings = ["no board model in any assembly (a link to an object with an EE-PCBA TraceID): nothing to check"]
         return
     entries, _ = mechecks.folder_entries(ctx.cfg, ercdrc.Acceptors(ctx.repo.path))   # format: CK-F9
-    o = mechecks.evaluate(ctx.cfg, check, mechecks.findings(ctx.cfg, res, check), entries)
+    o = mechecks.evaluate(ctx.cfg, check, mechecks.findings(ctx.cfg, res, check), entries, r.level)
     r.findings = o.problems
     rep = out / f"{check}.txt"
     rep.write_text("".join(f"{x}\n" for x in o.problems + o.listed) or "no findings\n")

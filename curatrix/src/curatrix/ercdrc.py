@@ -71,6 +71,8 @@ class Finding:
     excluded: bool = False
     comment: str = ""
     names: list[str] = field(default_factory=list)   # ME: the part names an entry's items name
+    level: str = ""              # ME: the check's level (warning | error) printed in place of the severity;
+    #                              the severity stays "error", so accepted.yaml can accept the finding
 
     @property
     def refs(self) -> list[str]:
@@ -80,7 +82,7 @@ class Finding:
 
     def line(self) -> str:
         where = ", ".join(self.refs) or "; ".join(self.items)[:120] or "-"
-        return f"{self.rule} ({self.severity or 'off'}): {self.description} [{where}]"
+        return f"{self.rule} ({self.level or self.severity or 'off'}): {self.description} [{where}]"
 
 
 def read_report(path: Path, check: str) -> list[Finding]:
@@ -352,7 +354,7 @@ def evaluate(findings: list[Finding], entries: list[Entry], excl: dict[str, tupl
             continue
         e = next((e for e in entries if e.matches(f)), None)
         if e is None:
-            o.problems.append(f"error: {f.line()}")
+            o.problems.append(f"{f.level or 'error'}: {f.line()}")
             o.row(f, "open")
             continue
         e.hits += 1

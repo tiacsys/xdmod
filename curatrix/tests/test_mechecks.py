@@ -65,7 +65,7 @@ def test_f17_collisions_and_acceptance(tmp_path, monkeypatch):
                          {"a": "A", "b": "C", "volume": 0.0005}], joined=[("B", "C")])
     monkeypatch.setattr(mechecks, "run", lambda ws, cfg, out: res)
     f = _run(root, repo, "c_collisions").findings
-    assert f == ["error: overlap (error): assemblies/fx/fx.FCStd: A and B overlap by 500 mm³ (tolerance 0.001 mm³) "
+    assert f == ["warning: overlap (warning): assemblies/fx/fx.FCStd: A and B overlap by 500 mm³ (tolerance 0.001 mm³) "
                  "[A, B]"], f                                # in every variant: one finding, no variant label
     res["assemblies"][0]["overlaps"][1]["volume"] = 0.5            # joined, but beyond the joint tolerance
     f = _run(root, repo, "c_collisions").findings
@@ -108,13 +108,13 @@ def test_f18_space_budget(tmp_path, monkeypatch):
         {"board": "Board2", "seat": "", "port": "", "placement": [0, 70, 20], "intrusions": [], "fasteners": []}]
     f = _run(root, repo, "c_space_budget").findings
     assert f == [
-        "error: space (error): assemblies/fx/fx.FCStd: Board and the fastener ScrewBad overlap by 11.31 mm³ (tolerance "
+        "warning: space (warning): assemblies/fx/fx.FCStd: Board and the fastener ScrewBad overlap by 11.31 mm³ (tolerance "
         "0.001 mm³): the fastener misses the board's hole [ScrewBad]",
-        "error: space (error): assemblies/fx/fx.FCStd: Board reaches 2 mm above heightAbove of the space budget "
+        "warning: space (warning): assemblies/fx/fx.FCStd: Board reaches 2 mm above heightAbove of the space budget "
         "SYS-IF-0001 at LCS_seat (ME-PORT-0009; board z 12.000 mm, budget 10 mm, tolerance 0.01 mm) [Board]",
-        "error: space (error): assemblies/fx/fx.FCStd: A reaches into the space budget SYS-IF-0001 of Board at LCS_seat "
+        "warning: space (warning): assemblies/fx/fx.FCStd: A reaches into the space budget SYS-IF-0001 of Board at LCS_seat "
         "(ME-PORT-0009) by 100 mm³, z -3 to -2 mm in the board frame (tolerance 0.001 mm³) [A]",
-        "error: space (error): assemblies/fx/fx.FCStd: Board2 is not placed at a board seat (an LCS with Port = an "
+        "warning: space (warning): assemblies/fx/fx.FCStd: Board2 is not placed at a board seat (an LCS with Port = an "
         "ME-PORT that specializes a SYS-IF budget: ME-PORT-0009); the link sits at [0, 70, 20] [Board2]"], f
     rows = mechecks.evaluate(checkcfg.load(repo / "checks.yaml", root), "CK-F18",
                              mechecks.findings(checkcfg.load(repo / "checks.yaml", root), res, "CK-F18"), {}).rows
@@ -138,7 +138,8 @@ def test_f18_seats_from_the_model(tmp_path):
     up = M()
     sp = up.el("Sys::BoardSpace", {"@type": "PortDefinition", "name": "BoardSpace", "qualifiedName": "Sys::BoardSpace",
                                    "declaredShortName": "SYS-IF-0001"})
-    for n, v in (("width", 30), ("depth", 20), ("heightAbove", 10)):
+    for n, v in (("width", 30), ("depth", 20), ("heightAbove", 10), ("hole1X", 4), ("hole1Y", 4),
+                 ("mountZoneDiameter", 8), ("holeDiameter", 3.2)):
         up.attr(sp, n, v, "millimetre")
     me = M()
     me.el("lib:Sys::BoardSpace", {"@type": "PortDefinition", "name": "BoardSpace", "qualifiedName": "Sys::BoardSpace",
@@ -148,6 +149,7 @@ def test_f18_seats_from_the_model(tmp_path):
     sub = me.el("Me::BoardSeat/sub", {"@type": "Subclassification", "superclassifier": {"@id": "lib:Sys::BoardSpace"}})
     seat["ownedRelationship"].append({"@id": sub["@id"]})
     me.attr(seat, "width", 25, "millimetre")
+    me.attr(seat, "mountZoneDiameter", 7, "millimetre")
     me.el("Me::Other", {"@type": "PortDefinition", "name": "Other", "qualifiedName": "Me::Other",
                         "declaredShortName": "ME-PORT-0001"})
     (repo / "generated").mkdir()
@@ -156,7 +158,9 @@ def test_f18_seats_from_the_model(tmp_path):
     (repo / "checks.yaml").write_text("version: 1\n" + CFG + "model: {files: [model/*.sysml], upstream: up.json}\n")
     cfg = checkcfg.load(repo / "checks.yaml", root)
     assert mechecks.seats(cfg) == {"ME-PORT-0002": {"budget": "SYS-IF-0001", "missing": ["heightBelow"],
-                                                    "values": {"width": 25.0, "depth": 20.0, "heightAbove": 10.0}}}
+                                                    "values": {"width": 25.0, "depth": 20.0, "heightAbove": 10.0,
+                                                               "hole1X": 4.0, "hole1Y": 4.0,
+                                                               "mountZoneDiameter": 7.0}}}
 
 
 def test_recompute_and_solids_shared_documents(tmp_path, monkeypatch):
@@ -169,9 +173,9 @@ def test_recompute_and_solids_shared_documents(tmp_path, monkeypatch):
                            "problem": "no solid (shape type Face)"}])
     monkeypatch.setattr(mechecks, "run", lambda ws, cfg, out: res)
     assert _run(root, repo, "c_recompute").findings == [
-        "error: recompute (error): parts/broken.FCStd: Fillet (Part::Fillet) does not recompute: Invalid [broken#Fillet]"]
+        "warning: recompute (warning): parts/broken.FCStd: Fillet (Part::Fillet) does not recompute: Invalid [broken#Fillet]"]
     assert _run(root, repo, "c_solids").findings == [
-        "error: solid (error): parts/sheet.FCStd: Sheet (ME-PART-0004): no solid (shape type Face) [sheet#Sheet]"]
+        "warning: solid (warning): parts/sheet.FCStd: Sheet (ME-PART-0004): no solid (shape type Face) [sheet#Sheet]"]
     (repo / "assemblies" / "fx" / "accepted.yaml").write_text(
         "version: 1\naccepted:\n  - check: CK-F16\n    rule: solid\n    items: [sheet#Sheet]\n    reason: a sheet\n")
     _commit(repo, "accept\n\nAccepted-by: Owner")
@@ -200,16 +204,16 @@ def test_me_checks_freecad(tmp_path):
     _commit(repo, "fixture")
     mechecks._CACHE.clear()
     assert _run(root, repo, "c_recompute").findings == [
-        "error: recompute (error): parts/broken.FCStd: Fillet (Part::Fillet) does not recompute: Touched, Invalid "
+        "warning: recompute (warning): parts/broken.FCStd: Fillet (Part::Fillet) does not recompute: Touched, Invalid "
         "[broken#Fillet]"]
     assert _run(root, repo, "c_solids").findings == [
-        "error: solid (error): parts/sheet.FCStd: Sheet (ME-PART-0004): no solid (shape type Face) [sheet#Sheet]"]
+        "warning: solid (warning): parts/sheet.FCStd: Sheet (ME-PART-0004): no solid (shape type Face) [sheet#Sheet]"]
     f = _run(root, repo, "c_collisions").findings
     assert sorted(f) == [
-        "error: overlap (error): assemblies/fx/fx.FCStd (variant SYS-CFG-0002): C and D overlap by 400 mm³ "
+        "warning: overlap (warning): assemblies/fx/fx.FCStd (variant SYS-CFG-0002): C and D overlap by 400 mm³ "
         "(tolerance 0.001 mm³) [C, D]",
-        "error: overlap (error): assemblies/fx/fx.FCStd: A and B overlap by 500 mm³ (tolerance 0.001 mm³) [A, B]",
-        "error: overlap (error): assemblies/fx/fx.FCStd: B and C overlap by 100 mm³ (tolerance 0.1 mm³, joined) "
+        "warning: overlap (warning): assemblies/fx/fx.FCStd: A and B overlap by 500 mm³ (tolerance 0.001 mm³) [A, B]",
+        "warning: overlap (warning): assemblies/fx/fx.FCStd: B and C overlap by 100 mm³ (tolerance 0.1 mm³, joined) "
         "[B, C]"], f                         # E touches A and B without a joint: no finding
     assert _run(root, repo, "c_space_budget").status == "skip"
     assert subprocess.run(["git", "-C", str(repo), "status", "--porcelain"], capture_output=True,
@@ -230,13 +234,13 @@ def test_f18_space_budget_freecad(tmp_path, monkeypatch):
     monkeypatch.setattr(mechecks, "seats", lambda cfg: SEAT)
     f = _run(root, repo, "c_space_budget").findings
     assert f == [
-        "error: space (error): assemblies/fx/fx.FCStd: Board and the fastener ScrewBad overlap by 11.31 mm³ (tolerance "
+        "warning: space (warning): assemblies/fx/fx.FCStd: Board and the fastener ScrewBad overlap by 11.31 mm³ (tolerance "
         "0.001 mm³): the fastener misses the board's hole [ScrewBad]",
-        "error: space (error): assemblies/fx/fx.FCStd: Board reaches 2 mm above heightAbove of the space budget "
+        "warning: space (warning): assemblies/fx/fx.FCStd: Board reaches 2 mm above heightAbove of the space budget "
         "SYS-IF-0001 at LCS_seat (ME-PORT-0009; board z 12.000 mm, budget 10 mm, tolerance 0.01 mm) [Board]",
-        "error: space (error): assemblies/fx/fx.FCStd: F reaches into the space budget SYS-IF-0001 of Board at LCS_seat "
+        "warning: space (warning): assemblies/fx/fx.FCStd: F reaches into the space budget SYS-IF-0001 of Board at LCS_seat "
         "(ME-PORT-0009) by 100 mm³, z -3 to -2 mm in the board frame (tolerance 0.001 mm³) [F]",
-        "error: space (error): assemblies/fx/fx.FCStd: Board2 is not placed at a board seat (an LCS with Port = an "
+        "warning: space (warning): assemblies/fx/fx.FCStd: Board2 is not placed at a board seat (an LCS with Port = an "
         "ME-PORT that specializes a SYS-IF budget: ME-PORT-0009); the link sits at [0.0, 70.0, 20.0] [Board2]"], f
     # planted: the budget lacks heightBelow; the board is still found at its seat (review of #86)
     mechecks._CACHE.clear()
@@ -247,3 +251,33 @@ def test_f18_space_budget_freecad(tmp_path, monkeypatch):
     assert any("Board at LCS_seat (ME-PORT-0009): the budget SYS-IF-0001 has no value for heightBelow" in x
                for x in f), f
     assert not any("Board is not placed" in x for x in f), f
+
+
+@pytest.mark.tools
+def test_f18_mount_zones_freecad(tmp_path, monkeypatch):
+    """CK-F18 mounting zones (owner decision on the canary bosses, 2026-11-18), in the FreeCAD
+    fixture (XD_BOARD=1, XD_SUPPORT=1): without mountZoneDiameter the budget behaves as before and
+    the support under (15, 5) is a finding; with an 8 mm zone around the holes (5, 5) and (15, 5)
+    the support, exactly as wide as its zone, passes, and F (planted) still reaches into the box
+    outside the zone around (5, 5): 100 mm³ less the 1 mm of an 8 mm cylinder."""
+    if shutil.which("FreeCADCmd") is None:
+        pytest.skip("FreeCADCmd not installed")
+    root, repo = _repo(tmp_path)
+    _fixture(tmp_path, repo, {"XD_BOARD": "1", "XD_SUPPORT": "1"})
+    _commit(repo, "fixture")
+    mechecks._CACHE.clear()
+    monkeypatch.setattr(mechecks, "seats", lambda cfg: SEAT)
+    f = [x for x in _run(root, repo, "c_space_budget").findings if "reaches into" in x]
+    assert [x.split(" reaches")[0] for x in f] == ["warning: space (warning): assemblies/fx/fx.FCStd: F",
+                                                   "warning: space (warning): assemblies/fx/fx.FCStd: Support"], f
+    assert "by 70.37 mm³, z -3 to -1.6 mm" in f[1], f
+    zoned = {"ME-PORT-0009": {"budget": "SYS-IF-0001", "missing": [], "values": {
+        **SEAT["ME-PORT-0009"]["values"], "hole1X": 5.0, "hole1Y": 5.0, "hole2X": 15.0, "hole2Y": 5.0,
+        "mountZoneDiameter": 8.0}}}
+    mechecks._CACHE.clear()
+    monkeypatch.setattr(mechecks, "seats", lambda cfg: zoned)
+    f = [x for x in _run(root, repo, "c_space_budget").findings if "reaches into" in x]
+    assert f == [
+        "warning: space (warning): assemblies/fx/fx.FCStd: F reaches into the space budget SYS-IF-0001 of Board at "
+        "LCS_seat (ME-PORT-0009) by 49.73 mm³, z -3 to -2 mm in the board frame, outside its mounting zones (8 mm) "
+        "(tolerance 0.001 mm³) [F]"], f
