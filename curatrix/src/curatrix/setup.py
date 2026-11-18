@@ -611,6 +611,10 @@ def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
             add("FAIL", f"{t.name}: installed {have}, tools.yaml wants {t.version}{pin}", "curatrix update")
         elif t.kind == "git" and tools.checkout_problem(ws, t):
             add("FAIL", f"{t.name}: {tools.checkout_problem(ws, t)}", "check it out at the pin without changes")
+        elif ci and getattr(t, "python_venv", None) and tools.missing_system_modules(t):
+            # the CI bootstrap skips it (no system KiCad on the runner), see tools.install_all
+            add("warn", f"{t.name} {t.version} not installed",
+                f"CI: system module {', '.join(tools.missing_system_modules(t))} not on the runner")
         else:
             add("FAIL", f"{t.name} {t.version} not installed",
                 "curatrix update" if t.kind == "git" else "curatrix update (or `curatrix update --adopt`)")
