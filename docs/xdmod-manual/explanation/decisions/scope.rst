@@ -98,7 +98,7 @@ What is in iteration 1 and what moved to iteration 2.
      it is ``<project>/v0.0.0-<n>-g<sha>-preview``. The full version goes into a title-block comment
      line and a silkscreen text; the ``Rev`` field cuts long strings off, so it holds only the short
      version or nothing.
-     *Corrected 2026-11-18 (owner decision Q13 of tiacsys/xdmod#69):* ``XD_VERSION`` holds the
+     *Corrected 2026-11-17 (owner decision Q13 of tiacsys/xdmod#69):* ``XD_VERSION`` holds the
      version without the ``<project>/`` tag prefix (``v0.1.0``, ``v0.1.0-3-gabc1234-preview``), as
      the output folder already did, and a new text variable ``XD_BOARD`` the board name. The title
      block of every sheet and of the board has title ``${XD_BOARD}`` and Rev ``${XD_VERSION}``; the

@@ -32,8 +32,10 @@ other repos (``libs/``) and can change the STEP model and the renderings without
 Frames and silkscreen (CK-F11; owner decision Q13 of tiacsys/xdmod#69, correcting XD-ADR-0142): the
 title block of every sheet and of the board has title ``${XD_BOARD}`` and rev ``${XD_VERSION}``; the
 board has the two silkscreen lines ``${XD_BOARD}`` and ``${XD_VERSION}``. ``XD_VERSION`` holds the
-version without the tag prefix (``v0.1.0``, ``v0.1.0-3-gabc1234-preview``), so it fits the Rev
-field; the committed values are ``unversioned`` and the project name.
+version without the tag prefix (``v0.1.0``, ``v0.1.0-3-gabc1234-preview``). A release version fits
+the Rev field; a preview version is longer than the field and KiCad cuts it off at the frame (open
+point for the owner: a comment line with the full version); the committed values are
+``unversioned`` and the project name.
 
 Jobset template (``xdmod/templates/kicad-pcba/pcba.kicad_jobset``): the jobs without a variant come
 first, then the variant-dependent ones. A project with variants has, instead of each
@@ -223,7 +225,8 @@ def _silk_texts(root) -> list[str]:
     return out
 
 
-# a long preview version, to test that the silkscreen version line fits (CK-F11); KiCad's stroke
+# a long preview version, to test that the silkscreen version line fits (CK-F11); the board line
+# is tested with the board name. KiCad's stroke
 # font is about 0.87 x the character width per character (measured with KiCad 10.0.8)
 LONG_VERSION = "v0.1.0-12-gabc1234-dirty-preview"
 CHAR_ADVANCE = 0.87
@@ -245,15 +248,49 @@ def _outline_box(root) -> tuple[float, float, float, float] | None:
     return min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts)
 
 
-def _version_line_fits(root) -> str | None:
-    """A finding if the silkscreen line with ${XD_VERSION}, filled with LONG_VERSION, would run past
-    the board outline (estimated from the font size; horizontal texts only)."""
+def _obstacles(root) -> list[tuple[str, float, float, float]]:
+    """(what, x, y, radius) of the holes (Edge.Cuts circles) and of every footprint pad (its
+    bounding circle; pad positions rotate with the footprint) of a board."""
+    import math
+    out = []
+    for c in _kids(root, "gr_circle"):
+        if next((k[1] for k in _kids(c, "layer") if len(k) > 1), "") != "Edge.Cuts":
+            continue
+        ctr, end = next(iter(_kids(c, "center")), None), next(iter(_kids(c, "end")), None)
+        if ctr and end:
+            cx, cy = float(ctr[1]), float(ctr[2])
+            out.append(("the hole", cx, cy, math.hypot(float(end[1]) - cx, float(end[2]) - cy)))
+    for fp in _kids(root, "footprint"):
+        at = next(iter(_kids(fp, "at")), None)
+        if not at or len(at) < 3:
+            continue
+        fx, fy = float(at[1]), float(at[2])
+        a = math.radians(float(at[3]) if len(at) > 3 else 0.0)
+        ref = next((pr[2] for pr in _kids(fp, "property") if len(pr) > 2 and pr[1] == "Reference"), "?")
+        for pad in _kids(fp, "pad"):
+            pa, ps = next(iter(_kids(pad, "at")), None), next(iter(_kids(pad, "size")), None)
+            if not pa or len(pa) < 3:
+                continue
+            px, py = float(pa[1]), float(pa[2])
+            r = max(float(ps[1]), float(ps[2])) / 2 if ps and len(ps) > 2 else 0.5
+            out.append((f"pad {pad[1]} of {ref}", fx + px * math.cos(a) + py * math.sin(a),
+                        fy - px * math.sin(a) + py * math.cos(a), r))
+    return out
+
+
+def _silk_line_findings(root, board: str) -> list[str]:
+    """Findings for the silkscreen lines with ${XD_BOARD} (filled with the board name) and
+    ${XD_VERSION} (filled with LONG_VERSION): each line, estimated from its font size, stays inside
+    the outline's bounding box and off holes and pads. Horizontal texts only; an estimate, not
+    KiCad's text layout."""
     box = _outline_box(root)
     if box is None:
-        return None
+        return []
+    obstacles = _obstacles(root)
+    out = []
     for t in _kids(root, "gr_text"):
         layer = next((c[1] for c in _kids(t, "layer") if len(c) > 1), "")
-        if not (isinstance(t[1], str) and VAR in t[1] and str(layer).endswith("SilkS")):
+        if not (isinstance(t[1], str) and (VAR in t[1] or BOARD_VAR in t[1]) and str(layer).endswith("SilkS")):
             continue
         at = next(iter(_kids(t, "at")), None)
         eff = next(iter(_kids(t, "effects")), [])
@@ -261,34 +298,34 @@ def _version_line_fits(root) -> str | None:
         size = next(iter(_kids(font, "size")), None) if font else None
         if at is None or size is None or len(at) < 3 or len(size) < 3:
             continue
-        rot = float(at[3]) % 180 if len(at) > 3 else 0.0
-        if rot:
+        if (float(at[3]) % 180 if len(at) > 3 else 0.0):
             continue
-        line = next(ln for ln in t[1].split("\n") if VAR in ln).replace(VAR, LONG_VERSION)
-        width = CHAR_ADVANCE * float(size[2]) * len(line)
+        h, w = float(size[1]), float(size[2])
         just = [x for j in (_kids(eff, "justify") if eff else []) for x in j[1:]]
         if str(layer).startswith("B."):
             just = ["right" if x == "left" else "left" if x == "right" else x for x in just]
-        x = float(at[1])
-        x0 = x if "left" in just else x - width if "right" in just else x - width / 2
-        if x0 < box[0] or x0 + width > box[2]:
-            return (f"the silkscreen line with {VAR} would run past the board outline (x {box[0]:g} to {box[2]:g} mm) "
-                    f"for a long version like {LONG_VERSION} (about {width:.1f} mm from x {x0:.1f} mm); move it or "
-                    f"make its characters narrower")
-        half = float(size[1]) / 2 + 0.15
-        y = float(at[2])
-        for c in _kids(root, "gr_circle"):
-            if next((k[1] for k in _kids(c, "layer") if len(k) > 1), "") != "Edge.Cuts":
+        lines = t[1].split("\n")
+        pitch = 1.6 * h
+        for k, ln in enumerate(lines):
+            if VAR not in ln and BOARD_VAR not in ln:
                 continue
-            ctr, end = next(iter(_kids(c, "center")), None), next(iter(_kids(c, "end")), None)
-            if not ctr or not end:
+            what = VAR if VAR in ln else BOARD_VAR
+            filled = ln.replace(VAR, LONG_VERSION).replace(BOARD_VAR, board)
+            width = CHAR_ADVANCE * w * len(filled)
+            x = float(at[1])
+            y = float(at[2]) + (k - (len(lines) - 1) / 2) * pitch
+            x0 = x if "left" in just else x - width if "right" in just else x - width / 2
+            y0, y1 = y - h / 2 - 0.15, y + h / 2 + 0.15
+            name = f"the silkscreen line with {what} ({filled!r}, about {width:.1f} mm from x {x0:.1f} mm)"
+            if x0 < box[0] or x0 + width > box[2] or y0 < box[1] or y1 > box[3]:
+                out.append(f"{name} would run past the board outline (x {box[0]:g} to {box[2]:g}, y {box[1]:g} to "
+                           f"{box[3]:g} mm); move it or make its characters smaller")
                 continue
-            cx, cy = float(ctr[1]), float(ctr[2])
-            r = ((float(end[1]) - cx) ** 2 + (float(end[2]) - cy) ** 2) ** 0.5
-            if x0 < cx + r and x0 + width > cx - r and y - half < cy + r and y + half > cy - r:
-                return (f"the silkscreen line with {VAR} would cross the hole at ({cx:g}, {cy:g}) for a long version "
-                        f"like {LONG_VERSION} (about {width:.1f} mm from x {x0:.1f} mm); move it")
-    return None
+            for o, cx, cy, r in obstacles:
+                if x0 < cx + r and x0 + width > cx - r and y0 < cy + r and y1 > cy - r:
+                    out.append(f"{name} would cross {o} at ({cx:g}, {cy:g}); move it")
+                    break
+    return out
 
 
 def version_findings(pr) -> list[str]:
@@ -315,9 +352,7 @@ def version_findings(pr) -> list[str]:
             for var in (BOARD_VAR, VAR):
                 if not any(var in ln for ln in lines):
                     out.append(f"{f.name}: no silkscreen text (F.SilkS or B.SilkS) with {var}")
-            fit = _version_line_fits(root)
-            if fit:
-                out.append(f"{f.name}: {fit}")
+            out += [f"{f.name}: {x}" for x in _silk_line_findings(root, pr.name)]
             if any(BOARD_VAR in ln and VAR in ln for ln in lines):
                 out.append(f"{f.name}: {BOARD_VAR} and {VAR} on one silkscreen line; put them on two lines (name, "
                            f"then version), sized to fit inside the board outline")
