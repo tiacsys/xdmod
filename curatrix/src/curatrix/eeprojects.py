@@ -92,9 +92,17 @@ def is_project_file(rel: str) -> bool:
     return name.endswith(PROJECT_SUFFIXES) or name in PROJECT_NAMES
 
 
+def duplicate_uuids(text: str) -> list[str]:
+    """The uuids that occur more than once in a KiCad schematic or board file."""
+    import collections
+    c = collections.Counter(re.findall(r'\(uuid "([^"]+)"\)', text))
+    return sorted(u for u, n in c.items() if n > 1)
+
+
 def folder_findings(cfg) -> list[str]:
     """CK-F6: one ``.kicad_pro`` per project folder, named like the folder, with its root sheet;
-    no KiCad project files outside these folders."""
+    no KiCad project files outside these folders; no uuid twice in a schematic or board file (a
+    copied block keeps its uuid, and ``kicad-cli ... upgrade --force`` does not repair it)."""
     repo = cfg.repo
     findings: list[str] = []
     good: list[Path] = []
@@ -124,6 +132,11 @@ def folder_findings(cfg) -> list[str]:
                 findings.append(f"{rel}/{d.name}.kicad_pro: its root sheet {d.name}.kicad_sch is missing")
             if len(pros) == 1:
                 good.append(d)
+        for f in sorted(d.glob("*.kicad_sch")) + sorted(d.glob("*.kicad_pcb")):
+            dup = duplicate_uuids(f.read_text(encoding="utf-8"))
+            if dup:
+                findings.append(f"{rel}/{f.name}: uuid used more than once: {', '.join(dup[:3])}"
+                                f"{' ...' if len(dup) > 3 else ''}; give each item its own uuid")
     for rel in sorted(_repo_files(repo)):
         if not is_project_file(rel):
             continue

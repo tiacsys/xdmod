@@ -43,7 +43,9 @@ from pathlib import Path
 
 from curatrix.cad import _children, _props, sexpr
 
-CONNECTOR_REF = re.compile(r"^(X|J|P|CN)\d")
+# connectors by reference: X (XD-RULE-0066), and P and CN of older libraries; J and JP are jumpers
+# and count as connectors only with a port field
+CONNECTOR_REF = re.compile(r"^(X|P|CN)\d")
 NO_PORT = "-"
 # the connector fields that name the port (Q10/Q11): usage name, def name, def ID; `Port` is the old
 # single field (the EE-PORT ID), reported by CK-F1 until it is replaced
@@ -511,6 +513,9 @@ def check_port_fields(fields: dict, ports: dict[str, tuple[str, str]], what: str
             out.append(f"{where}: {what} {missing}")
         return None, out
     if name == NO_PORT:
+        left = [k for k in ("portType", "portTypeID") if (fields.get(k) or "").strip()]
+        if left:
+            out.append(f"{where}: {what} has portName = - but {' and '.join(left)}; remove {'it' if len(left) == 1 else 'them'}")
         return None, out
     if name not in ports:
         out.append(f"{where}: {what}: portName {name!r} is no port of the def (ports: {', '.join(sorted(ports)) or 'none'})")
@@ -577,8 +582,11 @@ def conformance(doc: dict, board_id: str | None, m, where: str) -> list[str]:
 
 
 # ------------------------------------------------------------------ CK-F22: port and connector names
-# a reference designator as a name: one to three letters and a number (j1, p3, x2, cn1, jp2)
-DESIGNATOR_LIKE = re.compile(r"^[A-Za-z]{1,3}\d+[A-Za-z]?$")
+# a reference designator as a name: a KiCad reference prefix and a number (j1, p3, x2, cn1, jp2, u4);
+# interface names like i2c0, spi1, can0, usb2, pwm1, adc0, led1 are no designators (devicetree names)
+DESIGNATOR_PREFIXES = ("JP", "CN", "SW", "TP", "FB", "RN", "BT", "IC", "J", "P", "X", "U", "R", "C", "L", "D",
+                       "Q", "K", "F", "Y", "T", "H")
+DESIGNATOR_LIKE = re.compile(rf"^(?:{'|'.join(DESIGNATOR_PREFIXES)})\d+$", re.I)
 LOWER_CAMEL = re.compile(r"^[a-z][A-Za-z0-9]*$")
 CONNECTOR_PREFIX = re.compile(r"^X\d+$")
 
@@ -604,11 +612,13 @@ def port_name_findings(m) -> list[str]:
 
 
 def designator_findings(doc: dict, where: str) -> list[str]:
-    """CK-F22, KiCad side: a part with a portName field is a connector and has an X designator
-    (X1, X2, ...), so connectors are told apart from jumpers (J, JP) (owner decision Q11)."""
+    """CK-F22, KiCad side: a part whose portName names a port is a connector and has an X
+    designator (X1, X2, ...), so connectors are told apart from jumpers (J, JP) (owner decision
+    Q11); ``portName = -`` (no port of the board) is left out."""
     out = []
     for c in doc.get("connectors", []):
-        if c.get("portName") is not None and not CONNECTOR_PREFIX.match(c.get("ref") or ""):
+        name = (c.get("portName") or "").strip()
+        if name and name != NO_PORT and not CONNECTOR_PREFIX.match(c.get("ref") or ""):
             out.append(f"{where}: {c['ref']} has a portName but no X designator; connectors are X1, X2, ... "
                        f"(set the reference prefix to X)")
     return out

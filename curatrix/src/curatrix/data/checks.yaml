@@ -142,7 +142,7 @@ checks:
   CK-F22:
     need: XD-CHECK-0059
     enforces: [XD-RULE-0066]
-    description: "Port usages of the parts of the EE model (boards, cables, external parts) have functional lowerCamelCase names, not reference designators (one to three letters and a number, such as j1, p3, x2); every part of a pcba/ project with a portName field has an X designator (X1, X2, ...). A warning (owner decisions Q10, Q11)."
+    description: "Port usages of the parts of the EE model (boards, cables, external parts) have functional lowerCamelCase names, not reference designators (a KiCad reference prefix and digits, such as j1, p3, x2; interface names such as i2c0, spi1, can0 pass); every part of a pcba/ project whose portName names a port has an X designator (X1, X2, ...). A warning (owner decisions Q10, Q11)."
   CK-F4a:
     need: XD-CHECK-0040
     enforces: [XD-RULE-0051]
