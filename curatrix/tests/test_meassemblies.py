@@ -226,6 +226,21 @@ def test_f15_link_targets(tmp_path):
     assert any("missing.FCStd, which is not a FreeCAD file" in x for x in f), f
 
 
+def test_f15_board_library_links_do_not_count(tmp_path):
+    """A link to a board model of the board library (cad.board_library) is an EE block: not counted,
+    not a finding (CK-F18 and CK-F21 check it); the same link without the section is a finding."""
+    root, repo = _repo(tmp_path, me={k: v for k, v in ME.items() if k != "Gripper"})
+    lib = root / "lib-repo" / "boards" / "b"
+    fcstd(lib / "b-v0.1.0.FCStd", {"Board": ("App::Part", [_prop("TraceID", "EE-PCBA-0001", group="Trace")])})
+    _assembly(repo, links=(("../../parts/canary-part.FCStd", "CanaryBlock"),
+                           ("../../../lib-repo/boards/b/b-v0.1.0.FCStd", "Board")))
+    f = _run(root, repo, "CK-F15", "c_link_counts")
+    assert any("b-v0.1.0.FCStd, which is not a FreeCAD file of the repo" in x for x in f), f
+    (repo / "checks.yaml").write_text("version: 1\n" + CFG.replace(
+        '"assemblies/**/*.FCStd"]', '"assemblies/**/*.FCStd"], board_library: "{ws}/lib-repo"'))
+    assert _run(root, repo, "CK-F15", "c_link_counts") == []
+
+
 def test_new_asm_without_freecad(tmp_path):
     root, repo = _repo(tmp_path)
     (repo / "docs").mkdir()

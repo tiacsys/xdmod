@@ -148,13 +148,14 @@ Checks
 
 - CK-F3: the seat's values in the skeleton's ``Params`` and its LCS equal the ME model.
 - CK-F4b: DRC of the pushed board (the push itself adds no findings on the canary).
-- CK-F18, "board inside its space budget", exists but is still a skip with its reason (it skips
-  without a board model in the assembly, and reports "not checked yet" with one). Its rules, for
-  iteration 2: the seat's restated values equal the budget's; the KiCad outline and ``Edge.Cuts``
-  circles equal ``width``, ``depth`` and the hole list; each connector named in the budget sits at
-  its position (footprint pin 1, in the board frame); the board model (STEP) placed at the seat's LCS
-  fits the box and does not collide with the direct children of the assembly. Until then, the
-  reviewers compare these values by eye.
+- CK-F18, "board inside its space budget" (local, FreeCAD): the board model of the board library,
+  linked at the seat's LCS, fits the budget's box in the board frame (``width`` x ``depth``, from
+  ``-heightBelow`` to ``heightAbove``; tolerance 0.01 mm); no other part reaches into the box (a
+  stand-off under the board does: accept it in ``accepted.yaml`` or change the budget); no library
+  fastener collides with the board (a screw that misses its hole). Board versus part collisions are
+  CK-F17's. A skip without a board model. Not checked yet (iteration 2): the KiCad outline and
+  ``Edge.Cuts`` circles against ``width``, ``depth`` and the hole list, and the connector positions;
+  the reviewers compare these by eye.
 
 Pitfalls
 --------

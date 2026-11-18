@@ -61,6 +61,7 @@ import datetime as dt
 import hashlib
 import json
 import math
+import os
 import re
 import shutil
 from pathlib import Path
@@ -149,7 +150,7 @@ def empty_renderings(res: dict) -> list[str]:
 
 
 def bom_rows(rows: list[dict], repo: Path) -> list[dict]:
-    """The flat BOM: one row per part with its quantity."""
+    """The flat BOM: one row per part with its quantity; a board is one row named with its version."""
     out: dict[tuple, dict] = {}
     for r in rows:
         key = (r["file"], r["object"])
@@ -157,11 +158,12 @@ def bom_rows(rows: list[dict], repo: Path) -> list[dict]:
             kind = ("board" if r.get("TraceID", "").startswith("EE-PCBA") else "printed" if r.get("PrintProfile")
                     else "fastener" if r.get("Standard") else "bought" if r.get("Manufacturer") or r.get("MPN")
                     else "part")
-            try:
-                f = str(Path(r["file"]).resolve().relative_to(repo.resolve()))
-            except ValueError:
-                f = r["file"]
-            out[key] = {"id": r.get("TraceID", ""), "name": r.get("label", ""), "kind": kind, "qty": 0,
+            # repo-relative; a board of the board library (outside the repo) relative to the repo too
+            f = os.path.relpath(Path(r["file"]).resolve(), repo.resolve())
+            name = r.get("label", "")
+            if kind == "board" and r.get("Version"):          # one line with its version (as the assembly document)
+                name = f"{r.get('Board') or name} {r['Version']}"
+            out[key] = {"id": r.get("TraceID", ""), "name": name, "kind": kind, "qty": 0,
                         "material": r.get("Material", ""), "print_profile": r.get("PrintProfile", ""),
                         "standard": r.get("Standard", ""), "manufacturer": r.get("Manufacturer", ""),
                         "mpn": r.get("MPN", ""), "file": f}
@@ -553,8 +555,8 @@ def run_assembly(ws, repo, cfg, folder: Path, log=print, use_blender: bool = Tru
 
 
 def findings(ws, cfg, folder: Path, top: Path) -> dict:
-    """The ME check findings of this assembly (CK-F4c, CK-F16, CK-F17; findings of shared documents
-    too) with their acceptance state, and the reason CK-F18 skipped, for the assembly document
+    """The ME check findings of this assembly (CK-F4c, CK-F16, CK-F17, CK-F18; findings of shared
+    documents too) with their acceptance state, and the reason CK-F18 skipped (no board), for the assembly document
     (task 5.27; tied to the commit like the rest of the output). One FreeCADCmd run (mechecks)."""
     from curatrix import ercdrc, mechecks
     try:
@@ -567,10 +569,17 @@ def findings(ws, cfg, folder: Path, top: Path) -> dict:
     for check in mechecks.RULES:
         found = [(f, x) for f, x in mechecks.findings(cfg, res, check) if f in (mine, None)]
         rows += mechecks.evaluate(cfg, check, found, entries).rows
-    b = mechecks.boards(res)
+    b = [k["name"] for a in res.get("assemblies") or [] if _rel_doc(cfg, a["doc"]).startswith(mine + "/")
+         for k in a.get("children") or [] if k.get("kind") == "board"]
     return {"checks": list(mechecks.RULES), "rows": rows,
-            "skipped": {"CK-F18": f"board model(s) {', '.join(b)} placed; the space budget is not checked yet"
-                        if b else "no board model in the assembly"}}
+            "skipped": {} if b else {"CK-F18": "no board model in the assembly"}}
+
+
+def _rel_doc(cfg, doc: str) -> str:
+    try:
+        return str(Path(doc).resolve().relative_to(cfg.repo.resolve()))
+    except ValueError:
+        return doc
 
 
 def render_blender(ws, glb: Path, dest: Path, result: Path, label: list[str], release: bool, name: str,

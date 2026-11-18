@@ -1,9 +1,11 @@
-# FreeCADCmd script of the ME checks CK-F4c, CK-F16, CK-F17 and CK-F18 (task 5.25). Run only
+# FreeCADCmd script of the ME checks CK-F4c, CK-F16, CK-F17 and CK-F18 (tasks 5.25, 5.28). Run only
 # through curatrix (`curatrix check`): workspace-local FreeCAD config, limits. Inputs by
 # environment variables, because FreeCADCmd opens extra arguments as files (FreeCAD spike):
 #   XD_FILES   JSON list of the documents to open, in this order (per assembly the skeleton, then the
 #              top document, so the parts load fully through its links; then every other document)
 #   XD_LIB     the repo's lib/ folder (library fasteners live there)
+#   XD_SEATS   JSON {ME-PORT: {width, depth, heightAbove, heightBelow}} of the board seats (CK-F18):
+#              the ME seat ports that specialize a SYS-IF space budget, with the budget's values
 #   XD_RESULT  the result file (JSON)
 # FreeCADCmd exits 0 when a script raises, so the caller judges success by the result file only; the
 # script never raises and is safe to run twice. It never saves a document.
@@ -18,6 +20,12 @@
 #              children are the direct links of the assembly object (Group), without the skeleton;
 #              kind: part | fastener (a lib/ object with a Standard property) | board (an EE-PCBA
 #              TraceID); overlaps: common volume of each pair of non-fastener children (mm^3)
+#   budgets:   per assembly, one entry per board child (CK-F18): {board, seat (the LCS whose
+#              placement in the assembly equals the board link's, or ""), port, placement,
+#              bbox (the board's bounding box in the seat frame: xmin, ymin, zmin, xmax, ymax, zmax),
+#              intrusions: [{name, volume, z}] the non-fastener parts inside the budget box
+#              (common volume in mm^3, its z range in the seat frame), fasteners: [{name, volume}]
+#              common volume of the board with each fastener}
 import json
 import os
 import traceback
@@ -67,11 +75,77 @@ def rel(path):
     return os.path.realpath(path)
 
 
+def seat_places(d, skels, seats):
+    """(LCS name, ME-PORT, placement in the assembly) of every seat LCS reached through the
+    skeleton link(s) of the assembly: the link's placement replaces its target container's, so an
+    LCS inside the linked App::Part is at link * LCS, any other at link * its global placement."""
+    out = []
+    for c in d.Objects:
+        if not c.TypeId.startswith("App::Link") or c.Name not in skels:
+            continue
+        t = c.getLinkedObject(True)
+        if t is None or not (t.Document.FileName or "").endswith("-skeleton.FCStd"):
+            continue
+        for o in t.Document.Objects:
+            port = str(getattr(o, "Port", "") or "").strip() if "Port" in o.PropertiesList else ""
+            if port not in seats:
+                continue
+            inside = o.getParentGeoFeatureGroup() == t
+            out.append((o.Name, port, c.Placement.multiply(o.Placement if inside else o.getGlobalPlacement())))
+    return out
+
+
+def same_place(a, b):
+    return (a.Base - b.Base).Length < 1e-4 and a.Rotation.isSame(b.Rotation, 1e-6)
+
+
+def budget_of(d, kids, skels, seats, board):
+    """CK-F18 data of one board child (see the header)."""
+    import Part
+    lk = d.getObject(board["name"])
+    pl = lk.Placement
+    hit = next(((n, p, sp) for n, p, sp in seat_places(d, skels, seats) if same_place(sp, pl)), None)
+    e = {"board": board["name"], "seat": hit[0] if hit else "", "port": hit[1] if hit else "",
+         "placement": [round(v, 6) for v in (pl.Base.x, pl.Base.y, pl.Base.z)], "intrusions": [], "fasteners": []}
+    sh = lk.Shape
+    for k in kids:
+        if k["kind"] == "fastener":
+            f = d.getObject(k["name"]).Shape
+            if not f.isNull() and not sh.isNull() and f.BoundBox.intersect(sh.BoundBox):
+                v = sh.common(f).Volume
+                if v > TOL:
+                    e["fasteners"].append({"name": k["name"], "volume": round(v, 6)})
+    if not hit:
+        return e
+    seat = hit[2]
+    b = seats[hit[1]]
+    loc = sh.transformed(seat.inverse().toMatrix())
+    bb = loc.BoundBox
+    e["bbox"] = [round(v, 6) for v in (bb.XMin, bb.YMin, bb.ZMin, bb.XMax, bb.YMax, bb.ZMax)]
+    box = Part.makeBox(b["width"], b["depth"], b["heightAbove"] + b["heightBelow"],
+                       App.Vector(0, 0, -b["heightBelow"]))
+    for k in kids:
+        if k["kind"] != "part":
+            continue
+        o = d.getObject(k["name"]).Shape
+        if o.isNull():
+            continue
+        lo = o.transformed(seat.inverse().toMatrix())
+        if not lo.BoundBox.intersect(box.BoundBox):
+            continue
+        c = box.common(lo)
+        if c.Volume > TOL:
+            e["intrusions"].append({"name": k["name"], "volume": round(c.Volume, 6),
+                                    "z": [round(c.BoundBox.ZMin, 6), round(c.BoundBox.ZMax, 6)]})
+    return e
+
+
 try:
     for d in list(App.listDocuments().values()):
         App.closeDocument(d.Name)
     files = json.loads(os.environ["XD_FILES"])
     lib = rel(os.environ.get("XD_LIB", "")) + os.sep if os.environ.get("XD_LIB") else None
+    seats = json.loads(os.environ.get("XD_SEATS") or "{}")
     for f in files:
         if not any(rel(d.FileName) == rel(f) for d in App.listDocuments().values()):
             App.openDocument(f)
@@ -113,13 +187,14 @@ try:
         for a in d.Objects:
             if kind_of(tid(a)) != "ME-ASM":
                 continue
-            kids = []
+            kids, skels = [], []
             for c in getattr(a, "Group", []) or []:
                 if not c.TypeId.startswith("App::Link"):
                     continue
                 t = c.getLinkedObject(True)
                 tf = rel(t.Document.FileName) if t is not None and t.Document.FileName else ""
                 if tf.endswith("-skeleton.FCStd"):
+                    skels.append(c.Name)
                     continue
                 k = "part"
                 if t is not None and lib and tf.startswith(lib) and str(getattr(t, "Standard", "") or "").strip():
@@ -164,6 +239,7 @@ try:
                         overlaps.append({"a": ns[x], "b": ns[y], "volume": round(v, 6)})
             asms.append({"doc": rel(d.FileName), "object": a.Name, "id": tid(a), "children": kids,
                          "joined": sorted(joined), "overlaps": overlaps,
+                         "budgets": [budget_of(d, kids, skels, seats, k) for k in kids if k["kind"] == "board"],
                          "bbox": {k["name"]: [round(v, 6) for v in (lambda b: (b.XMin, b.YMin, b.ZMin, b.XMax, b.YMax, b.ZMax))(d.getObject(k["name"]).Shape.BoundBox)]
                                   for k in kids if k["kind"] == "board"}})
     out = {"ok": True, "order": [rel(d.FileName) for d in docs], "cycle": cycle, "recompute": recompute,

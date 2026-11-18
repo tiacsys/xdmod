@@ -131,7 +131,7 @@ BUILTIN = [
      _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_solids"),
     ("CK-F17", "no overlap between direct children of an assembly, per variant; joined may touch; fasteners left out",
      _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_collisions"),
-    ("CK-F18", "board models inside their space budget (a skip with its reason until task 5.28)",
+    ("CK-F18", "board models at a seat and inside its SYS-IF space budget; no part in the budget, no fastener in the board",
      _lv({"local": "warning", "baseline": "warning"}), "cad.freecad", True, "c_space_budget"),
     ("CK-F19", "every printed part (PrintProfile) has a version mark (LCS with Role = version-emboss)",
      _lv({"local": "warning", "pr": "warning"}), "cad.freecad", False, "c_version_face"),
@@ -607,12 +607,9 @@ def _me(ctx: Ctx, r: Result, check: str):
         r.level = "error"
         r.findings = [str(e)]
         return
-    if check == "CK-F18":            # a skip with its reason until task 5.28 gives the budget its form
-        b = mechecks.boards(res)
+    if check == "CK-F18" and not mechecks.boards(res):
         r.status = "skip"
-        r.findings = [f"board model(s) {', '.join(b)} placed, but the SYS-IF space budget has no form yet (co-design "
-                      f"task 5.28): not checked" if b else
-                      "no board model in any assembly (a link to an object with an EE-PCBA TraceID): nothing to check"]
+        r.findings = ["no board model in any assembly (a link to an object with an EE-PCBA TraceID): nothing to check"]
         return
     entries, _ = mechecks.folder_entries(ctx.cfg, ercdrc.Acceptors(ctx.repo.path))   # format: CK-F9
     o = mechecks.evaluate(ctx.cfg, check, mechecks.findings(ctx.cfg, res, check), entries)

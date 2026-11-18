@@ -20,7 +20,8 @@ to each part or sub-assembly equal its usages: the usages in the ME model (``par
 multiplicity) for internal elements, and the usages of the system model for the system blocks the
 assembly realizes, counted for the ME def that realizes each used block. A link names what it
 links by the ``TraceID`` of its target object (``ME-PART`` or ``ME-ASM``); links to the skeleton
-are not counted. Per configuration: a link with ``Configs`` counts only for those configurations;
+and links to a board model of the board library (``cad.board_library``, an EE block: CK-F18 and
+CK-F21 check it) are not counted. Per configuration: a link with ``Configs`` counts only for those configurations;
 the model usages are not filtered by configuration yet. A system usage of a block that no ME def
 realizes is not counted (it may be an EE or SW block); a usage the ME model repeats from the system
 model, a block realized by two ME defs and a multiplicity that is not one number are findings.
@@ -189,6 +190,16 @@ def expected_counts(m, upstream: list, asm: dict) -> tuple[dict[str, int], list[
 
 
 # ------------------------------------------------------------------ CK-F14
+def _in_board_library(cfg, src_rel: str, file: str) -> bool:
+    """Whether a link from ``src_rel`` lands in ``boards/`` of the board library (``cad.board_library``,
+    XD-ADR-0139), resolved from the linking file's folder as FreeCAD does."""
+    lib = (cfg.section("cad") or {}).get("board_library")
+    if not lib:
+        return False
+    target = ((cfg.repo / src_rel).parent / file).resolve()
+    return target.is_relative_to((cfg.resolve(lib) / "boards").resolve())
+
+
 def _resolve(src_rel: str, file: str) -> str:
     """A link's target file (relative to the linking document) as a repo-relative path."""
     parts: list[str] = []
@@ -299,6 +310,8 @@ def link_counts(cfg, m, upstream: list, docs: dict[str, Doc] | None = None) -> l
                 findings.append(f"{rel}: link {name} has no target")
                 continue
             t = targets[0]
+            if t.get("file") and _in_board_library(cfg, rel, t["file"]):
+                continue                              # a board model: an EE block (CK-F18, CK-F21)
             tfile = _resolve(rel, t["file"]) if t.get("file") else rel
             if PurePosixPath(tfile).name.endswith(SKELETON_SUFFIX):
                 continue

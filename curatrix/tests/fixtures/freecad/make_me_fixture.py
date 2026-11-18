@@ -14,6 +14,12 @@
 #                inside C, no volume), D (box-b, Configs SYS-CFG-0002) overlapping C by 400 mm^3,
 #                E (box-b) touching A and B without a joint
 #   assemblies/fx/fx-skeleton.FCStd  the skeleton (linked, never checked for overlaps)
+# XD_BOARD=1 adds the CK-F18 fixture (planted): boards/board.FCStd, an App::Part Board (EE-PCBA-0001)
+#   in the board frame: a body 20 x 10 x 1.6 mm under z = 0 with a 3.2 mm hole at (5, 5), and a part
+#   2 x 2 x 12 mm on top (2 mm above a 10 mm heightAbove); in the skeleton an LCS LCS_seat inside
+#   Skeleton (Port ME-PORT-0009) at (0, 40, 20); in the top document the links Board (at the seat),
+#   Board2 (at no seat), F (box-b at (0, 40, 8): 1 mm into a 3 mm heightBelow box, 100 mm^3),
+#   ScrewOk (through the board's hole) and ScrewBad (through the board body at (10, 45))
 import json
 import os
 import traceback
@@ -117,6 +123,32 @@ try:
     link("Sheet", made["sheet"][1], (16, 0, 5))           # a face inside C: no volume, no overlap
     link("D", made["box-b"][1], (20, 0, 0), "SYS-CFG-0002")   # into C (400 mm^3), only in SYS-CFG-0002
     link("E", made["box-b"][1], (0, 10, 0))               # touches A and B, no joint: no volume, no finding
+    if os.environ.get("XD_BOARD"):
+        bd = doc(f"{root}/boards/board.FCStd", "board")
+        bp = bd.addObject("App::Part", "Board")
+        trace(bp, "EE-PCBA-0001")
+        body = bd.addObject("Part::Feature", "PCB")
+        body.Shape = Part.makeBox(20, 10, 1.6, App.Vector(0, 0, -1.6)).cut(
+            Part.makeCylinder(1.6, 4, App.Vector(5, 5, -2)))
+        tall = bd.addObject("Part::Box", "Tall")
+        tall.Length, tall.Width, tall.Height = 2, 2, 12
+        tall.Placement = App.Placement(App.Vector(14, 4, 0), App.Rotation())
+        bp.addObject(body)
+        bp.addObject(tall)
+        bd.recompute()
+        bd.saveAs(f"{root}/boards/board.FCStd")
+        lcs = sk.addObject("Part::LocalCoordinateSystem", "LCS_seat")
+        lcs.Placement = App.Placement(App.Vector(0, 40, 20), App.Rotation())
+        lcs.addProperty("App::PropertyString", "Port", "Trace")
+        lcs.Port = "ME-PORT-0009"
+        skp.addObject(lcs)
+        sk.recompute()
+        sk.save()
+        link("Board", bp, (0, 40, 20))
+        link("Board2", bp, (0, 70, 20))
+        link("F", made["box-b"][1], (0, 40, 8))
+        link("ScrewOk", made["screw"][1], (5, 45, 10))
+        link("ScrewBad", made["screw"][1], (10, 45, 10))
     j = top.addObject("App::FeaturePython", "Joint")
     j.addProperty("App::PropertyXLinkSubHidden", "Reference1", "Joint")
     j.addProperty("App::PropertyXLinkSubHidden", "Reference2", "Joint")
