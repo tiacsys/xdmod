@@ -175,7 +175,7 @@ The linked document set, zdocs, and how documents get their content.
 .. xd-adr:: One document per board, harness and assembly
    :id: XD-ADR-0129
    :date: 2026-11-17
-   :decision_status: accepted
+   :decision_status: revised
    :status: valid
    :refines: XD-ADR-0102
    :revises: XD-ADR-0124
@@ -199,7 +199,7 @@ The linked document set, zdocs, and how documents get their content.
 .. xd-adr:: V-model documents for EE and ME, per-deliverable documents in sub-folders, one harness document
    :id: XD-ADR-0149
    :date: 2026-11-18
-   :decision_status: proposed
+   :decision_status: accepted
    :status: valid
    :revises: XD-ADR-0129
 
@@ -217,5 +217,5 @@ The linked document set, zdocs, and how documents get their content.
    WireViz diagram, wiring, BOM per cable; directive ``xd-harnesses``) instead of one
    ``harness-<cable>`` document per cable; ``harness/<cable>/`` stays one folder per cable. The
    diagrams come from ``curatrix cam <repo>`` (every board and harness); the document names the
-   missing or stale ``cam`` runs. Old Pages URLs may break; there are no redirects. CK-A7 checks the
-   layout.
+   missing or stale ``cam`` runs. Old Pages URLs may break; there are no redirects. Prototype documents go to ``docs/protos/proto-<setup>/`` the same way (owner, 2026-11-18). CK-A7 checks the
+   layout. Accepted by the owner on 2026-11-18 (review of the night shift, tiacsys/xdmod#69).

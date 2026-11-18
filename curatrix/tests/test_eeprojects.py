@@ -337,3 +337,11 @@ def test_kicad_fixtures_have_unique_uuids():
     files = sorted((FIXTURES / "kicad").rglob("*.kicad_pcb")) + sorted((FIXTURES / "kicad").rglob("*.kicad_sch"))
     assert files
     assert {f.name: eeprojects.duplicate_uuids(f.read_text()) for f in files if eeprojects.duplicate_uuids(f.read_text())} == {}
+
+
+def test_doc_folder_protos():
+    """Owner, 2026-11-18 (XD-ADR-0149): prototype documents sit in docs/protos/ like the other kinds."""
+    from curatrix.newpcba import doc_folder
+    assert doc_folder("proto-joint-bench") == "protos/proto-joint-bench"
+    assert doc_folder("pcba-canary-board") == "pcbas/pcba-canary-board"
+    assert doc_folder("ee-design") == "ee-design"
