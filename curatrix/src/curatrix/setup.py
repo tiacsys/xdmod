@@ -580,8 +580,8 @@ def doctor(ws: Workspace, quiet: bool = False, ci: bool = False) -> int:
         elif s and (s.get("version") != t.version or s.get("commit", "") != t.commit):
             have = s.get("version") + (f" at {s['commit'][:12]}" if s.get("commit") else "")
             add("FAIL", f"{t.name}: installed {have}, tools.yaml wants {t.version}{pin}", "curatrix update")
-        elif s and t.kind == "git" and t.path(ws).exists():
-            add("FAIL", f"{t.name}: {t.shown()} is a git checkout, not at {t.commit[:12]}", "curatrix update")
+        elif t.kind == "git" and tools.checkout_problem(ws, t):
+            add("FAIL", f"{t.name}: {tools.checkout_problem(ws, t)}", "check it out at the pin without changes")
         else:
             add("FAIL", f"{t.name} {t.version} not installed",
                 "curatrix update" if t.kind == "git" else "curatrix update (or `curatrix update --adopt`)")

@@ -91,7 +91,8 @@ def _upstream(tmp_path):
     return up, first
 
 
-def test_git_tool_pinned_by_commit_into_state(tmp_path):
+def test_git_tool_pinned_by_commit_into_state(tmp_path, monkeypatch):
+    monkeypatch.setattr(tools, "GIT_SCHEMES", ("https://", "file://"))      # a local upstream
     up, first = _upstream(tmp_path)
     ws = Workspace(tmp_path / "ws")
     (ws.root / ".venv").mkdir(parents=True)
@@ -123,19 +124,34 @@ def test_git_tool_adopts_a_checkout_at_the_pin(tmp_path):
     msgs = []
     tools.install(ws, t, log=msgs.append)                    # no network: the checkout is at the pin
     assert "adopt" in msgs[0] and (loc / ".git").exists() and tools.installed_ok(ws, t)
-    _git("checkout", "-q", "main", cwd=loc)                   # moved by hand: no longer ok
-    assert not tools.installed_ok(ws, t)
+    (loc / "tool.py").write_text("V = 99\n")                  # changed by hand: no longer ok, not replaced
+    assert not tools.installed_ok(ws, t) and "changed files: tool.py" in tools.checkout_problem(ws, t)
+    with pytest.raises(tools.ToolsError, match="Not replaced"):
+        tools.install(ws, t, log=lambda *_: None)
+    assert (loc / "tool.py").read_text() == "V = 99\n"
+    _git("checkout", "-q", "--", "tool.py", cwd=loc)
+    assert tools.installed_ok(ws, t)
+    _git("checkout", "-q", "main", cwd=loc)                   # moved by hand: no longer ok, never deleted
+    assert not tools.installed_ok(ws, t) and "not at the pin" in tools.checkout_problem(ws, t)
+    with pytest.raises(tools.ToolsError, match="Not replaced"):
+        tools.install(ws, t, log=lambda *_: None)
+    assert (loc / ".git").exists() and (loc / "tool.py").read_text() == "V = 2\n"
 
 
 @pytest.mark.parametrize("extra,match", [("kind: git, commit: abc", "40 hex"),
                                          ("kind: git, commit: " + "a" * 40 + ", sha256: " + "b" * 64, "not sha256"),
                                          ("kind: file, sha256: " + "b" * 64 + ", commit: " + "a" * 40, "only for kind git"),
                                          ("kind: file, sha256: " + "b" * 64 + ", subdir: x", "subdir"),
-                                         ("kind: git, commit: " + "a" * 40 + ", location: ../x", "location")])
+                                         ("kind: git, commit: " + "a" * 40 + ", location: ../x", "location"),
+                                         ("kind: git, commit: " + "a" * 40 + ", url: '--upload-pack=touch /tmp/x'", "https"),
+                                         ("kind: git, commit: " + "a" * 40 + ", url: 'ext::sh -c x'", "https"),
+                                         ("kind: git, commit: " + "a" * 40 + ", url: 'git@github.com:a/b'", "https"),
+                                         ("kind: git, commit: " + "a" * 40 + ", url: 'file:///x'", "https")])
 def test_git_tool_fields(tmp_path, extra, match):
     p = tmp_path / "t.yaml"
     loc = "" if "location" in extra else ", location: .xdmod/x"
-    p.write_text(f"tools:\n  - {{name: x, version: '1', url: 'file:///x'{loc}, {extra}}}\n")
+    url = "" if "url:" in extra else ", url: 'https://example.invalid/x'"
+    p.write_text(f"tools:\n  - {{name: x, version: '1'{url}{loc}, {extra}}}\n")
     with pytest.raises(tools.ToolsError, match=match):
         tools.parse(p)
 

@@ -293,8 +293,11 @@ system:                       # used from the machine (D19)
 Downloads are cached in `<ws>/.xdmod/cache/downloads/` and checked against `sha256` before use.
 `kind: git` (a tool without release archives, such as KiCad StepUp) fetches exactly `commit` into a
 bare cache repo `<ws>/.xdmod/cache/git/<name>.git`, checks that it got that commit, and extracts its
-tree (or `subdir`) with `git archive` into the location: no checkout, no remote. A location that is
-already a git checkout at the pinned commit (cloned by hand before) is adopted and stamped. Each
+tree (or `subdir`) with `git archive` into the location: no checkout, no remote. `url` must be
+`https://` (no ssh, no `ext::`, nothing option-like; `git fetch` gets it after `--`). A location that
+is already a git checkout (cloned by hand before) is adopted and stamped only at the pinned commit
+and without changed or added files; otherwise `update` stops with a message and never deletes it,
+and `doctor` fails. Each
 installed tool gets a stamp `.venv/opt/.xd-stamps/<name>.json` (name, version, sha256, commit); `doctor`
 compares stamps with tools.yaml and fails when an adopted checkout moved off its commit.
 
