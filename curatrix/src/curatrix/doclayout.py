@@ -3,7 +3,7 @@
 A repo's own documents sit in the folder of its docs registry (``docs/``): the V-model documents
 directly (``docs/ee-req/``, ``docs/ee-design/``, ...), the per-deliverable documents in one sub-folder
 per kind: ``docs/pcbas/pcba-<board>/``, ``docs/assemblies/asm-<assembly>/``,
-``docs/firmware/fw-<name>/`` (``newpcba.SUBFOLDERS``). The registry entry of a document in a
+``docs/firmware/fw-<name>/``, ``docs/protos/proto-<setup>/`` (``newpcba.SUBFOLDERS``). The registry entry of a document in a
 sub-folder names it with ``doc_dir: pcbas/pcba-<board>``; its deploy path stays ``html/<id>/``.
 Every cable of a repo is in one document ``harnesses`` (no ``harness-<cable>`` documents).
 

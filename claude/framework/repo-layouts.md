@@ -55,7 +55,7 @@ harness/<name>/          one WireViz harness per cable def: <name>.yml, both end
 lib/                     project-local symbols, footprints, 3D models that aren't in the tiacsys libraries (D88)
 tests/                   scripted EE checks → JUnit
 generated/               cad-needs.json (D110), model.json and model-needs.json, <project>.connectors.json (CK-D7)
-docs/ee-req/  docs/ee-design/  docs/ee-test-spec/  docs/ee-test-report/  docs/harnesses/  docs/pcbas/pcba-<name>/  docs/proto-<name>/
+docs/ee-req/  docs/ee-design/  docs/ee-test-spec/  docs/ee-test-report/  docs/harnesses/  docs/pcbas/pcba-<name>/  docs/protos/proto-<name>/
 ```
 Board, harness and prototype tags `<name>/vX.Y.Z`, made by the owner only (XD-ADR-0140). Design output (`curatrix cam`) goes to `build/robarm-ee/cam/<name>/<version>/`, never into the repo. KiCad and WireViz files carry the model's IDs only as references: the project's `TraceID` text variable, each connector's `portName`, `portType` and `portTypeID` fields (owner decisions Q10, Q11; connectors are X1, X2, ...), the same three lines in the notes of each harness end; no `Realizes` / `Conforms` fields on projects.
 KiCad library tables refer to the shared libraries only through variables (`${XD_KICAD_SYMBOLS}`, …) and to `lib/` through `${KIPRJMOD}`. The launcher sets the variables (`command-layer.md`).

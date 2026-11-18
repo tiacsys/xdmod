@@ -29,7 +29,7 @@ Check IDs use the prefix `CK-` (e.g. `CK-D4`) so that they can't be confused wit
 | ~~CK-A4~~ | No orphans (R3). Retired 2026-11-17: the schema rule of `needs_config.toml` enforces it in CK-A6 (task 5.2). Catalog parts are left out: an `ME-PART` with a `standard` (FreeCAD `Standard`) or `catalog` (`Manufacturer` + `MPN`) field from `curatrix gen cad-needs` (xdmod#69 finding 16; KiCad components not yet) | — | — |
 | ~~CK-A5~~ | HIL test results carry `firmware_sha256` and SHAs (R5, D60). Retired 2026-11-17: schema rule, CK-A6 (task 5.2) | — | — |
 | CK-A6 | Every doc builds strict (`-W --keep-going`, every doc reports, D64c); `doccheck` passes | local, PR, full | error |
-| CK-A7 | Document layout (xdmod#69 Q8, finding 15): every own registry entry has its folder, every folder below `docs/` with a `conf.py` is in the registry, per-deliverable documents sit in `docs/pcbas/`, `docs/assemblies/`, `docs/firmware/`, one `harnesses` document per repo with harnesses. Plain Python; only in repos with a `cad` or `code` section | local, PR, baseline | warning until it ran on the canary |
+| CK-A7 | Document layout (xdmod#69 Q8, finding 15): every own registry entry has its folder, every folder below `docs/` with a `conf.py` is in the registry, per-deliverable documents sit in `docs/pcbas/`, `docs/assemblies/`, `docs/firmware/`, `docs/protos/`, one `harnesses` document per repo with harnesses. Plain Python; only in repos with a `cad` or `code` section | local, PR, baseline | warning until it ran on the canary |
 
 ### CK-B. Graph rules (own check in xdmod, because sphinx-needs skips external needs)
 
