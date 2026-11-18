@@ -40,8 +40,9 @@ SVG viewer
     ``.. tracechain:: sys-need <-refines- sys-req <-satisfies- sys-el <-realizes- ee-cmp``
     One row per path from each need of the first type down the back links; gaps are shown.
 
-``xd-harness-ends``, ``xd-harness-diagram``, ``xd-harness-wires``, ``xd-harness-bom``
-    The ``harness-<name>`` document (task 5.22); see ``harness.py``.
+``xd-harnesses``, ``xd-harness-ends``, ``xd-harness-diagram``, ``xd-harness-wires``, ``xd-harness-bom``
+    The ``harnesses`` document, one for every cable of the repo (task 5.22; tiacsys/xdmod#69 finding
+    15); see ``harness.py``.
 
 ``xd-pcba-overview``, ``xd-pcba-variants``, ``xd-pcba-stackup``, ``xd-pcba-rules``, ``xd-pcba-connectors``,
 ``xd-pcba-bom``, ``xd-pcba-renderings``, ``xd-pcba-schematic``, ``xd-pcba-findings``

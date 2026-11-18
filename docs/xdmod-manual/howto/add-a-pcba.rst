@@ -47,7 +47,7 @@ Steps
    ``my-board``): the ``.kicad_pro`` with
    ``TraceID`` = the def's ``EE-PCBA`` ID, ``XD_BOARD = <name>`` and ``XD_VERSION = unversioned``, the ERC/DRC severities
    of the template, library tables with workspace variables only, the CAM jobset, and a schematic
-   and board saved by KiCad. It also writes the board document ``docs/pcba-<name>/`` and its entry
+   and board saved by KiCad. It also writes the board document ``docs/pcbas/pcba-<name>/`` and its entry
    in ``docs/documents.yaml``. The ``TraceID`` is a reference; the need comes from the model.
    ``Realizes``, ``Configs`` or other link fields in the ``.kicad_pro`` are reported, because links
    and ``configs`` come from the model.

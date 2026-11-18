@@ -22,14 +22,17 @@ Status: **AGREED 2026-11-14** (review answers → D109–D112). Built on D13, D2
 | | `sw-api` | SW API & Implementation (Doxygen) | code units (`@xdid`, `\satisfies`) | `sw-arch`, `sw-req` |
 | | `sw-test-spec` | SW Test Specification | test cases from ZTEST annotations (zdocs `testmodule`, test-ID ledger) | `sw-req`, `sw-arch` |
 | | `sw-test-report` | SW Test Report | Twister results (`native_sim` in CI, D101), coverage | `sw-test-spec` |
+| | `fw-<name>` | Firmware: <name> (one per firmware image, in `docs/firmware/`; xdmod#69 Q8) | build configuration, Zephyr board and variant, image version, size and memory map | `sw-arch`, `pcba-<name>` |
 | robarm-ee | `ee-req` | EE Requirements Specification | EE requirements (rst, EARS) | `se-req`, `se-arch` |
-| | `pcba-<name>` | PCBA Design: <name> (one per board, from the start, XD-ADR-0129) | overview with version; renderings and schematic (local, placeholder in CI); stackup and design-rule tables, connector pin tables (plain Python); ERC/DRC findings with acceptance (local); variants table; BOM with a column per variant in the appendix | `ee-req`, `se-arch` |
+| | `ee-design` | EE Design | design overview: board and cable defs, views, allocation (design only, the requirements are in `ee-req`; xdmod#69 Q8) | `ee-req`, `se-arch` |
+| | `pcba-<name>` | PCBA Design: <name> (one per board, from the start, XD-ADR-0129; in `docs/pcbas/`) | overview with version; renderings and schematic (local, placeholder in CI); stackup and design-rule tables, connector pin tables (plain Python); ERC/DRC findings with acceptance (local); variants table; BOM with a column per variant in the appendix | `ee-req`, `se-arch` |
 | | `proto-<name>` | Prototype Setup: <name> (one per `proto/` project, D27, D74, XD-ADR-0135) | wiring between external parts (KiCad schematic), modules, build steps | `ee-req`, `se-arch` |
-| | `harness-<name>` | Harness: <name> (one per harness, XD-ADR-0127) | WireViz diagram, pin-to-pin table, harness BOM, version; links to the `pcba-<name>` documents and `EE-PORT`s it connects | `pcba-<name>` of both ends, `se-arch` |
+| | `harnesses` | Harnesses (one document for every cable of the repo, xdmod#69 finding 15; `xd-harnesses`) | per cable: ends, WireViz diagram (local `curatrix cam <repo>`), pin-to-pin table, harness BOM, version; the missing `cam` runs; links to the `pcba-<name>` documents and `EE-PORT`s it connects | `pcba-<name>` of both ends, `se-arch` |
 | | `ee-test-spec` | EE Test Specification | EE test cases (rst, scripted checks) | `ee-req` |
 | | `ee-test-report` | EE Test Report | results of scripted checks (JUnit) | `ee-test-spec` |
 | robarm-me | `me-req` | ME Requirements Specification | ME requirements (rst, EARS) | `se-req`, `se-arch` |
-| | `asm-<name>` | Assembly Design: <name> (one per top-level assembly, a chapter per sub-assembly, XD-ADR-0129) | drawings, exploded view, mass and center of gravity (local, placeholder in CI); parameters, materials, interfaces (plain Python); findings; indented BOM in the appendix (boards and harnesses one line each, with version and link) | `me-req`, `se-arch`, `pcba-<name>`, `harness-<name>` |
+| | `me-design` | ME Design | design overview: assembly defs, views, allocation (design only; xdmod#69 Q8) | `me-req`, `se-arch` |
+| | `asm-<name>` | Assembly Design: <name> (one per top-level assembly, a chapter per sub-assembly, XD-ADR-0129; in `docs/assemblies/`) | drawings, exploded view, mass and center of gravity (local, placeholder in CI); parameters, materials, interfaces (plain Python); findings; indented BOM in the appendix (boards and harnesses one line each, with version and link) | `me-req`, `se-arch`, `pcba-<name>`, `harnesses` |
 | | `me-test-spec` | ME Test Specification | ME test cases (rst) | `me-req` |
 | | `me-test-report` | ME Test Report | results (JUnit, measurements) | `me-test-spec` |
 | robarm-integration | `int-test-spec` | System & Integration Test Specification | system and integration test cases, HIL setups (rst) | `se-req`, `se-arch`, and every domain spec |
@@ -40,7 +43,7 @@ Status: **AGREED 2026-11-14** (review answers → D109–D112). Built on D13, D2
 
 The robarm documents link to `xdmod-manual` (method references). xdmod never links to robarm, because the framework doesn't know its users (D5 spirit).
 
-**Iteration 1 (D135, changed by XD-ADR-0129):** robarm-ee and robarm-me each keep **one document** for requirements and overview (`ee-design`, `me-design`). Each board, harness and top-level assembly gets its own document from the start, created with its registry entry by `curatrix new pcba` / `new asm`. One directive set per document type; a section without data prints one fixed sentence. Test spec and report documents come once tests exist.
+**Document layout (XD-ADR-0149, owner decision Q8 of xdmod#69):** EE and ME have the V-model split of SW: `ee-req`, `ee-design` (design only), `ee-test-spec`, `ee-test-report` and the same for `me-`. Per-deliverable documents sit in sub-folders of `docs/` (`pcbas/`, `assemblies/`, `firmware/`; registry `doc_dir`, flat IDs and Pages paths); one `harnesses` document holds every cable. CK-A7 checks the layout. Before that, **iteration 1 (D135, changed by XD-ADR-0129):** robarm-ee and robarm-me each kept **one document** for requirements and overview (`ee-design`, `me-design`). Each board, harness and top-level assembly gets its own document from the start, created with its registry entry by `curatrix new pcba` / `new asm`. One directive set per document type; a section without data prints one fixed sentence. Test spec and report documents come once tests exist.
 
 ## 3. Registries (zdocs `documents.yaml`, D26, D35)
 
@@ -61,7 +64,7 @@ The robarm documents link to `xdmod-manual` (method references). xdmod never lin
 | `config-page` (generator) | one page per configuration (D106) | model JSON + needs | yes |
 | `coverage-matrix` | requirement × configuration matrix (D104) | needs + test results | yes |
 | `xd-pcba-*` (overview, renderings, schematic, stackup, rules, connectors, findings, variants, BOM) | the `pcba-<name>` document (task 5.21) | KiCad files (plain Python), `generated/<project>.connectors.json`, local CAM output | stackup, rules, connectors, variants, BOM: yes; renderings, schematic, findings: placeholder |
-| `xd-harness` | the `harness-<name>` document (task 5.22) | WireViz YAML (plain Python + Graphviz) | yes |
+| `xd-harness` | the `harnesses` document (task 5.22; `xd-harnesses` for every cable) | WireViz YAML (plain Python + Graphviz) | yes |
 | `xd-asm-*` (overview, drawing, exploded, renderings, mass, parameters, materials, interfaces, findings, subassemblies, BOM) | the `asm-<name>` document (task 5.27) | `.FCStd` files and model.json (plain Python), local CAM output (`mass.json`, `findings.json`, `renderings/<view>.png` as listed in `cam.json`, task 5.30) | overview, parameters, materials, interfaces, sub-assembly chapters, BOM: yes; drawings, exploded view, renderings, mass, findings: placeholder |
 | `testmodule` (zdocs), `test-report` (sphinx-test-reports) | test specs from ZTEST, results from JUnit / run records | code, results | yes |
 | `needflow` (graphviz) | trace graphs (D95) | needs | yes |

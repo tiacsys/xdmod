@@ -253,12 +253,13 @@ def test_new_asm_without_freecad(tmp_path):
     cfg = checkcfg.load(repo / "checks.yaml", root)
     folder = newasm.new_asm(ws, Repo("r", repo, "r"), cfg, "CanaryAssembly", freecad=False, log=lambda *_: None)
     assert folder == repo / "assemblies/canary-assembly"
-    idx = (repo / "docs/asm-canary-assembly/index.rst").read_text()
+    idx = (repo / "docs/assemblies/asm-canary-assembly/index.rst").read_text()
     assert "ME-ASM-0001" in idx and "Canary Assembly (asm-canary-assembly)" in idx and "__" not in idx
     # no views of the assembly in the model: the document names the two to add
     assert "no decomposition view of ``CanaryAssembly``" in idx and "canaryAssemblyParts.drawio.svg" in idx
     assert "no interconnection view of ``CanaryAssembly``" in idx and "canaryAssembly.drawio.svg" in idx
     assert "asm-canary-assembly:" in (repo / "docs/documents.yaml").read_text()
+    assert "    doc_dir: assemblies/asm-canary-assembly\n" in (repo / "docs/documents.yaml").read_text()
     with pytest.raises(newasm.NewError, match="exists"):
         newasm.new_asm(ws, Repo("r", repo, "r"), cfg, "CanaryAssembly", freecad=False, log=lambda *_: None)
     with pytest.raises(newasm.NewError, match="no assembly def 'Nope'"):

@@ -155,6 +155,33 @@ def test_registry_entry_keeps_comments(tmp_path):
     assert not newpcba.add_registry_entry(reg, "pcba-x", "X", "r")
 
 
+def test_registry_entry_in_a_sub_folder(tmp_path):
+    """A document in a sub-folder (xdmod#69 Q8) is an own document: its doc_dir stays inside docs/;
+    the group comes from it, not from the upstream entries."""
+    reg = tmp_path / "documents.yaml"
+    reg.write_text("groups:\n  - id: g-ee\n    title: E\n  - id: g-sys\n    title: S\ndocuments:\n  pcba-a:\n"
+                   "    title: A\n    group: g-ee\n    doc_dir: pcbas/pcba-a\n\n  # upstream\n  se-req:\n"
+                   "    group: g-sys\n    doc_dir: ../../s/docs/se-req\n")
+    assert newpcba.add_registry_entry(reg, "pcba-b", "B", "r", newpcba.doc_folder("pcba-b"))
+    t = reg.read_text()
+    assert "  pcba-b:\n    title: \"B\"\n    group: g-ee\n    doc_dir: pcbas/pcba-b\n" in t
+    assert newpcba.doc_folder("asm-x") == "assemblies/asm-x" and newpcba.doc_folder("fw-x") == "firmware/fw-x"
+    assert newpcba.doc_folder("ee-req") == "ee-req" and newpcba.doc_folder("harnesses") == "harnesses"
+    assert newpcba.is_own({"doc_dir": "pcbas/pcba-a"}) and newpcba.is_own({}) and \
+        not newpcba.is_own({"doc_dir": "../../s/docs/se-req"})
+
+
+def test_repo_root_of_a_document_in_a_sub_folder(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "xdmod_conf", XDMOD / "sphinx" / "xdmod_conf.py")
+    xc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(xc)
+    repo = tmp_path / "docs" / "ws" / "robarm-x"
+    assert xc.repo_root(str(repo / "docs/ee-req/conf.py")) == repo.resolve()
+    assert xc.repo_root(str(repo / "docs/pcbas/pcba-a/conf.py")) == repo.resolve()
+
+
 def _new_pcba_repo(tmp_path):
     root, repo = _repo(tmp_path, yaml_text=PROJECTS + "model: {files: [model/*.sysml]}\ndocs: {registry: docs/documents.yaml}\n")
     (repo / "docs").mkdir()
@@ -186,13 +213,16 @@ def test_new_pcba(tmp_path):
         uris = [u for u in (folder / t).read_text().split('(uri "')[1:]]
         assert uris and all(u.startswith("${XD_KICAD_") for u in uris)
     assert "pcba-joint-controller" in (repo / "docs/documents.yaml").read_text()
-    idx = (repo / "docs/pcba-joint-controller/index.rst").read_text()
+    idx = (repo / "docs/pcbas/pcba-joint-controller/index.rst").read_text()
     assert idx.startswith("Joint Controller (pcba-joint-controller)\n===") and "__" not in idx
     # no view of the board in the model yet: the document says what to add (no missing file)
     assert "The model has no interconnection view of ``JointController`` yet" in idx
     assert 'kind = "interconnection"; root = "Ee::JointController"' in idx and "\n.. sysml-view::" not in idx
     assert "views:`` section in ``checks.yaml``" in idx          # the repo has no views section: CK-D3 is off
-    assert '(REPO, "views/*.drawio.svg")' in (repo / "docs/pcba-joint-controller/conf.py").read_text()
+    import yaml as _y
+    ent = _y.safe_load((repo / "docs/documents.yaml").read_text())["documents"]["pcba-joint-controller"]
+    assert ent["doc_dir"] == "pcbas/pcba-joint-controller"          # sub-folder (xdmod#69 Q8)
+    assert '(REPO, "views/*.drawio.svg")' in (repo / "docs/pcbas/pcba-joint-controller/conf.py").read_text()
     assert _run(root, repo, "CK-F6", "c_ee_projects") == []
     f7 = _run(root, repo, "CK-F7", "c_ee_one_to_one")
     assert not any("JointController" in x for x in f7), f7
@@ -215,7 +245,7 @@ def test_new_pcba_embeds_the_board_views(tmp_path, monkeypatch):
     monkeypatch.setattr(views, "discover", lambda m: vd)
     cfg = checkcfg.load(repo / "checks.yaml", root)
     newpcba.new_pcba(Workspace(root), Repo("r", repo, "r"), cfg, "JointController", kicad=False, log=lambda *_: None)
-    idx = (repo / "docs/pcba-joint-controller/index.rst").read_text()
+    idx = (repo / "docs/pcbas/pcba-joint-controller/index.rst").read_text()
     assert ".. sysml-view:: /views/jointController.drawio.svg" in idx
     assert "(view jointController)" in idx and "(view ``" not in idx      # the caption is not rst
     assert ".. sysml-view:: /views/jointControllerVariants.drawio.svg" in idx

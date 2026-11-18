@@ -1,7 +1,7 @@
 """Wiring harnesses of an EE repo (task 5.22; XD-ADR-0127, XD-ADR-0129, XD-ADR-0133, XD-ADR-0135,
 XD-ADR-0140): discovery, the 1:1 with the cable defs of the EE model (CK-F7), the harness ends
 against the pin maps of both ports (CK-F1), the design output (``curatrix cam``) and the plain-Python
-tables of the ``harness-<name>`` document.
+tables of the ``harnesses`` document (one for every cable of the repo, tiacsys/xdmod#69 finding 15).
 
 A harness is one folder ``harness/<name>/`` with one WireViz YAML ``<name>.yml`` as entry point
 (checks.yaml ``cad.harnesses``, e.g. ``["harness/*/*.yml"]``). It is 1:1 with a cable def of the EE
