@@ -210,3 +210,29 @@ def test_doctor_warns_about_leftover_user_dirs(tmp_path, monkeypatch):
     rows = kicadmcp.doctor_rows(ws, "ee", smoke=False)
     warned = [w for st, w, _ in rows if st == "warn" and "user-global kicad-mcp" in w]
     assert len(warned) == 2 and any(".local/share/kicad-mcp" in w for w in warned)
+
+
+def test_install_all_skips_system_module_tool_on_ci(tmp_path, monkeypatch):
+    """A CI runner has no system KiCad: install_all skips a tool whose system modules are missing (with a
+    note) instead of failing the bootstrap; locally (CI unset) the tool is installed and may fail loudly."""
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    site = tmp_path / "usr-site"
+    site.mkdir()
+    monkeypatch.setattr(tools, "base_python", lambda: (Path("/usr/bin/python3.14"), site))
+    t = _tool(name="kicad-mcp", python_venv={"requirements": "requirements.lock.txt",
+                                             "system_modules": ["pcbnew", "_pcbnew"]})
+    ts = type("TS", (), {"tools": {"kicad-mcp": t}})()
+    monkeypatch.setattr(tools, "for_role", lambda all_, role: ts)
+    monkeypatch.setattr(tools, "load_all", lambda ws: None)
+    installed, logs = [], []
+    monkeypatch.setattr(tools, "install", lambda ws, tl, log, adopt=False: installed.append(tl.name))
+    assert tools.missing_system_modules(t) == ["pcbnew", "_pcbnew"]
+    monkeypatch.setenv("CI", "true")
+    tools.install_all(ws, "integration", log=logs.append)
+    assert installed == [] and "skip" in logs[0] and "pcbnew" in logs[0]
+    monkeypatch.delenv("CI")
+    tools.install_all(ws, "integration", log=logs.append)
+    assert installed == ["kicad-mcp"]
+    (site / "pcbnew.py").write_text("")
+    (site / "_pcbnew.so").write_text("")
+    assert tools.missing_system_modules(t) == []

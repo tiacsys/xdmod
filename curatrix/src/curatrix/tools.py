@@ -514,7 +514,24 @@ def install(ws: Workspace, t: Tool, log=print, adopt: bool = False) -> None:
     write_stamp(ws, t)
 
 
+def missing_system_modules(t: Tool) -> list[str]:
+    """The `python_venv.system_modules` of a tool that the system Python does not have."""
+    mods = list((t.python_venv or {}).get("system_modules") or [])
+    if not mods:
+        return []
+    _, site = base_python()
+    return [m for m in mods if not (sorted(site.glob(f"{m}.py")) or sorted(site.glob(f"{m}*.so"))
+                                    or any(p.is_dir() for p in site.glob(m)))]
+
+
 def install_all(ws: Workspace, role: str | None, log=print, adopt: bool = False) -> None:
     ts = for_role(load_all(ws), role)
     for t in ts.tools.values():
+        # A CI runner has no system KiCad: a tool that needs system modules (kicad-mcp needs pcbnew) is
+        # skipped there with a note instead of failing the bootstrap. Locally a missing module stays an error.
+        if os.environ.get("CI") and getattr(t, "python_venv", None):
+            miss = missing_system_modules(t)
+            if miss:
+                log(f"  skip     {t.name} {t.version} (CI: system module {', '.join(miss)} not installed)")
+                continue
         install(ws, t, log, adopt=adopt)
