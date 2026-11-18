@@ -32,8 +32,9 @@ sha256 (or commit). `doctor` compares the stamps with tools.yaml.
 ``kind: git`` pins by commit, which is content-addressed: curatrix fetches exactly that commit into
 a bare cache repo (``<ws>/.xdmod/cache/git/<name>.git``), checks that the fetched object is that
 commit, and extracts its tree (``git archive``) into the location. No checkout, no remote in the
-location. A location that is already a git checkout at the pinned commit (made by hand before the
-tool was curated) is adopted and stamped, not replaced.
+location. The url must be https://. A location that is already a git checkout (made by hand
+before the tool was curated) is adopted and stamped only at the pinned commit without changes;
+otherwise the install stops with a message and never deletes it.
 """
 from __future__ import annotations
 
@@ -53,6 +54,7 @@ from curatrix.ws import Workspace
 
 KINDS = ("tarball", "zip", "conda", "file", "npm", "git")
 STATE_PREFIX = ".xdmod/"       # a location under the workspace state instead of .venv
+GIT_SCHEMES = ("https://",)    # kind git: only these URL schemes (no ssh, no ext::, no option-like values)
 _VERSION = re.compile(r"(\d+\.\d+(?:\.\d+)?)")
 
 
@@ -86,6 +88,9 @@ class Tool:
                 raise ToolsError(f"{self.source}: tool {self.name}: kind git needs commit (the full hash, 40 hex digits)")
             if self.sha256:
                 raise ToolsError(f"{self.source}: tool {self.name}: kind git is pinned by commit, not sha256")
+            if not self.url.startswith(GIT_SCHEMES) or re.search(r"\s", self.url):
+                raise ToolsError(f"{self.source}: tool {self.name}: a git url must start with "
+                                 f"{' or '.join(GIT_SCHEMES)} and have no spaces: {self.url!r}")
         elif self.commit:
             raise ToolsError(f"{self.source}: tool {self.name}: commit is only for kind git")
         elif self.kind != "npm" and not re.fullmatch(r"[0-9a-f]{64}", self.sha256 or ""):
@@ -250,14 +255,37 @@ def git_head(path: Path, ws: Workspace | None = None) -> str | None:
     return r.stdout.strip() if r.returncode == 0 else None
 
 
+def git_changes(path: Path, ws: Workspace | None = None) -> list[str]:
+    """Changed or added files of a git checkout (`git status --porcelain`; ignored files such as
+    __pycache__ do not count, untracked ones do)."""
+    r = limits.run(["git", "-C", str(path), "status", "--porcelain"], "git", ws, capture_output=True, text=True)
+    if r.returncode:
+        return [f"git status failed: {r.stderr.strip()}"]
+    return [ln[3:] for ln in r.stdout.splitlines() if ln.strip()]
+
+
+def checkout_problem(ws: Workspace, t: Tool) -> str | None:
+    """For a kind git tool whose location is a git checkout (a clone made by hand): why it is not
+    the pinned tool (another commit, changed files), or None."""
+    loc = t.path(ws)
+    head = git_head(loc, ws)
+    if head is None:
+        return None
+    if head != t.commit:
+        return f"{t.shown()} is a git checkout at {head[:12]}, not at the pin {t.commit[:12]}"
+    changed = git_changes(loc, ws)
+    if changed:
+        return f"{t.shown()} is at the pin but has changed files: {', '.join(changed[:5])}"
+    return None
+
+
 def installed_ok(ws: Workspace, t: Tool) -> bool:
     s = stamp_of(ws, t.name)
     if not (s and s.get("version") == t.version and s.get("sha256", "") == t.sha256
             and s.get("commit", "") == t.commit and t.path(ws).exists()):
         return False
-    if t.kind == "git":                      # an adopted checkout must still be at the pin
-        head = git_head(t.path(ws), ws)
-        return head is None or head == t.commit
+    if t.kind == "git":                      # an adopted checkout must still be at the pin, unchanged
+        return checkout_problem(ws, t) is None
     return True
 
 
@@ -311,7 +339,7 @@ def fetch_git(ws: Workspace, t: Tool, into: Path) -> None:
             raise ToolsError(f"{t.name}: git init of the cache failed")
     have = run("-C", str(cache), "rev-parse", "--verify", "--quiet", f"{t.commit}^{{commit}}")
     if have.returncode or have.stdout.strip() != t.commit:
-        r = run("-C", str(cache), "fetch", "--quiet", "--depth", "1", t.url, t.commit)
+        r = run("-C", str(cache), "fetch", "--quiet", "--depth", "1", "--", t.url, t.commit)
         if r.returncode:
             raise ToolsError(f"{t.name}: git fetch of {t.commit} from {t.url} failed: {r.stderr.strip()}")
         have = run("-C", str(cache), "rev-parse", "--verify", "--quiet", f"{t.commit}^{{commit}}")
@@ -342,7 +370,13 @@ def install(ws: Workspace, t: Tool, log=print, adopt: bool = False) -> None:
         log(f"  adopt    {t.name} {t.version} (already in {t.shown()}; stamped, not re-installed)")
         write_stamp(ws, t)
         return
-    if t.kind == "git" and not t.subdir and git_head(loc, ws) == t.commit:
+    if t.kind == "git" and git_head(loc, ws) is not None:
+        # a clone made by hand: adopt it only at the pin and unchanged; never delete it
+        why = checkout_problem(ws, t) if not t.subdir else f"{t.shown()} is a git checkout (subdir tools are extracted)"
+        if why:
+            raise ToolsError(f"{t.name}: {why}. Not replaced, so nothing of yours is lost: check out "
+                             f"{t.commit} and drop the changes (git -C {t.shown()} checkout {t.commit}; "
+                             f"git -C {t.shown()} status), or move the folder away; then curatrix update")
         log(f"  adopt    {t.name} {t.version} (a git checkout at {t.commit[:12]} in {t.shown()}; stamped)")
         write_stamp(ws, t)
         return
