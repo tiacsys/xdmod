@@ -90,7 +90,7 @@ pycparser==3.12
 pydantic==2.14.3
 pydantic-core==2.50.4
 pyjwt==2.15.1
-python-dotenv==1.2.4
+python-dotenv==1.2.3
 python-multipart==0.0.34
 rich==15.0.0
 shellingham==1.5.4
