@@ -227,11 +227,6 @@ class Workspace:
                             .replace("{state}", str(self.state)))
         except Exception:  # noqa: BLE001 - env must work even with a broken tools.yaml
             pass
-        try:                                    # the FreeCAD MCP token (.mcp.json passes it on)
-            from curatrix import freecadmcp
-            e.update(freecadmcp.env(self))
-        except Exception:  # noqa: BLE001
-            pass
         path_parts = [str(self.venv / "bin")]
         if (self.opt / "node" / "node_modules" / ".bin").is_dir():
             path_parts.append(str(self.opt / "node" / "node_modules" / ".bin"))

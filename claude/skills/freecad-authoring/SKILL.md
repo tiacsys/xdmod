@@ -84,15 +84,52 @@ table row with its parameters, the links with `Configs`, and what each variant s
 - The owner (or you, with decision Q2) starts `curatrix launch freecad --mcp`: the addon FreeCADMCP
   opens 127.0.0.1:9875 with the workspace token for that session only, `HOME=.xdmod/stepup/home`.
   Claude Code reaches it through the `freecad` server of `<ws>/.mcp.json` (written by
-  `curatrix update`; start Claude with `curatrix launch claude` so `XD_FREECAD_MCP_TOKEN` is set).
+  `curatrix update`; it runs `curatrix mcp-server freecad`, which reads the token from its file and
+  keeps `HOME` under `.xdmod/freecad-mcp/`). Never start `freecad-mcp` yourself with your `HOME`.
 - Check `get_rpc_status` first. Give long calls an explicit `timeout`. A call that opens a modal box
-  blocks the GUI thread until a human closes it (`still_running`, then `GUI_DISPATCH_STUCK`); so
-  in `execute_code` replace `QMessageBox` statics and `QMessageBox`/`QDialog` `exec`/`exec_` by
-  logging before you call an addon that may ask something.
-- StepUp board load (`XD_STEPUP` on `sys.path`): set `Mod/kicadStepUpGui` `prefix3d_1` to
-  `libs/kicad/packages3D` and `pcb_placement` to 2 (or a board grid origin), then
-  `kicadStepUptools.onLoadBoard(file_name=<copy under build/>)`. Gives one coloured object per
-  component (`claude/notes/codesign-spike.md`, addendum 2026-11-18). Never on a repo file.
+  blocks the GUI thread until a human closes it (`still_running`, then `GUI_DISPATCH_STUCK`).
+- So around an addon call that may ask something, replace the message boxes and dialog `exec` by
+  logging, and **restore the originals and every preference you changed in `finally`**: the GUI
+  stays open for the owner, whose save and file dialogs must work again, and the workspace
+  `user.cfg` must not keep your settings. StepUp board load (always on a copy under `build/`):
+
+  ```python
+  import os, re, sys, FreeCAD
+  from PySide6 import QtWidgets as QW              # FreeCAD's PySide.QtGui is the same class
+  sys.path.insert(0, os.environ["XD_STEPUP"])
+  pg = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/kicadStepUpGui")
+  old_s = {k: pg.GetString(k) for k in ("prefix3d_1",) if k in pg.GetStrings()}
+  old_i = {k: pg.GetInt(k) for k in ("pcb_placement",) if k in pg.GetInts()}
+  NAMES = ("information", "warning", "critical", "question", "exec", "exec_")
+  LOG = []
+  saved = {(c, n): c.__dict__[n] for c in (QW.QMessageBox, QW.QDialog) for n in NAMES if n in c.__dict__}
+  try:
+      pg.SetString("prefix3d_1", os.path.join(os.environ["XD_WORKSPACE"], "libs/kicad/packages3D"))
+      pg.SetInt("pcb_placement", 2)                 # board base origin: no grid-origin box
+      for n in NAMES[:4]:
+          setattr(QW.QMessageBox, n, staticmethod(
+              lambda *a, n=n, **k: (LOG.append((n, re.sub("<[^>]+>", " ", str(a[2:3])))), QW.QMessageBox.Ok)[1]))
+      for c in (QW.QMessageBox, QW.QDialog):
+          c.exec = c.exec_ = lambda self, *a, **k: (LOG.append(("exec", type(self).__name__)), 0)[1]
+      import kicadStepUptools as ksu
+      ksu.cfg_read_all()
+      ksu.onLoadBoard(file_name=BOARD_COPY)         # a copy under build/, never a repo file
+  finally:
+      for c in (QW.QMessageBox, QW.QDialog):        # the owner's dialogs work again
+          for n in NAMES:
+              if (c, n) in saved:
+                  setattr(c, n, saved[(c, n)])
+              elif n in c.__dict__:
+                  delattr(c, n)
+      for k in ("prefix3d_1",):                     # user.cfg as before: old value, or none
+          pg.SetString(k, old_s[k]) if k in old_s else pg.RemString(k)
+      for k in ("pcb_placement",):
+          pg.SetInt(k, old_i[k]) if k in old_i else pg.RemInt(k)
+  print(LOG)
+  ```
+
+  The result: one coloured object per component
+  (`claude/notes/codesign-spike.md`, addendum 2026-11-18). Never on a repo file.
 
 ## To be added
 

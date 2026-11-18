@@ -30,12 +30,12 @@ def test_ensure_token_settings_and_mcp_entry(tmp_path, monkeypatch):
     assert s == {"remote_enabled": False, "allowed_ips": "127.0.0.1", "auth_token": tok, "auto_start_rpc": False}
     mcp = json.loads((ws.root / ".mcp.json").read_text())["mcpServers"]
     assert set(mcp) == {"other", "freecad"}
-    assert mcp["freecad"]["env"] == {"FREECAD_MCP_TOKEN": "${XD_FREECAD_MCP_TOKEN}"}
-    assert mcp["freecad"]["command"].endswith(".venv/bin/freecad-mcp") and "--use freecad" in mcp["freecad"]["args"][1]
+    assert mcp["freecad"]["command"].endswith(".venv/bin/curatrix") and mcp["freecad"]["args"] == ["mcp-server", "freecad"]
+    assert tok not in json.dumps(mcp)                                 # the token stays in its file
     loc = json.loads((ws.root / ".claude" / "settings.local.json").read_text())
     assert loc["enabledMcpjsonServers"] == ["freecad"] and loc["disabledMcpjsonServers"] == []
     assert loc["permissions"] == {"allow": ["Bash(ls)"]}
-    assert ws.env()["XD_FREECAD_MCP_TOKEN"] == tok
+    assert tok not in json.dumps(ws.env())                            # `curatrix env` never prints it
     freecadmcp.ensure(ws, "me", log=lambda *_: None)          # idempotent: same token
     assert freecadmcp.read_token(ws) == tok
     # a role without the addon: nothing
@@ -97,3 +97,48 @@ def test_doctor_rows(tmp_path, monkeypatch):
     user.mkdir(parents=True)
     assert any(st == "warn" and "user-global" in w for st, w, _ in freecadmcp.doctor_rows(ws, "me"))
     assert freecadmcp.doctor_rows(ws, "sw") == []
+
+
+def test_server_command_never_uses_the_real_home(tmp_path, monkeypatch):
+    """freecad-mcp writes headless scripts to Path.home()/.cache/freecad-mcp (review of #80)."""
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    freecadmcp.ensure(ws, "me", log=lambda *_: None)
+    (ws.venv / "bin" / "freecad-mcp").write_text("#!/bin/sh\n")
+    argv, env = freecadmcp.server_command(ws)
+    assert argv[0].endswith("/freecad-mcp") and "--use freecad -- FreeCADCmd" in argv[2]
+    assert env["HOME"] == str(ws.state / "freecad-mcp" / "home")
+    assert env["XDG_CACHE_HOME"] == str(ws.state / "freecad-mcp" / "cache")
+    assert env["FREECAD_MCP_TOKEN"] == freecadmcp.read_token(ws)
+    freecadmcp.token_path(ws).unlink()
+    import pytest
+    with pytest.raises(tools.ToolsError, match="no token"):
+        freecadmcp.server_command(ws)
+
+
+def test_doctor_warns_on_a_user_cache(tmp_path, monkeypatch):
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    monkeypatch.setattr(freecadmcp, "pip_version", lambda: "0.1.32")
+    monkeypatch.setattr(freecadmcp.Path, "home", lambda: tmp_path / "home")
+    freecadmcp.ensure(ws, "me", log=lambda *_: None)
+    (tmp_path / "home" / ".cache" / "freecad-mcp").mkdir(parents=True)
+    assert any(st == "warn" and "freecad-mcp ran with your HOME" in w for st, w, _ in freecadmcp.doctor_rows(ws, "me"))
+
+
+def test_launch_resets_auto_start_on_sigterm(tmp_path, monkeypatch):
+    import os
+    import signal
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    freecadmcp.ensure(ws, "me", log=lambda *_: None)
+    monkeypatch.setattr(setup.limits, "wrap", lambda cmd, lim: cmd)
+    monkeypatch.setattr(setup.shutil, "which", lambda exe: "/usr/bin/" + exe)
+    monkeypatch.setattr(setup, "real_tool", lambda ws, exe: None)
+
+    def run(cmd, cwd, env):
+        assert freecadmcp.read_settings(ws)["auto_start_rpc"] is True
+        os.kill(os.getpid(), signal.SIGTERM)
+    monkeypatch.setattr(setup.subprocess, "run", run)
+    before = signal.getsignal(signal.SIGTERM)
+    import pytest
+    with pytest.raises(SystemExit):
+        setup.launch(ws, "freecad", ["--mcp"])
+    assert freecadmcp.read_settings(ws)["auto_start_rpc"] is False and signal.getsignal(signal.SIGTERM) == before

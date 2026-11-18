@@ -10,16 +10,23 @@ neka-nat/freecad-mcp (MIT) has two halves at the same version:
 
 What curatrix adds (``ensure``, run by bootstrap/update):
 
-* a token file ``.xdmod/freecad/mcp-token`` (0600, made once); ``curatrix env`` exports it as
-  ``XD_FREECAD_MCP_TOKEN``, and ``.mcp.json`` passes it to the MCP server as ``FREECAD_MCP_TOKEN``;
+* a token file ``.xdmod/freecad/mcp-token`` (0600, made once); never in an environment that
+  ``curatrix env`` prints: ``curatrix mcp-server freecad`` (the command in ``.mcp.json``) reads it
+  when Claude Code starts the server and passes it as ``FREECAD_MCP_TOKEN``;
 * the addon's settings ``freecad_mcp_settings.json`` in FreeCAD's user data folder: remote access off,
   allowed IPs 127.0.0.1, the token, auto-start off;
 * the ``freecad`` entry of ``<ws>/.mcp.json`` (other servers are kept) and its approval in
   ``<ws>/.claude/settings.local.json`` (``enabledMcpjsonServers``).
 
+``curatrix mcp-server freecad`` runs ``freecad-mcp`` under the ``mcp`` limits with ``HOME`` and the
+XDG folders under ``.xdmod/freecad-mcp/``: freecad-mcp 0.1.32 writes its headless scripts to
+``~/.cache/freecad-mcp/headless`` (``Path.home()``), which must never be the user's home.
+
 ``curatrix launch freecad --mcp`` switches auto-start on for that run only, so the port is open
 only while such a session runs, and sets ``HOME`` to ``.xdmod/stepup/home`` (StepUp, driven through
-the MCP server, writes ``~/ksu-config.ini``). Without ``--mcp`` auto-start is switched off first.
+the MCP server, writes ``~/ksu-config.ini``). It is switched off again when FreeCAD exits or the
+launcher gets SIGTERM/SIGHUP/SIGINT; and every launch (with or without ``--mcp``) writes it first,
+so a run that was killed hard (SIGKILL) leaves it on only until the next launch or update.
 """
 from __future__ import annotations
 
@@ -34,7 +41,6 @@ from curatrix.ws import Workspace
 ADDON = "freecad-mcp-addon"
 PIP = "freecad-mcp"
 SERVER = "freecad"                       # the name in .mcp.json
-TOKEN_VAR = "XD_FREECAD_MCP_TOKEN"
 SETTINGS = "freecad_mcp_settings.json"
 SAFE = {"remote_enabled": False, "allowed_ips": "127.0.0.1"}
 
@@ -102,11 +108,43 @@ def write_settings(ws: Workspace, auto_start: bool = False) -> dict:
 
 
 def mcp_entry(ws: Workspace) -> dict:
-    v = ws.venv / "bin"
-    return {"command": str(v / "freecad-mcp"),
-            # execute_code_headless: FreeCADCmd under the freecad limits and the workspace config
-            "args": ["--freecadcmd", f"{v / 'curatrix'} run --use freecad -- FreeCADCmd"],
-            "env": {"FREECAD_MCP_TOKEN": "${" + TOKEN_VAR + "}"}}
+    """The server in .mcp.json: the curatrix wrapper (token from the file, HOME under .xdmod/)."""
+    return {"command": str(ws.venv / "bin" / "curatrix"), "args": ["mcp-server", SERVER],
+            "env": {"XD_WORKSPACE": str(ws.root)}}
+
+
+def server_home(ws: Workspace) -> Path:
+    return ws.state / "freecad-mcp"
+
+
+def server_command(ws: Workspace) -> tuple[list[str], dict]:
+    """argv and environment of the MCP server: freecad-mcp with headless runs through
+    `curatrix run --use freecad -- FreeCADCmd`, HOME and XDG_* under .xdmod/freecad-mcp/, the token."""
+    tok = read_token(ws)
+    if not tok:
+        raise tools.ToolsError(f"no token in {ws.rel(token_path(ws))}: run curatrix update")
+    exe = ws.venv / "bin" / "freecad-mcp"
+    if not exe.exists():
+        raise tools.ToolsError(f"{ws.rel(exe)} missing: run curatrix update")
+    env = ws.run_env()
+    base = server_home(ws)
+    for k, sub in (("HOME", "home"), ("XDG_CACHE_HOME", "cache"), ("XDG_CONFIG_HOME", "config"),
+                   ("XDG_DATA_HOME", "data")):
+        (base / sub).mkdir(parents=True, exist_ok=True)
+        env[k] = str(base / sub)
+    env["FREECAD_MCP_TOKEN"] = tok
+    argv = [str(exe), "--freecadcmd", f"{ws.venv / 'bin' / 'curatrix'} run --use freecad -- FreeCADCmd"]
+    return argv, env
+
+
+def serve(ws: Workspace) -> int:
+    """`curatrix mcp-server freecad`: exec the MCP server (stdio stays Claude Code's pipe)."""
+    from curatrix import limits
+    argv, env = server_command(ws)
+    cmd = limits.wrap(argv, limits.resolve("mcp", ws))
+    os.chdir(ws.root)
+    os.execvpe(cmd[0], cmd, env)
+    return 1                                  # not reached
 
 
 def _merge_json(p: Path, change) -> bool:
@@ -153,12 +191,6 @@ def ensure(ws: Workspace, role: str | None, log=print) -> None:
     made = write_mcp_config(ws)
     log(f"  FreeCAD MCP: token {ws.rel(token_path(ws))}, settings (remote off, loopback, token), "
         f"MCP server '{SERVER}'" + (f" (wrote {', '.join(made)})" if made else ""))
-
-
-def env(ws: Workspace) -> dict[str, str]:
-    """For `curatrix env`: the token, if there is one."""
-    tok = read_token(ws)
-    return {TOKEN_VAR: tok} if tok else {}
 
 
 def pip_version() -> str | None:
@@ -214,6 +246,10 @@ def doctor_rows(ws: Workspace, role: str | None) -> list[tuple[str, str, str]]:
         rows.append(("warn", f"no '{SERVER}' server in .mcp.json", "curatrix update"))
     for d in sorted((Path.home() / ".local" / "share" / "FreeCAD").glob("*/Mod/FreeCADMCP")):
         rows.append(("warn", f"a user-global FreeCAD MCP addon: {d}", "remove it; the workspace has its own"))
+    uc = Path.home() / ".cache" / "freecad-mcp"
+    if uc.exists():
+        rows.append(("warn", f"{uc} exists: freecad-mcp ran with your HOME",
+                     "start it only through .mcp.json (curatrix mcp-server freecad); remove the folder"))
     return rows
 
 

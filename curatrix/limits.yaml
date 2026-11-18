@@ -26,3 +26,4 @@ uses:
   git:       {memory: 1G, timeout: 10m}
   gui:       {memory: 8G, timeout: none, vmem: none} # KiCad, FreeCAD, drawio (D117)
   claude:    {memory: 8G, timeout: none, vmem: none} # Claude Code session
+  mcp:       {memory: 1G, timeout: none, vmem: none} # an MCP server started by Claude Code (stdio, lives as long as the session)
