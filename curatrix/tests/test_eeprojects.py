@@ -81,7 +81,7 @@ def test_discovery_and_root_sheets(tmp_path):
 
 def test_f6_folder_rule(tmp_path):
     """CK-F6 planted: two projects in one folder, a misnamed one, a folder without a project, a
-    missing root sheet, a KiCad file outside the project folders. lib/ symbols are no project files."""
+    missing root sheet, a KiCad file outside the project folders, a uuid used twice. lib/ symbols are no project files."""
     root, repo = _repo(tmp_path)
     _project(repo, "pcba", "canary-board", "EE-PCBA-0001")
     assert _run(root, repo, "CK-F6", "c_ee_projects") == []
@@ -94,6 +94,7 @@ def test_f6_folder_rule(tmp_path):
     (repo / "pcba/empty").mkdir()
     (repo / "pcba/empty/x.kicad_pcb").write_text("")
     (repo / "stray.kicad_sch").write_text("")
+    (d / "joint.kicad_pcb").write_text('(kicad_pcb (property "a" "1" (uuid "u-1")) (property "b" "2" (uuid "u-1")))')
     f = _run(root, repo, "CK-F6", "c_ee_projects")
     text = "\n".join(f)
     assert "pcba/joint/: 2 projects" in text
@@ -102,6 +103,7 @@ def test_f6_folder_rule(tmp_path):
     assert "pcba/empty/: a project folder without a .kicad_pro" in text
     assert "stray.kicad_sch: a KiCad project file outside a project folder" in text
     assert "pcba/empty/x.kicad_pcb: a KiCad project file outside" in text
+    assert "pcba/joint/joint.kicad_pcb: uuid used more than once: u-1" in text
     assert not any("canary-board" in x for x in f)
 
 
@@ -268,3 +270,11 @@ def test_template_jobset_writes_under_build():
     js = json.loads((XDMOD / "templates/kicad-pcba/pcba.kicad_jobset").read_text())
     assert [o["settings"]["output_path"] for o in js["outputs"]] == ["${XD_CAM_OUT}/__NAME__"]
     assert Workspace(XDMOD.parent).env()["XD_CAM_OUT"].endswith("/build/cam")
+
+
+def test_kicad_fixtures_have_unique_uuids():
+    """Fixtures written by a script and re-saved by kicad-cli keep copied uuids (review of xdmod#74)."""
+    from helpers import FIXTURES
+    files = sorted((FIXTURES / "kicad").rglob("*.kicad_pcb")) + sorted((FIXTURES / "kicad").rglob("*.kicad_sch"))
+    assert files
+    assert {f.name: eeprojects.duplicate_uuids(f.read_text()) for f in files if eeprojects.duplicate_uuids(f.read_text())} == {}

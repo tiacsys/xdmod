@@ -164,6 +164,7 @@ def test_f1_against_the_model():
     bad["connectors"].append({"ref": "J8", "portName": "servoOut", "portType": "BusHeader", "portTypeID": "EE-PORT-0002",
                               "pins": [{"number": "1", "name": "", "net": "SERVO_PWM"}, {"number": "3", "name": "", "net": "GND"}]})
     bad["connectors"].append({"ref": "J7", "Port": "EE-PORT-0001", "portName": None, "pins": []})
+    bad["connectors"].append({"ref": "J6", "portName": "-", "portTypeID": "EE-PORT-0002", "pins": []})
     text = "\n".join(conn.conformance(bad, "EE-PCBA-0001", m, "c"))
     assert "J1 (EePorts::ServoHeader): pin 1 is on net '/CANARY_A', the pin map says 'SERVO_PWM'" in text
     assert "J1 (EePorts::ServoHeader): pin 3 of the pin map is not on the connector" in text
@@ -173,6 +174,7 @@ def test_f1_against_the_model():
     assert "J8: portType is 'BusHeader', the port servoOut is typed by ServoHeader (EE-PORT-0001): portType = ServoHeader" in text
     assert "J8: portTypeID is 'EE-PORT-0002'" in text
     assert "J7 has the old field Port = 'EE-PORT-0001'; replace it by portName" in text
+    assert "J6 has portName = - but portTypeID; remove it" in text
     assert "the port bus (BusHeader) of the board def EeBoards::ControllerBoard is named by 0 connector(s) (none)" in text
     assert "the port servoOut (ServoHeader) of the board def EeBoards::ControllerBoard is named by 2 connector(s) (J1, J8)" in text
     assert "names no board def" in conn.conformance(good, "EE-PCBA-0099", m, "c")[0]
@@ -193,13 +195,17 @@ def test_f22_port_and_connector_names():
     assert "model EeCables::ServoMotor::plug: the port name 'j1' looks like a reference designator" in text
     assert "the port name 'Board_End' is not lowerCamelCase" in text
     assert "pwm" not in text and "gnd" not in text
-    assert conn.designator_findings({"connectors": [{"ref": "X1", "portName": "servoOut"}, {"ref": "R1"}]}, "c") == []
-    assert conn.designator_findings({"connectors": [{"ref": "J1", "portName": "-"}]}, "c") == [
+    assert conn.designator_findings({"connectors": [{"ref": "X1", "portName": "servoOut"}, {"ref": "R1"},
+                                                    {"ref": "J1", "portName": "-"}]}, "c") == []
+    assert conn.designator_findings({"connectors": [{"ref": "J1", "portName": "servoOut"}]}, "c") == [
         "c: J1 has a portName but no X designator; connectors are X1, X2, ... (set the reference prefix to X)"]
-    for name in ("j1", "p3", "x2", "cn1", "JP2"):
-        assert conn.DESIGNATOR_LIKE.match(name)
-    for name in ("canaryLink", "servoBase", "bus", "plug", "boardEnd"):
-        assert not conn.DESIGNATOR_LIKE.match(name)
+    for name in ("j1", "p3", "x2", "cn1", "JP2", "u4", "sw1", "tp3", "X12"):
+        assert conn.DESIGNATOR_LIKE.match(name), name
+    for name in ("canaryLink", "servoBase", "bus", "plug", "boardEnd", "i2c", "i2c0", "i2s", "spi1", "can0",
+                 "usb2", "pwm1", "adc0", "led1", "uart0", "m3", "gpio5"):
+        assert not conn.DESIGNATOR_LIKE.match(name), name
+    # a jumper J1 without port fields is no connector; J1 with a port field is
+    assert not conn.is_connector("J1", {}) and conn.is_connector("J1", {"portName": "-"}) and conn.is_connector("X3", {})
 
 
 def test_f22_through_the_check(tmp_path):
@@ -210,6 +216,10 @@ def test_f22_through_the_check(tmp_path):
                  "(set the reference prefix to X)",
                  "pcba/conn/conn.kicad_sch: J2 has a portName but no X designator; connectors are X1, X2, ... "
                  "(set the reference prefix to X)"]
+    d = _doc_for_controller()
+    d["connectors"][1].update(portName="-", portType=None, portTypeID=None)
+    (repo / "generated/conn.connectors.json").write_text(json.dumps(d))
+    assert len(_run(root, repo, "CK-F22", "c_port_names")) == 1             # J2 without a port: not asked
 
 
 def test_f1_through_the_check(tmp_path):
