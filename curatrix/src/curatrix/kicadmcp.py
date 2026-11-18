@@ -100,7 +100,7 @@ def command(ws: Workspace, t: tools.Tool) -> list[str]:
 
 def run(ws: Workspace, mode: str = "readonly") -> int:
     """`curatrix mcp-server kicad`: the server on this process's stdin/stdout (nothing else may write to
-    stdout). Memory limit only (use `mcp`): a session runs as long as the client does."""
+    stdout). Memory limit only (use `mcp-kicad`): a session runs as long as the client does."""
     t = tool(ws, ws.role) or tool(ws, None)
     if t is None:
         raise SystemExit(f"curatrix mcp-server kicad: {TOOL} is not in tools.yaml")
@@ -113,10 +113,9 @@ def run(ws: Workspace, mode: str = "readonly") -> int:
 
 # ------------------------------------------------------------------ .mcp.json
 def mcp_entry(ws: Workspace) -> dict:
-    from curatrix import setup
-    main = setup.main_workspace(ws)
-    return {"command": str(main.venv / "bin" / "curatrix"), "args": ["mcp-server", SERVER],
-            "env": {"XD_WORKSPACE": str(main.root)}}
+    """The server in .mcp.json; the same form and workspace rule as freecadmcp.mcp_entry."""
+    return {"command": str(ws.venv / "bin" / "curatrix"), "args": ["mcp-server", SERVER],
+            "env": {"XD_WORKSPACE": str(ws.root)}}
 
 
 def write_mcp_config(ws: Workspace) -> bool:
@@ -163,6 +162,16 @@ def snapshot_user_dirs(home_dir: Path | None = None, limit: int = 20000) -> dict
                 if len(snap) >= limit:
                     return snap
     return snap
+
+
+# The server's own folders in the user's home (upstream defaults); the curated server never makes them.
+SERVER_USER_DIRS = (".kicad-mcp", ".config/kicad-mcp", ".cache/kicad-mcp", ".local/share/kicad-mcp")
+
+
+def leftover_user_dirs(home_dir: Path | None = None) -> list[Path]:
+    """The server folders of SERVER_USER_DIRS that exist in the user's home."""
+    base = home_dir or Path.home()
+    return [base / d for d in SERVER_USER_DIRS if (base / d).exists()]
 
 
 def diff_snapshots(before: dict, after: dict) -> list[str]:
@@ -277,8 +286,11 @@ def doctor_rows(ws: Workspace, role: str | None, smoke: bool = True) -> list[tup
             rows.append(("FAIL", f"kicad-mcp changed user folders during the handshake: {', '.join(changed[:5])}"
                          + (" ..." if len(changed) > 5 else ""), "report it; the server must stay workspace-local"))
         else:
-            rows.append(("ok", "kicad-mcp left ~/.config/kicad, ~/.local/share/kicad, ~/.cache/kicad, "
-                         "~/.kicad-mcp unchanged"))
+            rows.append(("ok", "kicad-mcp left the user folders unchanged during the handshake",
+                         ", ".join(f"~/{d}" for d in USER_DIRS)))
+    for d in leftover_user_dirs():
+        rows.append(("warn", f"a user-global kicad-mcp folder: {d}",
+                     "made by a run without the workspace config; move it away (the workspace has its own)"))
     mj = ws.root / ".mcp.json"
     try:
         have_entry = (json.loads(mj.read_text()).get("mcpServers") or {}).get(SERVER) if mj.is_file() else None

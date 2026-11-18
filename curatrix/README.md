@@ -336,11 +336,14 @@ under `.xdmod/kicad-documents`, `KICAD_CLI` = the shim, `KICAD_PYTHON` = the too
 `KICAD_MCP_STRICT_PATHS=1` (no lookup below `$HOME`; the worker refuses to start without its
 folders), `KICAD_MCP_HOME` and `XDG_*` under `.xdmod/kicad-mcp/`, logs and `TMPDIR` under
 `build/kicad-mcp/`, `PYTHONPATH` unset, mode `readonly` by default and the toolboxes
-`core,schematic,board,drc` open. `doctor` checks the worker venv (kipy, sexpdata, skip; warns on
+`core,schematic,board,drc` open. A client can still open more toolboxes during a session (`open_toolbox`,
+`search_tools`, e.g. JLCPCB); readonly hides the writing tools anyway, and `HOME`/`XDG_*` keep any
+database under `.xdmod/kicad-mcp`. `doctor` checks the worker venv (kipy, sexpdata, skip; warns on
 pymupdf), `pcbnew.Version()` against the pinned KiCad, an MCP handshake (initialize, tools/list, the
 Python worker's READY; not with `--ci`) with a snapshot of `~/.config/kicad`, `~/.local/share/kicad`,
-`~/.cache/kicad` and the `kicad-mcp` folders before and after (FAIL on any change), and the
-`.mcp.json` entry. Schematic edits through the server are text writes: re-save them with
+`~/.cache/kicad` and the `kicad-mcp` folders before and after (FAIL on any change), warns when a
+user-global `~/.kicad-mcp`, `~/.config/kicad-mcp`, `~/.cache/kicad-mcp` or `~/.local/share/kicad-mcp`
+exists, and checks the `.mcp.json` entry. Schematic edits through the server are text writes: re-save them with
 `curatrix run --use kicad-cli -- kicad-cli sch upgrade --force <file>` (claude/notes/kicad-spike.md §7a).
 The Zephyr SDK belongs in robarm-sw's tools.yaml (D138), e.g.
 `env: {ZEPHYR_SDK_INSTALL_DIR: "{location}"}`.

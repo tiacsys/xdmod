@@ -109,7 +109,10 @@ def cmd_mcp_server(a):
     from curatrix import freecadmcp, kicadmcp, tools
     try:
         if a.server == "kicad":
-            return kicadmcp.run(_ws(), a.mode)
+            return kicadmcp.run(_ws(), a.mode or "readonly")
+        if a.mode is not None:
+            print(f"curatrix mcp-server {a.server}: --mode is only for kicad", file=sys.stderr)
+            return 2
         return freecadmcp.serve(_ws())
     except tools.ToolsError as e:
         print(f"curatrix mcp-server {a.server}: {e}", file=sys.stderr)
@@ -696,8 +699,8 @@ def parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("mcp-server", help="an MCP server for Claude Code (.mcp.json): workspace HOME, token, limits")
     s.add_argument("server", choices=["freecad", "kicad"])
-    s.add_argument("--mode", choices=["readonly", "write", "manufacturing"], default="readonly",
-                   help="kicad: the server's operating mode (default readonly: no tool that changes a design)")
+    s.add_argument("--mode", choices=["readonly", "write", "manufacturing"], default=None,
+                   help="kicad only: the server's operating mode (default readonly: no tool that changes a design)")
     s.set_defaults(func=cmd_mcp_server)
 
     s = sub.add_parser("docs", help="zdocs build of a repo (or `full`) into build/<area>/docs (strict)")
