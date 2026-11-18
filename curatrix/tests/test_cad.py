@@ -1,5 +1,6 @@
 import json
 import zipfile
+from pathlib import Path
 
 from curatrix import cad
 from helpers import FIXTURES
@@ -56,6 +57,25 @@ def test_freecad_trace_and_needs():
     needs, findings = cad.freecad_needs(fc, "parts/part.FCStd")
     assert findings == [] and needs["ME-PART-0001"]["realizes"] == ["SYS-EL-0003"]
     assert needs["ME-PART-0001"]["type"] == "me-part"
+    assert "standard" not in needs["ME-PART-0001"] and "catalog" not in needs["ME-PART-0001"]
+
+
+def test_freecad_catalog_parts(monkeypatch):
+    """A standard fastener gets `standard`, a bought part `catalog` (R3 leaves both out)."""
+    def sem(fcstd, source):
+        return {"objects": {
+            "Screw": {"type": "Part::Cut", "label": "M3x6", "trace": {"TraceID": "ME-PART-0002"},
+                      "values": {"Standard": "ISO 7380-1 M3x6, A2", "Manufacturer": "X", "MPN": "1"}},
+            "Spacer": {"type": "Part::Feature", "label": "Spacer", "trace": {"TraceID": "ME-PART-0003"},
+                       "values": {"Manufacturer": "Wurth", "MPN": "970030321"}},
+            "Half": {"type": "Part::Feature", "label": "Half", "trace": {"TraceID": "ME-PART-0004"},
+                     "values": {"Manufacturer": "Wurth"}}}}
+    monkeypatch.setattr(cad, "freecad_trace", sem)
+    needs, findings = cad.freecad_needs(Path("lib/x.FCStd"), "lib/x.FCStd")
+    assert findings == []
+    assert needs["ME-PART-0002"]["standard"] == "ISO 7380-1 M3x6, A2" and "catalog" not in needs["ME-PART-0002"]
+    assert needs["ME-PART-0003"]["catalog"] == "Wurth 970030321" and "standard" not in needs["ME-PART-0003"]
+    assert "catalog" not in needs["ME-PART-0004"]
 
 
 def test_freecad_compression_detection(tmp_path):

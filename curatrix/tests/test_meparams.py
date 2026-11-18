@@ -2,6 +2,7 @@
 placements, CK-F3."""
 import json
 import math
+from pathlib import Path
 
 import pytest
 
@@ -207,3 +208,27 @@ def test_tolerance_in_the_attributes_own_unit():
     params, _ = meparams.model_params(m, m.get("Me::A"))
     got = {p.alias: (round(p.value, 4), round(p.tol, 4)) for p in params}
     assert got == {"arm_length": (2000.0, 1.0), "arm_tilt": (57.2958, 0.573)}, got
+
+
+@pytest.mark.tools
+def test_write_params_loads_a_partial_part(tmp_path):
+    """write-params.py with a part that the top document's link opens only partially (FreeCADCmd):
+    it loads the part fully, writes the value, recomputes the part and saves it (finding 16 of
+    xdmod#69: it stopped with 'partially loaded documents')."""
+    import shutil
+    from curatrix.newasm import run_script
+    from curatrix.ws import Workspace
+    from helpers import FIXTURES
+    if shutil.which("FreeCADCmd") is None:
+        pytest.skip("FreeCADCmd not installed")
+    ws = Workspace(tmp_path / "ws")
+    d = tmp_path / "fx"
+    d.mkdir()
+    run_script(ws, FIXTURES / "freecad" / "make_params_fixture.py", {"XD_DIR": str(d)}, tmp_path / "fixture.json")
+    (tmp_path / "params.json").write_text(json.dumps({"plate_length": "12 mm"}))
+    script = Path(__file__).resolve().parents[2] / "templates" / "freecad-asm" / "write-params.py"
+    res = run_script(ws, script, {"XD_TOP": str(d / "fxp.FCStd"), "XD_SKELETON": str(d / "fxp-skeleton.FCStd"),
+                                  "XD_PARAMS": str(tmp_path / "params.json")}, tmp_path / "params.result.json")
+    assert res["changed"] == ["plate_length"] and res["invalid"] == []
+    assert sorted(Path(p).name for p in res["saved"]) == ["fxp-skeleton.FCStd", "plate.FCStd"], res
+    assert res["order"] == ["fxp-skeleton.FCStd", "plate.FCStd", "fxp.FCStd"], res

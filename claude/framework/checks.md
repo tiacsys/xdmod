@@ -26,7 +26,7 @@ Check IDs use the prefix `CK-` (e.g. `CK-D4`) so that they can't be confused wit
 | CK-A1 | Link written on the wrong side, to an unknown ID, or to a wrong target type (link types declared per need type, D64h) | local, PR, full | error |
 | CK-A2 | Required links ("Min" in the link table) and required fields present; `status`, `layer`, `category`, `verification_scope` from their enums; `configs`/`config` hold valid `SYS-CFG` IDs | local, PR, full | error |
 | CK-A3 | ID matches the regex and its kind matches the need type (D78) | local, PR, full | error |
-| ~~CK-A4~~ | No orphans (R3). Retired 2026-11-17: the schema rule of `needs_config.toml` enforces it in CK-A6 (task 5.2) | — | — |
+| ~~CK-A4~~ | No orphans (R3). Retired 2026-11-17: the schema rule of `needs_config.toml` enforces it in CK-A6 (task 5.2). Catalog parts are left out: an `ME-PART` with a `standard` (FreeCAD `Standard`) or `catalog` (`Manufacturer` + `MPN`) field from `curatrix gen cad-needs` (xdmod#69 finding 16; KiCad components not yet) | — | — |
 | ~~CK-A5~~ | HIL test results carry `firmware_sha256` and SHAs (R5, D60). Retired 2026-11-17: schema rule, CK-A6 (task 5.2) | — | — |
 | CK-A6 | Every doc builds strict (`-W --keep-going`, every doc reports, D64c); `doccheck` passes | local, PR, full | error |
 

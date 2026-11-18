@@ -41,6 +41,9 @@ def test_sample_builds_strict(tmp_path):
     assert needs["ME-PORT-0001"]["part_of"] == ["ME-ASM-0001"]
     assert needs["SW-DD-0002"]["conforms"] == ["EE-PCBA-0001", "EE-PORT-0001"]
     assert needs["XD-ADR-0002"]["decision_status"] == "proposed"
+    # catalog parts (a standard designation, or Manufacturer + MPN) need no realizes/satisfies (R3)
+    assert needs["ME-PART-0002"]["standard"] == "ISO 7380-1 M3x6, A2" and not needs["ME-PART-0002"]["satisfies"]
+    assert needs["ME-PART-0003"]["catalog"] == "Wurth 970030321"
 
 
 BAD = {
@@ -87,6 +90,13 @@ BAD = {
 .. ee-cmp:: Bad
    :id: EE-CMP-0090
    :status: valid
+""",
+    # an ME part without links stays an orphan, also with an empty standard designation
+    "orphan-me-part-empty-standard": """
+.. me-part:: Bad
+   :id: ME-PART-0090
+   :status: valid
+   :standard:
 """,
     "derived-without-rationale": """
 .. me-req:: Bad
@@ -194,6 +204,7 @@ REASON = {
     "me-conforms-to-ee-port": "needs.link_target_type",
     "sw-conforms-to-ee-cmp": "needs.link_target_type",
     "bad-decision-status": "schema violations",
+    "orphan-me-part-empty-standard": "XD-S-R3-no-orphan-design",
 }
 
 

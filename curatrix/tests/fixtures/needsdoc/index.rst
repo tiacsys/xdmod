@@ -186,6 +186,20 @@ Needs config test
    :satisfies: ME-REQ-0001
    :part_of: ME-ASM-0001
 
+.. me-part:: ISO 7380-1 M3x6
+   :id: ME-PART-0002
+   :status: valid
+   :standard: ISO 7380-1 M3x6, A2
+
+   A catalog part (a standard fastener): no realizes or satisfies link (R3 leaves it out).
+
+.. me-part:: Bought spacer
+   :id: ME-PART-0003
+   :status: valid
+   :catalog: Wurth 970030321
+
+   A catalog part (Manufacturer and MPN): no realizes or satisfies link.
+
 .. me-tc:: Length inspection
    :id: ME-TC-0001
    :status: valid
