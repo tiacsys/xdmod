@@ -1,7 +1,11 @@
 # FreeCAD script of `curatrix cam <repo> <board> --board-model` / `--library` (task 5.29, XD-ADR-0139).
 # Run only through curatrix: the FreeCAD GUI binary on Qt's offscreen platform (no window, no display),
 # workspace-local FreeCAD config with CompressionLevel 0, limits. Inputs by environment variables:
-# XD_STEP, XD_OUT, XD_TRACE_ID, XD_VERSION, XD_VARIANT, XD_BOARD, XD_COMMIT, XD_RESULT.
+# XD_STEP, XD_OUT, XD_TRACE_ID, XD_VERSION, XD_VARIANT, XD_BOARD, XD_COMMIT, XD_THICKNESS, XD_RESULT.
+# The STEP comes with its origin at the lower-left corner of the outline (kicad-cli --user-origin) and
+# z = 0 on the board's bottom face; the import moves it down by XD_THICKNESS (the board thickness of
+# the .kicad_pcb), so the model sits in the board frame of the co-design budget (XD-ADR-0134): z = 0
+# on the top face.
 # Success only by the result file; the script never raises and ends with os._exit (the GUI binary
 # would otherwise wait in its event loop).
 #
@@ -13,7 +17,7 @@
 # Writes XD_OUT, a new document with
 #   App::Part "Board"     the board model to link from an assembly; properties
 #                         TraceID (group Trace) = the board's EE-PCBA ID,
-#                         Version, Variant, Board, Commit, Source (group Board)
+#                         Version, Variant, Board, Commit, Source, Thickness (group Board)
 #   App::Link per component inside it, named and labelled by the reference designator (R1, J1;
 #                         "PCB" is the board body), Label2 = the STEP product (the 3D model's name),
 #                         placed in board coordinates, pointing to its model
@@ -78,6 +82,11 @@ try:
     if len(roots) != 1:
         raise RuntimeError(f"expected one top object in the STEP import, got {[o.Label for o in roots]}")
     root = roots[0]
+    thick = float(os.environ.get("XD_THICKNESS") or 0)
+    # into the board frame: z = 0 on the top face; every placement below is taken with transform=True,
+    # so it includes this one
+    root.Placement = App.Placement(App.Vector(0, 0, -thick), App.Rotation()).multiply(root.Placement)
+    src.recompute()
 
     def children(obj):
         """the objects an import object is made of: link group elements, compound links, the link target."""
@@ -116,6 +125,9 @@ try:
     part.Variant = os.environ.get("XD_VARIANT", "")
     part.Board = os.environ["XD_BOARD"]
     part.Commit = os.environ.get("XD_COMMIT", "")
+    part.addProperty("App::PropertyLength", "Thickness", "Board", "board thickness (KiCad general.thickness); "
+                     "the model's z = 0 is the top face (board frame)")
+    part.Thickness = thick
     part.Source = ("kicad-cli pcb export step, FreeCAD ImportGui.insert (offscreen); one link per component "
                    "to its 3D model in Models, with the STEP colours")
     comps, shapes, models, group, linked, copies = [], [], {}, None, 0, 0
@@ -190,6 +202,7 @@ try:
     out = {"ok": bool(comps) and not invalid, "valid": not invalid, "components": comps,
            "solids": len(whole.Solids), "shells": len(whole.Shells),
            "bbox_mm": [round(v, 3) for v in (bb.XLength, bb.YLength, bb.ZLength)] if shapes else None,
+           "bbox_min_mm": [round(v, 3) for v in (bb.XMin, bb.YMin, bb.ZMin)] if shapes else None,
            "coloured": sum(1 for c in comps if c["colours"]), "models": len(models), "links": linked,
            "copies": copies, "uncoloured_faces": [c["label"] for c in comps if not c["face_colours"]],
            "invalid": invalid}

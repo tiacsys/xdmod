@@ -6,14 +6,18 @@ and for any version (previews too):
 1. copy the project into ``build/<area>/board-model/<board>/<version>/project/`` and write the
    version into the copy's ``XD_VERSION`` and the board name into ``XD_BOARD`` (as ``curatrix cam``
    does, XD-ADR-0142);
-2. ``kicad-cli pcb export step --no-dnp --subst-models [--variant V]`` per variant of the project
-   (board body and components, no tracks, pads or zones);
+2. ``kicad-cli pcb export step --no-dnp --subst-models --user-origin X0xY0mm [--variant V]`` per
+   variant of the project (board body and components, no tracks, pads or zones), with the origin at
+   the lower-left corner of the ``Edge.Cuts`` outline (``board_frame``);
 3. the FreeCAD GUI binary on Qt's offscreen platform (no window) runs
    ``xdmod/templates/freecad-pcba/import-step.py``: ``ImportGui.insert`` keeps the STEP's structure and
    colours (finding 17 of xdmod#69; ``FreeCADCmd`` has no view providers and loses the colours).
    One ``App::Part`` ``Board`` with ``TraceID`` (group Trace) = the project's ``TraceID`` text
    variable (its ``EE-PCBA``) and ``Version``, ``Variant``, ``Board``, ``Commit``, ``Source`` (group
-   Board); inside it one object per component, named by its reference designator (``R1``, ``J1``;
+   Board) and ``Thickness``; the model sits in the **board frame** of the co-design budget
+   (XD-ADR-0134): origin at the lower-left corner of the outline seen from the top, x right, y up,
+   z = 0 on the top face (the import moves it down by the board thickness), so an assembly places it
+   with the seat's LCS as it is. Inside ``Board`` one object per component, named by its reference designator (``R1``, ``J1``;
    ``PCB`` = the board body): an ``App::Link`` to the component's 3D model, which is stored once per
    model in the hidden group ``Models`` with the STEP colours per face (``ShapeAppearance`` in
    ``GuiDocument.xml``); saved with the workspace FreeCAD config (CompressionLevel 0, uncompressed);
@@ -67,6 +71,36 @@ SKIP_COPY = shutil.ignore_patterns("*.kicad_prl", "*-backups", "fp-info-cache", 
 
 class BoardLibError(Exception):
     pass
+
+
+# ------------------------------------------------------------------ board frame
+def board_frame(pcb: Path) -> tuple[float, float, float]:
+    """(x, y, thickness) of a board's frame in KiCad coordinates (mm, y down): the lower-left corner
+    of the ``Edge.Cuts`` outline seen from the top (smallest x, largest y) and ``general.thickness``
+    (KiCad's default 1.6 mm without one). The board frame of the co-design budget (XD-ADR-0134): x
+    right, y up, z = 0 on the top face."""
+    root = cad.sexpr(pcb.read_text(encoding="utf-8"))
+    xs, ys = [], []
+    for item in root[1:]:
+        if not (isinstance(item, list) and item and str(item[0]).startswith("gr_")):
+            continue
+        if not any(isinstance(c, list) and c[:2] == ["layer", "Edge.Cuts"] for c in item[1:]):
+            continue
+        kids = {c[0]: c for c in item[1:] if isinstance(c, list) and c}
+        pts = [kids[k][1:3] for k in ("start", "end", "mid", "center") if k in kids]
+        pts += [c[1:3] for c in (kids.get("pts") or [])[1:] if isinstance(c, list) and c and c[0] == "xy"]
+        pts = [(float(a), float(b)) for a, b in pts]
+        if item[0] == "gr_circle" and "center" in kids and "end" in kids:
+            (cx, cy), (ex, ey) = (float(v) for v in kids["center"][1:3]), (float(v) for v in kids["end"][1:3])
+            r = ((ex - cx) ** 2 + (ey - cy) ** 2) ** 0.5
+            pts += [(cx - r, cy - r), (cx + r, cy + r)]
+        xs += [a for a, _ in pts]
+        ys += [b for _, b in pts]
+    if not xs:
+        raise BoardLibError(f"{pcb.name}: no outline on Edge.Cuts, so the board has no frame")
+    general = next((c for c in root[1:] if isinstance(c, list) and c and c[0] == "general"), [])
+    thick = next((float(c[1]) for c in general[1:] if isinstance(c, list) and c[:1] == ["thickness"]), 1.6)
+    return min(xs), max(ys), thick
 
 
 # ------------------------------------------------------------------ names
@@ -203,10 +237,12 @@ def export(ws, repo, cfg, pr, release_only: bool = False, log=print) -> dict:
     env = dict(ws.run_env(), TMPDIR=str(tmp))
     head = _git(repo.path, "rev-parse", "HEAD").stdout.strip()
     max_mb = DEFAULT_MAX_MB
+    fx, fy, thick = board_frame(pcb)       # the model in the board frame: the seat's LCS places it as is
     files, findings = [], []
     for variant in domvariants.kicad_variants(pr.pro) or [None]:
         step = top / (file_name(pr.name, short, variant)[:-len(".FCStd")] + ".step")
-        argv = ["kicad-cli", "pcb", "export", "step", "--no-dnp", "--subst-models", "-f", "-o", str(step)]
+        argv = ["kicad-cli", "pcb", "export", "step", "--no-dnp", "--subst-models", "-f", "-o", str(step),
+                "--user-origin", f"{fx:g}x{fy:g}mm"]
         argv += ["--variant", variant] if variant else []
         log(f"  {pr.name} {ver}{' variant ' + variant if variant else ''}: kicad-cli pcb export step")
         p = limits.run([*argv, str(pcb)], "kicad-cli", ws, env=env, capture_output=True, text=True)
@@ -219,7 +255,7 @@ def export(ws, repo, cfg, pr, release_only: bool = False, log=print) -> dict:
             res = newasm.run_script(ws, ws.xdmod / "templates" / "freecad-pcba" / "import-step.py",
                                     {"XD_STEP": str(step.resolve()), "XD_OUT": str(fc.resolve()), "XD_TRACE_ID": tid,
                                      "XD_VERSION": ver, "XD_VARIANT": variant or "", "XD_BOARD": pr.name,
-                                     "XD_COMMIT": head},
+                                     "XD_COMMIT": head, "XD_THICKNESS": f"{thick:g}"},
                                     top / (step.stem + ".result.json"), exe="FreeCAD")
         except newpcba.NewError as e:
             raise BoardLibError(f"{pr.name}: FreeCAD import: {e}") from e
@@ -240,13 +276,14 @@ def export(ws, repo, cfg, pr, release_only: bool = False, log=print) -> dict:
         findings += [f"{fc.name}: {x}" for x in f]
         comps = res.get("components") or []
         files.append({"file": fc.name, "variant": variant, "step": step.name, "mb": round(mb, 3),
-                      "solids": res.get("solids"), "bbox_mm": res.get("bbox_mm"),
+                      "solids": res.get("solids"), "bbox_mm": res.get("bbox_mm"), "bbox_min_mm": res.get("bbox_min_mm"),
                       "components": [{k: c.get(k) for k in ("label", "model", "colours")} for c in comps],
                       "models": res.get("models")})
         log(f"    {ws.rel(fc)}: {mb:.2f} MB, {len(comps)} components ({res.get('models')} models), "
-            f"{res.get('solids')} solids, bbox {res.get('bbox_mm')} mm")
+            f"{res.get('solids')} solids, bbox {res.get('bbox_mm')} mm from {res.get('bbox_min_mm')} (board frame)")
     shutil.rmtree(tmp, ignore_errors=True)
     rec = {"kind": "board-model", "project": pr.name, "version": ver, "release": release, "commit": head,
+           "frame": {"origin_kicad_mm": [fx, fy], "thickness_mm": thick},
            "trace_id": tid, "date": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
            "files": files, "findings": findings, "folder": ws.rel(top)}
     (top / "board-model.json").write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")

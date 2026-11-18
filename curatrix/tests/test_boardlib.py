@@ -354,21 +354,44 @@ def test_board_colours_refuses_unknown_material_versions(tmp_path):
         boardlib.board_colours(fc)
 
 
+# a board outline 30 x 20 mm with its lower-left corner at (88, 112) and a mounting hole; 1.2 mm thick
+PCB = """(kicad_pcb (general (thickness 1.2))
+  (gr_line (start 88 92) (end 88 112) (layer "Edge.Cuts"))
+  (gr_line (start 88 112) (end 118 112) (layer "Edge.Cuts"))
+  (gr_rect (start 100 92) (end 118 100) (layer "Edge.Cuts"))
+  (gr_circle (center 92 108) (end 90.4 108) (layer "Edge.Cuts"))
+  (gr_line (start 0 0) (end 200 200) (layer "F.SilkS"))
+)"""
+
+
+def test_board_frame(tmp_path):
+    pcb = tmp_path / "b.kicad_pcb"
+    pcb.write_text(PCB)
+    assert boardlib.board_frame(pcb) == (88.0, 112.0, 1.2)
+    pcb.write_text(PCB.replace("(general (thickness 1.2))", ""))
+    assert boardlib.board_frame(pcb)[2] == 1.6                       # KiCad's default
+    pcb.write_text('(kicad_pcb (gr_line (start 0 0) (end 9 9) (layer "F.SilkS")))')
+    with pytest.raises(boardlib.BoardLibError, match="no outline on Edge.Cuts"):
+        boardlib.board_frame(pcb)
+
+
 def _stub_export(tmp_path, monkeypatch, write, result):
     """export() with kicad-cli and FreeCAD stubbed: `write(path)` makes the board file the import would."""
     from curatrix import limits, newasm
     root = tmp_path / "ws"
     ee, _ = ee_repo(root)
-    (ee / "pcba" / "canary" / "canary.kicad_pcb").write_text("(kicad_pcb)")
+    (ee / "pcba" / "canary" / "canary.kicad_pcb").write_text(PCB)
     ws = Workspace(root)
 
     def kicad(argv, use, ws_, **kw):
+        assert argv[argv.index("--user-origin") + 1] == "88x112mm"
         out = argv[argv.index("-o") + 1]
         open(out, "w").write("ISO-10303-21;")
         return subprocess.CompletedProcess(argv, 0, "", "")
 
     def freecad(ws_, script, env, res, use="freecad", exe="FreeCADCmd"):
         assert exe == "FreeCAD" and script.name == "import-step.py"
+        assert env["XD_THICKNESS"] == "1.2"
         write(Path(env["XD_OUT"]))
         return result
     monkeypatch.setattr(limits, "run", kicad)
@@ -419,9 +442,10 @@ def test_import_step_pins_the_import_settings(tmp_path):
     res = newasm.run_script(ws, Path(boardlib.__file__).resolve().parents[3] / "templates" / "freecad-pcba" /
                             "import-step.py",
                             {"XD_STEP": str(step), "XD_OUT": str(out), "XD_TRACE_ID": TID, "XD_VERSION": "canary/v0.1.0",
-                             "XD_VARIANT": "", "XD_BOARD": "canary", "XD_COMMIT": ""},
+                             "XD_VARIANT": "", "XD_BOARD": "canary", "XD_COMMIT": "", "XD_THICKNESS": "1.6"},
                             tmp_path / "import.result.json", exe="FreeCAD")
     assert sorted(c["label"] for c in res["components"]) == ["PCB", "R1", "R2"], res
     assert res["links"] == 3 and res["models"] == 3 and res["solids"] == 3
     assert boardlib.board_props(out)["Version"] == "canary/v0.1.0"
+    assert res["bbox_min_mm"][2] <= -1.6 + 1e-6          # board frame: z = 0 on the top face
     assert len(boardlib.board_colours(out)) == 3

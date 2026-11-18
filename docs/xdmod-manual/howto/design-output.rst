@@ -82,7 +82,10 @@ the version as label and its BOM (``<name>.bom.tsv``) (:need:`XD-ADR-0127`).
 The FreeCAD model of a board for the ME side comes from the same command:
 ``--board-model`` writes it for any version under ``build/<area>/board-model/``; ``--library`` does
 so only for a tagged release and copies it into a board-library checkout for its PR
-(:need:`XD-ADR-0139`).
+(:need:`XD-ADR-0139`). The model sits in the board frame of the co-design budget
+(:need:`XD-ADR-0134`): origin at the lower-left corner of the ``Edge.Cuts`` outline seen from the
+top, x right, y up, z = 0 on the top face (``general.thickness`` of the board, in the ``Board``
+property ``Thickness``). An assembly places it with the seat's LCS as it is.
 
 The model is made by the FreeCAD GUI binary on Qt's offscreen platform (no window opens): the
 ``App::Part`` ``Board`` carries the trace properties (``TraceID``, ``Version``, ``Variant``,
