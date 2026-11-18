@@ -162,7 +162,8 @@ def bom_rows(rows: list[dict], repo: Path) -> list[dict]:
             f = os.path.relpath(Path(r["file"]).resolve(), repo.resolve())
             name = r.get("label", "")
             if kind == "board" and r.get("Version"):          # one line with its version (as the assembly document)
-                name = f"{r.get('Board') or name} {r['Version']}"
+                board = r.get("Board") or name
+                name = f"{board} {str(r['Version']).removeprefix(board + '/')}"     # canary-board v0.1.0
             out[key] = {"id": r.get("TraceID", ""), "name": name, "kind": kind, "qty": 0,
                         "material": r.get("Material", ""), "print_profile": r.get("PrintProfile", ""),
                         "standard": r.get("Standard", ""), "manufacturer": r.get("Manufacturer", ""),
@@ -565,10 +566,14 @@ def findings(ws, cfg, folder: Path, top: Path) -> dict:
         raise CamError(f"{folder.name}: the ME checks failed: {e}") from None
     mine = str(folder.relative_to(cfg.repo))
     entries, _ = mechecks.folder_entries(cfg, ercdrc.Acceptors(cfg.repo))
+    from curatrix.checks import BUILTIN
+    levels = {c[0]: c[2].get("local", "") for c in BUILTIN}
     rows = []
     for check in mechecks.RULES:
         found = [(f, x) for f, x in mechecks.findings(cfg, res, check) if f in (mine, None)]
-        rows += mechecks.evaluate(cfg, check, found, entries).rows
+        # "severity" is the finding's own (error, as KiCad names it); "level" is the check's level in a
+        # local run (warning for CK-F4c, CK-F16, CK-F17, CK-F18): what the finding blocks
+        rows += [dict(r, level=levels.get(check, "")) for r in mechecks.evaluate(cfg, check, found, entries).rows]
     b = [k["name"] for a in res.get("assemblies") or [] if _rel_doc(cfg, a["doc"]).startswith(mine + "/")
          for k in a.get("children") or [] if k.get("kind") == "board"]
     return {"checks": list(mechecks.RULES), "rows": rows,

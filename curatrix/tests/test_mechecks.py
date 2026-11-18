@@ -238,3 +238,12 @@ def test_f18_space_budget_freecad(tmp_path, monkeypatch):
         "(ME-PORT-0009) by 100 mm³, z -3 to -2 mm in the board frame (tolerance 0.001 mm³) [F]",
         "error: space (error): assemblies/fx/fx.FCStd: Board2 is not placed at a board seat (an LCS with Port = an "
         "ME-PORT that specializes a SYS-IF budget: ME-PORT-0009); the link sits at [0.0, 70.0, 20.0] [Board2]"], f
+    # planted: the budget lacks heightBelow; the board is still found at its seat (review of #86)
+    mechecks._CACHE.clear()
+    monkeypatch.setattr(mechecks, "seats", lambda cfg: {"ME-PORT-0009": {
+        "budget": "SYS-IF-0001", "missing": ["heightBelow"],
+        "values": {"width": 20.0, "depth": 10.0, "heightAbove": 10.0}}})
+    f = _run(root, repo, "c_space_budget").findings
+    assert any("Board at LCS_seat (ME-PORT-0009): the budget SYS-IF-0001 has no value for heightBelow" in x
+               for x in f), f
+    assert not any("Board is not placed" in x for x in f), f

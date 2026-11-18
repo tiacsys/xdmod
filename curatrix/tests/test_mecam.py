@@ -68,7 +68,7 @@ def test_bom_rows_and_totals(tmp_path):
             {"file": str(repo.parent / "lib/boards/b/b-v0.1.0.FCStd"), "object": "Board", "label": "b",
              "TraceID": "EE-PCBA-0001", "Board": "b", "Version": "b/v0.1.0"}]
     b = mecam.bom_rows(rows, repo)
-    assert [(r["item"], r["kind"], r["qty"], r["name"]) for r in b] == [(1, "board", 1, "b b/v0.1.0"),
+    assert [(r["item"], r["kind"], r["qty"], r["name"]) for r in b] == [(1, "board", 1, "b v0.1.0"),
                                                                        (2, "fastener", 1, "Screw"),
                                                                        (3, "printed", 2, "A")]
     assert b[2]["file"] == "parts/a.FCStd" and b[0]["file"] == "../lib/boards/b/b-v0.1.0.FCStd"

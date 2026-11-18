@@ -17,7 +17,7 @@ Sources: **P** = `plan.md` "Iteration 2 backlog"; **L** = `phase5-decisions.md` 
 | A2 | Warnings for board or assembly variants that no configuration uses | P; L 5.16 (canary `alt` unused) | needs real configurations to be useful |
 | A3 | CK-F13: variant names and overrides equal across EE model, `.kicad_pro`, `.kicad_sch`, `.kicad_pcb`; `Setting` per variant | L 5.16 | not built; CK-B8 covers the variant names that matter for the canary |
 | A4 | CK-F2: Zephyr devicetree vs the EE board model | L 5.10 | moved behind 5.15, then not built; robarm-sw has no board of its own yet |
-| A5 | CK-F18 for real: board inside its space budget (outline, holes, connector positions, STEP fits the box) | L 5.25, 5.28 | the check exists but skips; budget form came late (5.28) |
+| A5 | CK-F18 for real: board inside its space budget (outline, holes, connector positions, STEP fits the box) | L 5.25, 5.28 | partly done (xdmod#86): the board model at its seat inside the budget box, parts in the box, fasteners through the board; open: KiCad outline, holes and connector positions against the budget |
 | A6 | Change impact (CK-G1) per layer of a stacked PR | P | one level of stacking is enough so far |
 | A7 | CK-H4 gap: a `commit-msg` hook keyed on `CLAUDECODE` that adds the trailer | L 5.7, 5.8 | an agent commit without the marker passes CK-H4; policy covers it today |
 | A8 | A check that warns when a PR's new ledger IDs are already on main | L (process notes) | three ID collisions between parallel PRs; practice "ids fix right before push" works |

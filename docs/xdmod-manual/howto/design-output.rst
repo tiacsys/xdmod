@@ -125,8 +125,11 @@ link's ``Configs`` names, plus ``base`` (the links without ``Configs``), or ``al
    * - BOM and mass
      - ``bom.csv`` (flat, with totals), ``mass.json`` (mass and center of gravity)
 
-The version folder also holds ``findings.json`` (CK-F4c, CK-F16, CK-F17 with their acceptance state)
-and ``cam.json``.
+The version folder also holds ``findings.json`` (CK-F4c, CK-F16, CK-F17, CK-F18 with their acceptance
+state; ``severity`` is the finding's own, ``level`` the check's level in a local run, a warning for
+these four) and ``cam.json``. In ``bom.csv`` a board of the board library is one line named with its
+version (``canary-board v0.1.0``); its ``file`` is relative to the ME repo and leaves it
+(``../robarm-freecad-pcba/boards/...``).
 
 Blender or the fallback renderer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
