@@ -370,6 +370,15 @@ def test_board_frame(tmp_path):
     assert boardlib.board_frame(pcb) == (88.0, 112.0, 1.2)
     pcb.write_text(PCB.replace("(general (thickness 1.2))", ""))
     assert boardlib.board_frame(pcb)[2] == 1.6                       # KiCad's default
+    # a semicircular left end: (0,10) -> (-3.535534,1.464466) -> (0,0) around (0,5) bulges to x -5,
+    # past its start, mid and end; the lower-left corner is (-5, 10)
+    pcb.write_text('(kicad_pcb (gr_arc (start 0 10) (mid -3.535534 1.464466) (end 0 0) (layer "Edge.Cuts"))'
+                   ' (gr_line (start 0 0) (end 10 0) (layer "Edge.Cuts")) (gr_line (start 10 0) (end 10 10)'
+                   ' (layer "Edge.Cuts")) (gr_line (start 10 10) (end 0 10) (layer "Edge.Cuts")))')
+    x, y, _ = boardlib.board_frame(pcb)
+    assert (x, y) == (-5.0, 10.0)
+    # the same circle, the right half: its left extreme is not on the arc
+    assert min(p[0] for p in boardlib._arc_extremes((0, 0), (5, 5), (0, 10))) > -1e-9
     pcb.write_text('(kicad_pcb (gr_line (start 0 0) (end 9 9) (layer "F.SilkS")))')
     with pytest.raises(boardlib.BoardLibError, match="no outline on Edge.Cuts"):
         boardlib.board_frame(pcb)

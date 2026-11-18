@@ -85,7 +85,9 @@ so only for a tagged release and copies it into a board-library checkout for its
 (:need:`XD-ADR-0139`). The model sits in the board frame of the co-design budget
 (:need:`XD-ADR-0134`): origin at the lower-left corner of the ``Edge.Cuts`` outline seen from the
 top, x right, y up, z = 0 on the top face (``general.thickness`` of the board, in the ``Board``
-property ``Thickness``). An assembly places it with the seat's LCS as it is.
+property ``Thickness``). An assembly places it with the seat's LCS as it is. The outline must be
+drawn on the board (lines, rects, polygons, circles, arcs); ``Edge.Cuts`` items inside a footprint are
+not read.
 
 The model is made by the FreeCAD GUI binary on Qt's offscreen platform (no window opens): the
 ``App::Part`` ``Board`` carries the trace properties (``TraceID``, ``Version``, ``Variant``,

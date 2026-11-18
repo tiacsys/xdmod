@@ -78,7 +78,9 @@ def board_frame(pcb: Path) -> tuple[float, float, float]:
     """(x, y, thickness) of a board's frame in KiCad coordinates (mm, y down): the lower-left corner
     of the ``Edge.Cuts`` outline seen from the top (smallest x, largest y) and ``general.thickness``
     (KiCad's default 1.6 mm without one). The board frame of the co-design budget (XD-ADR-0134): x
-    right, y up, z = 0 on the top face."""
+    right, y up, z = 0 on the top face. Lines, rects, polygons, circles and arcs (with the arc's true
+    extent, also past its start, mid and end) count; outline items drawn inside a footprint
+    (``fp_line`` on Edge.Cuts) are not read: draw the outline on the board."""
     root = cad.sexpr(pcb.read_text(encoding="utf-8"))
     xs, ys = [], []
     for item in root[1:]:
@@ -90,6 +92,8 @@ def board_frame(pcb: Path) -> tuple[float, float, float]:
         pts = [kids[k][1:3] for k in ("start", "end", "mid", "center") if k in kids]
         pts += [c[1:3] for c in (kids.get("pts") or [])[1:] if isinstance(c, list) and c and c[0] == "xy"]
         pts = [(float(a), float(b)) for a, b in pts]
+        if item[0] == "gr_arc" and all(k in kids for k in ("start", "mid", "end")):
+            pts += _arc_extremes(*(tuple(float(v) for v in kids[k][1:3]) for k in ("start", "mid", "end")))
         if item[0] == "gr_circle" and "center" in kids and "end" in kids:
             (cx, cy), (ex, ey) = (float(v) for v in kids["center"][1:3]), (float(v) for v in kids["end"][1:3])
             r = ((ex - cx) ** 2 + (ey - cy) ** 2) ** 0.5
@@ -100,7 +104,32 @@ def board_frame(pcb: Path) -> tuple[float, float, float]:
         raise BoardLibError(f"{pcb.name}: no outline on Edge.Cuts, so the board has no frame")
     general = next((c for c in root[1:] if isinstance(c, list) and c and c[0] == "general"), [])
     thick = next((float(c[1]) for c in general[1:] if isinstance(c, list) and c[:1] == ["thickness"]), 1.6)
-    return min(xs), max(ys), thick
+    return round(min(xs), 6), round(max(ys), 6), thick         # KiCad's grid is 1 nm; drop the trig noise
+
+
+def _arc_extremes(a, m, b) -> list[tuple[float, float]]:
+    """The axis extremes (left, right, top, bottom of its circle) that lie on the arc a -> m -> b."""
+    import math
+    (ax, ay), (mx, my), (bx, by) = a, m, b
+    d = 2 * (ax * (my - by) + mx * (by - ay) + bx * (ay - my))
+    if abs(d) < 1e-12:
+        return []                                     # collinear: a straight segment, its ends count
+    ux = ((ax**2 + ay**2) * (my - by) + (mx**2 + my**2) * (by - ay) + (bx**2 + by**2) * (ay - my)) / d
+    uy = ((ax**2 + ay**2) * (bx - mx) + (mx**2 + my**2) * (ax - bx) + (bx**2 + by**2) * (mx - ax)) / d
+    r = math.hypot(ax - ux, ay - uy)
+
+    def ang(x, y):
+        return math.atan2(y - uy, x - ux) % (2 * math.pi)
+    ta, tm, tb = ang(ax, ay), ang(mx, my), ang(bx, by)
+    span = (tb - ta) % (2 * math.pi)
+    ccw = (tm - ta) % (2 * math.pi) <= span           # does the arc run a -> b counter-clockwise through m?
+    out = []
+    for k in range(4):
+        t = k * math.pi / 2
+        off = (t - ta) % (2 * math.pi) if ccw else (ta - t) % (2 * math.pi)
+        if off <= (span if ccw else (2 * math.pi - span)):
+            out.append((ux + r * math.cos(t), uy + r * math.sin(t)))
+    return out
 
 
 # ------------------------------------------------------------------ names
