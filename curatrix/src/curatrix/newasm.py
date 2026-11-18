@@ -3,7 +3,7 @@ ME model (task 5.23; XD-ADR-0128, XD-ADR-0137).
 
 Makes ``assemblies/<name>/`` with the top document ``<name>.FCStd`` and ``<name>-skeleton.FCStd``, both
 written by FreeCAD itself (``FreeCADCmd`` runs ``xdmod/templates/freecad-asm/new-asm.py`` under the
-``freecad`` limits and the workspace-local config), then the document ``docs/asm-<name>/`` and its
+``freecad`` limits and the workspace-local config), then the document ``docs/assemblies/asm-<name>/`` and its
 entry in the docs registry (it embeds the assembly's decomposition and interconnection views, or
 says which views to add). ``<name>`` is the def's name in kebab case (``CanaryAssembly`` ->
 ``canary-assembly``).
@@ -15,7 +15,7 @@ import shutil
 from pathlib import Path
 
 from curatrix import eeprojects, meassemblies, model as modelmod
-from curatrix.newpcba import NewError, _subst, add_registry_entry, title_of, views_block
+from curatrix.newpcba import NewError, _subst, add_registry_entry, doc_folder, title_of, views_block
 
 
 def find_assembly(cfg, element: str) -> dict:
@@ -85,7 +85,7 @@ def new_asm(ws, repo, cfg, element: str, freecad: bool = True, log=print) -> Pat
     doc_id = f"asm-{name}"
     reg = cfg.docs_registry
     if reg is not None:
-        ddir = reg.parent / doc_id
+        ddir = reg.parent / doc_folder(doc_id)
         ddir.mkdir(parents=True, exist_ok=True)
         rst_title = f"{title} ({doc_id})"
         dv = {**values, "__TITLE_RST__": f"{rst_title}\n{'=' * len(rst_title)}",
@@ -95,7 +95,7 @@ def new_asm(ws, repo, cfg, element: str, freecad: bool = True, log=print) -> Pat
         for f in ("conf.py", "index.rst"):
             (ddir / f).write_text(_subst((tmpl / "doc" / f).read_text(encoding="utf-8"), dv), encoding="utf-8")
         log(f"  wrote {ws.rel(ddir)}/ (conf.py, index.rst)")
-        if add_registry_entry(reg, doc_id, title, repo.name):
+        if add_registry_entry(reg, doc_id, title, repo.name, doc_folder(doc_id)):
             log(f"  added {doc_id} to {ws.rel(reg)}")
     else:
         log("  no docs section in checks.yaml: no assembly document made")

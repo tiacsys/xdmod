@@ -55,7 +55,7 @@ harness/<name>/          one WireViz harness per cable def: <name>.yml, both end
 lib/                     project-local symbols, footprints, 3D models that aren't in the tiacsys libraries (D88)
 tests/                   scripted EE checks → JUnit
 generated/               cad-needs.json (D110), model.json and model-needs.json, <project>.connectors.json (CK-D7)
-docs/ee-design/  docs/pcba-<name>/  docs/proto-<name>/  docs/harness-<name>/  docs/ee-test-spec/  docs/ee-test-report/
+docs/ee-req/  docs/ee-design/  docs/ee-test-spec/  docs/ee-test-report/  docs/harnesses/  docs/pcbas/pcba-<name>/  docs/proto-<name>/
 ```
 Board, harness and prototype tags `<name>/vX.Y.Z`, made by the owner only (XD-ADR-0140). Design output (`curatrix cam`) goes to `build/robarm-ee/cam/<name>/<version>/`, never into the repo. KiCad and WireViz files carry the model's IDs only as references: the project's `TraceID` text variable, each connector's `portName`, `portType` and `portTypeID` fields (owner decisions Q10, Q11; connectors are X1, X2, ...), the same three lines in the notes of each harness end; no `Realizes` / `Conforms` fields on projects.
 KiCad library tables refer to the shared libraries only through variables (`${XD_KICAD_SYMBOLS}`, …) and to `lib/` through `${KIPRJMOD}`. The launcher sets the variables (`command-layer.md`).
@@ -73,7 +73,7 @@ templates/               TechDraw templates with git fields (freecad-storage.md 
 print/                   print-settings profiles (D30)
 tests/                   scripted ME checks → JUnit
 generated/               cad-needs.json, <file>.json semantic exports (D110, textconv), model.json and model-needs.json
-docs/me-design/  docs/asm-<name>/  docs/me-test-spec/  docs/me-test-report/
+docs/me-req/  docs/me-design/  docs/me-test-spec/  docs/me-test-report/  docs/assemblies/asm-<name>/
 ```
 Only assemblies are tagged (`<name>/vX.Y.Z`, owner only, XD-ADR-0140). Design output (`curatrix cam`, XD-ADR-0143) goes to `build/robarm-me/cam/<name>/<version>/`. Board models come at fixed versions from robarm-freecad-pcba.
 
@@ -98,7 +98,7 @@ dts/bindings/            our own bindings, e.g. robot,joint with trace-id (D64f)
 zephyr/module.yml        robarm-sw is a Zephyr module (dts_root, board_root), so that bindings and overlays are found (D114)
 tests/<suite>/           ztest suites (native_sim and hardware), with test IDs from the ledger (D80)
 generated/               code-needs.json if not produced by zdocs directly
-docs/sw-req/  docs/sw-arch/  docs/sw-api/ (Doxygen)  docs/sw-test-spec/  docs/sw-test-report/
+docs/sw-req/  docs/sw-arch/  docs/sw-api/ (Doxygen)  docs/sw-test-spec/  docs/sw-test-report/  docs/firmware/fw-<name>/
 ```
 
 ### robarm-integration

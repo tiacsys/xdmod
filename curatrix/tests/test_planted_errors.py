@@ -22,6 +22,7 @@ HERE = "curatrix/tests/test_planted_errors.py"
 # for a check extended by a later task (each part has its planted error)
 PLANTED = {
     "CK-A6": "curatrix/tests/test_needs_config.py::test_planted_error_fails",
+    "CK-A7": "curatrix/tests/test_doclayout.py::test_planted_errors",
     "CK-A1": f"{HERE}::test_a1_unknown_link",
     "CK-A3": f"{HERE}::test_a3_id_does_not_match_its_type",
     "CK-B1": f"{HERE}::test_b1_requirement_not_refined",

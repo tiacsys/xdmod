@@ -9,6 +9,10 @@ checks:
     need: XD-CHECK-0001
     enforces: [XD-RULE-0034, XD-RULE-0002, XD-RULE-0010, XD-RULE-0012]
     description: "Builds every document of the repo's registry with zdocs in strict mode. The sphinx-needs schema in the shared needs configuration checks each need: link side, link targets, required links, field values and ID pattern."
+  CK-A7:
+    need: XD-CHECK-0060
+    enforces: [XD-RULE-0067]
+    description: "Plain Python on the docs registry and the folders below docs/: every own registry entry has its document folder, every document folder is in the registry, per-deliverable documents sit in their sub-folder (pcbas/, assemblies/, firmware/), and a repo with harnesses has one harnesses document and no harness-<cable> documents."
   CK-A1:
     need: XD-CHECK-0002
     enforces: [XD-RULE-0002]

@@ -60,7 +60,7 @@ Columns: the need type, its ID kind (`id-scheme.md`), its home repo, whether it 
 | EE requirement | `EE-REQ` | authored (rst, EARS) | EE requirements spec |
 | PCBA | `EE-PCBA` | authored in the EE model (board def that specializes a system block) → generated need; the KiCad project's `TraceID` refers to it (XD-ADR-0128) | `pcba-<name>` (one per PCBA) |
 | Port (connector, or port of an external part) | `EE-PORT` | authored in the EE model (port def that specializes a `SYS-IF`) → generated need; the KiCad connector's `portTypeID` field refers to it, next to `portName` (the board def's port usage) and `portType` (the def name) (XD-ADR-0133, Q10/Q11 of xdmod#69) | `pcba-<name>` |
-| Wiring harness | `EE-HAR` | authored in the EE model (cable def) → generated need; the WireViz YAML in `harness/<name>/` refers to it (XD-ADR-0127) | `harness-<name>` |
+| Wiring harness | `EE-HAR` | authored in the EE model (cable def) → generated need; the WireViz YAML in `harness/<name>/` refers to it (XD-ADR-0127) | `harnesses` |
 | Circuit block / component | `EE-CMP` | generated from KiCad hidden symbol or sheet fields (D29); stays CAD-owned | `pcba-<name>` |
 | Prototype wiring (modules, jumpers) | `EE-CMP` with `configs: [SYS-CFG-0001]` | generated from a KiCad schematic of the prototype (D74) | Prototype doc (one per setup) |
 | EE test case | `EE-TC` | authored (rst) or generated from scripted checks | EE test spec |

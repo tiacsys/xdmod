@@ -11,7 +11,8 @@ Creates, from ``xdmod/templates/kicad-pcba/``:
   upgrade --force`` under the ``kicad-cli`` limits and the workspace-local KiCad config);
 * ``sym-lib-table`` and ``fp-lib-table`` with workspace libraries only;
 * ``<name>.kicad_jobset`` (the shared jobset template);
-* the document ``docs/pcba-<name>/`` and its entry in the docs registry; the document embeds the
+* the document ``docs/pcbas/pcba-<name>/`` and its entry in the docs registry (``doc_dir:
+  pcbas/pcba-<name>``; owner decision Q8 of tiacsys/xdmod#69); the document embeds the
   board's interconnection view (block diagram) and variants view from the model, or says which
   view to add (tiacsys/xdmod#69 finding 3).
 
@@ -113,18 +114,39 @@ def _subst(text: str, values: dict[str, str]) -> str:
     return text
 
 
-def add_registry_entry(registry: Path, doc_id: str, title: str, project: str) -> bool:
+# sub-folder of docs/ per kind of per-deliverable document (owner decision Q8 of tiacsys/xdmod#69);
+# the registry entry names it as ``doc_dir: <sub>/<id>``, the deploy path stays ``html/<id>/``
+SUBFOLDERS = {"pcba-": "pcbas", "asm-": "assemblies", "fw-": "firmware"}
+
+
+def doc_folder(doc_id: str) -> str:
+    """The folder of a document relative to the registry: ``pcbas/pcba-x``, else the ID."""
+    sub = next((d for p, d in SUBFOLDERS.items() if doc_id.startswith(p)), None)
+    return f"{sub}/{doc_id}" if sub else doc_id
+
+
+def is_own(entry) -> bool:
+    """A registry entry of the repo's own documents: no ``doc_dir``, or one inside the registry
+    folder (``pcbas/pcba-x``); upstream documents point out of it (``../../<repo>/docs/<id>``)."""
+    if not isinstance(entry, dict):
+        return False
+    d = str(entry.get("doc_dir") or "")
+    return not d or not (d.startswith("/") or ".." in Path(d).parts)
+
+
+def add_registry_entry(registry: Path, doc_id: str, title: str, project: str, doc_dir: str | None = None) -> bool:
     """Add a document entry to a zdocs registry, keeping its comments: after the repo's own
-    documents (before the first ``# upstream`` comment line in ``documents:``, else at the end)."""
+    documents (before the first ``# upstream`` comment line in ``documents:``, else at the end).
+    ``doc_dir`` (relative to the registry) for a document in a sub-folder."""
     text = registry.read_text(encoding="utf-8")
     data = yaml.safe_load(text) or {}
     docs = data.get("documents") or {}
     if doc_id in docs:
         return False
-    own = [d for d in docs.values() if isinstance(d, dict) and not d.get("doc_dir")]
+    own = [d for d in docs.values() if is_own(d)]
     group = next((d.get("group") for d in own if d.get("group")), None)
     entry = [f"  {doc_id}:", f"    title: \"{title}\""] + ([f"    group: {group}"] if group else []) + \
-            [f"    version_project: {project}", "    builders: [html]", "    needs: {source: json}", ""]
+            ([f"    doc_dir: {doc_dir}"] if doc_dir else []) + [f"    version_project: {project}", "    builders: [html]", "    needs: {source: json}", ""]
     lines = text.splitlines()
     start = next((i for i, ln in enumerate(lines) if re.match(r"^documents:\s*$", ln)), None)
     if start is None:
@@ -181,7 +203,7 @@ def new_pcba(ws, repo, cfg, element: str, kicad: bool = True, log=print) -> Path
     doc_id = f"pcba-{name}"
     reg = cfg.docs_registry
     if reg is not None:
-        ddir = reg.parent / doc_id
+        ddir = reg.parent / doc_folder(doc_id)
         ddir.mkdir(parents=True, exist_ok=True)
         rst_title = f"{title} ({doc_id})"
         dv = {**values, "__TITLE_RST__": f"{rst_title}\n{'=' * len(rst_title)}",
@@ -193,7 +215,7 @@ def new_pcba(ws, repo, cfg, element: str, kicad: bool = True, log=print) -> Path
         for f in ("conf.py", "index.rst"):
             (ddir / f).write_text(_subst((tmpl / "doc" / f).read_text(encoding="utf-8"), dv), encoding="utf-8")
         log(f"  wrote {ws.rel(ddir)}/ (conf.py, index.rst)")
-        if add_registry_entry(reg, doc_id, title, repo.name):
+        if add_registry_entry(reg, doc_id, title, repo.name, doc_folder(doc_id)):
             log(f"  added {doc_id} to {ws.rel(reg)}")
     else:
         log("  no docs section in checks.yaml: no board document made")

@@ -137,3 +137,11 @@ General rules that the hygiene and generated-file checks enforce.
    :decided_by: XD-ADR-0125
 
    A pull request holds one SYSMOD step or one tool feature. Generated files go with the change that causes them and are not counted.
+
+.. xd-rule:: Documents follow the layout of their registry
+   :id: XD-RULE-0067
+   :tags: checks
+   :status: valid
+   :decided_by: XD-ADR-0149
+
+   Every own document of a repo's docs registry has its folder below ``docs/``, and every document folder below ``docs/`` is in the registry. Per-deliverable documents sit in the sub-folder of their kind (``pcbas/pcba-<board>``, ``assemblies/asm-<assembly>``, ``firmware/fw-<name>``); every cable of a repo is in the one ``harnesses`` document.

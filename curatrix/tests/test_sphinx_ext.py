@@ -152,7 +152,7 @@ def test_harness_document_directives(tmp_path):
     rc, log, out = build(tmp_path, text, env=env)
     assert rc == 0, log
     html = (out / "index.html").read_text()
-    assert "WireViz diagram of servo-cable: built locally" in html
+    assert "WireViz diagram of servo-cable: made locally by" in html
     assert "SERVO_PWM" in html and "W1:2" in html and "XHP-3" in html and "Lapp" in html
     v = tmp_path / "cam" / "servo-cable" / "v0.1.0"
     (v / "servo-cable").mkdir(parents=True)
@@ -164,6 +164,41 @@ def test_harness_document_directives(tmp_path):
     assert r.returncode == 0, r.stdout + r.stderr
     html = (out / "index.html").read_text()
     assert 'id="wv"' in html and "servo-cable/v0.1.0" in html
+
+
+def test_harnesses_document(tmp_path):
+    """xd-harnesses (tiacsys/xdmod#69 finding 15): one section per cable of the repo, the missing and
+    stale cam runs named with the command that makes them."""
+    import json
+    import os
+    import yaml
+    from test_harness import GOOD
+    from helpers import git_init
+    data = yaml.safe_load(yaml.safe_dump(GOOD))
+    data["metadata"].pop("TraceID")
+    for c in data["connectors"].values():
+        c["notes"] = "portName: -"
+    for n in ("servo-cable", "motor-cable"):
+        (tmp_path / "harness" / n).mkdir(parents=True)
+        (tmp_path / "harness" / n / f"{n}.yml").write_text(yaml.safe_dump(data))
+    (tmp_path / "checks.yaml").write_text("version: 1\ncad: {harnesses: [\"harness/*/*.yml\"]}\n")
+    git_init(tmp_path)
+    subprocess.run(["git", "-C", str(tmp_path), "add", "harness", "checks.yaml"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-qm", "h"], check=True)
+    v = tmp_path / "cam" / "servo-cable" / "v0.1.0"
+    (v / "servo-cable").mkdir(parents=True)
+    (v / "servo-cable" / "servo-cable.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" id="wv"><rect/></svg>')
+    (v / "cam.json").write_text(json.dumps({"kind": "harness", "version": "servo-cable/v0.1.0", "release": True,
+                                            "commit": "0" * 40}))
+    env = dict(os.environ, XD_CAM_DIR=str(tmp_path / "cam"))
+    rc, log, out = build(tmp_path, "Harnesses\n=========\n\n.. xd-harnesses::\n", env=env)
+    assert rc == 0, log
+    html = (out / "index.html").read_text()
+    assert "2 cable(s): motor-cable, servo-cable." in html
+    assert "no local output for motor-cable; output of an older commit for servo-cable" in html
+    assert f"Run `curatrix cam {tmp_path.name}` (every board and harness)" in html.replace("&#96;", "`")
+    assert 'id="harness-motor-cable"' in html and 'id="wv"' in html and "not the current one" in html
+    assert html.count("Bill of materials") == 2
 
 
 def test_harness_diagram_documents_are_always_outdated():

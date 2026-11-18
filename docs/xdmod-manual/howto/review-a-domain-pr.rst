@@ -56,7 +56,7 @@ of CK-D10 here only means that the design output of this commit is not made yet 
 
 ``docs`` prints the path of the start page (``build/<area>/docs/deploy/html/<doc>/index.html``,
 inside the set's build area); ``--open`` opens it. The pages to read are ``pcba-<board>``,
-``harness-<name>``, ``asm-<assembly>`` and the design document (``ee-design``, ``me-design``). The
+``harnesses``, ``asm-<assembly>`` and the design document (``ee-design``, ``me-design``). The
 output is a preview (red ``PREVIEW`` marking): a PR branch is never a release
 (:ref:`howto-design-output`).
 

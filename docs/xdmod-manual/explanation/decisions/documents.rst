@@ -195,3 +195,26 @@ The linked document set, zdocs, and how documents get their content.
    included only in local builds, from ``build/<repo>/cam/``, with the version it shows; CI and Pages
    show a placeholder. At the baseline stage, missing or stale local output is an error. A board or
    harness appears in the assembly BOM as one line with its version and a link to its document.
+
+.. xd-adr:: V-model documents for EE and ME, per-deliverable documents in sub-folders, one harness document
+   :id: XD-ADR-0149
+   :date: 2026-11-18
+   :decision_status: proposed
+   :status: valid
+   :revises: XD-ADR-0129
+
+   Owner decision Q8 and finding 15 of tiacsys/xdmod#69 (2026-11-17), written down for the owner's
+   acceptance. **EE and ME get the V-model split that SW has:** ``ee-req``, ``ee-test-spec``,
+   ``ee-test-report`` and ``me-req``, ``me-test-spec``, ``me-test-report``. ``ee-design`` and
+   ``me-design`` keep the design only; the requirements move to ``ee-req`` / ``me-req`` with their
+   IDs. **Per-deliverable documents sit in one sub-folder of** ``docs/`` **per kind:**
+   ``docs/pcbas/pcba-<board>/``, ``docs/assemblies/asm-<assembly>/`` and, for SW, one firmware document
+   per image ``docs/firmware/fw-<name>/`` (build configuration, Zephyr board and variant, image
+   version, size and memory map). The registry entry names the folder (``doc_dir: pcbas/pcba-<board>``);
+   the document ID and its deploy path ``html/<id>/`` stay flat. ``curatrix new pcba`` / ``new asm``
+   write into the sub-folders. **One** ``harnesses`` **document per repo** lists every cable (ends,
+   WireViz diagram, wiring, BOM per cable; directive ``xd-harnesses``) instead of one
+   ``harness-<cable>`` document per cable; ``harness/<cable>/`` stays one folder per cable. The
+   diagrams come from ``curatrix cam <repo>`` (every board and harness); the document names the
+   missing or stale ``cam`` runs. Old Pages URLs may break; there are no redirects. CK-A7 checks the
+   layout.

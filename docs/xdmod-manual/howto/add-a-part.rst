@@ -43,7 +43,7 @@ New assembly
    It makes ``assemblies/<name>/`` (``<name>`` = the def's name in kebab case) with the top document
    ``<name>.FCStd`` (an assembly with ``TraceID`` = the def's ``ME-ASM``, a ``Joints`` group and a
    link to the skeleton) and ``<name>-skeleton.FCStd`` (the spreadsheet ``Params`` and the master
-   sketch ``MasterSketch`` in the part ``Skeleton``), plus the document ``docs/asm-<name>/`` and its
+   sketch ``MasterSketch`` in the part ``Skeleton``), plus the document ``docs/assemblies/asm-<name>/`` and its
    registry entry.
 
 3. **Parameters from the model.** Write the model values into ``Params`` (aliases
@@ -218,7 +218,7 @@ In the BOM, a standard fastener (any object with a ``Standard`` property such as
 ``ISO 4762 M3x10, A2``, usually in ``lib/``) is named by its standard designation; another bought
 part (a ``lib/`` object, or one with ``Manufacturer`` or ``MPN``) names
 ``Manufacturer`` and ``MPN``; a board model or harness is one line with its version and its
-``pcba-<name>`` / ``harness-<name>`` document, its parts stay in the EE BOM. CK-F12 warns about a
+``pcba-<name>`` / ``harnesses`` document, its parts stay in the EE BOM. CK-F12 warns about a
 bought part without them and about an own part without ``Material`` (:need:`XD-RULE-0058`).
 
 Design output and renderings

@@ -61,6 +61,9 @@ def _lv(levels: dict[str, str]) -> dict[str, str]:
 
 BUILTIN = [
     ("CK-A6", "docs build strict (zdocs, sphinx-needs schema: CK-A1-A3)", _lv({s: "error" for s in ALL}), "docs", False, "c_docs"),
+    ("CK-A7", "document layout: registry entries and document folders agree; per-deliverable documents in "
+              "their sub-folder; one harnesses document",
+     _lv({"local": "warning", "pr": "warning", "baseline": "warning"}), "docs+deliverables", False, "c_docs_layout"),
     ("CK-A1", "links: unknown IDs (own graph check)", _lv({s: "error" for s in ALL}), "docs", False, "c_graph"),
     ("CK-A3", "IDs match the scheme and their need type", _lv({s: "error" for s in ALL}), "docs", False, "c_graph"),
     ("CK-B1", "every SYS-REQ refined or satisfied (R1)", _lv({"full": "error", "baseline": "error"}), "docs", False, "c_graph"),
@@ -149,7 +152,7 @@ BUILTIN = [
 ]
 
 # Why a built-in check is off for a repo: the checks.yaml key it needs.
-NEED_TEXT = {"model.variants": "model.variants: true", "model.upstream": "model.upstream", "generated": "a model, cad or code section",
+NEED_TEXT = {"docs+deliverables": "a docs section and a cad or code section", "model.variants": "model.variants: true", "model.upstream": "model.upstream", "generated": "a model, cad or code section",
              "requirements": "requirements: true and a docs section", "provenance": "a model section or cad.freecad_json",
              "views": "views and model sections",
              "variants": "a variants section (domain repos, with model.upstream)",
@@ -178,6 +181,8 @@ def enabled(cfg: checkcfg.ChecksConfig, need: str | None) -> bool:
         return cfg.section("model") is not None or bool((cfg.section("cad") or {}).get("freecad_json"))
     if need == "views":
         return cfg.section("views") is not None and cfg.section("model") is not None
+    if need == "docs+deliverables":
+        return cfg.section("docs") is not None and any(cfg.section(x) for x in ("cad", "code"))
     if need == "cad.projects":
         return bool((cfg.section("cad") or {}).get("projects"))
     if need in ("cad.connectors", "cad.connectors+model"):
@@ -203,6 +208,12 @@ def c_docs(ctx: Ctx, r: Result):
     r.log = ctx.ws.rel(res.log)
     if not res.ok:
         r.findings = [f"strict mode: {res.strict_mode}", res.summary or "docs build failed"]
+
+
+def c_docs_layout(ctx: Ctx, r: Result):
+    """CK-A7 (tiacsys/xdmod#69 Q8, finding 15): see ``doclayout``."""
+    from curatrix import doclayout
+    r.findings = doclayout.findings(ctx.cfg)
 
 
 def _graph(ctx: Ctx):

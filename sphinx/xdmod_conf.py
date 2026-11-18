@@ -29,8 +29,13 @@ XDMOD = Path(__file__).resolve().parent.parent
 
 
 def repo_root(conf_file: str) -> Path:
-    """<repo> for <repo>/docs/<doc>/conf.py."""
-    return Path(conf_file).resolve().parents[2]
+    """<repo> for <repo>/docs/<doc>/conf.py and for a document in a sub-folder,
+    <repo>/docs/<sub>/<doc>/conf.py (``pcbas/``, ``assemblies/``, ``firmware/``; owner decision Q8 of
+    tiacsys/xdmod#69): the parent of the ``docs`` folder one or two levels above the document."""
+    here = Path(conf_file).resolve().parent
+    if here.parent.name != "docs" and here.parents[1].name == "docs":
+        return here.parents[2]
+    return here.parents[1]
 
 
 def workspace() -> Path:

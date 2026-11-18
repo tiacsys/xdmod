@@ -14,7 +14,7 @@ committed ``model.json``, so CI shows it:
   variant (the links' own ``Configs``, as ``curatrix cam`` and the ME checks read them; XD-ADR-0137).
   A standard fastener (an object with a ``Standard`` property) is named by its standard designation
   (``ISO 4762 M3x10, A2``); a board (``EE-PCBA``) or harness (``EE-HAR``) is one line with its
-  version and its ``pcba-<name>`` / ``harness-<name>`` document, never its components (owner, ME-8).
+  version and its ``pcba-<name>`` / ``harnesses`` document, never its components (owner, ME-8).
 * ``bom_field_findings`` (CK-F12 for ME): a library part (``lib/``) that is not a standard fastener
   names ``Manufacturer`` and ``MPN``; an own part (``parts/``, ``assemblies/``) names its ``Material``.
 * ``materials``, ``parameters``, ``interfaces``: the tables of the document.
@@ -68,12 +68,13 @@ class Node:
         return self.label
 
     def document(self) -> str:
-        """The zdocs document of a board or harness line (``pcba-<name>``, ``harness-<name>``)."""
+        """The zdocs document of a board or harness line (``pcba-<name>``; ``harnesses``, the one
+        document of every cable, tiacsys/xdmod#69 finding 15)."""
         from curatrix.eeprojects import kebab
         if self.kind == "board":
             return f"pcba-{kebab(str(self.values.get('Board') or self.label))}"
         if self.kind == "harness":
-            return f"harness-{kebab(str(self.values.get('Harness') or self.label))}"
+            return "harnesses"
         return ""
 
     def walk(self, path: str = ""):
