@@ -21,7 +21,8 @@ def test_ensure_token_settings_and_mcp_entry(tmp_path, monkeypatch):
     ws = Workspace(make_ws(tmp_path, monkeypatch))
     (ws.root / ".claude").mkdir()
     (ws.root / ".claude" / "settings.local.json").write_text(json.dumps({"permissions": {"allow": ["Bash(ls)"]},
-                                                                        "disabledMcpjsonServers": ["freecad"]}))
+                                                                        "enabledMcpjsonServers": ["freecad"],
+                                                                        "disabledMcpjsonServers": ["x"]}))
     (ws.root / ".mcp.json").write_text(json.dumps({"mcpServers": {"other": {"command": "x"}}}))
     freecadmcp.ensure(ws, "me", log=lambda *_: None)
     tok = freecadmcp.read_token(ws)
@@ -33,7 +34,8 @@ def test_ensure_token_settings_and_mcp_entry(tmp_path, monkeypatch):
     assert mcp["freecad"]["command"].endswith(".venv/bin/curatrix") and mcp["freecad"]["args"] == ["mcp-server", "freecad"]
     assert tok not in json.dumps(mcp)                                 # the token stays in its file
     loc = json.loads((ws.root / ".claude" / "settings.local.json").read_text())
-    assert loc["enabledMcpjsonServers"] == ["freecad"] and loc["disabledMcpjsonServers"] == []
+    # owner decision 2026-11-18: no approval written; an old curatrix approval is removed, the rest kept
+    assert "enabledMcpjsonServers" not in loc and loc["disabledMcpjsonServers"] == ["x"]
     assert loc["permissions"] == {"allow": ["Bash(ls)"]}
     assert tok not in json.dumps(ws.env())                            # `curatrix env` never prints it
     freecadmcp.ensure(ws, "me", log=lambda *_: None)          # idempotent: same token
