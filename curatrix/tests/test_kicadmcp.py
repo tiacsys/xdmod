@@ -147,7 +147,7 @@ def test_user_dir_snapshot(tmp_path):
 
 def test_cli_has_mcp_server_kicad():
     a = cli.parser().parse_args(["mcp-server", "kicad"])
-    assert a.server == "kicad" and a.mode == "readonly" and a.func is cli.cmd_mcp_server
+    assert a.server == "kicad" and a.mode is None and a.func is cli.cmd_mcp_server
     assert cli.parser().parse_args(["mcp-server", "kicad", "--mode", "write"]).mode == "write"
     with pytest.raises(SystemExit):
         cli.parser().parse_args(["mcp-server", "kicad", "--mode", "anything"])
@@ -184,3 +184,29 @@ def test_handshake_against_a_fake_server(tmp_path, monkeypatch):
     ok, detail = kicadmcp.handshake(ws, t, timeout=10)
     assert not ok and "KICAD_MCP_STRICT_PATHS" in detail
     assert os.environ.get("XD_WORKSPACE") == str(ws.root)
+
+
+def test_mode_is_only_for_kicad(capsys):
+    a = cli.parser().parse_args(["mcp-server", "freecad", "--mode", "write"])
+    assert cli.cmd_mcp_server(a) == 2
+    assert "only for kicad" in capsys.readouterr().err
+
+
+def test_doctor_warns_about_leftover_user_dirs(tmp_path, monkeypatch):
+    """An unpatched run makes ~/.config/kicad-mcp etc.; doctor names each one (like #80 for
+    ~/.cache/freecad-mcp)."""
+    home = tmp_path / "home"
+    assert kicadmcp.leftover_user_dirs(home) == []
+    for d in (".config/kicad-mcp/logs", ".local/share/kicad-mcp"):
+        (home / d).mkdir(parents=True)
+    assert kicadmcp.leftover_user_dirs(home) == [home / ".config/kicad-mcp", home / ".local/share/kicad-mcp"]
+    ws = Workspace(make_ws(tmp_path, monkeypatch))
+    t = tools.parse(XDMOD / "tools.yaml").tools[kicadmcp.TOOL]
+    monkeypatch.setattr(kicadmcp.Path, "home", lambda: home)
+    monkeypatch.setattr(kicadmcp, "tool", lambda ws, role: t)
+    monkeypatch.setattr(kicadmcp.tools, "installed_ok", lambda ws, t: True)
+    monkeypatch.setattr(kicadmcp, "_venv_check", lambda ws, t, code: type(
+        "R", (), {"returncode": 1, "stdout": "", "stderr": "x"})())
+    rows = kicadmcp.doctor_rows(ws, "ee", smoke=False)
+    warned = [w for st, w, _ in rows if st == "warn" and "user-global kicad-mcp" in w]
+    assert len(warned) == 2 and any(".local/share/kicad-mcp" in w for w in warned)

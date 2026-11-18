@@ -441,11 +441,11 @@ Curated as tools.yaml `kicad-mcp` (tarball + new `python_venv`), started by `cur
 | Readonly session: `open_project`, `get_project_info`, `list_schematic_components`, `get_schematic_component J1` (all fields incl. hidden `Port`, `MPN`, `TraceID`) | works (SWIG backend) |
 | `run_erc` / `run_drc` vs `curatrix check robarm-ee --only CK-F4a` / `CK-F4b` | same result: ERC 0; DRC 2 `unconnected_items` J1–R1, the two findings of the open `accepted.yaml` proposal |
 | Readonly refuses writes | `set_schematic_component_property` -> "Tool ... disabled" |
-| **Readonly still writes a file**: `run_drc` writes `<board>_drc_violations.json` next to the board | a finding for the fork: in readonly the report should go to `TMPDIR` / the log folder. Until then, never point a readonly session at a repo checkout without `git status` afterwards |
+| Readonly `run_drc` wrote `<board>_drc_violations.json` next to the board (trial build) | **fixed in `v2.9.0-xd.2`** (fork #6): in readonly and manufacturing mode the report, a caller's `reportPath` and the 2D-view file go to `.xdmod/kicad-mcp/reports/`; the board folder stays unchanged (checked again on xd.2) |
 | Write mode: `set_schematic_component_property` (hidden field), `move_component R1`, `save_board` | board saved through pcbnew: 1 line changed (the `at`); schematic written as text: 5 lines, non-canonical (`) (hide yes))` on one line) |
 | `curatrix run --use kicad-cli -- kicad-cli sch upgrade --force` on the edited schematic | canonical again: only the field value line differs from the original. So: schematic edits through the server must be re-saved by kicad-cli before a commit (rule 4) |
 | With `curatrix launch kicad` open (IPC server switched on in `.xdmod/kicad/10.0/kicad_common.json` for the trial only, restored afterwards) | `check_kicad_ui`: running, `ipc_connected: true` on `/tmp/kicad/api.sock`. With only the project manager open, the session stays on SWIG (the GUI does not hold the board); live board edits need the PCB editor open. IPC tools (`ipc_*`) are not in the default toolboxes |
-| User folders (`~/.config/kicad`, `~/.local/share/kicad`, `~/.cache/kicad`, `~/.kicad-mcp`, `~/.cache/pip`, FreeCAD and Blender folders) | unchanged during install, doctor and trial (`find -newer`). The only write below HOME of the night: the **unpatched upstream** test suite created `~/.kicad-mcp/logs` (5 files) before the fork patches; moved to `build/kicad-mcp-fork/evidence/` |
+| User folders (`~/.config/kicad`, `~/.local/share/kicad`, `~/.cache/kicad`, `~/.kicad-mcp`, `~/.cache/pip`, FreeCAD and Blender folders) | unchanged during install, doctor and trial (`find -newer`). Writes below HOME of the night, all by the **unpatched upstream** test suite (vitest and pytest, 2026-11-17 23:56-23:57, before the fork patches and before the suites ran with a fake HOME): `~/.kicad-mcp/logs` (5 files), `~/.config/kicad-mcp/logs/` (empty), `~/.cache/kicad-mcp/` (empty), `~/.local/share/kicad-mcp/jlcpcb_parts.db` (48 KB). Moved to `build/kicad-mcp-fork/evidence/` and `.../evidence/home-leak-2026-11-17/`; `doctor` now warns when any of these folders exists |
 
 Release check (same night): with the released `v2.9.0-xd.1` asset (sha256 `96bee2f6…`) the doctor
 handshake FAILED: strict mode refused `XDG_*_HOME` below `$HOME`, and this workspace lives below
@@ -458,6 +458,8 @@ scratch copy writes its report to `.xdmod/kicad-mcp/reports/`, the board folder 
 `.xdmod/kicad-mcp/home` for the server and its child processes (kicad-cli, Java).
 
 Open: the IPC server is off in the workspace KiCad config; switching it on for `curatrix launch
-kicad` is a decision for the owner (socket without auth, report §3). The readonly DRC report file
-above. The server needs more than 30 s to exit after its stdin closes when the worker is still warming
-up (the doctor kills it after 15 s).
+kicad` is a decision for the owner (socket without auth, report §3). The server needs more than 30 s
+to exit after its stdin closes when the worker is still warming up (the doctor kills it after 15 s).
+While a session has a project open, KiCad's lock file `~<project>.kicad_pro.lck` sits next to the
+project; a clean exit removes it, a killed server (doctor timeout, memory limit) leaves it behind, and
+it then shows up in `git status`: delete it by hand.
