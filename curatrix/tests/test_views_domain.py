@@ -56,6 +56,29 @@ def test_allocation_planted_errors(m):
     assert any(x.startswith("missing in the file: EeBoards::ControllerBoard->") and x.endswith(":realizes") for x in d), d
 
 
+def test_allocation_colours_by_origin_not_by_scope(m):
+    """With a def as root, the other domain elements it links to stay white; only system
+    model elements are grey."""
+    g = views.graph(m, view("allocation", "EeCables::ServoCable"))
+    fill = {n["trace_id"]: n.get("fill") for n in g["nodes"]}
+    assert {"EE-PORT-0001", "EE-PORT-0010"} <= set(fill)
+    assert fill["EE-PORT-0001"] is None and fill["EE-PORT-0010"] is None
+
+
+def test_allocation_def_root_without_a_need_is_an_error(m):
+    # planted: a def without a trace ID as root gave an empty view
+    with pytest.raises(views.ViewError, match="no definition with a trace ID"):
+        views.graph(m, view("allocation", "EeCables::ServoMotor"))
+
+
+def test_variants_planted_lost_serves_line(m):
+    xml = views.to_mxfile(views.graph(m, view("variants", "EeBoards::ControllerBoard")))
+    g = views.graph(m, view("variants", "EeBoards::ControllerBoard"))
+    g["edges"] = [e for e in g["edges"] if e["id"] != "EeVariants::CtrlFast->Sys::Full:serves"]
+    d = views.diff_content(views.content_of(xml), views.content_of(views.to_mxfile(g)))
+    assert "missing in the file: EeVariants::CtrlFast->Sys::Full:serves" in d, d
+
+
 def test_variants_view(m):
     g = views.graph(m, view("variants", "EeBoards::ControllerBoard"))
     nodes = {short(n["id"]): n for n in g["nodes"]}

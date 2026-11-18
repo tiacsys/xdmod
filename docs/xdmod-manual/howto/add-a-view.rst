@@ -63,7 +63,8 @@ Checks
    view then shows only the relations between them (a view across two domains). In an
    ``interconnection`` view, ``show`` names the ports to draw. ``direction`` (``DOWN``,
    ``RIGHT``, ``LEFT``, ``UP``) sets the layout direction; the default depends on the kind
-   (``RIGHT`` for ``interconnection``, ``DOWN`` for the others). Every drawing must fit a 4:3 or 16:9
+   (``RIGHT`` for ``interconnection`` and ``context``, ``UP`` for ``allocation`` and
+   ``variants``, ``DOWN`` for the others). Every drawing must fit a 4:3 or 16:9
    page, upright or across (a width to height ratio from 9:16 to 16:9). When it does not,
    ``views build`` turns the layout by 90 degrees, wraps long chains and moves the legend, and
    reports the ratio; ``RIGHT!`` forbids turning. If no layout fits, split the view.

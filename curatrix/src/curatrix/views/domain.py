@@ -35,7 +35,13 @@ def _scope(m: Model, root: dict) -> list[dict]:
     return [root]
 
 
-def _upstream_node(m: Model, t: dict) -> dict:
+def _upstream(m: Model, t: dict) -> bool:
+    """An element of the upstream (system) model: a library element in the compact JSON, or a
+    trace ID without an element (a placeholder). Colour by origin, not by the view's scope."""
+    return bool(t.get("isLibraryElement")) or not t.get("@type")
+
+
+def _target_node(m: Model, t: dict) -> dict:
     q = t["qualifiedName"]
     if t.get("@type", "").endswith("Usage"):
         label = f"«{KEYWORD.get(t['@type'], 'usage')}»\n{q.split('::', 1)[-1]}"
@@ -43,14 +49,13 @@ def _upstream_node(m: Model, t: dict) -> dict:
     else:
         label, shape = (header(t) if t.get("@type") else q), "def"
     n = node(q, label, t.get("@type") or "need", shape=shape, trace_id=element_id(m, t) or t.get("declaredShortName") or "")
-    n["fill"] = UPSTREAM_FILL
+    if _upstream(m, t):
+        n["fill"] = UPSTREAM_FILL
     return n
 
 
 def allocation(m: Model, v, opts: dict, root: dict) -> dict:
     els = _scope(m, root)
-    if not els:
-        raise GraphError(f"no definition with a trace ID in {root.get('qualifiedName')}")
     doc, _ = to_needs(m)
     needs = doc["versions"][""]["needs"]
     by_id: dict[str, dict] = {}
@@ -60,6 +65,8 @@ def allocation(m: Model, v, opts: dict, root: dict) -> dict:
             by_id[tid] = p
     # only elements that are needs (a CAD-owned kind such as ME-PART is a reference, XD-ADR-0128)
     own = {element_id(m, p): p for p in els if element_id(m, p) in needs}
+    if not own:
+        raise GraphError(f"no definition with a trace ID (a need) in {root.get('qualifiedName')}")
     g = {"nodes": [], "edges": []}
     upstream: dict[str, dict] = {}          # trace ID -> upstream element (or a placeholder)
     for sid in sorted(own):
@@ -78,7 +85,7 @@ def allocation(m: Model, v, opts: dict, root: dict) -> dict:
                 g["edges"].append(edge(src, dst, "allocation", link, LABEL.get(link, f"«{link}»"),
                                        eid=f"{src}->{dst}:{link}"))
     for t in sorted(upstream.values(), key=lambda t: t["qualifiedName"]):
-        g["nodes"].append(_upstream_node(m, t))
+        g["nodes"].append(_target_node(m, t))
     g["direction"] = (opts.get("direction") or "UP").upper()
     return g
 
@@ -126,6 +133,6 @@ def variants(m: Model, v, opts: dict, root: dict) -> dict:
                     g["edges"].append(edge(pid, t["qualifiedName"], "allocation", "Dependency", "«serves»",
                                            eid=f"{pid}->{t['qualifiedName']}:serves"))
     for q in sorted(upstream):
-        g["nodes"].append(_upstream_node(m, upstream[q]))
+        g["nodes"].append(_target_node(m, upstream[q]))
     g["direction"] = (opts.get("direction") or "UP").upper()
     return g

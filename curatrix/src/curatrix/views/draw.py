@@ -79,10 +79,12 @@ LEGEND = {
                "rounded box = the system or an actor or external system around it (name : definition; colour = "
                "layer); small squares = ports; lines = connections and interfaces between ports; thick arrow = flow. "
                "A box with a need ID links to its page.",
-    "allocation": "Legend (allocation): white = the domain model, grey = the system model it refines; "
-                  "sharp box = definition with its «keyword» and <need ID>; dashed arrow = trace link from the "
-                  "concrete to the abstract element, labelled with the link type («realizes», «conforms», "
-                  "«part of»), derived from :> specialization, dependency and allocate. A box links to its need.",
+    "allocation": "Legend (allocation): white = the domain model, grey = the system model it refines; sharp box = "
+                  "definition with its «keyword» and <need ID>. Dashed arrows are the trace links of the needs, from the "
+                  "concrete to the abstract element: «realizes» (a system element), «conforms» (a system interface), "
+                  "«satisfies» (a requirement), derived from :> specialization, dependency and allocate; and the "
+                  "structure links inside the domain: «part of» (a port of its board or assembly), «connects» (a "
+                  "harness and the ports its ends mate with). A box links to its need.",
     "variants": "Legend (variants): sharp box = definition (grey: of the system model), rounded = usage; hollow triangle = the variant "
                 "specializes the definition (its variantName and documentation inside); dashed «serves» arrow = "
                 "the configuration and system usage the variant serves. A box with a need ID links to its page.",

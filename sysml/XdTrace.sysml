@@ -37,7 +37,8 @@ library package XdTrace {
     //   root       qualified name of the element the view starts from
     //   layer      optional layer filter (functional | logical | product)
     //   direction  optional layout direction: DOWN | RIGHT | LEFT | UP; default per kind:
-    //              RIGHT for interconnection and context, DOWN for the others; the layout may
+    //              RIGHT for interconnection and context, UP for allocation and variants,
+    //              DOWN for the others; the layout may
     //              turn it by 90 degrees to keep the canvas between 9:16 and 16:9, unless it ends
     //              in "!" (RIGHT!)
     //   show       general view: relationships to draw, comma-separated: specialization,
