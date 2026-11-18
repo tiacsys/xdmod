@@ -420,7 +420,8 @@ class Findings(Directive):
                                                        f"by a human commit with ``Accepted-by``." if rows else ""), ""]
         if rows:
             lines += _table(["State", "Check", "Rule", "Items", "Description", "Acceptance"],
-                            [[self.STATES.get(r["state"], r["state"]), _lit(r["check"]), _lit(r["rule"]),
+                            [[self.STATES.get(r["state"], r["state"]),
+                              _lit(r["check"]) + (f" ({r['level']})" if r.get("level") else ""), _lit(r["rule"]),
                               _cell(r["items"]), _cell(r["description"]), _cell(r["note"])] for r in rows])
         for k, why in sorted((d.get("skipped") or {}).items()):
             lines += [f"{k}: skipped, {_cell(why)}.", ""]

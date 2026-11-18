@@ -5,7 +5,8 @@
 #              top document, so the parts load fully through its links; then every other document)
 #   XD_LIB     the repo's lib/ folder (library fasteners live there)
 #   XD_SEATS   JSON {ME-PORT: {width, depth, heightAbove, heightBelow}} of the board seats (CK-F18):
-#              the ME seat ports that specialize a SYS-IF space budget, with the budget's values
+#              the ME seat ports that specialize a SYS-IF space budget, with the budget's values (a
+#              seat may lack some: then only the seat is reported, without bbox and intrusions)
 #   XD_RESULT  the result file (JSON)
 # FreeCADCmd exits 0 when a script raises, so the caller judges success by the result file only; the
 # script never raises and is safe to run twice. It never saves a document.
@@ -119,6 +120,8 @@ def budget_of(d, kids, skels, seats, board):
         return e
     seat = hit[2]
     b = seats[hit[1]]
+    if any(k not in b for k in ("width", "depth", "heightAbove", "heightBelow")):
+        return e                            # the caller names the missing value; no box to check
     loc = sh.transformed(seat.inverse().toMatrix())
     bb = loc.BoundBox
     e["bbox"] = [round(v, 6) for v in (bb.XMin, bb.YMin, bb.ZMin, bb.XMax, bb.YMax, bb.ZMax)]

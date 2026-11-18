@@ -123,8 +123,9 @@ def run(ws, cfg, out: Path) -> dict:
         lib = (cfg.repo / "lib").resolve()
         try:
             res = run_script(ws, ws.xdmod / SCRIPT, {"XD_FILES": json.dumps([str(f) for f in fs]), "XD_LIB": str(lib),
-                                                     "XD_SEATS": json.dumps({k: v["values"] for k, v in st.items()
-                                                                             if not v["missing"]})},
+                                                     # every seat, also one whose budget lacks a value: the
+                                                     # board is found at it, and the finding names the value
+                                                     "XD_SEATS": json.dumps({k: v["values"] for k, v in st.items()})},
                              out / "me-checks.result.json")
         except NewError as e:
             raise MeCheckError(str(e)) from None
