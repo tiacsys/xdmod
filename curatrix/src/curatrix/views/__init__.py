@@ -347,6 +347,8 @@ def positions(laid: dict) -> dict[str, dict]:
 # A diagram must fit a page: its canvas is between 9:16 (portrait) and 16:9 (landscape), so
 # 4:3 and 16:9 pages in either orientation take it without large empty margins.
 RATIO_MIN, RATIO_MAX = 9 / 16, 16 / 9
+# where the legend may go, in this order; a small drawing (two boxes) needs the narrowest one
+LEGEND_PLACES = ("below", "below-narrow", "right", "below-narrowest")
 PERPENDICULAR = {"RIGHT": "DOWN", "LEFT": "UP", "DOWN": "RIGHT", "UP": "LEFT"}
 
 
@@ -403,11 +405,11 @@ def layout(ws, m: Model, v: ViewDef, log=lambda *_: None) -> tuple[dict, str, fl
         if t.get("wrap"):
             g["wrap"] = True
         pos = positions(run_elk(ws, to_elk(g)))
-        for legend in ("below", "below-narrow", "right"):
+        for legend in LEGEND_PLACES:
             g["legend"] = legend
             xml = to_mxfile(g, pos)
             r = canvas_ratio(xml)
-            score = (ratio_error(r), tries.index(t), ("below", "below-narrow", "right").index(legend))
+            score = (ratio_error(r), tries.index(t), LEGEND_PLACES.index(legend))
             if best is None or score < best[0]:
                 best = (score, g, xml, r)
             if ratio_error(r) == 0:
@@ -672,4 +674,8 @@ def check_file(path: Path, expected_xml: str | None) -> list[str]:
         errs.append(f"{path.name}: picture is stale (hash differs from the embedded diagram); run `curatrix views normalize {path}`")
     errs += [f"{path.name}: {d}" for d in diff_content(content_of(expected_xml), content_of(content))]
     errs += [f"{path.name}: {d}" for d in geometry_errors(content)]
+    r = canvas_ratio(normalize_xml(content))
+    if ratio_error(r):       # the same rule as `views build`, so CI catches a layout build rejects
+        errs.append(f"{path.name}: the drawing does not fit a page (width/height {r:.2f}, allowed "
+                    f"{RATIO_MIN:.2f}..{RATIO_MAX:.2f}); run `curatrix views build`, or split the view")
     return errs
