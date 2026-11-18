@@ -83,6 +83,17 @@ def _registry_docs(repo: Path) -> dict[str, str]:
         return {}
 
 
+def xref_name(env, repo: Path, doc: str) -> str | None:
+    """The intersphinx name of document ``doc`` in THIS build, or None when the build does not know
+    it. The repo's own registry gives the prefix ``pcba_x`` (the zdocs default), the full set's
+    registry ``pcba-x`` (prefix = ID); try the name each registry would give."""
+    have = getattr(env.config, "intersphinx_mapping", None) or {}
+    for name in (_registry_docs(repo).get(doc), doc, doc.replace("-", "_")):
+        if name and name in have:
+            return name
+    return None
+
+
 def _model(repo: Path):
     from xdmod_sphinx.reference import curatrix_module
     try:
@@ -104,7 +115,7 @@ class HarnessEnds(Directive):
             out += _rst(self, f"Harness :need:`{h.trace_id}`, ``harness/{h.name}/{h.name}.yml``.")
         m = _model(repo)
         owners = hm.port_owners(m) if m is not None else {}
-        docs = _registry_docs(repo)
+        env = self.state.document.settings.env
         from xdmod_sphinx.reference import curatrix_module
         kebab = curatrix_module("eeprojects").kebab
         rows = []
@@ -115,7 +126,8 @@ class HarnessEnds(Directive):
             for kind, name, oid, pname in owners.get(port, []):
                 if kind == "board":
                     doc = f"pcba-{kebab(name)}"
-                    link = f", :external+{docs[doc]}:doc:`{doc} <index>`" if doc in docs else ""
+                    xn = xref_name(env, repo, doc)
+                    link = f", :external+{xn}:doc:`{doc} <index>`" if xn else ""
                     parts.append(f"board {name} port ``{pname}`` (:need:`{oid}`{link})" if oid
                                  else f"board {name} port ``{pname}``")
                 else:
