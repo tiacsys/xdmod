@@ -22,7 +22,7 @@ Status: **AGREED 2026-11-14** (review answers → D109–D112). Built on D13, D2
 | | `sw-api` | SW API & Implementation (Doxygen) | code units (`@xdid`, `\satisfies`) | `sw-arch`, `sw-req` |
 | | `sw-test-spec` | SW Test Specification | test cases from ZTEST annotations (zdocs `testmodule`, test-ID ledger) | `sw-req`, `sw-arch` |
 | | `sw-test-report` | SW Test Report | Twister results (`native_sim` in CI, D101), coverage | `sw-test-spec` |
-| | `fw-<name>` | Firmware: <name> (one per firmware image, in `docs/firmware/`; xdmod#69 Q8) | build configuration, Zephyr board and variant, image version, size and memory map | `sw-arch`, `pcba-<name>` |
+| | `fw-<name>` | Firmware: <name> (one per firmware image, in `docs/firmware/`; xdmod#69 Q8) | build configuration, Zephyr board and variant, image version, size and memory map | `sw-arch`, `se-arch` |
 | robarm-ee | `ee-req` | EE Requirements Specification | EE requirements (rst, EARS) | `se-req`, `se-arch` |
 | | `ee-design` | EE Design | design overview: board and cable defs, views, allocation (design only, the requirements are in `ee-req`; xdmod#69 Q8) | `ee-req`, `se-arch` |
 | | `pcba-<name>` | PCBA Design: <name> (one per board, from the start, XD-ADR-0129; in `docs/pcbas/`) | overview with version; renderings and schematic (local, placeholder in CI); stackup and design-rule tables, connector pin tables (plain Python); ERC/DRC findings with acceptance (local); variants table; BOM with a column per variant in the appendix | `ee-req`, `se-arch` |
