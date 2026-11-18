@@ -265,3 +265,29 @@ def test_pcba_renderings_note_missing_models():
     assert Renderings.models_note({}) == []
     (w,) = Renderings.models_note({"kicad_3d_models": "missing", "kicad_3d_models_missing": ["a", "b"]})
     assert "missing" in w.astext() and "2 models not found" in w.astext() and "ee3d or full" in w.astext()
+
+
+def test_pcba_renderings_no_data_kept_with_models_note(tmp_path, monkeypatch):
+    """Review of xdmod#78: with the 3D models missing and no PNG at all, the section shows the models
+    warning AND the "no data" sentence, not the warning alone."""
+    sys.path.insert(0, str(FIXTURES.parents[2] / "sphinx"))
+    from types import SimpleNamespace
+    from xdmod_sphinx import pcba
+
+    class FakeBoard:
+        def __init__(self, _directive):
+            pass
+
+        def cam(self):
+            return {"kicad_3d_models": "missing", "kicad_3d_models_missing": ["a"]}, tmp_path
+
+        def variants(self):
+            return []
+
+    monkeypatch.setattr(pcba, "_Board", FakeBoard)
+    env = SimpleNamespace(docname="doc", doc2path=lambda name: str(tmp_path / "doc.rst"))
+    d = object.__new__(pcba.Renderings)
+    d.state = SimpleNamespace(document=SimpleNamespace(settings=SimpleNamespace(env=env)))
+    texts = [n.astext() for n in pcba.Renderings.run(d)]
+    assert any("missing" in t for t in texts)
+    assert texts[-1] == pcba.NO_DATA
