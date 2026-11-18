@@ -418,3 +418,36 @@ plain-Python BOM reader (P5-15); variant overrides are in the netlist too, so on
 - The schematic PDF per variant (how DNP is drawn), and a render per variant with real 3D models.
 - A real KiCad GUI round trip (does the GUI keep the hand-written variants and exclusions on save).
 - Hierarchical sheets (net names, variant overrides per sheet instance).
+
+## 7a. Addendum 2026-11-18: the KiCad MCP server as a curated tool
+
+xdmod#69 finding 19, owner decisions Q1, Q2, Q3; research: `build/research-kicad-mcp/report.md`.
+The verdict of §7 ("cut for iteration 1") is replaced: mixelpixx/KiCAD-MCP-Server v2.9.0 (MIT) runs
+workspace-local through the fork **tiacsys/KiCAD-MCP-Server** (branch `xd/main` = tag `v2.9.0` + PRs:
+#1 CI and release asset with a hashed lock file without pymupdf, #2 `KICAD_MCP_HOME` /
+`KICAD_MCP_LOG_DIR`, #3 review fixes, #4 `KICAD_DOCUMENTS_HOME` / `KICAD_CONFIG_HOME` honoured and
+`KICAD_MCP_STRICT_PATHS`, #5 `KICAD_API_SOCKET` / `KICAD_API_TOKEN`). The upstream PR drafts wait for
+the owner's OK (D124): `build/kicad-mcp-fork/upstream-drafts/`.
+
+Curated as tools.yaml `kicad-mcp` (tarball + new `python_venv`), started by `curatrix mcp-server kicad`
+(curatrix/README.md, tools.yaml). Trial of research report §7 on scratch copies of the canary board
+(`build/kicad-mcp/trial*/`, never the repo), with a preview asset of the patch stack (c4d3b0d; the
+`v2.9.0-xd.1` tag waits for the fork reviews):
+
+| Step | Result |
+|---|---|
+| Install (`python_venv`: own venv, `pip --require-hashes --only-binary`, pcbnew linked) | works; pcbnew 10.0.8 from `/usr/lib/python3.14/site-packages` |
+| doctor handshake (initialize, tools/list, worker READY, strict paths) | ok: 38 tools in readonly with toolboxes core, schematic, board, drc; user folders unchanged |
+| Readonly session: `open_project`, `get_project_info`, `list_schematic_components`, `get_schematic_component J1` (all fields incl. hidden `Port`, `MPN`, `TraceID`) | works (SWIG backend) |
+| `run_erc` / `run_drc` vs `curatrix check robarm-ee --only CK-F4a` / `CK-F4b` | same result: ERC 0; DRC 2 `unconnected_items` J1–R1, the two findings of the open `accepted.yaml` proposal |
+| Readonly refuses writes | `set_schematic_component_property` -> "Tool ... disabled" |
+| **Readonly still writes a file**: `run_drc` writes `<board>_drc_violations.json` next to the board | a finding for the fork: in readonly the report should go to `TMPDIR` / the log folder. Until then, never point a readonly session at a repo checkout without `git status` afterwards |
+| Write mode: `set_schematic_component_property` (hidden field), `move_component R1`, `save_board` | board saved through pcbnew: 1 line changed (the `at`); schematic written as text: 5 lines, non-canonical (`) (hide yes))` on one line) |
+| `curatrix run --use kicad-cli -- kicad-cli sch upgrade --force` on the edited schematic | canonical again: only the field value line differs from the original. So: schematic edits through the server must be re-saved by kicad-cli before a commit (rule 4) |
+| With `curatrix launch kicad` open (IPC server switched on in `.xdmod/kicad/10.0/kicad_common.json` for the trial only, restored afterwards) | `check_kicad_ui`: running, `ipc_connected: true` on `/tmp/kicad/api.sock`. With only the project manager open, the session stays on SWIG (the GUI does not hold the board); live board edits need the PCB editor open. IPC tools (`ipc_*`) are not in the default toolboxes |
+| User folders (`~/.config/kicad`, `~/.local/share/kicad`, `~/.cache/kicad`, `~/.kicad-mcp`, `~/.cache/pip`, FreeCAD and Blender folders) | unchanged during install, doctor and trial (`find -newer`). The only write below HOME of the night: the **unpatched upstream** test suite created `~/.kicad-mcp/logs` (5 files) before the fork patches; moved to `build/kicad-mcp-fork/evidence/` |
+
+Open: the IPC server is off in the workspace KiCad config; switching it on for `curatrix launch
+kicad` is a decision for the owner (socket without auth, report §3). The readonly DRC report file
+above. The server needs more than 30 s to exit after its stdin closes when the worker is still warming
+up (the doctor kills it after 15 s).

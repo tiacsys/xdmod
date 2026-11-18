@@ -29,6 +29,7 @@ Contents: [CLI](#cli) · [checks.yaml](#checksyaml) · [Check catalogue](#check-
 | `curatrix update [--adopt]` | fast-forwards the manifest repo to its remote default branch (fetch + `merge --ff-only`, only when it is on that branch, without changes to tracked files and not ahead; else a warning), `west update -k`, re-executes itself when that moved xdmod (the new curatrix does the rest), then the same refresh (pip only if a requirements file changed). Refuses inside a worktree set. The first update after this came in runs the old code: fast-forward the manifest repo once by hand (`git -C <manifest> fetch origin && git -C <manifest> merge --ff-only origin/main`) |
 | `curatrix launch kicad\|freecad\|blender\|drawio\|claude [ARGS…]` | GUI tools from the root with workspace-local config, memory limit only (D117). See [Launchers](#launchers) |
 | `curatrix mcp-server freecad` | the command of the `freecad` server in `<ws>/.mcp.json` (Claude Code starts it): `freecad-mcp` with the token from `.xdmod/freecad/mcp-token`, `HOME`/`XDG_*` under `.xdmod/freecad-mcp/`, `mcp` limits |
+| `curatrix mcp-server kicad [--mode readonly\|write\|manufacturing]` | the command of the `kicad` server in `<ws>/.mcp.json`: the KiCad MCP server over stdio, `mcp-kicad` limits (memory only), `HOME` under `.xdmod/kicad-mcp/`; default mode `readonly`. See [tools.yaml](#toolsyaml) |
 | `curatrix docs <repo\|full> [--open]` | zdocs build of `<repo>/docs` into `build/<area>/docs/` (strict, D64c) |
 | `curatrix check [<repo>] [--stage local\|pr\|full\|baseline] [--no-cad] [--only IDs] [--base DIR] [--json]` | the repo's checks ([catalogue](#check-catalogue)); logs + `build/<area>/checks/summary.json`; prints a reproduce command per failure. `--only CK-D,CK-C1` runs those even outside the stage. `--json` puts the summary on stdout, the log on stderr |
 | `curatrix gen stubs\|model\|cad-needs\|freecad-json\|tombstones\|all [<repo>] [--check]` | regenerate committed generated files ([Generated files](#generated-files)); `--check` only compares |
@@ -277,6 +278,9 @@ tools:                        # installed into <ws>/.venv/<location> (or <ws>/.x
     subdir: share/…           # tarball / zip / conda / git: copy only this folder
     package: elkjs            # npm: package name (default: name)
     licence: "MIT"            # optional: the licence and any gap in it (doctor shows it)
+    python_venv:              # tarball only: the tool's own venv <location>/venv (not .venv)
+      requirements: requirements.lock.txt   # in the tool; pip --no-deps --require-hashes --only-binary
+      system_modules: [pcbnew, _pcbnew]     # linked in from the base Python's site-packages (.pth)
     links: {gh: bin/gh}       # symlinks .venv/bin/<name> -> <location>/<path>
     env: {JAVA_HOME: "{location}"}   # exported by `curatrix env` ({location}, {venv}, {state} = .xdmod)
     roles: [sw]               # optional: only for these roles
@@ -317,7 +321,28 @@ scripts to `~/.cache/freecad-mcp`), and execs `.venv/bin/freecad-mcp` under the 
 (1G, no timeout), headless runs through `curatrix run --use freecad -- FreeCADCmd`. `doctor` fails
 on another addon or pip version, unsafe or stale settings, and warns about auto-start left on, a
 missing `.mcp.json` entry, a user-global `~/.local/share/FreeCAD/*/Mod/FreeCADMCP`, or an existing
-`~/.cache/freecad-mcp`. The Zephyr SDK belongs in robarm-sw's tools.yaml (D138), e.g.
+`~/.cache/freecad-mcp`.
+
+The KiCad MCP server (`kicad-mcp`, xdmod#69 finding 19): mixelpixx/KiCAD-MCP-Server (MIT) through the
+fork tiacsys/KiCAD-MCP-Server, whose branch `xd/main` adds configurable paths and a strict mode
+(offered upstream). The release asset holds the built `dist/`, production `node_modules`, `python/`
+and a hashed `requirements.lock.txt` without pymupdf (AGPL-3.0); `python_venv` installs it into
+`.venv/opt/kicad-mcp/venv` (pip cache under `.xdmod/cache/pip`) and links the system KiCad's SWIG
+`pcbnew` in. `curatrix update` writes the server `kicad` into `<ws>/.mcp.json`
+(`.venv/bin/curatrix mcp-server kicad`); Claude Code asks the owner once to approve it (curatrix writes no
+approval). `curatrix mcp-server kicad [--mode readonly|write|manufacturing]` runs the server over stdio under
+the `mcp-kicad` limits (4G, no timeout) with `HOME` under `.xdmod/kicad-mcp/home` and the KiCad config of `curatrix launch kicad`, `KICAD10_3RD_PARTY`
+under `.xdmod/kicad-documents`, `KICAD_CLI` = the shim, `KICAD_PYTHON` = the tool's venv,
+`KICAD_MCP_STRICT_PATHS=1` (no lookup below `$HOME`; the worker refuses to start without its
+folders), `KICAD_MCP_HOME` and `XDG_*` under `.xdmod/kicad-mcp/`, logs and `TMPDIR` under
+`build/kicad-mcp/`, `PYTHONPATH` unset, mode `readonly` by default and the toolboxes
+`core,schematic,board,drc` open. `doctor` checks the worker venv (kipy, sexpdata, skip; warns on
+pymupdf), `pcbnew.Version()` against the pinned KiCad, an MCP handshake (initialize, tools/list, the
+Python worker's READY; not with `--ci`) with a snapshot of `~/.config/kicad`, `~/.local/share/kicad`,
+`~/.cache/kicad` and the `kicad-mcp` folders before and after (FAIL on any change), and the
+`.mcp.json` entry. Schematic edits through the server are text writes: re-save them with
+`curatrix run --use kicad-cli -- kicad-cli sch upgrade --force <file>` (claude/notes/kicad-spike.md §7a).
+The Zephyr SDK belongs in robarm-sw's tools.yaml (D138), e.g.
 `env: {ZEPHYR_SDK_INSTALL_DIR: "{location}"}`.
 
 ## ids.yaml (the ledger)
