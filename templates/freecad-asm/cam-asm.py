@@ -34,7 +34,8 @@ import FreeCAD as App
 res = os.environ.get("XD_RESULT", "")
 out = {"ok": False}
 LCS_TYPES = ("Part::LocalCoordinateSystem", "PartDesign::CoordinateSystem")
-BOM_PROPS = ("TraceID", "PrintProfile", "Material", "Standard", "Manufacturer", "MPN", "Mass", "Density")
+BOM_PROPS = ("TraceID", "PrintProfile", "Material", "Standard", "Manufacturer", "MPN", "Mass", "Density",
+             "Board", "Version")            # Board, Version: a board model of the board library
 # view: (Direction, the view normal towards the viewer; XDirection, the model direction that points
 # right in the view). Up is Direction x XDirection: +z for front, right and iso, +y for top.
 VIEWS = {"front": ((0, -1, 0), (1, 0, 0)), "top": ((0, 0, 1), (1, 0, 0)), "right": ((1, 0, 0), (0, 1, 0)),

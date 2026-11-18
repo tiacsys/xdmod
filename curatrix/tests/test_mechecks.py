@@ -1,5 +1,6 @@
 """ME checks (task 5.25): CK-F4c recompute, CK-F16 solids, CK-F17 collisions, CK-F18 space budget,
 accepted findings in assemblies/<name>/accepted.yaml (CK-F9, XD-ADR-0126)."""
+import json
 import shutil
 import subprocess
 
@@ -84,19 +85,78 @@ def test_f17_collisions_and_acceptance(tmp_path, monkeypatch):
     assert f == ["assemblies/fx/accepted.yaml entry 1 (CK-F17 overlap: A, B) matches no CK-F17 finding; remove it"], f
 
 
+SEAT = {"ME-PORT-0009": {"budget": "SYS-IF-0001", "missing": [],
+                         "values": {"width": 20.0, "depth": 10.0, "heightAbove": 10.0, "heightBelow": 3.0}}}
+
+
 def test_f18_space_budget(tmp_path, monkeypatch):
-    """CK-F18 until task 5.28: always a skip with its reason, never a finding that needs acceptance;
-    planted: a placed board model is named in the reason (not checked)."""
+    """CK-F18 planted (plain Python on the FreeCAD result): a skip without a board; a board out of
+    its box (beyond the tolerance only), a part in the box, a fastener through the board and a board
+    at no seat are findings; a part in the box can be accepted (rule space)."""
     root, repo = _repo(tmp_path)
     res = _result(repo, [])
     monkeypatch.setattr(mechecks, "run", lambda ws, cfg, out: res)
     r = _run(root, repo, "c_space_budget")
     assert r.status == "skip" and "no board model" in r.findings[0], r
     res["assemblies"][0]["children"].append({"name": "Board", "kind": "board", "configs": "", "id": "EE-PCBA-0001"})
-    r = _run(root, repo, "c_space_budget")
-    assert r.status == "skip" and r.findings == [
-        "board model(s) Board placed, but the SYS-IF space budget has no form yet (co-design task 5.28): not "
-        "checked"], r.findings
+    res["seats"] = SEAT
+    res["assemblies"][0]["budgets"] = [
+        {"board": "Board", "seat": "LCS_seat", "port": "ME-PORT-0009", "placement": [0, 40, 20],
+         "bbox": [0.0, -0.005, -3.005, 20.0, 10.0, 12.0],
+         "intrusions": [{"name": "A", "volume": 100.0, "z": [-3.0, -2.0]}, {"name": "B", "volume": 0.0005, "z": [0, 0]}],
+         "fasteners": [{"name": "ScrewBad", "volume": 11.3097}]},
+        {"board": "Board2", "seat": "", "port": "", "placement": [0, 70, 20], "intrusions": [], "fasteners": []}]
+    f = _run(root, repo, "c_space_budget").findings
+    assert f == [
+        "error: space (error): assemblies/fx/fx.FCStd: Board and the fastener ScrewBad overlap by 11.31 mm³ (tolerance "
+        "0.001 mm³): the fastener misses the board's hole [ScrewBad]",
+        "error: space (error): assemblies/fx/fx.FCStd: Board reaches 2 mm above heightAbove of the space budget "
+        "SYS-IF-0001 at LCS_seat (ME-PORT-0009; board z 12.000 mm, budget 10 mm, tolerance 0.01 mm) [Board]",
+        "error: space (error): assemblies/fx/fx.FCStd: A reaches into the space budget SYS-IF-0001 of Board at LCS_seat "
+        "(ME-PORT-0009) by 100 mm³, z -3 to -2 mm in the board frame (tolerance 0.001 mm³) [A]",
+        "error: space (error): assemblies/fx/fx.FCStd: Board2 is not placed at a board seat (an LCS with Port = an "
+        "ME-PORT that specializes a SYS-IF budget: ME-PORT-0009); the link sits at [0, 70, 20] [Board2]"], f
+    rows = mechecks.evaluate(checkcfg.load(repo / "checks.yaml", root), "CK-F18",
+                             mechecks.findings(checkcfg.load(repo / "checks.yaml", root), res, "CK-F18"), {}).rows
+    assert len(rows) == 4 and rows[2]["items"] == "A", rows            # the assembly document's table
+    (repo / "assemblies" / "fx" / "accepted.yaml").write_text(
+        "version: 1\naccepted:\n  - check: CK-F18\n    rule: space\n    items: [A]\n"
+        "    reason: the stand-off under the board (planted)\n")
+    _commit(repo, "accept the stand-off\n\nAccepted-by: Owner")
+    f = _run(root, repo, "c_space_budget").findings
+    assert len(f) == 3 and not any("A reaches" in x for x in f), f
+    res["seats"] = {"ME-PORT-0009": {"budget": "SYS-IF-0001", "missing": ["heightBelow"], "values": {}}}
+    f = _run(root, repo, "c_space_budget").findings
+    assert any("the budget SYS-IF-0001 has no value for heightBelow" in x for x in f), f
+
+
+def test_f18_seats_from_the_model(tmp_path):
+    """The seats: ME port defs that specialize a SYS-IF budget of the upstream model; the budget's
+    defaults, overridden by the values the seat restates; a missing value is named."""
+    from test_meparams import M
+    root, repo = _repo(tmp_path)
+    up = M()
+    sp = up.el("Sys::BoardSpace", {"@type": "PortDefinition", "name": "BoardSpace", "qualifiedName": "Sys::BoardSpace",
+                                   "declaredShortName": "SYS-IF-0001"})
+    for n, v in (("width", 30), ("depth", 20), ("heightAbove", 10)):
+        up.attr(sp, n, v, "millimetre")
+    me = M()
+    me.el("lib:Sys::BoardSpace", {"@type": "PortDefinition", "name": "BoardSpace", "qualifiedName": "Sys::BoardSpace",
+                                  "declaredShortName": "SYS-IF-0001", "isLibraryElement": True})
+    seat = me.el("Me::BoardSeat", {"@type": "PortDefinition", "name": "BoardSeat", "qualifiedName": "Me::BoardSeat",
+                                   "declaredShortName": "ME-PORT-0002"})
+    sub = me.el("Me::BoardSeat/sub", {"@type": "Subclassification", "superclassifier": {"@id": "lib:Sys::BoardSpace"}})
+    seat["ownedRelationship"].append({"@id": sub["@id"]})
+    me.attr(seat, "width", 25, "millimetre")
+    me.el("Me::Other", {"@type": "PortDefinition", "name": "Other", "qualifiedName": "Me::Other",
+                        "declaredShortName": "ME-PORT-0001"})
+    (repo / "generated").mkdir()
+    (repo / "generated" / "model.json").write_text(json.dumps(me.data))
+    (repo / "up.json").write_text(json.dumps(up.data))
+    (repo / "checks.yaml").write_text("version: 1\n" + CFG + "model: {files: [model/*.sysml], upstream: up.json}\n")
+    cfg = checkcfg.load(repo / "checks.yaml", root)
+    assert mechecks.seats(cfg) == {"ME-PORT-0002": {"budget": "SYS-IF-0001", "missing": ["heightBelow"],
+                                                    "values": {"width": 25.0, "depth": 20.0, "heightAbove": 10.0}}}
 
 
 def test_recompute_and_solids_shared_documents(tmp_path, monkeypatch):
@@ -154,3 +214,27 @@ def test_me_checks_freecad(tmp_path):
     assert _run(root, repo, "c_space_budget").status == "skip"
     assert subprocess.run(["git", "-C", str(repo), "status", "--porcelain"], capture_output=True,
                           text=True).stdout == ""                     # the check saved nothing
+
+
+@pytest.mark.tools
+def test_f18_space_budget_freecad(tmp_path, monkeypatch):
+    """CK-F18 planted in the FreeCAD fixture (XD_BOARD=1): a board 2 mm above heightAbove, a part
+    1 mm into the box below the board, a screw through the board body (the one through the hole
+    passes), a second board at no seat."""
+    if shutil.which("FreeCADCmd") is None:
+        pytest.skip("FreeCADCmd not installed")
+    root, repo = _repo(tmp_path)
+    _fixture(tmp_path, repo, {"XD_BOARD": "1"})
+    _commit(repo, "fixture")
+    mechecks._CACHE.clear()
+    monkeypatch.setattr(mechecks, "seats", lambda cfg: SEAT)
+    f = _run(root, repo, "c_space_budget").findings
+    assert f == [
+        "error: space (error): assemblies/fx/fx.FCStd: Board and the fastener ScrewBad overlap by 11.31 mm³ (tolerance "
+        "0.001 mm³): the fastener misses the board's hole [ScrewBad]",
+        "error: space (error): assemblies/fx/fx.FCStd: Board reaches 2 mm above heightAbove of the space budget "
+        "SYS-IF-0001 at LCS_seat (ME-PORT-0009; board z 12.000 mm, budget 10 mm, tolerance 0.01 mm) [Board]",
+        "error: space (error): assemblies/fx/fx.FCStd: F reaches into the space budget SYS-IF-0001 of Board at LCS_seat "
+        "(ME-PORT-0009) by 100 mm³, z -3 to -2 mm in the board frame (tolerance 0.001 mm³) [F]",
+        "error: space (error): assemblies/fx/fx.FCStd: Board2 is not placed at a board seat (an LCS with Port = an "
+        "ME-PORT that specializes a SYS-IF budget: ME-PORT-0009); the link sits at [0.0, 70.0, 20.0] [Board2]"], f

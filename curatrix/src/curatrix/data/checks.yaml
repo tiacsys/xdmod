@@ -126,7 +126,7 @@ checks:
   CK-F15:
     need: XD-CHECK-0047
     enforces: [XD-RULE-0056]
-    description: "In the document of an assembly def, the FreeCAD links per part or sub-assembly (by the TraceID of the link target) equal its usages: the ME model's usages (with multiplicity) and the system model's usages in the blocks the assembly realizes; per configuration (Configs on links); links to the skeleton are not counted."
+    description: "In the document of an assembly def, the FreeCAD links per part or sub-assembly (by the TraceID of the link target) equal its usages: the ME model's usages (with multiplicity) and the system model's usages in the blocks the assembly realizes; per configuration (Configs on links); links to the skeleton and to board models of the board library (cad.board_library) are not counted."
   CK-D7:
     need: XD-CHECK-0037
     enforces: [XD-RULE-0050]
@@ -174,7 +174,7 @@ checks:
   CK-F18:
     need: XD-CHECK-0055
     enforces: [XD-RULE-0062]
-    description: "Each board model in an assembly (a link to an object with an EE-PCBA TraceID) stays inside its SYS-IF space budget; the budget's form comes from the co-design task 5.28, so until then the check is a skip with its reason (no board model, or board models placed but not checked), never a finding (local, needs FreeCAD)."
+    description: "Each board model in an assembly (a link to an object with an EE-PCBA TraceID, e.g. from the board library) sits at a seat LCS (Port = an ME-PORT that specializes a SYS-IF space budget) and stays inside the budget's box (width x depth, -heightBelow to heightAbove in the board frame, the seat's restated values or the budget's defaults; tolerance 0.01 mm); no other part reaches into the box and no library fastener into the board (common volume above 0.001 mm³); fasteners may pass through the box. A skip without a board model. Findings can be accepted (rule space; items the board, or the part or fastener) (local, needs FreeCAD)."
   CK-F19:
     need: XD-CHECK-0056
     enforces: [XD-RULE-0063]

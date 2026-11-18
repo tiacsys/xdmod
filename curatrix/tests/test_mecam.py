@@ -64,13 +64,17 @@ def test_bom_rows_and_totals(tmp_path):
             {"file": str(repo / "parts/a.FCStd"), "object": "Box", "label": "A", "TraceID": "ME-PART-0001",
              "PrintProfile": "pla", "Material": "PLA"},
             {"file": str(repo / "lib/screw.FCStd"), "object": "Screw", "label": "Screw", "TraceID": "ME-PART-0005",
-             "Standard": "ISO 4762 M3x10, A2"}]
+             "Standard": "ISO 4762 M3x10, A2"},
+            {"file": str(repo.parent / "lib/boards/b/b-v0.1.0.FCStd"), "object": "Board", "label": "b",
+             "TraceID": "EE-PCBA-0001", "Board": "b", "Version": "b/v0.1.0"}]
     b = mecam.bom_rows(rows, repo)
-    assert [(r["item"], r["kind"], r["qty"], r["file"]) for r in b] == [(1, "fastener", 1, "lib/screw.FCStd"),
-                                                                       (2, "printed", 2, "parts/a.FCStd")]
+    assert [(r["item"], r["kind"], r["qty"], r["name"]) for r in b] == [(1, "board", 1, "b b/v0.1.0"),
+                                                                       (2, "fastener", 1, "Screw"),
+                                                                       (3, "printed", 2, "A")]
+    assert b[2]["file"] == "parts/a.FCStd" and b[0]["file"] == "../lib/boards/b/b-v0.1.0.FCStd"
     mecam._write_csv(tmp_path / "bom.csv", b)
     last = list(csv.DictReader(open(tmp_path / "bom.csv")))[-1]
-    assert (last["item"], last["qty"]) == ("total", "3")
+    assert (last["item"], last["qty"]) == ("total", "4")
 
 
 def test_sheet_svg_and_pdf():

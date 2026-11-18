@@ -17,10 +17,21 @@ load fully through its links), recomputes everything without saving and reports:
   ``OVERLAP_TOL`` is a finding; parts joined by an assembly joint (``Reference1`` and
   ``Reference2`` of a joint name both links) may touch and get ``JOINED_TOL``, the numerical noise of
   a boolean on coincident faces. Touching faces give no volume, so touching is free for every pair.
-* **CK-F18** each board model (a link whose target carries an ``EE-PCBA`` ``TraceID``) inside its
-  ``SYS-IF`` space budget. The budget's form comes from the co-design task 5.28; until then the
-  check is always a skip with its reason (no board model, or board models placed but not checked),
-  never a finding that would need acceptance.
+* **CK-F18** each board model (a link whose target carries an ``EE-PCBA`` ``TraceID``, e.g. a board of
+  the board library, XD-ADR-0139) inside its ``SYS-IF`` space budget (XD-ADR-0134). The seats are
+  the ME port defs (``ME-PORT``) that specialize a ``SYS-IF`` budget of the upstream model; the
+  budget's box is ``width`` x ``depth`` in the board frame (origin at the lower-left corner of the
+  outline seen from the top, z = 0 on the top face), from ``-heightBelow`` to ``heightAbove``,
+  with the values the seat restates or else the budget's defaults. Findings (rule ``space``):
+  a board link not placed at a seat LCS (an LCS with ``Port`` = a seat, reached through the
+  skeleton link); a board that reaches out of the box by more than ``BOX_TOL``; a part (not a
+  fastener, not a board) with a common volume above ``OVERLAP_TOL`` with the box (a stand-off
+  under the board, a wall too close); a library fastener with a common volume above
+  ``OVERLAP_TOL`` with the board (a screw that misses the board's hole). Fasteners may pass
+  through the box (they hold the board through the budget's holes); board versus part collisions
+  are CK-F17's. Without a board model the check is a skip with its reason. The items of an
+  ``accepted.yaml`` entry: the board link for its own findings (box, seat), the part or fastener
+  link for the others.
 
 Every error can be accepted in ``assemblies/<name>/accepted.yaml``, in the format and with the
 acceptor rule of ``ercdrc`` (XD-ADR-0126, CK-F9): ``check`` CK-F4c | CK-F16 | CK-F17, ``rule``
@@ -40,7 +51,9 @@ from curatrix import ercdrc, meassemblies
 SCRIPT = Path("templates") / "freecad-asm" / "check-asm.py"
 OVERLAP_TOL = 1e-3          # mm^3
 JOINED_TOL = 0.1            # mm^3, parts joined by an assembly joint
-RULES = {"CK-F4c": "recompute", "CK-F16": "solid", "CK-F17": "overlap"}   # CK-F18: a skip until 5.28
+RULES = {"CK-F4c": "recompute", "CK-F16": "solid", "CK-F17": "overlap", "CK-F18": "space"}
+BOX_TOL = 0.01              # mm, a board beyond its budget box; KiCad's STEP seats components 5 um off the top face
+BOX = ("width", "depth", "heightAbove", "heightBelow")
 _CACHE: dict[tuple, dict] = {}
 
 
@@ -59,10 +72,47 @@ def files(cfg) -> list[Path]:
     return first + [p for p in docs if p not in first]
 
 
+def seats(cfg) -> dict[str, dict]:
+    """{ME-PORT: {budget, values: {width, depth, heightAbove, heightBelow}, missing}} of every seat:
+    an ME port def that specializes a ``SYS-IF`` space budget of the upstream model (co-design,
+    XD-ADR-0134). A value the seat restates wins over the budget's default."""
+    from curatrix import gen, ids as idmod, meparams, model as modelmod
+    mj = cfg.resolve((cfg.section("model") or {}).get("json", "generated/model.json"))
+    if not (cfg.section("model") and mj.is_file()):
+        return {}
+    m = modelmod.Model.load(mj)
+    ups, _ = gen.upstream_models(cfg)
+    joined = modelmod.Joined(m, ups)
+    out = {}
+    for pdef in m.user():
+        if pdef.get("@type") != "PortDefinition":
+            continue
+        pid = modelmod.element_id(m, pdef) or ""
+        if idmod.kind_of(pid) != "ME-PORT":
+            continue
+        for s in m.supers(pdef):
+            sid = modelmod.element_id(m, s) or ""
+            if idmod.kind_of(sid) != "SYS-IF":
+                continue
+            um, full = joined.full(s)
+            values = {}
+            for mm, el in ((um, full), (m, pdef)):          # the budget's defaults, then the seat's own values
+                if el is None:
+                    continue
+                for a in meparams._attributes(mm, el):
+                    v = meparams._value(mm, a) if a.get("name") in BOX else None
+                    if v is not None and v[1] == "length":
+                        values[a["name"]] = v[0]
+            out[pid] = {"budget": sid, "values": values, "missing": [k for k in BOX if k not in values]}
+            break
+    return out
+
+
 def run(ws, cfg, out: Path) -> dict:
     """The FreeCAD result of the repo (cached per set of files and their modification times)."""
     fs = files(cfg)
-    key = (str(cfg.repo.resolve()), tuple((str(f), f.stat().st_mtime_ns) for f in fs))
+    st = seats(cfg)
+    key = (str(cfg.repo.resolve()), tuple((str(f), f.stat().st_mtime_ns) for f in fs), json.dumps(st, sort_keys=True))
     if key in _CACHE:
         return _CACHE[key]
     if not fs:
@@ -72,10 +122,13 @@ def run(ws, cfg, out: Path) -> dict:
         from curatrix.newpcba import NewError
         lib = (cfg.repo / "lib").resolve()
         try:
-            res = run_script(ws, ws.xdmod / SCRIPT, {"XD_FILES": json.dumps([str(f) for f in fs]), "XD_LIB": str(lib)},
+            res = run_script(ws, ws.xdmod / SCRIPT, {"XD_FILES": json.dumps([str(f) for f in fs]), "XD_LIB": str(lib),
+                                                     "XD_SEATS": json.dumps({k: v["values"] for k, v in st.items()
+                                                                             if not v["missing"]})},
                              out / "me-checks.result.json")
         except NewError as e:
             raise MeCheckError(str(e)) from None
+        res["seats"] = st
     _CACHE[key] = res
     return res
 
@@ -132,6 +185,55 @@ def findings(cfg, res: dict, check: str) -> list[tuple[str | None, ercdrc.Findin
                     out.append((_folder(cfg, rel), _finding(
                         check, f"{rel}{label}: {pair[0]} and {pair[1]} overlap by {o['volume']:.4g} mm³ "
                                f"(tolerance {tol:g} mm³{j})", list(pair))))
+    elif check == "CK-F18":
+        out += _space_findings(cfg, res)
+    return out
+
+
+def _space_findings(cfg, res: dict) -> list[tuple[str | None, ercdrc.Finding]]:
+    """CK-F18 findings (see the module doc)."""
+    out = []
+    st = res.get("seats") or {}
+    sides = (("x", 0, "left of the outline (x < 0)", None), ("y", 1, "below the outline (y < 0)", None),
+             ("z", 2, "below heightBelow", "heightBelow"), ("x", 3, "beyond width", "width"),
+             ("y", 4, "beyond depth", "depth"), ("z", 5, "above heightAbove", "heightAbove"))
+    for a in res.get("assemblies") or []:
+        rel = _rel(cfg, a["doc"])
+        folder = _folder(cfg, rel)
+        for b in a.get("budgets") or []:
+            board = b["board"]
+
+            def add(text, names, _board=board):     # items: the board, or the part / fastener alone (an
+                # entry's items must cover all of a finding's, so [board, part] would also accept the board's own)
+                out.append((folder, _finding("CK-F18", f"{rel}: {text}", names or [_board])))
+            for f in b.get("fasteners") or []:
+                if f["volume"] > OVERLAP_TOL:
+                    add(f"{board} and the fastener {f['name']} overlap by {f['volume']:.4g} mm³ (tolerance "
+                        f"{OVERLAP_TOL:g} mm³): the fastener misses the board's hole", [f["name"]])
+            if not b.get("seat"):
+                add(f"{board} is not placed at a board seat (an LCS with Port = an ME-PORT that specializes a SYS-IF "
+                    f"budget: {', '.join(sorted(st)) or 'none in the model'}); the link sits at {b.get('placement')}", [])
+                continue
+            seat = st.get(b["port"]) or {}
+            if seat.get("missing"):
+                add(f"{board} at {b['seat']} ({b['port']}): the budget {seat.get('budget')} has no value for "
+                    f"{', '.join(seat['missing'])}", [])
+                continue
+            v = seat["values"]
+            lim = {"width": v["width"], "depth": v["depth"], "heightAbove": v["heightAbove"],
+                   "heightBelow": -v["heightBelow"]}
+            bb = b.get("bbox") or []
+            for axis, i, what, key in sides if bb else ():
+                edge = lim[key] if key else 0.0
+                over = (edge - bb[i]) if i < 3 else (bb[i] - edge)
+                if over > BOX_TOL:
+                    add(f"{board} reaches {over:.3g} mm {what} of the space budget {seat['budget']} at {b['seat']} "
+                        f"({b['port']}; board {axis} {bb[i]:.3f} mm, budget {edge:g} mm, tolerance {BOX_TOL:g} mm)", [])
+            for x in b.get("intrusions") or []:
+                if x["volume"] > OVERLAP_TOL:
+                    add(f"{x['name']} reaches into the space budget {seat['budget']} of {board} at {b['seat']} "
+                        f"({b['port']}) by {x['volume']:.4g} mm³, z {x['z'][0]:.3g} to {x['z'][1]:.3g} mm in the "
+                        f"board frame (tolerance {OVERLAP_TOL:g} mm³)", [x["name"]])
     return out
 
 
@@ -169,6 +271,7 @@ def evaluate(cfg, check: str, found: list[tuple[str | None, ercdrc.Finding]],
         o = ercdrc.evaluate(fs, pool, {})
         total.problems += o.problems
         total.listed += o.listed
+        total.rows += o.rows                      # the assembly document's findings table (findings.json)
     for folder, es in sorted(mine.items()):
         for e in es:
             if not e.hits:
