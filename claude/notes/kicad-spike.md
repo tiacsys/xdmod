@@ -451,7 +451,11 @@ Release check (same night): with the released `v2.9.0-xd.1` asset (sha256 `96bee
 handshake FAILED: strict mode refused `XDG_*_HOME` below `$HOME`, and this workspace lives below
 `$HOME` (a rule added in fork #4 after the trial build). Fork PR #7 limits the rule to the desktop
 folders; the handshake with that fix (scratch copy of the release) passes, user folders unchanged.
-The pin moves to `v2.9.0-xd.2` (with #6, readonly DRC report under `KICAD_MCP_HOME`) before #84 merges.
+Pinned now to `v2.9.0-xd.2` (fork `xd/main` 9bd4d68, with #6 and #7): installed from the release
+asset, doctor handshake ok (38 tools, worker ready, user folders unchanged); a readonly `run_drc` on a
+scratch copy writes its report to `.xdmod/kicad-mcp/reports/`, the board folder stays unchanged.
+`curatrix mcp-server kicad` (aligned with #80's `mcp-server freecad`) also sets `HOME` to
+`.xdmod/kicad-mcp/home` for the server and its child processes (kicad-cli, Java).
 
 Open: the IPC server is off in the workspace KiCad config; switching it on for `curatrix launch
 kicad` is a decision for the owner (socket without auth, report §3). The readonly DRC report file
